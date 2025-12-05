@@ -1,0 +1,182 @@
+/* 테마 전환 애니메이션 */
+body,
+body * {
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    fill 0.2s ease-in-out,
+    stroke 0.2s ease-in-out;
+}
+
+/* 기본 테마 (현재 오렌지 색상) */
+[data-theme='default'] {
+  --bg-primary: rgb(255 247 237); /* bg-orange-50 */
+  --bg-secondary: rgb(255 255 255);
+  --text-primary: rgb(0 0 0);
+  --text-secondary: rgb(107 114 128); /* gray-500 */
+  --text-muted: rgb(156 163 175); /* gray-400 */
+  --accent-primary: rgb(253 186 116); /* orange-300 */
+  --accent-hover: rgb(251 146 60); /* orange-400 */
+  --border-color: rgb(212 212 216); /* zinc-300 */
+  --nav-bg: rgb(255 255 255);
+  --button-hover-bg: rgb(243 244 246); /* gray-100 */
+}
+
+/* 라이트 모드 */
+[data-theme='light'] {
+  --bg-primary: rgb(249 250 251); /* gray-50 */
+  --bg-secondary: rgb(255 255 255);
+  --text-primary: rgb(17 24 39); /* gray-900 */
+  --text-secondary: rgb(107 114 128); /* gray-500 */
+  --text-muted: rgb(156 163 175); /* gray-400 */
+  --accent-primary: rgb(59 130 246); /* blue-500 */
+  --accent-hover: rgb(37 99 235); /* blue-600 */
+  --border-color: rgb(229 231 235); /* gray-200 */
+  --nav-bg: rgb(255 255 255);
+  --button-hover-bg: rgb(243 244 246); /* gray-100 */
+}
+
+/* 다크 모드 */
+[data-theme='dark'] {
+  --bg-primary: rgb(17 24 39); /* gray-900 */
+  --bg-secondary: rgb(31 41 55); /* gray-800 */
+  --text-primary: rgb(243 244 246); /* gray-100 */
+  --text-secondary: rgb(156 163 175); /* gray-400 */
+  --text-muted: rgb(107 114 128); /* gray-500 */
+  --accent-primary: rgb(96 165 250); /* blue-400 */
+  --accent-hover: rgb(59 130 246); /* blue-500 */
+  --border-color: rgb(55 65 81); /* gray-700 */
+  --nav-bg: rgb(31 41 55); /* gray-800 */
+  --button-hover-bg: rgb(55 65 81); /* gray-700 */
+}
+
+/* 다크 모드 그라데이션 배경 */
+[data-theme='dark'] .theme-bg-gradient {
+  background: linear-gradient(to bottom right, rgb(17 24 39), rgb(55 65 81));
+}
+
+/* 개인 설정 (사용자가 커스터마이징 가능) */
+[data-theme='custom'] {
+  --bg-primary: var(--custom-bg-primary, rgb(255 255 255));
+  --bg-secondary: var(--custom-bg-secondary, rgb(245 245 245));
+  --text-primary: var(--custom-text-primary, rgb(0 0 0));
+  --text-secondary: var(--custom-text-secondary, rgb(107 114 128));
+  --text-muted: var(--custom-text-muted, rgb(156 163 175));
+  --accent-primary: var(--custom-accent-primary, rgb(59 130 246));
+  --accent-hover: var(--custom-accent-hover, rgb(37 99 235));
+  --border-color: var(--custom-border-color, rgb(229 231 235));
+  --nav-bg: var(--custom-nav-bg, rgb(255 255 255));
+  --button-hover-bg: var(--custom-button-hover-bg, rgb(243 244 246));
+}
+
+/* Tailwind 색상 팔레트 - 자동 테마 생성용 */
+:root {
+  /* Rose */
+  --color-rose-50: rgb(255 241 242);
+  --color-rose-100: rgb(255 228 230);
+  --color-rose-200: rgb(254 205 211);
+  --color-rose-300: rgb(253 164 175);
+  --color-rose-400: rgb(251 113 133);
+  --color-rose-500: rgb(244 63 94);
+  --color-rose-600: rgb(225 29 72);
+  --color-rose-700: rgb(190 18 60);
+  --color-rose-800: rgb(159 18 57);
+  --color-rose-900: rgb(136 19 55);
+
+  /* Orange */
+  --color-orange-50: rgb(255 247 237);
+  --color-orange-100: rgb(255 237 213);
+  --color-orange-200: rgb(254 215 170);
+  --color-orange-300: rgb(253 186 116);
+  --color-orange-400: rgb(251 146 60);
+  --color-orange-500: rgb(249 115 22);
+  --color-orange-600: rgb(234 88 12);
+  --color-orange-700: rgb(194 65 12);
+  --color-orange-800: rgb(154 52 18);
+  --color-orange-900: rgb(124 45 18);
+
+  /* Yellow */
+  --color-yellow-50: rgb(254 252 232);
+  --color-yellow-100: rgb(254 249 195);
+  --color-yellow-200: rgb(254 240 138);
+  --color-yellow-300: rgb(253 224 71);
+  --color-yellow-400: rgb(250 204 21);
+  --color-yellow-500: rgb(234 179 8);
+  --color-yellow-600: rgb(202 138 4);
+  --color-yellow-700: rgb(161 98 7);
+  --color-yellow-800: rgb(133 77 14);
+  --color-yellow-900: rgb(113 63 18);
+
+  /* Lime */
+  --color-lime-50: rgb(247 254 231);
+  --color-lime-100: rgb(236 252 203);
+  --color-lime-200: rgb(217 249 157);
+  --color-lime-300: rgb(190 242 100);
+  --color-lime-400: rgb(163 230 53);
+  --color-lime-500: rgb(132 204 22);
+  --color-lime-600: rgb(101 163 13);
+  --color-lime-700: rgb(77 124 15);
+  --color-lime-800: rgb(63 98 18);
+  --color-lime-900: rgb(54 83 20);
+
+  /* Emerald */
+  --color-emerald-50: rgb(236 253 245);
+  --color-emerald-100: rgb(209 250 229);
+  --color-emerald-200: rgb(167 243 208);
+  --color-emerald-300: rgb(110 231 183);
+  --color-emerald-400: rgb(52 211 153);
+  --color-emerald-500: rgb(16 185 129);
+  --color-emerald-600: rgb(5 150 105);
+  --color-emerald-700: rgb(4 120 87);
+  --color-emerald-800: rgb(6 95 70);
+  --color-emerald-900: rgb(6 78 59);
+
+  /* Indigo */
+  --color-indigo-50: rgb(238 242 255);
+  --color-indigo-100: rgb(224 231 255);
+  --color-indigo-200: rgb(199 210 254);
+  --color-indigo-300: rgb(165 180 252);
+  --color-indigo-400: rgb(129 140 248);
+  --color-indigo-500: rgb(99 102 241);
+  --color-indigo-600: rgb(79 70 229);
+  --color-indigo-700: rgb(67 56 202);
+  --color-indigo-800: rgb(55 48 163);
+  --color-indigo-900: rgb(49 46 129);
+
+  /* Purple */
+  --color-purple-50: rgb(250 245 255);
+  --color-purple-100: rgb(243 232 255);
+  --color-purple-200: rgb(233 213 255);
+  --color-purple-300: rgb(216 180 254);
+  --color-purple-400: rgb(192 132 252);
+  --color-purple-500: rgb(168 85 247);
+  --color-purple-600: rgb(147 51 234);
+  --color-purple-700: rgb(126 34 206);
+  --color-purple-800: rgb(107 33 168);
+  --color-purple-900: rgb(88 28 135);
+
+  /* Pink */
+  --color-pink-50: rgb(253 242 248);
+  --color-pink-100: rgb(252 231 243);
+  --color-pink-200: rgb(251 207 232);
+  --color-pink-300: rgb(249 168 212);
+  --color-pink-400: rgb(244 114 182);
+  --color-pink-500: rgb(236 72 153);
+  --color-pink-600: rgb(219 39 119);
+  --color-pink-700: rgb(190 24 93);
+  --color-pink-800: rgb(157 23 77);
+  --color-pink-900: rgb(131 24 67);
+
+  /* Slate */
+  --color-slate-50: rgb(248 250 252);
+  --color-slate-100: rgb(241 245 249);
+  --color-slate-200: rgb(226 232 240);
+  --color-slate-300: rgb(203 213 225);
+  --color-slate-400: rgb(148 163 184);
+  --color-slate-500: rgb(100 116 139);
+  --color-slate-600: rgb(71 85 105);
+  --color-slate-700: rgb(51 65 85);
+  --color-slate-800: rgb(30 41 59);
+  --color-slate-900: rgb(15 23 42);
+}
