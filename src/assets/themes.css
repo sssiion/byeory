@@ -1,15 +1,22 @@
-/* 기본 테마 (현재 오렌지 색상) */
+/* 기본 테마 (인스타그램 감성) */
 [data-theme='default'] {
-  --bg-primary: rgb(255 247 237); /* bg-orange-50 */
+  --bg-primary: rgb(245 240 250); /* 은은한 보라색 배경 */
   --bg-secondary: rgb(255 255 255);
-  --text-primary: rgb(0 0 0);
+  --text-primary: rgb(0 0 0); /* 검은색 기본 글씨 */
   --text-secondary: rgb(107 114 128); /* gray-500 */
   --text-muted: rgb(156 163 175); /* gray-400 */
-  --accent-primary: rgb(253 186 116); /* orange-300 */
-  --accent-hover: rgb(251 146 60); /* orange-400 */
-  --border-color: rgb(212 212 216); /* zinc-300 */
+  --accent-primary: rgb(245 101 184); /* 핑크 (그라데이션 시작색) */
+  --accent-hover: rgb(236 72 153); /* 진한 핑크 */
+  --border-color: rgb(244 114 182); /* 분홍색 border */
   --nav-bg: rgb(255 255 255);
   --button-hover-bg: rgb(243 244 246); /* gray-100 */
+  --button-text: rgb(255 255 255); /* 버튼 안 흰색 글씨 */
+
+  /* 그라데이션 색상 */
+  --gradient-start: rgb(245 101 184); /* 핑크 */
+  --gradient-end: rgb(192 132 252); /* 보라 */
+  --gradient-start-hover: rgb(236 72 153); /* 진한 핑크 */
+  --gradient-end-hover: rgb(168 85 247); /* 진한 보라 */
 }
 
 /* 라이트 모드 */
@@ -30,7 +37,7 @@
 [data-theme='dark'] {
   --bg-primary: rgb(17 24 39); /* gray-900 */
   --bg-secondary: rgb(31 41 55); /* gray-800 */
-  --text-primary: rgb(0 0 0);
+  --text-primary: rgb(156 163 175); /* gray-400 - 다크모드에서 보이는 밝은 회색 */
   --text-secondary: rgb(156 163 175); /* gray-400 */
   --text-muted: rgb(107 114 128); /* gray-500 */
   --accent-primary: rgb(96 165 250); /* blue-400 */
@@ -168,4 +175,46 @@
   --color-slate-700: rgb(51 65 85);
   --color-slate-800: rgb(30 41 59);
   --color-slate-900: rgb(15 23 42);
+}
+
+/* 인스타그램 감성 버튼 그라데이션 스타일 */
+[data-theme='default'] .btn-gradient,
+[data-theme='default'] button.bg-accent-primary,
+[data-theme='default'] .bg-accent-primary,
+[data-theme='default'] button[class*='bg-accent'],
+[data-theme='default'] .button-primary {
+  background: linear-gradient(to right, rgb(233 213 255), rgb(252 231 243), rgb(255 237 213)) !important;
+  color: rgb(0 0 0) !important;
+  border: 2px solid rgb(244 114 182) !important;
+  transition: all 0.3s ease;
+}
+
+[data-theme='default'] .btn-gradient:hover,
+[data-theme='default'] button.bg-accent-primary:hover,
+[data-theme='default'] .bg-accent-primary:hover,
+[data-theme='default'] button[class*='bg-accent']:hover,
+[data-theme='default'] .button-primary:hover {
+  background: linear-gradient(to right, rgb(216 180 254), rgb(249 168 212), rgb(253 186 116)) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244 114 182 / 0.3);
+}
+
+[data-theme='default'] .text-accent-primary {
+  background: linear-gradient(135deg, rgb(245 101 184), rgb(192 132 252));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 분홍색 border 적용 */
+[data-theme='default'] .border-border {
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='default'] .border-accent-primary {
+  border-color: var(--accent-primary) !important;
+}
+
+[data-theme='default'] .hover\:border-accent-primary:hover {
+  border-color: var(--accent-primary) !important;
 }

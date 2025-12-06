@@ -10,7 +10,7 @@ function Navigation() {
     <>
       {/* PC 버전 네비게이션 - 상단 고정 */}
       <div
-        className="fixed top-0 right-0 left-0 z-50 hidden px-40 py-3 shadow-lg md:block"
+        className="fixed top-0 right-0 left-0 z-50 hidden px-20 py-3 shadow-lg md:block"
         style={{
           backgroundColor: 'var(--nav-bg)',
           borderBottom: '1px solid var(--border-color)',
@@ -23,7 +23,7 @@ function Navigation() {
           </Link>
 
           {/* PC 내비게이션 메뉴 - 텍스트만 표시 */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-15">
             <Link
               to="/"
               style={{

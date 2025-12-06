@@ -12,7 +12,7 @@ const themeOptions: { value: Theme; label: string; description: string }[] = [
   {
     value: 'default',
     label: '기본 테마',
-    description: '따뜻한 오렌지 색상의 기본 테마',
+    description: '파스텔 감성의 부드러움',
   },
   {
     value: 'light',
@@ -68,24 +68,65 @@ export default function ThemeSettings({ onBack, onClose, onNavigateToCustom }: P
       </div>
 
       {/* 테마 목록 */}
-      <div className="mb-4 space-y-2">
+      <div className="mb-4 space-y-3">
         {themeOptions.map((option) => (
-          <button key={option.value} onClick={() => handleThemeSelect(option.value)} className={`w-full rounded-lg border-2 p-4 text-left transition-all ${theme === option.value ? 'border-accent-primary bg-button-hover' : 'border-border hover:border-accent-primary bg-transparent'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-text-primary font-semibold">{option.label}</div>
-                <div className="text-text-secondary text-sm">{option.description}</div>
-              </div>
+          <button key={option.value} onClick={() => handleThemeSelect(option.value)} className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 transition-all ${option.value === 'default' ? (theme === option.value ? 'border-2 border-pink-400 bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100' : 'border-border border-2 bg-transparent hover:border-pink-300') : theme === option.value ? 'border-accent-primary bg-button-hover border-2' : 'border-border hover:border-accent-primary border-2 bg-transparent'}`}>
+            {/* 아이콘 */}
+            {option.value === 'default' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={theme === option.value ? 'text-pink-500' : 'text-text-muted'}>
+                <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+              </svg>
+            ) : option.value === 'custom' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+                <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+                <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                <path d="M12 2v2" />
+                <path d="M12 22v-2" />
+                <path d="m17 20.66-1-1.73" />
+                <path d="M11 10.27 7 3.34" />
+                <path d="m20.66 17-1.73-1" />
+                <path d="m3.34 7 1.73 1" />
+                <path d="M14 12h8" />
+                <path d="M2 12h2" />
+                <path d="m20.66 7-1.73 1" />
+                <path d="m3.34 17 1.73-1" />
+                <path d="m17 3.34-1 1.73" />
+                <path d="m11 13.73-4 6.93" />
+              </svg>
+            ) : option.value === 'dark' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="m4.93 4.93 1.41 1.41" />
+                <path d="m17.66 17.66 1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="m6.34 17.66-1.41 1.41" />
+                <path d="m19.07 4.93-1.41 1.41" />
+              </svg>
+            )}
 
-              {/* 아이콘 표시 로직 */}
+            <span className={option.value === 'default' && theme === option.value ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent' : 'text-text-primary'}>{option.label}</span>
+
+            {/* 우측 영역 */}
+            <div className="ml-auto flex items-center gap-2">
+              {option.value !== 'custom' && <span className={`text-sm ${option.value === 'default' && theme === option.value ? 'text-pink-700' : 'text-text-secondary'}`}>{option.description}</span>}
+
               {option.value === 'custom' ? (
-                // Custom일 경우 화살표 아이콘
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               ) : theme === option.value ? (
-                // 현재 선택된 테마일 경우 체크 아이콘
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={option.value === 'default' ? 'text-pink-500' : 'text-accent-primary'}>
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               ) : null}
