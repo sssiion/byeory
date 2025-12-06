@@ -1,8 +1,12 @@
 import Navigation from './components/Navigation';
+import DefaultPageRedirect from './components/DefaultPageRedirect';
 
 function HomePage() {
   return (
     <div className="theme-bg-gradient min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* 기본 페이지 리다이렉트 */}
+      <DefaultPageRedirect />
+
       {/* 내비게이션 설정 */}
       <Navigation />
 

@@ -404,9 +404,29 @@ export default function CustomThemeSettings({ onBack, onClose }: Props) {
                 <label className="text-text-secondary text-xs font-medium">Base Theme Color</label>
                 <div className="flex items-center gap-3">
                   <div className="relative h-10 w-10 overflow-hidden rounded-full shadow-md" style={{ backgroundColor: customBaseColor }}>
-                    <input type="color" value={customBaseColor} onChange={(e) => setCustomBaseColor(e.target.value)} className="absolute -top-2 -left-2 h-16 w-16 cursor-pointer opacity-0" />
+                    <input
+                      type="color"
+                      value={customBaseColor}
+                      onChange={(e) => {
+                        const newColor = e.target.value;
+                        setCustomBaseColor(newColor);
+                        setStartColor(newColor);
+                        setEndColor('#FFFFFF');
+                      }}
+                      className="absolute -top-2 -left-2 h-16 w-16 cursor-pointer opacity-0"
+                    />
                   </div>
-                  <input type="text" value={customBaseColor} onChange={(e) => setCustomBaseColor(e.target.value)} className="border-border text-text-primary focus:border-accent-primary w-28 rounded-md border bg-transparent px-3 py-2 text-sm uppercase focus:outline-none" />
+                  <input
+                    type="text"
+                    value={customBaseColor}
+                    onChange={(e) => {
+                      const newColor = e.target.value;
+                      setCustomBaseColor(newColor);
+                      setStartColor(newColor);
+                      setEndColor('#FFFFFF');
+                    }}
+                    className="border-border text-text-primary focus:border-accent-primary w-28 rounded-md border bg-transparent px-3 py-2 text-sm uppercase focus:outline-none"
+                  />
                 </div>
               </div>
 
@@ -456,8 +476,8 @@ export default function CustomThemeSettings({ onBack, onClose }: Props) {
         </div>
       )}
 
-      <button onClick={onClose} className="bg-accent-primary w-full rounded-lg py-3 font-semibold text-white transition-opacity hover:opacity-90">
-        완료
+      <button onClick={() => {}} className="bg-accent-primary w-full rounded-lg py-3 font-semibold text-white transition-opacity hover:opacity-90">
+        저장
       </button>
     </>
   );

@@ -8,26 +8,22 @@ interface Props {
 }
 
 // 테마 목록 데이터 정의
-const themeOptions: { value: Theme; label: string; description: string }[] = [
+const themeOptions: { value: Theme; label: string }[] = [
   {
     value: 'default',
     label: '기본 테마',
-    description: '파스텔 감성의 부드러움',
   },
   {
     value: 'light',
     label: '라이트 모드',
-    description: '밝고 깔끔한 화이트 테마',
   },
   {
     value: 'dark',
     label: '다크 모드',
-    description: '눈이 편한 다크 테마',
   },
   {
     value: 'custom',
     label: '개인 설정',
-    description: '나만의 색상으로 꾸미기',
   },
 ];
 
@@ -110,8 +106,6 @@ export default function ThemeSettings({ onBack, onClose, onNavigateToCustom }: P
 
             {/* 우측 영역 */}
             <div className="ml-auto flex items-center gap-2">
-              {option.value !== 'custom' && <span className={`text-sm ${option.value === 'default' && theme === option.value ? 'text-pink-700' : 'text-text-secondary'}`}>{option.description}</span>}
-
               {option.value === 'custom' ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
                   <polyline points="9 18 15 12 9 6"></polyline>
