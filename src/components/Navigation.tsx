@@ -210,7 +210,7 @@ function Navigation() {
         <div className="flex items-center justify-between select-none">
           {/* 홈 로고 */}
           <Link to="/" className={isEditMode ? 'pointer-events-none' : ''}>
-            <img src="/logo.png" alt="벼리" className="w-25" />
+            <img src="/logo.png" alt="벼리" className="w-23" />
           </Link>
 
           {/* PC 내비게이션 메뉴 - 텍스트만 표시 */}
