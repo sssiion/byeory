@@ -54,8 +54,8 @@ const BG_COLORS = [
 ];
 
 export default function PersonalSettings({ onBack, onClose, currentTheme, onThemeChange }: PersonalSettingsProps) {
-    const [activeTab, setActiveTab] = useState<Tab>('manual');
-    const [manualSubTab, setManualSubTab] = useState<ManualSubTab>('colors');
+    const [activeTab, setActiveTab] = useState<Tab>('font');
+    const [manualSubTab, setManualSubTab] = useState<ManualSubTab>('text');
 
     // Font State
     const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('fontFamily') || DEFAULT_FONT_FAMILY);
