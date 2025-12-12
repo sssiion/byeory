@@ -55,30 +55,30 @@ const TodoPage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
                     <h1 className="text-3xl font-bold theme-text-primary">Todo</h1>
 
-                    <div className="flex bg-gray-200 p-1 rounded-lg">
+                    <div className="flex theme-bg-card-secondary p-1 rounded-xl">
                         <button
                             onClick={() => setViewMode('daily')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'daily'
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'daily'
+                                ? 'theme-btn shadow-md'
+                                : 'theme-text-secondary hover:text-[var(--text-primary)]'
                                 }`}
                         >
                             일간
                         </button>
                         <button
                             onClick={() => setViewMode('weekly')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'weekly'
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'weekly'
+                                ? 'theme-btn shadow-md'
+                                : 'theme-text-secondary hover:text-[var(--text-primary)]'
                                 }`}
                         >
                             주간
                         </button>
                         <button
                             onClick={() => setViewMode('monthly')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'monthly'
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'monthly'
+                                ? 'theme-btn shadow-md'
+                                : 'theme-text-secondary hover:text-[var(--text-primary)]'
                                 }`}
                         >
                             월간

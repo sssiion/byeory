@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Calendar, Clock } from 'lucide-react';
 import type { Todo } from './types';
 
 interface TodoModalProps {
@@ -85,45 +85,45 @@ export function TodoModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="theme-bg-modal rounded-xl shadow-2xl max-w-md w-full border theme-border">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl">{isEditMode ? '할 일 수정' : '할 일 추가'}</h2>
+        <div className="flex items-center justify-between p-6 border-b theme-border">
+          <h2 className="text-xl font-bold theme-text-primary">{isEditMode ? '할 일 수정' : '할 일 추가'}</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-black/5 rounded-lg transition-colors theme-icon"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Title */}
           <div>
-            <label className="block text-sm mb-2">할 일</label>
+            <label className="block text-sm font-medium mb-2 theme-text-secondary">할 일</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="할 일을 입력하세요"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)]"
+              className="w-full px-4 py-3 border theme-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] bg-transparent theme-text-primary placeholder-gray-400"
               autoFocus
             />
           </div>
 
           {/* All Day Switch */}
           <div className="flex items-center justify-between py-2">
-            <label className="text-sm">하루종일</label>
+            <label className="text-sm font-medium theme-text-secondary">하루종일</label>
             <button
               type="button"
               onClick={() => setAllDay(!allDay)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${allDay ? '' : 'bg-gray-300'}`}
+              className={`relative w-12 h-7 rounded-full transition-colors ${allDay ? '' : 'bg-gray-300'}`}
               style={{ backgroundColor: allDay ? 'var(--btn-bg)' : undefined }}
             >
               <div
-                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${allDay ? 'translate-x-6' : ''
+                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${allDay ? 'translate-x-5' : ''
                   }`}
               />
             </button>
@@ -131,70 +131,82 @@ export function TodoModal({
 
           {/* Start Date */}
           <div>
-            <label className="block text-sm mb-2">시작 날짜</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                if (!allDay && new Date(e.target.value) > new Date(endDate)) {
-                  setEndDate(e.target.value);
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)]"
-            />
+            <label className="block text-sm font-medium mb-2 theme-text-secondary">시작 날짜</label>
+            <div className="relative">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (!allDay && new Date(e.target.value) > new Date(endDate)) {
+                    setEndDate(e.target.value);
+                  }
+                }}
+                className="w-full px-4 py-3 border theme-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] bg-transparent theme-text-primary [&::-webkit-calendar-picker-indicator]:opacity-0"
+              />
+              <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 theme-text-secondary pointer-events-none" />
+            </div>
           </div>
 
           {/* Start Time */}
           {!allDay && (
             <div>
-              <label className="block text-sm mb-2">시작 시간</label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)]"
-              />
+              <label className="block text-sm font-medium mb-2 theme-text-secondary">시작 시간</label>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-4 py-3 border theme-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] bg-transparent theme-text-primary [&::-webkit-calendar-picker-indicator]:opacity-0"
+                />
+                <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 theme-text-secondary pointer-events-none" />
+              </div>
             </div>
           )}
 
           {/* End Date */}
           {!allDay && (
             <div>
-              <label className="block text-sm mb-2">종료 날짜</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={startDate}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)]"
-              />
+              <label className="block text-sm font-medium mb-2 theme-text-secondary">종료 날짜</label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate}
+                  className="w-full px-4 py-3 border theme-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] bg-transparent theme-text-primary [&::-webkit-calendar-picker-indicator]:opacity-0"
+                />
+                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 theme-text-secondary pointer-events-none" />
+              </div>
             </div>
           )}
 
           {/* End Time */}
           {!allDay && (
             <div>
-              <label className="block text-sm mb-2">종료 시간</label>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)]"
-              />
+              <label className="block text-sm font-medium mb-2 theme-text-secondary">종료 시간</label>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-4 py-3 border theme-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] bg-transparent theme-text-primary [&::-webkit-calendar-picker-indicator]:opacity-0"
+                />
+                <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 theme-text-secondary pointer-events-none" />
+              </div>
             </div>
           )}
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6">
             {isEditMode && (
               <button
                 type="button"
                 onClick={handleDelete}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${showDeleteConfirm ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-red-300 text-red-600 hover:bg-red-50'}`}
+                className={`px-4 py-3 rounded-xl transition-colors flex items-center gap-2 ${showDeleteConfirm ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-red-200 text-red-500 hover:bg-red-50'}`}
               >
-                <Trash2 className="w-4 h-4" />
-                {showDeleteConfirm ? '정말 삭제' : '삭제'}
+                <Trash2 className="w-5 h-5" />
+                {showDeleteConfirm ? '정말 삭제' : ''}
               </button>
             )}
 
@@ -203,13 +215,13 @@ export function TodoModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 border theme-border rounded-xl hover:bg-black/5 transition-colors theme-text-secondary font-medium"
             >
               취소
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+              className="px-6 py-3 text-white rounded-xl transition-all hover:opacity-90 shadow-lg shadow-blue-500/30 font-medium"
               style={{ backgroundColor: 'var(--btn-bg)' }}
             >
               {isEditMode ? '수정' : '추가'}

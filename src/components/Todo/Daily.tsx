@@ -74,47 +74,47 @@ export function DailyView({
     const completedTodos = dailyTodos.filter(t => t.completed);
 
     return (
-        <div>
-            {/* Date Navigation */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">
+        <div className="mx-auto w-full p-4 md:p-6">
+            {/* Date Navigation & Filters */}
+            <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-2 md:gap-4 justify-center md:justify-start">
                     <button
                         onClick={goToPreviousDay}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <h2 className="text-lg md:text-2xl min-w-[200px] md:min-w-[300px] text-center">
+                    <h2 className="text-lg md:text-2xl font-bold min-w-[200px] md:min-w-[300px] text-center theme-text-primary">
                         {formatDisplayDate(currentDate)}
                     </h2>
                     <button
                         onClick={goToNextDay}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
                     >
                         <ChevronRight className="w-5 h-5" />
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-start">
+                <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-end">
                     {/* Filter */}
-                    <div className="flex items-center gap-3 md:border-r md:pr-4">
+                    <div className="flex items-center gap-3 md:border-r theme-border md:pr-4">
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 checked={showIncomplete}
                                 onChange={(e) => setShowIncomplete(e.target.checked)}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
                             />
-                            <span className="text-sm font-medium theme-text-primary">미완료</span>
+                            <span className="text-sm font-medium theme-text-secondary">미완료</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 checked={showCompleted}
                                 onChange={(e) => setShowCompleted(e.target.checked)}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
                             />
-                            <span className="text-sm font-medium theme-text-primary">완료</span>
+                            <span className="text-sm font-medium theme-text-secondary">완료</span>
                         </label>
                     </div>
 
@@ -124,39 +124,46 @@ export function DailyView({
                         style={{ backgroundColor: 'var(--btn-bg)' }}
                     >
                         <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                        <span className="hidden sm:inline">할 일 추가</span>
-                        <span className="sm:hidden">추가</span>
+                        <span className="text-sm md:text-base font-medium">할 일 추가</span>
                     </button>
                 </div>
             </div>
 
-            {/* Todo List */}
-            <div className="space-y-2">
-                {incompleteTodos.length === 0 && completedTodos.length === 0 ?
-                    (
-                        <div className="text-center py-12 text-gray-400">
-                            이 날짜에 등록된 할 일이 없습니다
-                        </div>
-                    ) : (
-                        <>
-                            {incompleteTodos.map(todo => (
-                                <TodoItem
-                                    key={todo.id}
-                                    todo={todo}
-                                    onToggleComplete={onToggleComplete}
-                                    onEdit={setEditingTodo}
-                                />
-                            ))}
-                            {completedTodos.map(todo => (
-                                <TodoItem
-                                    key={todo.id}
-                                    todo={todo}
-                                    onToggleComplete={onToggleComplete}
-                                    onEdit={setEditingTodo}
-                                />
-                            ))}
-                        </>
-                    )}
+            {/* Content Box (Outer Box) */}
+            <div className="theme-bg-card-secondary rounded-2xl p-2">
+                {/* Todo List Box (Inner Box) */}
+                <div className="bg-transparent rounded-xl px-2 py-2">
+                    <div
+                        className="space-y-3 h-[520px] overflow-y-auto pr-1 scrollbar-hide"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                        {incompleteTodos.length === 0 && completedTodos.length === 0 ?
+                            (
+                                <div className="h-full flex items-center justify-center theme-text-secondary opacity-60">
+                                    이 날짜에 등록된 할 일이 없습니다
+                                </div>
+                            ) : (
+                                <>
+                                    {incompleteTodos.map(todo => (
+                                        <TodoItem
+                                            key={todo.id}
+                                            todo={todo}
+                                            onToggleComplete={onToggleComplete}
+                                            onEdit={setEditingTodo}
+                                        />
+                                    ))}
+                                    {completedTodos.map(todo => (
+                                        <TodoItem
+                                            key={todo.id}
+                                            todo={todo}
+                                            onToggleComplete={onToggleComplete}
+                                            onEdit={setEditingTodo}
+                                        />
+                                    ))}
+                                </>
+                            )}
+                    </div>
+                </div>
             </div>
 
             {/* Add Modal */}

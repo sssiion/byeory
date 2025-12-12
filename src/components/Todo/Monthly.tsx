@@ -270,16 +270,16 @@ function MonthlyViewContent({
         <div className="flex items-center gap-2 md:gap-4 justify-center md:justify-start">
           <button
             onClick={goToPreviousMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-lg md:text-2xl min-w-[150px] md:min-w-[200px] text-center">
-            {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+          <h2 className="text-xl md:text-2xl font-bold theme-text-primary">
+            {formatDate(currentDate)}
           </h2>
           <button
             onClick={goToNextMonth}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -287,24 +287,24 @@ function MonthlyViewContent({
 
         <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-start">
           {/* Filter */}
-          <div className="flex items-center gap-3 md:border-r md:pr-4">
+          <div className="flex items-center gap-3 md:border-r theme-border md:pr-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showIncomplete}
                 onChange={(e) => setShowIncomplete(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 theme-border"
               />
-              <span className="text-sm font-medium theme-text-primary">미완료</span>
+              <span className="text-sm font-medium theme-text-secondary">미완료</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showCompleted}
                 onChange={(e) => setShowCompleted(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 theme-border"
               />
-              <span className="text-sm font-medium theme-text-primary">완료</span>
+              <span className="text-sm font-medium theme-text-secondary">완료</span>
             </label>
           </div>
 
@@ -323,12 +323,12 @@ function MonthlyViewContent({
       {/* Calendar */}
       <div className="mb-6">
         {/* Day names header */}
-        <div className="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 mb-px">
+        <div className="grid grid-cols-7 gap-px border theme-border mb-px bg-[var(--border-color)]">
           {dayNames.map((day, index) => (
             <div
               key={day}
-              className={`bg-gray-50 py-1 md:py-2 text-center text-[10px] md:text-sm ${index === 0 ?
-                'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
+              className={`theme-bg-card py-1 md:py-2 text-center text-[10px] md:text-sm ${index === 0 ?
+                'text-red-600' : index === 6 ? 'text-blue-600' : 'theme-text-secondary'
                 }`}
             >
               {day}
@@ -337,7 +337,7 @@ function MonthlyViewContent({
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200">
+        <div className="grid grid-cols-7 gap-px border theme-border bg-[var(--border-color)]">
           {calendarDays.map((day, index) => {
             const dateString = formatDate(day.date);
             const isSelected = dateString === selectedDate;
@@ -366,16 +366,19 @@ function MonthlyViewContent({
       </div>
 
       {/* Selected Date Todos */}
-      <div className="bg-gray-50 rounded-lg p-4 md:p-6">
-        <h3 className="text-base md:text-lg mb-4">
+      <div className="theme-bg-card-secondary rounded-lg p-4 md:p-6">
+        <h3 className="text-base md:text-lg mb-4 theme-text-primary">
           {new Date(selectedDate).getFullYear()}년 {new Date(selectedDate).getMonth() + 1}월 {' '}
           {new Date(selectedDate).getDate()}일 할 일
         </h3>
 
-        <div className="space-y-2">
+        <div
+          className="space-y-3 h-[520px] overflow-y-auto pr-1 scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {selectedDateTodos.length === 0 ?
             (
-              <div className="text-center py-8 text-gray-400">
+              <div className="h-full flex items-center justify-center text-gray-400">
                 이 날짜에 등록된 할 일이 없습니다
               </div>
             ) : (

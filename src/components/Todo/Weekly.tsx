@@ -256,16 +256,16 @@ function WeeklyViewContent({
         <div className="flex items-center gap-2 md:gap-4 justify-center md:justify-start">
           <button
             onClick={goToPreviousWeek}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h2 className="text-lg md:text-2xl min-w-[250px] md:min-w-[350px] text-center">
+          <h2 className="text-lg md:text-2xl min-w-[250px] md:min-w-[350px] text-center theme-text-primary">
             {formatWeekRange(weekDates)}
           </h2>
           <button
             onClick={goToNextWeek}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -273,35 +273,34 @@ function WeeklyViewContent({
 
         <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-start">
           {/* Filter */}
-          <div className="flex items-center gap-3 md:border-r md:pr-4">
+          <div className="flex items-center gap-3 md:border-r theme-border md:pr-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showIncomplete}
                 onChange={(e) => setShowIncomplete(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
               />
-              <span className="text-sm font-medium theme-text-primary">미완료</span>
+              <span className="text-sm font-medium theme-text-secondary">미완료</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showCompleted}
                 onChange={(e) => setShowCompleted(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
               />
-              <span className="text-sm font-medium theme-text-primary">완료</span>
+              <span className="text-sm font-medium theme-text-secondary">완료</span>
             </label>
           </div>
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+            className="flex items-center gap-2 px-3 md:px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90 shadow-lg shadow-blue-500/30"
             style={{ backgroundColor: 'var(--btn-bg)' }}
           >
             <Plus className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="hidden sm:inline">할 일 추가</span>
-            <span className="sm:hidden">추가</span>
+            <span className="text-sm md:text-base font-medium">할 일 추가</span>
           </button>
         </div>
       </div>
@@ -332,13 +331,16 @@ function WeeklyViewContent({
       </div>
 
       {/* Selected Date Todos */}
-      <div className="bg-gray-50 rounded-lg p-4 md:p-6 mt-6">
-        <h3 className="text-base md:text-lg mb-4">
+      <div className="theme-bg-card-secondary rounded-lg p-4 md:p-6 mt-6">
+        <h3 className="text-base md:text-lg mb-4 theme-text-primary">
           {new Date(selectedDate).getFullYear()}년 {new Date(selectedDate).getMonth() + 1}월 {' '}
           {new Date(selectedDate).getDate()}일 할 일
         </h3>
 
-        <div className="space-y-2">
+        <div
+          className="space-y-3 h-[520px] overflow-y-auto pr-1 scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {todos.filter(todo => {
             const start = new Date(todo.startDate);
             const end = new Date(todo.endDate);
@@ -355,7 +357,7 @@ function WeeklyViewContent({
             return true;
           }).length === 0 ?
             (
-              <div className="text-center py-8 text-gray-400">
+              <div className="h-full flex items-center justify-center text-gray-400">
                 이 날짜에 등록된 할 일이 없습니다
               </div>
             ) : (
