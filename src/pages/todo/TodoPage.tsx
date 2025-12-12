@@ -3,8 +3,6 @@ import Navigation from '../../components/Header/Navigation';
 import { DailyView } from '../../components/Todo/Daily';
 import { WeeklyView } from '../../components/Todo/Weekly';
 import { MonthlyView } from '../../components/Todo/Monthly';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import type { Todo } from '../../components/Todo/types';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
@@ -89,37 +87,35 @@ const TodoPage: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <DndProvider backend={HTML5Backend}>
-                    <div className="theme-bg-card rounded-2xl shadow-sm border theme-border p-6 min-h-[600px]">
-                        {viewMode === 'monthly' && (
-                            <MonthlyView
-                                todos={todos}
-                                onAddTodo={handleAddTodo}
-                                onUpdateTodo={handleUpdateTodo}
-                                onDeleteTodo={handleDeleteTodo}
-                                onToggleComplete={handleToggleComplete}
-                            />
-                        )}
-                        {viewMode === 'weekly' && (
-                            <WeeklyView
-                                todos={todos}
-                                onAddTodo={handleAddTodo}
-                                onUpdateTodo={handleUpdateTodo}
-                                onDeleteTodo={handleDeleteTodo}
-                                onToggleComplete={handleToggleComplete}
-                            />
-                        )}
-                        {viewMode === 'daily' && (
-                            <DailyView
-                                todos={todos}
-                                onAddTodo={handleAddTodo}
-                                onUpdateTodo={handleUpdateTodo}
-                                onDeleteTodo={handleDeleteTodo}
-                                onToggleComplete={handleToggleComplete}
-                            />
-                        )}
-                    </div>
-                </DndProvider>
+                <div className="theme-bg-card rounded-2xl shadow-sm border theme-border p-6 min-h-[600px]">
+                    {viewMode === 'monthly' && (
+                        <MonthlyView
+                            todos={todos}
+                            onAddTodo={handleAddTodo}
+                            onUpdateTodo={handleUpdateTodo}
+                            onDeleteTodo={handleDeleteTodo}
+                            onToggleComplete={handleToggleComplete}
+                        />
+                    )}
+                    {viewMode === 'weekly' && (
+                        <WeeklyView
+                            todos={todos}
+                            onAddTodo={handleAddTodo}
+                            onUpdateTodo={handleUpdateTodo}
+                            onDeleteTodo={handleDeleteTodo}
+                            onToggleComplete={handleToggleComplete}
+                        />
+                    )}
+                    {viewMode === 'daily' && (
+                        <DailyView
+                            todos={todos}
+                            onAddTodo={handleAddTodo}
+                            onUpdateTodo={handleUpdateTodo}
+                            onDeleteTodo={handleDeleteTodo}
+                            onToggleComplete={handleToggleComplete}
+                        />
+                    )}
+                </div>
             </main>
         </div>
     );

@@ -405,3 +405,9 @@ body {
     background-color: var(--btn-hover);
     transform: translateY(-1px);
 }
+
+/* Global Checkbox Style */
+input[type='checkbox'] {
+    accent-color: var(--btn-bg);
+    cursor: pointer;
+}

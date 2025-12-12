@@ -117,38 +117,40 @@ const MenuSettings: React.FC = () => {
     const { saveMenuOrder, cancelMenuOrder } = useMenu();
 
     return (
-        <div className="flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+        <div className="flex flex-col items-center justify-center p-4 md:p-8 text-center animate-fade-in pb-10 md:pb-8">
             {/* 아이콘 및 헤더 */}
-            <div className="mb-6 relative">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center theme-text-primary mb-4 animate-bounce-slow">
-                    <MousePointerClick className="w-10 h-10" />
+            <div className="mb-4 md:mb-6 relative">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary/10 flex items-center justify-center theme-text-primary mb-2 md:mb-4 animate-bounce-slow">
+                    <MousePointerClick className="w-8 h-8 md:w-10 md:h-10" />
                 </div>
             </div>
 
-            <h2 className="text-3xl font-bold theme-text-primary mb-4">
+            <h2 className="text-2xl md:text-3xl font-bold theme-text-primary mb-2 md:mb-4">
                 메뉴 순서 편집
             </h2>
 
-            <p className="theme-text-secondary text-lg max-w-lg mb-8 leading-relaxed">
-                상단 네비게이션의 메뉴를 <span className="theme-text-primary font-bold">드래그</span>하여 원하는 위치로 이동시키세요.<br />
+            <p className="theme-text-secondary text-base md:text-lg max-w-lg mb-6 md:mb-8 leading-relaxed">
+                <span className="md:inline hidden">상단 네비게이션의 </span>
+                <span className="md:hidden inline">하단 네비게이션의 </span>
+                메뉴를 <span className="theme-text-primary font-bold">드래그</span>하여 원하는 위치로 이동시키세요.<br />
                 편집이 완료되면 저장 버튼을 눌러주세요.
             </p>
 
             {/* 액션 버튼 */}
-            <div className="flex gap-4">
+            <div className="flex gap-3 md:gap-4">
                 <button
                     onClick={cancelMenuOrder}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl theme-bg-card theme-border border hover:bg-black/5 transition-all duration-300 font-medium theme-text-secondary hover:theme-text-primary hover:shadow-md"
+                    className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-xl theme-bg-card theme-border border hover:bg-black/5 transition-all duration-300 font-medium text-sm md:text-base theme-text-secondary hover:theme-text-primary hover:shadow-md"
                 >
-                    <XCircle className="w-5 h-5" />
+                    <XCircle className="w-4 h-4 md:w-5 md:h-5" />
                     <span>취소</span>
                 </button>
 
                 <button
                     onClick={saveMenuOrder}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl theme-bg-primary text-white shadow-lg hover:opacity-90 transition-all duration-300 font-bold hover:shadow-primary/30 hover:-translate-y-1 border"
+                    className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-xl theme-bg-primary text-white shadow-lg hover:opacity-90 transition-all duration-300 font-bold text-sm md:text-base hover:shadow-primary/30 hover:-translate-y-1 border"
                 >
-                    <Save className="w-5 h-5" />
+                    <Save className="w-4 h-4 md:w-5 md:h-5" />
                     <span>설정 저장</span>
                 </button>
             </div>
@@ -157,7 +159,8 @@ const MenuSettings: React.FC = () => {
             <div className="mt-12 p-4 rounded-xl theme-bg-card-secondary theme-border border max-w-md w-full">
                 <div className="flex items-center justify-center gap-2 text-sm theme-text-secondary">
                     <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                    상단 메뉴바가 점선으로 표시되면 편집 가능 상태입니다.
+                    <span className="md:inline hidden">상단 메뉴바가 점선으로 표시되면 편집 가능 상태입니다.</span>
+                    <span className="md:hidden inline">하단 아이콘을 꾹 눌러 이동하세요.</span>
                 </div>
             </div>
         </div>

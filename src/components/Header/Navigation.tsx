@@ -1,9 +1,108 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import SettingsModal from '../settings/Settings';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut } from 'lucide-react';
 import { useMenu } from '../settings/menu/MenuSettings';
 import { useAuth } from '../../context/AuthContext';
+import { useDrag, useDrop } from 'react-dnd';
+
+interface DraggableMenuItemProps {
+    id: string;
+    index: number;
+    moveMenuItem: (dragIndex: number, hoverIndex: number) => void;
+    children: React.ReactNode;
+    isEditMode: boolean;
+}
+
+const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMenuItem, children, isEditMode }) => {
+    const ref = useRef<HTMLDivElement>(null);
+
+    interface DragItem {
+        index: number;
+        id: string;
+        type: string;
+    }
+
+    const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: any }>({
+        accept: 'MENU_ITEM',
+        collect(monitor) {
+            return {
+                handlerId: monitor.getHandlerId(),
+            };
+        },
+        hover(item: DragItem, monitor) {
+            if (!ref.current) {
+                return;
+            }
+            const dragIndex = item.index;
+            const hoverIndex = index;
+
+            // Don't replace items with themselves
+            if (dragIndex === hoverIndex) {
+                return;
+            }
+
+            // Determine rectangle on screen
+            const hoverBoundingRect = ref.current?.getBoundingClientRect();
+
+            // Get vertical middle
+            const hoverMiddleX =
+                (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
+
+            // Determine mouse position
+            const clientOffset = monitor.getClientOffset();
+
+            // Get pixels to the left
+            const hoverClientX = (clientOffset as any).x - hoverBoundingRect.left;
+
+            // Only perform the move when the mouse has crossed half of the items width
+            if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
+                return;
+            }
+
+            if (dragIndex > hoverIndex && hoverClientX > hoverMiddleX) {
+                return;
+            }
+
+            // Time to actually perform the action
+            moveMenuItem(dragIndex, hoverIndex);
+
+            // Note: we're mutating the monitor item here!
+            item.index = hoverIndex;
+        },
+    });
+
+    const [{ isDragging }, drag] = useDrag({
+        type: 'MENU_ITEM',
+        item: () => {
+            return { id, index };
+        },
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+        canDrag: isEditMode,
+    });
+
+    // Provide a proper handle or just drag the whole item.
+    // For mobile touch, we usually want to drag the whole item.
+    drag(drop(ref));
+
+    const opacity = isDragging ? 0.3 : 1;
+
+    return (
+        <div
+            ref={ref}
+            style={{ opacity }}
+            data-handler-id={handlerId}
+            className={`relative rounded-lg transition-all duration-200 md:w-32 md:flex-none flex-1 flex justify-center items-center py-0 md:py-2 mx-1 ${isEditMode
+                ? 'border-2 border-dashed border-primary/50 cursor-grab active:cursor-grabbing hover:bg-primary/5'
+                : ''
+                }`}
+        >
+            {children}
+        </div>
+    );
+};
 
 const Navigation: React.FC = () => {
     const location = useLocation();
@@ -13,28 +112,10 @@ const Navigation: React.FC = () => {
 
     // Menu Context
     const { menuItems, isEditMode, setIsEditMode, moveMenuItem } = useMenu();
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     const isActive = (path: string) => {
         if (path === '/' && location.pathname !== '/') return false;
         return location.pathname.startsWith(path);
-    };
-
-    // Drag and Drop Handlers
-    const handleDragStart = (index: number) => {
-        setDraggedIndex(index);
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-    };
-
-    const handleDrop = (index: number) => {
-        if (draggedIndex === null) return;
-        if (draggedIndex !== index) {
-            moveMenuItem(draggedIndex, index);
-        }
-        setDraggedIndex(null);
     };
 
     return (
@@ -47,39 +128,27 @@ const Navigation: React.FC = () => {
                 </div>
 
                 {/* Desktop Center Navigation */}
-                <nav className="hidden md:flex space-x-20">
+                <nav className="hidden md:flex items-center justify-center">
                     {menuItems.map((item, index) => {
                         return (
-                            <div
+                            <DraggableMenuItem
                                 key={item.id}
-                                draggable={isEditMode}
-                                onDragStart={() => handleDragStart(index)}
-                                onDragOver={handleDragOver}
-                                onDrop={() => handleDrop(index)}
-                                className={`relative rounded-lg transition-all duration-200 
-                                ${isEditMode
-                                        ? 'border-2 border-dashed border-primary/50 cursor-grab active:cursor-grabbing p-2 hover:bg-primary/5'
-                                        : ''
-                                    }`}
+                                index={index}
+                                id={item.id}
+                                moveMenuItem={moveMenuItem}
+                                isEditMode={isEditMode}
                             >
-                                {isEditMode ? (
-                                    <div className="flex items-center gap-2 px-2 pointer-events-none">
-                                        <span className={`text-lg font-medium theme-text-secondary opacity-70`}>
-                                            {item.name}
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <Link
-                                        to={item.path}
-                                        className={`text-lg font-medium transition-colors duration-200 ${isActive(item.path)
-                                            ? 'theme-text-primary font-bold'
-                                            : 'theme-text-secondary hover:theme-text-primary'
-                                            }`}
-                                    >
-                                        {item.name}
-                                    </Link>
-                                )}
-                            </div>
+                                <Link
+                                    to={item.path}
+                                    onClick={(e) => isEditMode && e.preventDefault()}
+                                    className={`text-lg font-medium transition-colors duration-200 block ${isActive(item.path)
+                                        ? 'theme-text-primary font-bold'
+                                        : 'theme-text-secondary hover:theme-text-primary'
+                                        }`}
+                                >
+                                    {item.name}
+                                </Link>
+                            </DraggableMenuItem>
                         )
                     })}
                 </nav>
@@ -104,20 +173,29 @@ const Navigation: React.FC = () => {
 
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 theme-bg-header border-t theme-border z-50 pb-safe transition-colors duration-300">
-                <div className="flex justify-around items-center h-16">
-                    {menuItems.map((item) => {
+                <div className="flex justify-around items-center h-16 w-full">
+                    {menuItems.map((item, index) => {
                         const active = isActive(item.path);
                         const Icon = item.icon;
                         return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${active ? 'theme-text-primary' : 'theme-text-secondary'
-                                    }`}
+                            <DraggableMenuItem
+                                key={item.id}
+                                index={index}
+                                id={item.id}
+                                moveMenuItem={moveMenuItem}
+                                isEditMode={isEditMode}
                             >
-                                <Icon className="w-6 h-6" />
-                                <span className="text-[10px] font-medium">{item.name}</span>
-                            </Link>
+                                <div className={`flex flex-col items-center justify-center w-full h-full space-y-1 p-2 ${active ? 'theme-text-primary' : 'theme-text-secondary'}`}>
+                                    <Link
+                                        to={item.path}
+                                        onClick={(e) => isEditMode && e.preventDefault()}
+                                        className="flex flex-col items-center"
+                                    >
+                                        <Icon className="w-6 h-6" />
+                                        <span className="text-[10px] font-medium">{item.name}</span>
+                                    </Link>
+                                </div>
+                            </DraggableMenuItem>
                         );
                     })}
                 </div>
@@ -125,7 +203,10 @@ const Navigation: React.FC = () => {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
-                onMenuEditMode={() => setIsEditMode(true)}
+                onMenuEditMode={() => {
+                    setIsEditMode(true);
+                    navigate('/home');
+                }}
             />
         </>
     );

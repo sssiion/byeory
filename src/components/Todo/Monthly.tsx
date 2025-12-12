@@ -295,7 +295,7 @@ function MonthlyViewContent({
                 onChange={(e) => setShowIncomplete(e.target.checked)}
                 className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
               />
-              <span className="text-sm font-medium text-gray-700">미완료</span>
+              <span className="text-sm font-medium theme-text-primary">미완료</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
@@ -304,7 +304,7 @@ function MonthlyViewContent({
                 onChange={(e) => setShowCompleted(e.target.checked)}
                 className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
               />
-              <span className="text-sm font-medium text-gray-700">완료</span>
+              <span className="text-sm font-medium theme-text-primary">완료</span>
             </label>
           </div>
 

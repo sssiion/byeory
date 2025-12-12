@@ -8,6 +8,14 @@ import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 import MarketPage from './pages/Market/MarketPage'
 
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { TouchBackend } from 'react-dnd-touch-backend';
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const Backend = isMobile ? TouchBackend : HTML5Backend;
+const backendOptions = isMobile ? { enableMouseEvents: true } : {};
+
 import './assets/main.css'
 import './assets/themes.css'
 import LoginPage from './pages/auth/LoginPage'
@@ -30,7 +38,6 @@ if (savedFontSize) {
   document.documentElement.style.setProperty('--font-size', savedFontSize);
 }
 
-// Initialize manual theme settings
 // Initialize manual theme settings
 const savedManualTextColor = localStorage.getItem('manualTextColor');
 const savedManualTextIntensity = localStorage.getItem('manualTextIntensity');
@@ -85,22 +92,24 @@ const RootRedirector = () => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MenuProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<RootRedirector />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/join" element={<JoinPage />} />
-            <Route path="/find-password" element={<FindPasswordPage />} />
-            <Route path="/home" element={<MainPage />} />
-            <Route path="/post" element={<PostPage />} />
-            <Route path="/todo" element={<TodoPage />} />
-            <Route path="/community" element={<CommunityPage />} />
-            <Route path="/market" element={<MarketPage />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </MenuProvider>
+    <DndProvider backend={Backend} options={backendOptions}>
+      <MenuProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<RootRedirector />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/join" element={<JoinPage />} />
+              <Route path="/find-password" element={<FindPasswordPage />} />
+              <Route path="/home" element={<MainPage />} />
+              <Route path="/post" element={<PostPage />} />
+              <Route path="/todo" element={<TodoPage />} />
+              <Route path="/community" element={<CommunityPage />} />
+              <Route path="/market" element={<MarketPage />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </MenuProvider>
+    </DndProvider>
   </StrictMode >,
 );
