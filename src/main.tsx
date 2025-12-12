@@ -2,9 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import MainPage from './pages/MainPage'
-import Post from './pages/post/Post'
-import Todo from './pages/todo/Todo'
-import Community from './pages/community/Community'
+import PostPage from './pages/post/PostPage'
+import TodoPage from './pages/todo/TodoPage'
+import CommunityPage from './pages/community/CommunityPage'
+import { MenuProvider } from './components/settings/menu/MenuSettings';
+import MarketPage from './pages/Market/MarketPage'
+
 import './assets/main.css'
 import './assets/themes.css'
 import LoginPage from './pages/auth/LoginPage'
@@ -79,8 +82,6 @@ const RootRedirector = () => {
   return <Navigate to={defaultPage} replace />;
 };
 
-import { MenuProvider } from './components/settings/menu/MenuSettings';
-import Market from './pages/Market/MarketPage'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -93,10 +94,10 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/join" element={<JoinPage />} />
             <Route path="/find-password" element={<FindPasswordPage />} />
             <Route path="/home" element={<MainPage />} />
-            <Route path="/post" element={<Post />} />
-            <Route path="/todo" element={<Todo />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/market" element={<Market />} />
+            <Route path="/post" element={<PostPage />} />
+            <Route path="/todo" element={<TodoPage />} />
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/market" element={<MarketPage />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
