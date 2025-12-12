@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { ThemeCheckbox } from "../common/ThemeCheckbox";
+import type { Todo } from './types';
 import { useDrag, useDrop } from "react-dnd";
 import type { DragSourceMonitor, DropTargetMonitor } from "react-dnd";
-import type { Todo } from "../../types";
 import { TodoItem } from "./CheckTodo";
 import { TodoModal } from "./EditTodo";
 
@@ -275,16 +274,24 @@ function WeeklyViewContent({
         <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-start">
           {/* Filter */}
           <div className="flex items-center gap-3 md:border-r md:pr-4">
-            <ThemeCheckbox
-              checked={showIncomplete}
-              onChange={setShowIncomplete}
-              label="미완료"
-            />
-            <ThemeCheckbox
-              checked={showCompleted}
-              onChange={setShowCompleted}
-              label="완료"
-            />
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showIncomplete}
+                onChange={(e) => setShowIncomplete(e.target.checked)}
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+              />
+              <span className="text-sm font-medium text-gray-700">미완료</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showCompleted}
+                onChange={(e) => setShowCompleted(e.target.checked)}
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+              />
+              <span className="text-sm font-medium text-gray-700">완료</span>
+            </label>
           </div>
 
           <button

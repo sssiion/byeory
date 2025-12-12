@@ -5,7 +5,7 @@ import { WeeklyView } from '../../components/Todo/Weekly';
 import { MonthlyView } from '../../components/Todo/Monthly';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import type { Todo } from '../../types';
+import type { Todo } from '../../components/Todo/types';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
@@ -49,7 +49,7 @@ const TodoPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen flex flex-col transition-colors duration-300">
             <Navigation />
 
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle, Settings } from 'lucide-react';
-import type { Todo } from '../../types';
+import type { Todo } from './types';
 
 interface TodoItemProps {
   todo: Todo;
