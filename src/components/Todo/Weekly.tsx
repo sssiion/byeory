@@ -259,6 +259,8 @@ function WeeklyViewContent({
   };
 
   const filteredTodos = todos.filter((todo) => {
+    // 아무것도 선택하지 않으면 전체 표시
+    if (!showCompleted && !showIncomplete) return true;
     if (!showCompleted && todo.completed) return false;
     if (!showIncomplete && !todo.completed) return false;
     return true;
@@ -369,6 +371,7 @@ function WeeklyViewContent({
             const endTime = end.setHours(0, 0, 0, 0);
             return selectedTime >= startTime && selectedTime <= endTime;
           }).filter(todo => {
+            if (!showCompleted && !showIncomplete) return true;
             if (!showCompleted && todo.completed) return false;
             if (!showIncomplete && !todo.completed) return false;
             return true;
@@ -388,6 +391,7 @@ function WeeklyViewContent({
                 return selectedTime >= startTime && selectedTime <= endTime;
               })
                 .filter(todo => {
+                  if (!showCompleted && !showIncomplete) return true;
                   if (!showCompleted && todo.completed) return false;
                   if (!showIncomplete && !todo.completed) return false;
                   return true;
