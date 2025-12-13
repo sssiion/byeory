@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Global Scrollbar Hide */
+* {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
 /* 기본 폰트 */
 body {
     font-family: 'Noto Sans KR', sans-serif;

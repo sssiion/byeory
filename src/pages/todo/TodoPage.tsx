@@ -9,18 +9,7 @@ type ViewMode = 'daily' | 'weekly' | 'monthly';
 
 const TodoPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
-    const [todos, setTodos] = useState<Todo[]>([
-        {
-            id: '1',
-            title: 'Sample Todo',
-            completed: false,
-            startDate: '2025-12-06',
-            endDate: '2025-12-06',
-            startTime: '10:00',
-            endTime: '11:00',
-            allDay: false
-        }
-    ]);
+    const [todos, setTodos] = useState<Todo[]>([]);
 
     const handleAddTodo = (newTodo: Omit<Todo, 'id'>) => {
         const todo: Todo = {

@@ -29,15 +29,11 @@ interface WeeklyViewProps {
 
 interface DraggableTodoItemProps {
   todo: Todo;
-  onToggleComplete: (id: string) => void;
-  onEdit: (todo: Todo) => void;
   onSelect: (todo: Todo) => void;
 }
 
 function DraggableTodoItem({
   todo,
-  onToggleComplete,
-  onEdit,
   onSelect,
 }: DraggableTodoItemProps) {
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -51,15 +47,17 @@ function DraggableTodoItem({
   return (
     <div
       ref={drag as any}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      className="cursor-pointer hover:opacity-80 transition-opacity"
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        backgroundColor: 'var(--btn-bg)',
+        color: 'var(--btn-text)'
+      }}
+      className="p-2 rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition-opacity"
       onClick={() => onSelect(todo)}
     >
-      <TodoItem
-        todo={todo}
-        onToggleComplete={onToggleComplete}
-        onEdit={onEdit}
-      />
+      <div className={`text-xs md:text-sm truncate ${todo.completed ? "line-through opacity-70" : ""}`}>
+        {todo.title}
+      </div>
     </div>
   );
 }
@@ -73,6 +71,7 @@ interface DayColumnProps {
   onToggleComplete: (id: string) => void;
   onEdit: (todo: Todo) => void;
   onSelectDate: (date: string) => void;
+  onAddClick: (date: string) => void;
   isSelected: boolean;
 }
 
@@ -82,9 +81,8 @@ function DayColumn({
   todos,
   isToday,
   onDrop,
-  onToggleComplete,
-  onEdit,
   onSelectDate,
+  onAddClick,
   isSelected,
 }: DayColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
@@ -104,19 +102,25 @@ function DayColumn({
   return (
     <div
       onClick={() => onSelectDate(date)}
-      className={`flex-1 min-w-0 flex flex-col cursor-pointer ${isOver ? "bg-blue-50" : isSelected ? "bg-blue-50/50" : ""
-        } transition-colors`}
+      className={`flex-1 min-w-0 flex flex-col cursor-pointer p-1 md:p-2 rounded-xl transition-all border-2 border-transparent ${isOver ? "bg-blue-50" : isSelected ? "bg-blue-50/50 dark:bg-white/5 shadow-sm" : ""
+        }`}
+      style={{
+        borderColor: isSelected ? 'var(--btn-bg)' : 'transparent'
+      }}
     >
       {/* 날짜 헤더 */}
       <div className="flex flex-col items-center mb-1 md:mb-4">
-        <div className="text-[10px] md:text-sm text-gray-600 mb-0.5 md:mb-2">{dayName}</div>
+        <div className="text-[10px] md:text-sm theme-text-secondary font-bold mb-0.5 md:mb-2 w-auto text-center">{dayName}</div>
         <div
-          className={`w-8 h-8 md:w-16 md:h-16 
-          rounded-full flex items-center justify-center text-xs md:text-base ${isToday
+          className={`w-6 h-6 md:w-16 md:h-16 
+          rounded-full flex items-center justify-center text-[10px] md:text-base transition-colors font-bold ${isToday
               ? "text-white"
-              : "bg-gray-200 text-gray-700"
+              : ""
             }`}
-          style={{ backgroundColor: isToday ? 'var(--btn-bg)' : undefined }}
+          style={{
+            backgroundColor: isToday ? 'var(--btn-bg)' : 'rgba(128, 128, 128, 0.15)',
+            color: isToday ? '#ffffff' : 'var(--text-primary)'
+          }}
         >
           {day}
         </div>
@@ -125,7 +129,7 @@ function DayColumn({
       {/* 할 일 목록 영역 */}
       <div
         ref={drop as any}
-        className={`flex-1 px-0.5 md:px-1 space-y-1 md:space-y-2 h-[300px] md:h-[500px] max-h-[300px] md:max-h-[500px] overflow-y-auto scrollbar-hide ${isOver ?
+        className={`flex-1 px-0.5 md:px-1 space-y-1.5 md:space-y-2 min-h-[30px] max-h-[100px] md:min-h-25 md:max-h-25 overflow-y-auto scrollbar-hide ${isOver ?
           "bg-blue-100/30 rounded-lg" : ""
           }`}
         style={{
@@ -133,20 +137,31 @@ function DayColumn({
           msOverflowStyle: "none",
         }}
       >
-        {todos.map((todo) => (
-          <DraggableTodoItem
-            key={todo.id}
-            todo={todo}
-            onToggleComplete={onToggleComplete}
-            onEdit={onEdit}
-            onSelect={() => onSelectDate(date)}
-          />
-        ))}
-        {todos.length === 0 && (
-          <div className="h-full flex items-center justify-center text-gray-400 text-[10px] md:text-sm text-center px-0.5">
-            할 일을<br className="md:hidden" />추가해주세요
-          </div>
-        )}
+        <div className="hidden md:block space-y-1.5 md:space-y-2">
+          {todos.map((todo) => (
+            <DraggableTodoItem
+              key={todo.id}
+              todo={todo}
+              onSelect={() => onSelectDate(date)}
+            />
+          ))}
+        </div>
+
+        {/* 모바일에서는 항상 + 버튼 표시 (할 일이 있어도 상세 내용은 하단에서 확인) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddClick(date);
+          }}
+          className={`w-full py-1 md:py-3 text-[10px] md:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1 ${todos.length > 0 ? 'md:hidden' : ''}`}
+          style={{
+            color: 'var(--btn-bg)',
+            backgroundColor: 'rgba(var(--btn-bg-rgb), 0.1)',
+          }}
+        >
+          <Plus className="w-3 h-3 md:w-4 md:h-4" />
+          <span className="hidden md:inline">일정 추가</span>
+        </button>
       </div>
     </div>
   );
@@ -250,63 +265,63 @@ function WeeklyViewContent({
   });
 
   return (
-    <div>
+    <div className="mx-auto w-full p-2 md:p-2">
       {/* Week Navigation */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6 md:mb-8">
-        <div className="flex items-center gap-2 md:gap-4 justify-center md:justify-start">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-6">
+        <div className="flex items-center gap-1 md:gap-4 justify-center md:justify-start">
           <button
             onClick={goToPreviousWeek}
-            className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
+            className="p-1 md:p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
-          <h2 className="text-lg md:text-2xl min-w-[250px] md:min-w-[350px] text-center theme-text-primary">
+          <h2 className="text-base md:text-lg xl:text-2xl font-bold min-w-[200px] md:min-w-[350px] text-center theme-text-primary">
             {formatWeekRange(weekDates)}
           </h2>
           <button
             onClick={goToNextWeek}
-            className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
+            className="p-1 md:p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-start">
+        <div className="flex items-center gap-2 md:gap-4 justify-between md:justify-end">
           {/* Filter */}
-          <div className="flex items-center gap-3 md:border-r theme-border md:pr-4">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+          <div className="flex items-center gap-3 md:gap-4 md:border-r theme-border md:pr-4">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showIncomplete}
                 onChange={(e) => setShowIncomplete(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
+                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
               />
-              <span className="text-sm font-medium theme-text-secondary">미완료</span>
+              <span className="text-xs md:text-sm font-medium theme-text-secondary">미완료</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={showCompleted}
                 onChange={(e) => setShowCompleted(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
+                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
               />
-              <span className="text-sm font-medium theme-text-secondary">완료</span>
+              <span className="text-xs md:text-sm font-medium theme-text-secondary">완료</span>
             </label>
           </div>
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90 shadow-lg shadow-blue-500/30"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 text-white rounded-lg transition-colors hover:opacity-90"
             style={{ backgroundColor: 'var(--btn-bg)' }}
           >
             <Plus className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="text-sm md:text-base font-medium">할 일 추가</span>
+            <span className="text-xs md:text-sm xl:text-base font-medium">할 일 추가</span>
           </button>
         </div>
       </div>
 
       {/* Week Grid */}
-      <div className="flex gap-0.5 md:gap-4">
+      <div className="flex flex-row gap-1 md:gap-4">
         {weekDates.map((date, index) => {
           const dateString = formatLocalDate(date);
           const dayTodos = filteredTodos.filter((todo) => {
@@ -324,6 +339,10 @@ function WeeklyViewContent({
               onToggleComplete={onToggleComplete}
               onEdit={setEditingTodo}
               onSelectDate={setSelectedDate}
+              onAddClick={(date) => {
+                setSelectedDate(date);
+                setShowAddModal(true);
+              }}
               isSelected={dateString === selectedDate}
             />
           );
@@ -331,22 +350,20 @@ function WeeklyViewContent({
       </div>
 
       {/* Selected Date Todos */}
-      <div className="theme-bg-card-secondary rounded-lg p-4 md:p-6 mt-6">
-        <h3 className="text-base md:text-lg mb-4 theme-text-primary">
+      <div className="theme-bg-card-secondary rounded-lg p-3 md:p-6 mt-4 md:mt-6">
+        <h3 className="text-sm md:text-lg mb-3 md:mb-4 theme-text-primary font-bold">
           {new Date(selectedDate).getFullYear()}년 {new Date(selectedDate).getMonth() + 1}월 {' '}
           {new Date(selectedDate).getDate()}일 할 일
         </h3>
 
         <div
-          className="space-y-3 h-[520px] overflow-y-auto pr-1 scrollbar-hide"
+          className="space-y-3 h-30 md:h-[400px] overflow-y-auto pr-1 scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {todos.filter(todo => {
             const start = new Date(todo.startDate);
             const end = new Date(todo.endDate);
             const selected = new Date(selectedDate);
-
-            // 날짜 비교 (시간 제외)
             const selectedTime = selected.setHours(0, 0, 0, 0);
             const startTime = start.setHours(0, 0, 0, 0);
             const endTime = end.setHours(0, 0, 0, 0);
@@ -357,7 +374,7 @@ function WeeklyViewContent({
             return true;
           }).length === 0 ?
             (
-              <div className="h-full flex items-center justify-center text-gray-400">
+              <div className="h-full flex items-center justify-center theme-text-secondary opacity-60 text-xs md:text-sm">
                 이 날짜에 등록된 할 일이 없습니다
               </div>
             ) : (
