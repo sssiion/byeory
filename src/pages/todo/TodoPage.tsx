@@ -52,13 +52,13 @@ const TodoPage: React.FC = () => {
 
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header & View Switcher */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+                <div className="flex flex-row items-center justify-between gap-4 mb-8">
                     <h1 className="text-3xl font-bold theme-text-primary">Todo</h1>
 
                     <div className="flex theme-bg-card-secondary p-1 rounded-xl">
                         <button
                             onClick={() => setViewMode('daily')}
-                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'daily'
+                            className={`px-3 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'daily'
                                 ? 'theme-btn shadow-md'
                                 : 'theme-text-secondary hover:text-[var(--text-primary)]'
                                 }`}
@@ -67,7 +67,7 @@ const TodoPage: React.FC = () => {
                         </button>
                         <button
                             onClick={() => setViewMode('weekly')}
-                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'weekly'
+                            className={`px-3 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'weekly'
                                 ? 'theme-btn shadow-md'
                                 : 'theme-text-secondary hover:text-[var(--text-primary)]'
                                 }`}
@@ -76,7 +76,7 @@ const TodoPage: React.FC = () => {
                         </button>
                         <button
                             onClick={() => setViewMode('monthly')}
-                            className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'monthly'
+                            className={`px-3 sm:px-6 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'monthly'
                                 ? 'theme-btn shadow-md'
                                 : 'theme-text-secondary hover:text-[var(--text-primary)]'
                                 }`}
@@ -87,7 +87,7 @@ const TodoPage: React.FC = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className="theme-bg-card rounded-2xl shadow-sm border theme-border p-6 min-h-[600px]">
+                <div className="theme-bg-card rounded-2xl shadow-sm border theme-border p-3 md:p-6 min-h-[350px] md:min-h-[600px]">
                     {viewMode === 'monthly' && (
                         <MonthlyView
                             todos={todos}

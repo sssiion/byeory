@@ -74,57 +74,57 @@ export function DailyView({
     const completedTodos = dailyTodos.filter(t => t.completed);
 
     return (
-        <div className="mx-auto w-full p-4 md:p-6">
+        <div className="mx-auto w-full p-2 md:p-2">
             {/* Date Navigation & Filters */}
-            <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-2 md:gap-4 justify-center md:justify-start">
+            <div className="flex flex-col md:flex-row items-stretch xl:items-center justify-between gap-2 xl:gap-4 mb-3 xl:mb-6">
+                <div className="flex items-center gap-1 md:gap-4 justify-center md:justify-start">
                     <button
                         onClick={goToPreviousDay}
-                        className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
+                        className="p-1 md:p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
                     </button>
-                    <h2 className="text-lg md:text-2xl font-bold min-w-[200px] md:min-w-[300px] text-center theme-text-primary">
+                    <h2 className="text-base md:text-lg xl:text-2xl font-bold min-w-[140px] md:min-w-[200px] xl:min-w-[300px] text-center theme-text-primary">
                         {formatDisplayDate(currentDate)}
                     </h2>
                     <button
                         onClick={goToNextDay}
-                        className="p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
+                        className="p-1 md:p-2 theme-text-secondary hover:text-[var(--text-primary)] transition-colors"
                     >
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3 md:gap-4 justify-between md:justify-end">
+                <div className="flex items-center gap-2 md:gap-4 justify-between md:justify-end">
                     {/* Filter */}
-                    <div className="flex items-center gap-3 md:border-r theme-border md:pr-4">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <div className="flex items-center gap-3 md:gap-4 md:border-r theme-border md:pr-4">
+                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 checked={showIncomplete}
                                 onChange={(e) => setShowIncomplete(e.target.checked)}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
+                                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
                             />
-                            <span className="text-sm font-medium theme-text-secondary">미완료</span>
+                            <span className="text-xs md:text-sm font-medium theme-text-secondary">미완료</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <label className="flex items-center gap-1.5 cursor-pointer select-none">
                             <input
                                 type="checkbox"
                                 checked={showCompleted}
                                 onChange={(e) => setShowCompleted(e.target.checked)}
-                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
+                                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
                             />
-                            <span className="text-sm font-medium theme-text-secondary">완료</span>
+                            <span className="text-xs md:text-sm font-medium theme-text-secondary">완료</span>
                         </label>
                     </div>
 
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="flex items-center gap-2 px-3 md:px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                        className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 text-white rounded-lg transition-colors hover:opacity-90"
                         style={{ backgroundColor: 'var(--btn-bg)' }}
                     >
                         <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                        <span className="text-sm md:text-base font-medium">할 일 추가</span>
+                        <span className="text-xs md:text-sm xl:text-base font-medium">할 일 추가</span>
                     </button>
                 </div>
             </div>
@@ -134,7 +134,7 @@ export function DailyView({
                 {/* Todo List Box (Inner Box) */}
                 <div className="bg-transparent rounded-xl px-2 py-2">
                     <div
-                        className="space-y-3 h-[520px] overflow-y-auto pr-1 scrollbar-hide"
+                        className="space-y-3 h-60 md:h-130 overflow-y-auto pr-1 scrollbar-hide"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         {incompleteTodos.length === 0 && completedTodos.length === 0 ?
