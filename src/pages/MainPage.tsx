@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Header/Navigation';
 import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings';
-import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/widgets/Registry';
-import { DraggableWidget } from '../components/widgets/DraggableWidget';
+import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
+import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
 import { Plus, X, RotateCcw, LayoutGrid, Settings2, Minus } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { clampWidget, resolveCollisions } from '../components/widgets/layoutUtils';
+import { clampWidget, resolveCollisions } from '../components/settings/widgets/layoutUtils';
 
 // Default Grid Size
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 6 };
@@ -128,7 +128,7 @@ const MainPage: React.FC = () => {
         let found = false;
 
         // 현재 가장 아래에 있는 위젯의 높이 구하기 (검색 범위 제한용)
-        const currentMaxY = widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 1);
+        const currentMaxY = widgets.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), 1);
 
         // Y축: 1행부터 (현재 최대 높이 + 위젯 높이)까지 탐색
         // 충분히 아래까지 검색하면 무조건 자리는 나오게 되어 있음
@@ -206,7 +206,7 @@ const MainPage: React.FC = () => {
             const resolved = resolveCollisions(prev, movedWidget);
 
             // Auto-expand grid if needed
-            const maxRow = resolved.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), gridSize.rows);
+            const maxRow = resolved.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), gridSize.rows);
             if (maxRow > gridSize.rows) {
                 setGridSize(p => ({ ...p, rows: maxRow }));
             }
@@ -228,7 +228,7 @@ const MainPage: React.FC = () => {
             const resolved = resolveCollisions(prev, movedWidget);
 
             // Auto-expand grid if needed
-            const maxRow = resolved.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), gridSize.rows);
+            const maxRow = resolved.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), gridSize.rows);
             if (maxRow > gridSize.rows) {
                 setGridSize(p => ({ ...p, rows: maxRow }));
             }
