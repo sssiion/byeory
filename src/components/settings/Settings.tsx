@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Palette, Menu, Home, Layout } from 'lucide-react';
 import ThemeSettings from './theme/ThemeSettings';
 import DefaultPageSettings from './default/DefaultPageSettings';
@@ -12,6 +13,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose, onMenuEditMode }: SettingsModalProps) {
+    const navigate = useNavigate();
     const [currentView, setCurrentView] = useState<SettingsView>('main');
 
     if (!isOpen) return null;
@@ -69,7 +71,13 @@ export default function SettingsModal({ isOpen, onClose, onMenuEditMode }: Setti
                             </button>
 
                             {/* 위젯 편집 버튼 */}
-                            <button onClick={() => setCurrentView('widget')} className="group theme-border theme-bg-card hover:border-[color:var(--text-primary)] flex flex-col items-center justify-center gap-3 rounded-lg border-2 py-12 transition-all hover:scale-105 hover:shadow-md">
+                            <button
+                                onClick={() => {
+                                    navigate('/home?editMode=widget');
+                                    handleClose();
+                                }}
+                                className="group theme-border theme-bg-card hover:border-[color:var(--text-primary)] flex flex-col items-center justify-center gap-3 rounded-lg border-2 py-12 transition-all hover:scale-105 hover:shadow-md"
+                            >
                                 <div className="theme-text-primary transition-colors">
                                     <Layout className="w-8 h-8" />
                                 </div>
