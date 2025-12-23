@@ -1,11 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface Props {
     id: string;
-    x: number; // %
-    y: number; // %
-    w: number; // %
-    h: number; // %
+    x: number;
+    y: number;
+    w: number;
+    h: number;
     rotation: number;
     zIndex: number;
     isSelected: boolean;
@@ -15,145 +15,147 @@ interface Props {
     children: React.ReactNode;
 }
 
-const ResizableItem: React.FC<Props> = ({ id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children }) => {
+const ResizableItem: React.FC<Props> = ({
+                                            id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
+                                        }) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const [isResizing, setIsResizing] = useState(false);
+    const [isRotating, setIsRotating] = useState(false);
 
-    const isDraggingRef = useRef(false);
+    // 드래그 시작 시점의 상태 저장
+    const startPos = useRef({
+        startX: 0, startY: 0,
+        initialX: 0, initialY: 0,
+        initialW: 0, initialH: 0,
+        initialRotate: 0,
+        centerX: 0, centerY: 0 // 회전 중심점
+    });
 
-    const handleMouseDown = (e: React.MouseEvent, mode: 'drag' | 'resize' | 'rotate') => {
+    const handleMouseDown = (e: React.MouseEvent) => {
         if (readOnly) return;
-
-        e.stopPropagation();
-
-        const target = e.target as HTMLElement;
-        // 입력창(textarea)인 경우 드래그 방지
-        const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName);
-        if (isInput) {
-            onSelect();
-            return;
-        }
-
-        e.preventDefault();
+        e.stopPropagation(); // 드래그 시작 시 배경 선택 방지
         onSelect();
-
-        if (e.button !== 0) return;
-
-        // 1. 부모 컨테이너 크기 정밀 계산 (getBoundingClientRect 사용)
-        const element = e.currentTarget as HTMLElement;
-        const parent = (element.offsetParent as HTMLElement) || document.body;
-        const parentRect = parent.getBoundingClientRect();
-        const parentW = parentRect.width;
-        const parentH = parentRect.height;
-
-        // 2. [핵심 수정] "화면에 그려진 크기"가 아니라 "저장된 데이터(%)"를 기준으로 시작 픽셀을 계산합니다.
-        // 이렇게 해야 클릭 순간에 크기가 튀지 않습니다.
-        const startState = {
-            mouseX: e.clientX,
-            mouseY: e.clientY,
-            // 저장된 %를 픽셀로 정확히 환산
-            wPx: (w / 100) * parentW,
-            hPx: (h / 100) * parentH,
-            // 위치도 데이터 기반 환산
-            xPx: (x / 100) * parentW,
-            yPx: (y / 100) * parentH,
-            rotation: rotation,
-            parentW,
-            parentH
+        setIsDragging(true);
+        startPos.current = {
+            ...startPos.current,
+            startX: e.clientX,
+            startY: e.clientY,
+            initialX: x,
+            initialY: y
         };
+    };
 
-        isDraggingRef.current = false;
+    const handleResizeStart = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault(); // 텍스트 선택 등 기본 동작 방지
+        setIsResizing(true);
+        startPos.current = {
+            ...startPos.current,
+            startX: e.clientX,
+            startY: e.clientY,
+            initialW: w,
+            initialH: h
+        };
+    };
 
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-            const dx = moveEvent.clientX - startState.mouseX;
-            const dy = moveEvent.clientY - startState.mouseY;
+    const handleRotateStart = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setIsRotating(true);
 
-            if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-                isDraggingRef.current = true;
-            }
+        // 아이템의 중심점 계산 (회전 각도 계산용)
+        const rect = (e.target as HTMLElement).closest('.group')?.getBoundingClientRect();
+        if (rect) {
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            startPos.current = {
+                ...startPos.current,
+                centerX, centerY,
+                initialRotate: rotation
+            };
+        }
+    };
 
-            if (mode === 'drag') {
-                // 이동: (기존위치Px + 이동량Px) / 부모크기 * 100
-                const newXPx = startState.xPx + dx;
-                const newYPx = startState.yPx + dy;
-
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isDragging) {
+                const deltaX = e.clientX - startPos.current.startX;
+                const deltaY = e.clientY - startPos.current.startY;
                 onUpdate({
-                    x: (newXPx / startState.parentW) * 100,
-                    y: (newYPx / startState.parentH) * 100
+                    x: startPos.current.initialX + deltaX,
+                    y: startPos.current.initialY + deltaY
                 });
+            } else if (isResizing) {
+                const deltaX = e.clientX - startPos.current.startX;
+                const deltaY = e.clientY - startPos.current.startY;
 
-            } else if (mode === 'resize') {
-                // 크기: (기존크기Px + 이동량Px) / 부모크기 * 100
-                const newWidthPx = Math.max(30, startState.wPx + dx); // 최소 30px
-                const newHeightPx = Math.max(30, startState.hPx + dy);
-
+                // 🔴 [수정] 가로(w) 뿐만 아니라 세로(h)도 같이 변경되도록 수정
                 onUpdate({
-                    w: (newWidthPx / startState.parentW) * 100,
-                    h: (newHeightPx / startState.parentH) * 100
+                    w: Math.max(30, startPos.current.initialW + deltaX),
+                    h: Math.max(30, startPos.current.initialH + deltaY)
                 });
+            } else if (isRotating) {
+                const { centerX, centerY } = startPos.current;
+                // 중심점과 현재 마우스 위치 사이의 각도 계산 (atan2)
+                const radians = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+                const degrees = radians * (180 / Math.PI);
 
-            } else if (mode === 'rotate') {
-                onUpdate({ rotation: startState.rotation + dx * 0.5 });
+                // 마우스 위치에 따라 직관적으로 회전하도록 +90도 보정
+                onUpdate({ rotation: degrees + 90 });
             }
         };
 
         const handleMouseUp = () => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
+            setIsDragging(false);
+            setIsResizing(false);
+            setIsRotating(false);
         };
 
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    };
-
-    const handleClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!isDraggingRef.current) {
-            onSelect();
+        if (isDragging || isResizing || isRotating) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
         }
-    };
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, isResizing, isRotating, onUpdate]);
 
     return (
         <div
-            onMouseDown={(e) => handleMouseDown(e, 'drag')}
-            onClick={handleClick}
-            className={`absolute group select-none ${isSelected ? 'z-50' : 'cursor-pointer hover:ring-1 hover:ring-indigo-200'}`}
+            className={`absolute select-none group ${isSelected ? 'z-50' : ''}`}
             style={{
-                left: `${x}%`,
-                top: `${y}%`,
-                width: `${w}%`,
-                height: `${h}%`,
+                left: `${x}px`,
+                top: `${y}px`,
+                width: `${w}px`,
+                height: `${h}px`, // 높이 값 적용
                 transform: `rotate(${rotation}deg)`,
-                zIndex: isSelected ? 9999 : zIndex,
-                touchAction: 'none'
+                zIndex: zIndex,
+                cursor: readOnly ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+                touchAction: 'none' // 모바일 터치 대응
             }}
+            onMouseDown={handleMouseDown}
+            // 🔴 [중요] 클릭 이벤트가 배경(EditorCanvas)으로 전파되어 '선택 해제' 되는 것을 막음
+            onClick={(e) => e.stopPropagation()}
         >
-            <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}>
+            <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500' : ''}`}>
                 {children}
 
                 {isSelected && !readOnly && (
                     <>
-                        {/* 이동 핸들 (좌측 상단) */}
+                        {/* 크기 조절 핸들 (우측 하단) */}
                         <div
-                            onMouseDown={(e) => handleMouseDown(e, 'drag')}
-                            className="absolute -left-3 -top-3 w-6 h-6 bg-indigo-500 text-white rounded-full cursor-move z-50 shadow-sm flex items-center justify-center text-xs hover:scale-110 transition"
-                            title="이동"
-                        >
-                            ✥
-                        </div>
+                            onMouseDown={handleResizeStart}
+                            className="absolute -bottom-3 -right-3 w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-se-resize z-50 shadow-md hover:scale-110 transition"
+                            title="크기 조절"
+                        />
                         {/* 회전 핸들 (상단 중앙) */}
                         <div
-                            onMouseDown={(e) => handleMouseDown(e, 'rotate')}
-                            className="absolute left-1/2 -top-8 -translate-x-1/2 w-6 h-6 bg-white border-2 border-indigo-500 text-indigo-500 rounded-full flex items-center justify-center cursor-ew-resize shadow-sm text-xs z-50 hover:scale-110 transition"
+                            onMouseDown={handleRotateStart}
+                            className="absolute -top-8 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-grab z-50 flex items-center justify-center shadow-md hover:bg-indigo-50 hover:scale-110 transition"
                             title="회전"
                         >
-                            ↻
-                        </div>
-                        {/* 리사이즈 핸들 (우측 하단) */}
-                        <div
-                            onMouseDown={(e) => handleMouseDown(e, 'resize')}
-                            className="absolute -right-3 -bottom-3 w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-se-resize z-50 shadow-sm flex items-center justify-center text-[8px] text-indigo-500 hover:scale-110 transition"
-                            title="크기 조절"
-                        >
-                            ↔
+                            <span className="text-[10px] font-bold text-indigo-700">↻</span>
                         </div>
                     </>
                 )}

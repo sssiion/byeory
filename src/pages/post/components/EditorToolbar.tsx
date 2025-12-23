@@ -1,88 +1,111 @@
 import React from 'react';
+import { Sliders, Type, AlignLeft, AlignCenter, AlignRight, Trash2, Palette } from 'lucide-react';
+import type { Block, Sticker, FloatingText, FloatingImage } from '../types';
 
 interface Props {
-    targetType: 'block' | 'sticker' | 'floating' | 'floatingImage' | null;
-    values: any;
-    onUpdate: (key: string, value: any) => void;
-    onZIndexChange?: (direction: 'up' | 'down') => void;
-    onDelete: () => void;
-    hasImage?: boolean;
+    selectedId: string;
+    selectedType: 'block' | 'sticker' | 'floating' | 'floatingImage';
+    currentItem: Block | Sticker | FloatingText | FloatingImage | any;
+    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage', changes: any) => void;
+    onDelete?: () => void;
 }
 
-const EditorToolbar: React.FC<Props> = ({ targetType, values, onUpdate, onZIndexChange, onDelete, hasImage }) => {
-    if (!targetType) return null;
+const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete }) => {
+    const itemType = (currentItem as any)?.type;
+
+    const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floating');
+    const isImageItem = (selectedType === 'block' && itemType !== 'paragraph') || selectedType === 'sticker' || selectedType === 'floatingImage';
+
+    const handleTextUpdate = (key: string, value: any) => {
+        if (selectedType === 'block') {
+            onUpdate(selectedId, selectedType, { [key]: value });
+        } else {
+            const currentStyles = (currentItem as any).styles || {};
+            const newStyles = { ...currentStyles, [key]: value };
+            onUpdate(selectedId, selectedType, { styles: newStyles });
+        }
+    };
 
     return (
         <div
-            // 🛠️ [중요 수정] 도구 상자 클릭 시 배경 클릭 이벤트(선택 해제) 방지
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center gap-6 z-[100] animate-in slide-in-from-bottom-5"
             onMouseDown={(e) => e.stopPropagation()}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white shadow-2xl border border-gray-200 rounded-full px-6 py-3 flex items-center gap-4 z-50 animate-fade-in-up"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
         >
+            <div className="flex items-center gap-2 text-sm font-bold text-gray-500 border-r pr-4">
+                <Sliders size={16} className="text-indigo-600" />
+                <span>설정</span>
+            </div>
 
-            {/* 1. 텍스트/블록 스타일 도구 */}
-            {(targetType === 'block' || targetType === 'floating') && (
-                <>
-                    <div className="flex gap-1 border-r pr-4">
-                        <span className="text-xs self-center mr-1">텍스트</span>
+            {isTextItem && (
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <Type size={14} className="text-gray-400" />
                         <select
-                            value={values.fontSize || '18px'}
-                            onChange={(e) => onUpdate('fontSize', e.target.value)}
-                            className="bg-transparent text-sm font-bold outline-none cursor-pointer"
+                            value={(currentItem as any).styles?.fontSize || '18px'}
+                            onChange={(e) => handleTextUpdate('fontSize', e.target.value)}
+                            className="bg-gray-100 rounded px-2 py-1 text-sm outline-none cursor-pointer hover:bg-gray-200 transition"
                         >
                             <option value="14px">작게</option>
                             <option value="18px">보통</option>
                             <option value="24px">크게</option>
-                            <option value="32px">아주 크게</option>
+                            <option value="32px">제목</option>
                         </select>
                     </div>
-
-                    <div className="flex gap-2 border-r pr-4 items-center">
-                        <button onClick={() => onUpdate('textAlign', 'left')} className={`p-1.5 rounded ${values.textAlign === 'left' ? 'bg-indigo-100' : 'hover:bg-gray-100'}`}>⬅️</button>
-                        <button onClick={() => onUpdate('textAlign', 'center')} className={`p-1.5 rounded ${values.textAlign === 'center' ? 'bg-indigo-100' : 'hover:bg-gray-100'}`}>⏺️</button>
-                        <button onClick={() => onUpdate('textAlign', 'right')} className={`p-1.5 rounded ${values.textAlign === 'right' ? 'bg-indigo-100' : 'hover:bg-gray-100'}`}>➡️</button>
-                        <input type="color" value={values.color || '#000000'} onChange={(e) => onUpdate('color', e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0 ml-1" />
+                    <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+                        {['left', 'center', 'right'].map((align) => (
+                            <button key={align} onClick={() => handleTextUpdate('textAlign', align)} className={`p-1.5 rounded-md ${(currentItem as any).styles?.textAlign === align ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:bg-gray-200'}`}>
+                                {align === 'left' && <AlignLeft size={14} />}
+                                {align === 'center' && <AlignCenter size={14} />}
+                                {align === 'right' && <AlignRight size={14} />}
+                            </button>
+                        ))}
                     </div>
+                    <input
+                        type="color"
+                        value={(currentItem as any).styles?.color || '#000000'}
+                        onChange={(e) => handleTextUpdate('color', e.target.value)}
+                        className="w-6 h-6 rounded-full cursor-pointer border-0 p-0"
+                    />
+                </div>
+            )}
 
-                    {/* 사진 크기 조절 (블록용) */}
-                    {targetType === 'block' && hasImage && (
-                        <div className="flex gap-2 items-center border-r pr-4 w-32">
-                            <span className="text-xs">📸 크기</span>
+            {isImageItem && (
+                <>
+                    {selectedType === 'block' && (
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500 font-bold whitespace-nowrap">사진 높이</span>
                             <input
-                                type="range" min="200" max="800" step="50"
-                                value={parseInt(values.imageHeight || '400')}
-                                onChange={(e) => onUpdate('imageHeight', `${e.target.value}px`)}
-                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                type="range" min="200" max="800" step="10"
+                                value={parseInt((currentItem as Block).styles?.imageHeight || '300')}
+                                onChange={(e) => onUpdate(selectedId, 'block', { imageHeight: `${e.target.value}px` })}
+                                className="w-32 accent-indigo-600 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none"
+                            />
+                        </div>
+                    )}
+                    {(selectedType === 'sticker' || selectedType === 'floatingImage') && (
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500 font-bold whitespace-nowrap">투명도</span>
+                            <input
+                                type="range" min="0.1" max="1" step="0.1"
+                                value={(currentItem as any).opacity ?? 1}
+                                onChange={(e) => onUpdate(selectedId, selectedType, { opacity: parseFloat(e.target.value) })}
+                                className="w-32 accent-indigo-600 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none"
                             />
                         </div>
                     )}
                 </>
             )}
 
-            {/* 2. 레이어 순서 (스티커, 텍스트, 사진) */}
-            {(targetType === 'sticker' || targetType === 'floating' || targetType === 'floatingImage') && (
-                <div className="flex gap-2 border-r pr-4">
-                    <button onClick={() => onZIndexChange?.('down')} className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">🔻 뒤로</button>
-                    <button onClick={() => onZIndexChange?.('up')} className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200">🔺 앞으로</button>
+            {onDelete && (
+                <div className="border-l pl-4 ml-auto">
+                    <button onClick={onDelete} className="flex items-center gap-1 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap">
+                        <Trash2 size={16} />
+                        <span>삭제</span>
+                    </button>
                 </div>
             )}
-
-            {/* 3. 투명도 조절 (스티커, 자유 사진) */}
-            {(targetType === 'sticker' || targetType === 'floatingImage') && (
-                <div className="flex gap-2 items-center border-r pr-4 w-32">
-                    <span className="text-xs">👻</span>
-                    <input
-                        type="range" min="0.1" max="1" step="0.1"
-                        value={values.opacity || 1}
-                        onChange={(e) => onUpdate('opacity', parseFloat(e.target.value))}
-                        className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                    />
-                </div>
-            )}
-
-            {/* 삭제 버튼 */}
-            <button onClick={onDelete} className="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded font-bold text-sm whitespace-nowrap">
-                삭제 🗑️
-            </button>
         </div>
     );
 };
