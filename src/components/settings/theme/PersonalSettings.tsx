@@ -214,10 +214,25 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // 1. Check file size (limit to 3MB)
+            if (file.size > 3 * 1024 * 1024) {
+                alert('이미지 용량이 너무 큽니다. 3MB  이하의 이미지를 사용해주세요.\n(브라우저 저장소 제한으로 인해 고화질 이미지는 저장이 불가능할 수 있습니다.)');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;
-                setManualBgImage(base64String);
+                try {
+                    // Try saving to localStorage immediately to test quota
+                    localStorage.setItem('temp_test_storage', base64String);
+                    localStorage.removeItem('temp_test_storage');
+
+                    setManualBgImage(base64String);
+                } catch (error) {
+                    console.error('Storage quota exceeded', error);
+                    alert('브라우저 저장 공간이 부족하여 이미지를 저장할 수 없습니다.\n더 작은 용량의 이미지를 사용하거나, 브라우저 캐시를 정리해주세요.');
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -650,7 +665,10 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                                     className="w-full h-full transition-all duration-300"
                                                     style={{
                                                         backgroundImage: `url(${manualBgImage})`,
-                                                        backgroundSize: manualBgSize === 'repeat' ? 'auto' : 'cover',
+                                                        // For preview purposes, force 'repeat' to show as a 3x3 grid (approx 33%) 
+                                                        // so the user can see the pattern effect regardless of actual image size.
+                                                        // The actual site will still use 'auto' (original size).
+                                                        backgroundSize: manualBgSize === 'repeat' ? '25%' : 'cover',
                                                         backgroundRepeat: manualBgSize === 'repeat' ? 'repeat' : 'no-repeat',
                                                         backgroundPosition: 'center'
                                                     }}
