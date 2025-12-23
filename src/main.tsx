@@ -6,7 +6,11 @@ import PostPage from './pages/post/PostPage'
 import TodoPage from './pages/todo/TodoPage'
 import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
+import { ThemeProvider } from './components/settings/theme/ThemeContext';
 import MarketPage from './pages/Market/MarketPage'
+import ProfilePage from './pages/profile/ProfilePage'
+import ProfileEditScreen from './pages/profile/ProfileEditScreen';
+import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -95,19 +99,24 @@ createRoot(document.getElementById('root')!).render(
     <DndProvider backend={Backend} options={backendOptions}>
       <MenuProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<RootRedirector />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/join" element={<JoinPage />} />
-              <Route path="/find-password" element={<FindPasswordPage />} />
-              <Route path="/home" element={<MainPage />} />
-              <Route path="/post" element={<PostPage />} />
-              <Route path="/todo" element={<TodoPage />} />
-              <Route path="/community" element={<CommunityPage />} />
-              <Route path="/market" element={<MarketPage />} />
-            </Routes>
-          </BrowserRouter>
+          <ThemeProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<RootRedirector />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/join" element={<JoinPage />} />
+                <Route path="/find-password" element={<FindPasswordPage />} />
+                <Route path="/home" element={<MainPage />} />
+                <Route path="/post" element={<PostPage />} />
+                <Route path="/todo" element={<TodoPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/market" element={<MarketPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/profile/edit" element={<ProfileEditScreen />} />
+                <Route path="/profile/password" element={<PasswordChangeScreen />} />
+              </Routes>
+            </BrowserRouter>
+          </ThemeProvider>
         </AuthProvider>
       </MenuProvider>
     </DndProvider>

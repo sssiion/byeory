@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import SettingsModal from '../settings/Settings';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Settings, LogOut } from 'lucide-react';
+import { User, Settings } from 'lucide-react';
 import { useMenu } from '../settings/menu/MenuSettings';
 import { useAuth } from '../../context/AuthContext';
 import { useDrag, useDrop } from 'react-dnd';
@@ -108,7 +108,7 @@ const Navigation: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const { isLoggedIn, logout } = useAuth();
+    const { isLoggedIn } = useAuth();
 
     // Menu Context
     const { menuItems, isEditMode, setIsEditMode, moveMenuItem } = useMenu();
@@ -157,10 +157,10 @@ const Navigation: React.FC = () => {
                 <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary">
                     <button
                         className="p-2 hover:bg-black/5 rounded-full transition-colors"
-                        onClick={() => isLoggedIn ? logout() : navigate('/login')}
-                        title={isLoggedIn ? "로그아웃" : "로그인"}
+                        onClick={() => isLoggedIn ? navigate('/profile') : navigate('/login')}
+                        title={isLoggedIn ? "프로필" : "로그인"}
                     >
-                        {isLoggedIn ? <LogOut className="w-5 h-5 md:w-6 md:h-6" /> : <User className="w-5 h-5 md:w-6 md:h-6" />}
+                        {isLoggedIn ? <User className="w-5 h-5 md:w-6 md:h-6" /> : <User className="w-5 h-5 md:w-6 md:h-6" />}
                     </button>
                     <button
                         className="p-2 hover:bg-black/5 rounded-full transition-colors"

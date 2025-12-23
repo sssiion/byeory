@@ -90,7 +90,8 @@
 }
 
 /* Manual Theme */
-[data-theme='manual'] {
+[data-theme='manual'],
+[data-theme='custom'] {
     --bg-gradient: var(--manual-gradient, none);
     --bg-solid: rgba(var(--manual-bg-color), var(--manual-bg-intensity));
     --bg-header: rgba(255, 255, 255, 0.6);
