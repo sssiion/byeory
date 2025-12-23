@@ -4,11 +4,12 @@ import Navigation from '../components/Header/Navigation';
 import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings';
 import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
 import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
-import { Plus, X, RotateCcw, LayoutGrid, AlignStartVertical } from 'lucide-react';
+import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { clampWidget, resolveCollisions } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
+
 
 // Default Grid Size
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
@@ -57,9 +58,11 @@ const MainPage: React.FC = () => {
     const { isEditMode: isMenuEditMode } = useMenu();
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
     const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
+    const [widgetSnapshot, setWidgetSnapshot] = useState<WidgetInstance[] | null>(null);
     const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
     const [isArrangeConfirmOpen, setIsArrangeConfirmOpen] = useState(false);
+    const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
     // Preview properties
     const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
@@ -125,6 +128,15 @@ const MainPage: React.FC = () => {
             }, { replace: true });
         }
     }, [searchParams]);
+
+    // Snapshot widgets when entering edit mode
+    useEffect(() => {
+        if (isWidgetEditMode && widgetSnapshot === null) {
+            setWidgetSnapshot(JSON.parse(JSON.stringify(widgets)));
+        } else if (!isWidgetEditMode) {
+            setWidgetSnapshot(null);
+        }
+    }, [isWidgetEditMode, widgetSnapshot, widgets]);
 
     const addWidget = (type: WidgetType) => {
         const registryItem = WIDGET_REGISTRY[type];
@@ -251,10 +263,13 @@ const MainPage: React.FC = () => {
     };
 
     const resetWidgets = () => {
-        if (confirm("초기화 하시겠습니까?")) {
-            setWidgets(DEFAULT_WIDGETS_V3);
-            setGridSize(DEFAULT_GRID_SIZE);
-        }
+        setIsResetConfirmOpen(true);
+    };
+
+    const handleReset = () => {
+        setWidgets(DEFAULT_WIDGETS_V3);
+        setGridSize(DEFAULT_GRID_SIZE);
+        setIsResetConfirmOpen(false);
     };
 
     const handleArrange = () => {
@@ -360,24 +375,39 @@ const MainPage: React.FC = () => {
                                     {isWidgetEditMode && (
                                         <>
                                             <button
-                                                onClick={() => setIsWidgetEditMode(false)}
-                                                className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-white shadow-md transition-colors"
+                                                onClick={() => {
+                                                    setIsWidgetEditMode(false);
+                                                }}
+                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-white shadow-md transition-colors"
                                             >
-                                                Done
+                                                Save
                                             </button>
 
+                                            <button
+                                                onClick={() => {
+                                                    if (widgetSnapshot) {
+                                                        setWidgets(widgetSnapshot);
+                                                    }
+                                                    setIsWidgetEditMode(false);
+                                                }}
+                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+
+                                            {/* 구분선 */}
                                             <div className="w-px h-6 bg-gray-200 mx-1"></div>
 
                                             <button
                                                 onClick={() => setIsCatalogOpen(true)}
-                                                className="px-4 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] font-bold flex items-center gap-1"
+                                                className="h-10 px-4 w-20 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
-                                                <Plus size={16} /> Add
+                                                <Plus size={18} /> Add
                                             </button>
 
                                             <button
                                                 onClick={() => setIsArrangeConfirmOpen(true)}
-                                                className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)]"
+                                                className="h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                                 title="Auto Arrange"
                                             >
                                                 <AlignStartVertical size={18} />
@@ -385,10 +415,10 @@ const MainPage: React.FC = () => {
 
                                             <button
                                                 onClick={resetWidgets}
-                                                className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50"
+                                                className="h-10 w-10 flex items-center justify-center rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                                                 title="Reset Layout"
                                             >
-                                                <RotateCcw size={18} />
+                                                <RefreshCw size={20} />
                                             </button>
                                         </>
                                     )}
@@ -482,7 +512,7 @@ const MainPage: React.FC = () => {
                         <div className="bg-[var(--bg-card)] w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in duration-200">
                             <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">위젯 정렬</h3>
                             <p className="text-[var(--text-secondary)] mb-6">
-                                정렬시 빈칸없이 전부 체워집니다.
+                                정렬시 빈칸없이 전부 채워집니다.
                             </p>
                             <div className="flex gap-3 justify-end">
                                 <button
@@ -496,6 +526,32 @@ const MainPage: React.FC = () => {
                                     className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-white hover:opacity-90 transition-colors"
                                 >
                                     실행
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Reset Confirm Modal */}
+                {isResetConfirmOpen && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-[var(--bg-card)] w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in duration-200">
+                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">레이아웃 초기화</h3>
+                            <p className="text-[var(--text-secondary)] mb-6">
+                                모든 위젯 설정이 초기화됩니다. 계속하시겠습니까?
+                            </p>
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => setIsResetConfirmOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] hover:bg-gray-200 transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={handleReset}
+                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                                >
+                                    초기화
                                 </button>
                             </div>
                         </div>
