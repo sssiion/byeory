@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { supabase, uploadImageToSupabase, generateBlogContent } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } from '../types';
 
+
+const CANVAS_WIDTH = 800;
+
 export const usePostEditor = () => {
     // ... (상태 변수들 기존과 동일) ...
     const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -23,15 +26,18 @@ export const usePostEditor = () => {
 
     useEffect(() => { if (supabase) fetchPosts(); }, []);
 
-    // ... (fetchPosts, handleStartWriting, handlePostClick, handleSave, handleAiGenerate 등은 기존과 동일) ...
+    // 1️⃣ 저장된 데이터 불러올 때 (% -> px 변환)
     const fetchPosts = async () => {
         if (!supabase) return;
         const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
         if (!error && data) {
             setPosts(data.map(p => ({
                 id: p.id, title: p.title, date: new Date(p.created_at).toLocaleDateString(),
-                blocks: p.blocks || [], stickers: p.stickers || [],
-                floatingTexts: p.floating_texts || [], floatingImages: p.floating_images || []
+                blocks: p.blocks || [],
+                // DB의 % 데이터를 화면 px로 변환
+                stickers: (p.stickers || []).map((s: any) => ({ ...s, x: s.x * CANVAS_WIDTH / 100, y: s.y, w: s.w * CANVAS_WIDTH / 100, h: s.h * CANVAS_WIDTH / 100 })),
+                floatingTexts: (p.floating_texts || []).map((f: any) => ({ ...f, x: f.x * CANVAS_WIDTH / 100, y: f.y, w: f.w * CANVAS_WIDTH / 100, h: f.h * CANVAS_WIDTH / 100 })),
+                floatingImages: (p.floating_images || []).map((i: any) => ({ ...i, x: i.x * CANVAS_WIDTH / 100, y: i.y, w: i.w * CANVAS_WIDTH / 100, h: i.h * CANVAS_WIDTH / 100 }))
             })));
         }
     };
@@ -39,27 +45,47 @@ export const usePostEditor = () => {
     const handleStartWriting = () => {
         setCurrentPostId(null); setTitle(""); setRawInput("");
         setBlocks([{ id: `b-${Date.now()}`, type: 'paragraph', text: '' }]);
-        setStickers([]); setFloatingTexts([]); setFloatingImages([]); setTempImages([]);
+        setStickers([]); setFloatingTexts([]); setFloatingImages([]);
         setSelectedId(null); setSelectedType(null);
         setViewMode('editor');
     };
 
     const handlePostClick = (post: PostData) => {
         setCurrentPostId(post.id); setTitle(post.title);
-        setBlocks(post.blocks); setStickers(post.stickers);
-        setFloatingTexts(post.floatingTexts || []);
-        setFloatingImages(post.floatingImages || []);
+        setBlocks(post.blocks);
+        setStickers(post.stickers);
+        setFloatingTexts(post.floatingTexts);
+        setFloatingImages(post.floatingImages);
         setViewMode('read');
     };
 
+    // 2️⃣ 저장할 때 (px -> % 변환)
     const handleSave = async () => {
         if (!title.trim()) return alert("제목을 입력해주세요!");
-        const postData = { title, blocks, stickers, floating_texts: floatingTexts, floating_images: floatingImages };
-        if (!supabase) { alert("⚠️ 임시 저장됨"); setViewMode('list'); return; }
+
+        // 화면상 px 좌표를 DB용 % 좌표로 변환하여 저장
+        const convertToPercent = (items: any[]) => items.map(item => ({
+            ...item,
+            x: (item.x / CANVAS_WIDTH) * 100,
+            w: (item.w / CANVAS_WIDTH) * 100,
+            h: (item.h / CANVAS_WIDTH) * 100,
+            // y는 스크롤 높이 문제로 일단 px 유지하거나 별도 처리 (여기선 편의상 유지)
+        }));
+
+        const postData = {
+            title, blocks,
+            stickers: convertToPercent(stickers),
+            floating_texts: convertToPercent(floatingTexts),
+            floating_images: convertToPercent(floatingImages)
+        };
+
+        if (!supabase) { alert("⚠️ 임시 저장됨 (DB 연결 안됨)"); setViewMode('list'); return; }
+
         setIsSaving(true);
         const { error } = currentPostId
             ? await supabase.from('posts').update(postData).eq('id', currentPostId)
             : await supabase.from('posts').insert(postData);
+
         if (error) alert("저장 실패: " + error.message);
         else { alert("저장 완료!"); fetchPosts(); setViewMode('list'); }
         setIsSaving(false);
@@ -75,27 +101,27 @@ export const usePostEditor = () => {
         finally { setIsAiProcessing(false); }
     };
 
-    const handleUpdate = (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage', keyOrObj: any, value?: any) => {
-        let updates: any = {};
-        if (typeof keyOrObj === 'string') updates[keyOrObj] = value;
-        else updates = keyOrObj;
-
-        if (type === 'block') setBlocks(p => p.map(b => b.id === id ? { ...b, styles: { ...b.styles, ...updates } } : b));
-        else if (type === 'sticker') setStickers(p => p.map(s => s.id === id ? { ...s, ...updates } : s));
-        else if (type === 'floatingImage') setFloatingImages(p => p.map(img => img.id === id ? { ...img, ...updates } : img));
-        else if (type === 'floating') setFloatingTexts(p => p.map(f => {
-            if (f.id !== id) return f;
-            const newStyles = { ...f.styles };
-            let hasStyleChange = false;
-            const newRoot = { ...f };
-            Object.keys(updates).forEach(key => {
-                if (['fontSize', 'fontWeight', 'textAlign', 'color', 'backgroundColor'].includes(key)) {
-                    newStyles[key as keyof typeof newStyles] = updates[key];
-                    hasStyleChange = true;
-                } else { (newRoot as any)[key] = updates[key]; }
-            });
-            return hasStyleChange ? { ...newRoot, styles: newStyles } : newRoot;
-        }));
+    // 👇 이 함수 전체를 아래 코드로 덮어씌워주세요!
+    const handleUpdate = (id: string, type: string, changes: any) => {
+        // 1. 블록(고정 사진/글) 업데이트 (이게 빠져있어서 안 움직였던 것!)
+        if (type === 'block') {
+            setBlocks(p => p.map(b => b.id === id ? {
+                ...b,
+                styles: { ...b.styles, ...changes } // styles 안에 안전하게 합치기
+            } : b));
+        }
+        // 2. 스티커 업데이트
+        else if (type === 'sticker') {
+            setStickers(p => p.map(s => s.id === id ? { ...s, ...changes } : s));
+        }
+        // 3. 텍스트 메모 업데이트
+        else if (type === 'floating') {
+            setFloatingTexts(p => p.map(f => f.id === id ? { ...f, ...changes } : f));
+        }
+        // 4. 자유 사진 업데이트
+        else if (type === 'floatingImage') {
+            setFloatingImages(p => p.map(i => i.id === id ? { ...i, ...changes } : i));
+        }
     };
 
     const handleDelete = () => {
@@ -107,83 +133,67 @@ export const usePostEditor = () => {
         setSelectedId(null); setSelectedType(null);
     };
 
-    const getMaxZ = () => Math.max(
-        ...stickers.map(s => s.zIndex),
-        ...floatingTexts.map(f => f.zIndex),
-        ...floatingImages.map(i => i.zIndex),
-        10
-    );
 
-    // 🌟 [핵심] 현재 스크롤 위치를 기반으로 화면 중앙에 생성하는 함수
-    const getSpawnPosition = () => {
-        // 현재 스크롤 위치 (px)
-        const scrollY = window.scrollY;
-        // 전체 문서 높이 (px) - body가 없을 경우 fallback
-        const totalHeight = document.body.scrollHeight || document.documentElement.scrollHeight || 1000;
-        // 화면 높이 (px)
-        const viewHeight = window.innerHeight;
 
-        // 현재 보고 있는 화면의 중간 지점 (px)
-        const middlePx = scrollY + (viewHeight / 3); // 살짝 위쪽(1/3 지점)이 더 보기 좋음
-
-        // 전체 높이 대비 퍼센트(%) 계산
-        const yPercent = (middlePx / totalHeight) * 100;
-
-        // 안전 장치: 최소 5%, 최대 90% 안에 들어오도록
-        return Math.min(Math.max(yPercent, 5), 90);
-    };
-
+    // 4️⃣ 아이템 추가 (초기값 px 단위로 설정)
     const addSticker = (url: string) => {
         const newSticker: Sticker = {
             id: `stk-${Date.now()}`, url,
-            x: 40, // 가로 중앙 근처
-            y: getSpawnPosition(), // 💡 현재 화면 기준 생성
-            w: 15, h: 15,
-            rotation: (Math.random()*20)-10, opacity: 1, zIndex: getMaxZ() + 1
+            x: 100, y: window.scrollY + 200, // px 단위
+            w: 150, h: 150, // px 단위
+            rotation: (Math.random()*20)-10, zIndex: 10
         };
         setStickers([...stickers, newSticker]);
-        setSelectedId(newSticker.id); setSelectedType('sticker');
     };
 
     const addFloatingText = () => {
         const newText: FloatingText = {
             id: `ft-${Date.now()}`, text: "메모",
-            x: 35,
-            y: getSpawnPosition(), // 💡 현재 화면 기준 생성
-            w: 30, h: 10,
-            rotation: 0, zIndex: getMaxZ() + 1,
+            x: 100, y: window.scrollY + 200, // px 단위
+            w: 200, h: 100, // px 단위
+            rotation: 0, zIndex: 11,
             styles: { fontSize: '18px', fontWeight: 'normal', textAlign: 'center', color: '#000000', backgroundColor: 'transparent' }
         };
         setFloatingTexts([...floatingTexts, newText]);
-        setSelectedId(newText.id); setSelectedType('floating');
     };
 
     const addFloatingImage = async (file: File) => {
-        let url = "";
-        if (supabase) {
-            const uploaded = await uploadImageToSupabase(file);
-            if (uploaded) url = uploaded;
-        } else {
-            const reader = new FileReader();
-            url = await new Promise((r) => { reader.onload = () => r(reader.result as string); reader.readAsDataURL(file); });
-        }
-
-        if (url) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const url = e.target?.result as string;
             const newImg: FloatingImage = {
                 id: `fi-${Date.now()}`, url,
-                x: 30,
-                y: getSpawnPosition(), // 💡 현재 화면 기준 생성
-                w: 40, h: 30,
-                rotation: 0, opacity: 1, zIndex: getMaxZ() + 1
+                x: 100, y: window.scrollY + 200, // px
+                w: 250, h: 200, // px
+                rotation: 0, zIndex: 12
             };
             setFloatingImages(prev => [...prev, newImg]);
-            setSelectedId(newImg.id); setSelectedType('floatingImage');
-        }
+        };
+        reader.readAsDataURL(file);
     };
 
+    // 3️⃣ 이미지 업로드 수정 (무조건 미리보기 보장)
     const handleBlockImageUpload = async (id: string, file: File, imgIndex: number = 1) => {
-        const url = await uploadImageToSupabase(file);
-        if (url) setBlocks(p => p.map(b => b.id === id ? { ...b, [imgIndex === 1 ? 'imageUrl' : 'imageUrl2']: url } : b));
+        // 즉시 로컬 미리보기 생성
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const localUrl = e.target?.result as string;
+            setBlocks(prev => prev.map(b => b.id === id ? {
+                ...b, [imgIndex === 1 ? 'imageUrl' : 'imageUrl2']: localUrl
+            } : b));
+        };
+        reader.readAsDataURL(file);
+
+        // 백그라운드에서 서버 업로드 시도 (성공하면 URL 교체)
+        if (supabase) {
+            uploadImageToSupabase(file).then(serverUrl => {
+                if (serverUrl) {
+                    setBlocks(prev => prev.map(b => b.id === id ? {
+                        ...b, [imgIndex === 1 ? 'imageUrl' : 'imageUrl2']: serverUrl
+                    } : b));
+                }
+            });
+        }
     };
 
     const changeZIndex = (dir: 'up'|'down') => {

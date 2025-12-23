@@ -1,3 +1,5 @@
+export type ViewMode = 'list' | 'editor' | 'read';
+
 export interface Block {
     id: string;
     type: 'paragraph' | 'image-full' | 'image-double' | 'image-left' | 'image-right';
@@ -6,47 +8,39 @@ export interface Block {
     imageUrl2?: string;
     imageRotation?: number;
     imageFit?: 'cover' | 'contain';
-    // 텍스트 스타일 추가
-    styles?: {
-        fontSize?: string;
-        fontWeight?: string;
-        textAlign?: 'left' | 'center' | 'right';
-        color?: string;
-    };
+    styles?: Record<string, any>;
 }
 
-export interface Sticker {
+// 🔴 수정됨: 좌표와 크기를 number(픽셀 단위)로 변경
+export interface BaseFloatingItem {
     id: string;
+    x: number; // px 단위
+    y: number; // px 단위
+    w: number; // px 단위
+    h: number; // px 단위 (비율 유지를 위해 자동 계산될 수 있음)
+    rotation: number;
+    opacity?: number;
+    zIndex: number;
+}
+
+export interface Sticker extends BaseFloatingItem {
     url: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    rotation: number;
-    opacity: number;
-    zIndex: number;
 }
 
-// ✨ 새로운 떠다니는 텍스트 타입
-export interface FloatingText {
-    id: string;
+export interface FloatingText extends BaseFloatingItem {
     text: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    rotation: number;
-    zIndex: number;
     styles: {
         fontSize: string;
         fontWeight: string;
-        textAlign: 'left' | 'center' | 'right';
+        textAlign: string;
         color: string;
-        backgroundColor?: string;
+        backgroundColor: string;
     };
 }
 
-export type ViewMode = 'list' | 'editor' | 'read';
+export interface FloatingImage extends BaseFloatingItem {
+    url: string;
+}
 
 export interface PostData {
     id: number;
@@ -54,17 +48,6 @@ export interface PostData {
     date: string;
     blocks: Block[];
     stickers: Sticker[];
-    floatingTexts?: FloatingText[]; // 저장 데이터에 추가
-    floatingImages?: FloatingImage[]; // 추가
-}
-export interface FloatingImage {
-    id: string;
-    url: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    rotation: number;
-    opacity: number;
-    zIndex: number;
+    floatingTexts: FloatingText[];
+    floatingImages: FloatingImage[];
 }
