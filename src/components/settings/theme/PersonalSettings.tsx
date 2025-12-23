@@ -102,6 +102,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
 
     // Manual Theme State - Button
     const [manualBtnColor, setManualBtnColor] = useState(() => localStorage.getItem('manualBtnColor') || '#2563eb');
+    const [manualBtnTextColor, setManualBtnTextColor] = useState(() => localStorage.getItem('manualBtnTextColor') || '#ffffff');
 
     // Gradient State
     const [gradientDirection, setGradientDirection] = useState(() => localStorage.getItem('manualGradientDirection') || 'to bottom right');
@@ -191,6 +192,8 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         // Apply Button Settings
         document.documentElement.style.setProperty('--manual-btn-bg', manualBtnColor);
         localStorage.setItem('manualBtnColor', manualBtnColor);
+        document.documentElement.style.setProperty('--manual-btn-text', manualBtnTextColor);
+        localStorage.setItem('manualBtnTextColor', manualBtnTextColor);
     };
 
     const handleResetManualTheme = () => {
@@ -200,6 +203,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         setManualBgColor('#ffffff');
         setManualBgIntensity(100);
         setManualBtnColor('#2563eb');
+        setManualBtnTextColor('#ffffff');
         setGradientDirection('to bottom right');
         setGradientStartColor('#ffffff');
         setGradientEndColor('#3b82f6');
@@ -472,8 +476,11 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
 
                                     <div className="flex gap-2 mt-4">
                                         <button
-                                            className="px-4 py-2 rounded-lg text-white font-medium text-sm"
-                                            style={{ backgroundColor: manualBtnColor }}
+                                            className="px-4 py-2 rounded-lg font-medium text-sm"
+                                            style={{
+                                                backgroundColor: manualBtnColor,
+                                                color: manualBtnTextColor
+                                            }}
                                         >
                                             Button
                                         </button>
@@ -578,6 +585,15 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                         onChange={setManualBtnColor}
                                         colors={TEXT_COLORS} // Reusing bright colors
                                     />
+
+                                    <div className="mt-4">
+                                        <ColorPicker
+                                            label="버튼 텍스트 색상 (Button Text Color)"
+                                            color={manualBtnTextColor}
+                                            onChange={setManualBtnTextColor}
+                                            colors={['#ffffff', '#000000', ...TEXT_COLORS.slice(2)]}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         )}

@@ -94,6 +94,12 @@ if (savedManualBtnColor) {
   document.documentElement.style.setProperty('--manual-btn-bg', savedManualBtnColor);
 }
 
+// Initialize manual button text color
+const savedManualBtnTextColor = localStorage.getItem('manualBtnTextColor');
+if (savedManualBtnTextColor) {
+  document.documentElement.style.setProperty('--manual-btn-text', savedManualBtnTextColor);
+}
+
 const RootRedirector = () => {
   const defaultPage = localStorage.getItem('defaultPage') || '/home';
   return <Navigate to={defaultPage} replace />;

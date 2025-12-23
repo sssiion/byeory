@@ -109,7 +109,7 @@
     --icon-color: rgba(var(--manual-text-color), var(--manual-text-intensity));
 
     --btn-bg: var(--manual-btn-bg, #2563eb);
-    --btn-text: #ffffff;
+    --btn-text: var(--manual-btn-text, #ffffff);
     --btn-hover: var(--manual-btn-bg, #1d4ed8);
 }
 
