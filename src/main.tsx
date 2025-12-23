@@ -7,7 +7,7 @@ import TodoPage from './pages/todo/TodoPage'
 import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 import { ThemeProvider } from './components/settings/theme/ThemeContext';
-import MarketPage from './pages/Market/MarketPage'
+import MarketPage from './pages/market/MarketPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditScreen from './pages/profile/ProfileEditScreen';
 import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
