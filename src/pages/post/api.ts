@@ -5,6 +5,8 @@ import  { LAYOUT_PRESETS } from './constants';
 const GEMINI_API_KEY = "AIzaSyCwqFuqZ2cuV9gaAAKq2_fmgCB-UyjyqkY"; // 실제 키 사용 시 주의
 const SUPABASE_URL = "https://eshgkaxpdjrnydyijtpp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_nOSbz6httzI14l7vWyJ3yw_WZRBE7fT";
+// 🏡 백엔드 API 주소 (로컬 개발 환경 예시)
+const API_BASE_URL = "http://localhost:8080/api/posts";
 export const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 export const uploadImageToSupabase = async (file: File): Promise<string | null> => {
@@ -92,5 +94,39 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
     } catch (e) {
         console.error(e);
         throw new Error("AI 생성 실패");
+    }
+};
+// 1️⃣ 게시글 목록 조회 (GET)
+export const fetchPostsFromApi = async () => {
+    try {
+        // 백엔드의 GET /api/posts 엔드포인트 호출
+        const response = await fetch(`${API_BASE_URL}`);
+        if (!response.ok) throw new Error("게시글 불러오기 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// 2️⃣ 게시글 저장 (생성 POST / 수정 PUT)
+export const savePostToApi = async (postData: any, isUpdate: boolean = false) => {
+    try {
+        const url = isUpdate ? `${API_BASE_URL}/${postData.id}` : API_BASE_URL;
+        const method = isUpdate ? "PUT" : "POST";
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(postData),
+        });
+
+        if (!response.ok) throw new Error("저장 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        throw error;
     }
 };
