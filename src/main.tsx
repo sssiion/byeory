@@ -70,10 +70,6 @@ if (savedManualBgIntensity) {
   document.documentElement.style.setProperty('--manual-bg-intensity', `${parseInt(savedManualBgIntensity) / 100}`);
 }
 
-if (savedManualBgIntensity) {
-  document.documentElement.style.setProperty('--manual-bg-intensity', `${parseInt(savedManualBgIntensity) / 100}`);
-}
-
 // Initialize manual gradient settings
 const savedIsGradient = localStorage.getItem('manualIsGradient') === 'true';
 const savedGradientDirection = localStorage.getItem('manualGradientDirection');
