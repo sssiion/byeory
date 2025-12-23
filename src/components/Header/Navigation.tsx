@@ -123,7 +123,10 @@ const Navigation: React.FC = () => {
             {/* Top Header */}
             <header className={`sticky top-0 z-50 flex justify-between items-center px-4 md:px-6 py-3 md:py-4 theme-bg-header shadow-sm border-b theme-border transition-colors duration-300`}>
                 {/* Logo */}
-                <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+                <div
+                    className={`flex items-center ${isEditMode ? 'cursor-default opacity-50' : 'cursor-pointer'}`}
+                    onClick={() => !isEditMode && navigate('/')}
+                >
                     <img src="/logo.png" alt="Logo" className="w-18 md:w-20" />
                 </div>
 
@@ -156,15 +159,23 @@ const Navigation: React.FC = () => {
                 {/* Right Icons */}
                 <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary">
                     <button
-                        className="p-2 hover:bg-black/5 rounded-full transition-colors"
-                        onClick={() => isLoggedIn ? navigate('/profile') : navigate('/login')}
+                        className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => {
+                            if (isEditMode) return;
+                            isLoggedIn ? navigate('/profile') : navigate('/login');
+                        }}
+                        disabled={isEditMode}
                         title={isLoggedIn ? "프로필" : "로그인"}
                     >
                         {isLoggedIn ? <User className="w-5 h-5 md:w-6 md:h-6" /> : <User className="w-5 h-5 md:w-6 md:h-6" />}
                     </button>
                     <button
-                        className="p-2 hover:bg-black/5 rounded-full transition-colors"
-                        onClick={() => setIsSettingsOpen(true)}
+                        className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => {
+                            if (isEditMode) return;
+                            setIsSettingsOpen(true);
+                        }}
+                        disabled={isEditMode}
                     >
                         <Settings className="w-5 h-5 md:w-6 md:h-6" />
                     </button>
