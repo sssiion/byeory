@@ -2,15 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Header/Navigation';
 import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings';
-import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/widgets/Registry';
-import { DraggableWidget } from '../components/widgets/DraggableWidget';
-import { Plus, X, RotateCcw, LayoutGrid, Settings2, Minus } from 'lucide-react';
+import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
+import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
+import { Plus, X, RotateCcw, LayoutGrid, AlignStartVertical } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { clampWidget, resolveCollisions } from '../components/widgets/layoutUtils';
+import { clampWidget, resolveCollisions } from '../components/settings/widgets/layoutUtils';
+import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
 
 // Default Grid Size
-const DEFAULT_GRID_SIZE = { cols: 4, rows: 6 };
+const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
+
+
 
 // Default Widgets
 const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
@@ -56,16 +59,17 @@ const MainPage: React.FC = () => {
     const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
     const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+    const [isArrangeConfirmOpen, setIsArrangeConfirmOpen] = useState(false);
 
-    // Preview state for drag
-    const [dragPreview, setDragPreview] = useState<WidgetLayout | null>(null);
+    // Preview properties
+    const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
 
-    const [searchParams, setSearchParams] = useSearchParams(); // Added this line
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Load
     useEffect(() => {
         const savedWidgets = localStorage.getItem('my_dashboard_widgets_v3');
-        const savedGrid = localStorage.getItem('my_dashboard_grid_size');
+        const savedGrid = localStorage.getItem('my_dashboard_grid_size_v4');
 
         if (savedWidgets) {
             try {
@@ -83,17 +87,37 @@ const MainPage: React.FC = () => {
             } catch (e) {
                 setGridSize(DEFAULT_GRID_SIZE);
             }
+        } else {
+            setGridSize(DEFAULT_GRID_SIZE);
         }
     }, []);
+
+    // ... (omitted)
+
+    // Save
+    useEffect(() => {
+        if (widgets.length > 0) {
+            localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
+        }
+        localStorage.setItem('my_dashboard_grid_size_v4', JSON.stringify(gridSize));
+    }, [widgets, gridSize]);
+
+    // Automatically resize grid based on widgets
+    useEffect(() => {
+        const maxY = widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
+        const requiredRows = Math.max(maxY, DEFAULT_GRID_SIZE.rows);
+
+        if (requiredRows !== gridSize.rows) {
+            setGridSize(prev => ({ ...prev, rows: requiredRows }));
+        }
+    }, [widgets, gridSize.rows]);
 
     // Check for edit mode trigger in URL
     useEffect(() => {
         const editMode = searchParams.get('editMode');
-        console.log("MainPage Edit Mode Trigger:", editMode);
 
         if (editMode === 'widget') {
             setIsWidgetEditMode(true);
-            // Clear the param properly using react-router
             setSearchParams(params => {
                 const newParams = new URLSearchParams(params);
                 newParams.delete('editMode');
@@ -102,52 +126,34 @@ const MainPage: React.FC = () => {
         }
     }, [searchParams]);
 
-    // Save
-    useEffect(() => {
-        if (widgets.length > 0) {
-            localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
-        }
-        localStorage.setItem('my_dashboard_grid_size', JSON.stringify(gridSize));
-    }, [widgets, gridSize]);
-
     const addWidget = (type: WidgetType) => {
         const registryItem = WIDGET_REGISTRY[type];
 
-        // 1. 위젯의 크기 결정
         let w = 1, h = 1;
         if (registryItem.defaultSize === 'wide') { w = 4; h = 1; }
         else if (registryItem.defaultSize === 'large') { w = 2; h = 2; }
         else if (registryItem.defaultSize === 'medium') { w = 2; h = 1; }
 
-        // 그리드 너비보다 위젯이 크면 강제로 줄임 (안전장치)
         if (w > gridSize.cols) w = gridSize.cols;
 
-        // 2. 빈 공간 찾기 알고리즘 (First Fit)
         let targetX = 1;
         let targetY = 1;
         let found = false;
 
-        // 현재 가장 아래에 있는 위젯의 높이 구하기 (검색 범위 제한용)
-        const currentMaxY = widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 1);
+        const currentMaxY = widgets.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), 1);
 
-        // Y축: 1행부터 (현재 최대 높이 + 위젯 높이)까지 탐색
-        // 충분히 아래까지 검색하면 무조건 자리는 나오게 되어 있음
         for (let y = 1; y <= currentMaxY + h; y++) {
-            // X축: 1열부터 (그리드 너비 - 위젯 너비 + 1)까지 탐색
             for (let x = 1; x <= gridSize.cols - w + 1; x++) {
-
-                // 해당 위치(x, y)에 w, h 크기로 놓았을 때 충돌이 있는지 확인
                 const hasCollision = widgets.some(existing => {
                     const e = existing.layout;
                     return (
-                        x < e.x + e.w &&       // 기존 위젯 오른쪽보다 왼쪽
-                        x + w > e.x &&         // 기존 위젯 왼쪽보다 오른쪽
-                        y < e.y + e.h &&       // 기존 위젯 아래쪽보다 위쪽
-                        y + h > e.y            // 기존 위젯 위쪽보다 아래쪽
+                        x < e.x + e.w &&
+                        x + w > e.x &&
+                        y < e.y + e.h &&
+                        y + h > e.y
                     );
                 });
 
-                // 충돌이 없다면 여기가 빈칸임!
                 if (!hasCollision) {
                     targetX = x;
                     targetY = y;
@@ -155,7 +161,7 @@ const MainPage: React.FC = () => {
                     break;
                 }
             }
-            if (found) break; // 자리를 찾았으면 더 이상 검색 중단
+            if (found) break;
         }
 
         const newWidget: WidgetInstance = {
@@ -174,26 +180,48 @@ const MainPage: React.FC = () => {
     };
 
     const onCellHover = useCallback((x: number, y: number, item: any) => {
-        if (!item || !item.layout) return;
+        if (!item || !item.id) return;
 
-        // Calculate preview position
-        const { w, h } = item.layout;
+        // Find the actual widget being dragged to get its dimensions
+        // (Item might only contain partial info depending on how it was constructed)
+        const draggingWidget = widgets.find(w => w.id === item.id);
+        if (!draggingWidget) return;
+
+        const { w, h } = draggingWidget.layout;
         const clamped = clampWidget({ x, y, w, h }, gridSize.cols);
 
-        setDragPreview(prev => {
-            if (prev && prev.x === clamped.x && prev.y === clamped.y) return prev;
-            return clamped;
-        });
-    }, [gridSize]);
+        // Optimization: Don't recalculate if position hasn't changed from last preview
+        // effectively, we need to track "last calculated preview input" to avoid thrashing
+        // but `layoutPreview` state updates will cause re-renders anyway.
+        // We can just rely on basic equality or memo logic if performance is an issue.
+        // For now, let's just calculate.
+
+        // Create a temporary "moved" widget
+        const movedWidget = { ...draggingWidget, layout: { ...draggingWidget.layout, x: clamped.x, y: clamped.y } };
+
+        // Calculate the full layout with collisions resolved
+        // Note: we must pass the *original* widgets list (without the move applied) 
+        // but we need to trick resolveCollisions to use the movedWidget as the "pusher".
+
+        // resolveCollisions takes (widgets list, active widget). 
+        // It removes active widget from list by ID, then pushes it back in at new spot, then resolves others.
+        const resolved = resolveCollisions(widgets, movedWidget);
+
+        setLayoutPreview(resolved);
+    }, [widgets, gridSize.cols]);
+
+    // Handle end of drag to clear preview
+    // Note: react-dnd dragging end is handled in the DraggableWidget, 
+    // but the drop event is handled here.
+    // We should clear preview on drop or when drag ends.
 
     const updateWidgetPosition = (id: string, targetX: number, targetY: number) => {
-        setDragPreview(null); // Clear preview
+        setLayoutPreview(null); // Clear preview on drop
 
         setWidgets(prev => {
             const activeWidget = prev.find(w => w.id === id);
             if (!activeWidget) return prev;
 
-            // Apply clamping to ensure it fits in grid
             const clamped = clampWidget({
                 ...activeWidget.layout,
                 x: targetX,
@@ -201,15 +229,7 @@ const MainPage: React.FC = () => {
             }, gridSize.cols);
 
             const movedWidget = { ...activeWidget, layout: clamped };
-
-            // Run collision resolution
             const resolved = resolveCollisions(prev, movedWidget);
-
-            // Auto-expand grid if needed
-            const maxRow = resolved.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), gridSize.rows);
-            if (maxRow > gridSize.rows) {
-                setGridSize(p => ({ ...p, rows: maxRow }));
-            }
 
             return resolved;
         });
@@ -223,15 +243,8 @@ const MainPage: React.FC = () => {
             const newLayout = { ...activeWidget.layout, ...layout };
             const clamped = clampWidget(newLayout, gridSize.cols);
 
-            // Resolve collisions for resize too
             const movedWidget = { ...activeWidget, layout: clamped };
             const resolved = resolveCollisions(prev, movedWidget);
-
-            // Auto-expand grid if needed
-            const maxRow = resolved.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), gridSize.rows);
-            if (maxRow > gridSize.rows) {
-                setGridSize(p => ({ ...p, rows: maxRow }));
-            }
 
             return resolved;
         });
@@ -244,10 +257,67 @@ const MainPage: React.FC = () => {
         }
     };
 
-    // Calculate minimum rows needed to show all widgets + 1 empty row
-    const maxWidgetY = widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
-    const displayRows = Math.max(gridSize.rows, maxWidgetY, 6); // At least 6 rows or fits content
-    const finalRows = displayRows + 1; // Always show 1 extra empty row at bottom
+    const handleArrange = () => {
+        setWidgets(prev => {
+            // 1. Sort by Y then X (Reading Order)
+            const sorted = [...prev].sort((a, b) => {
+                if (a.layout.y === b.layout.y) return a.layout.x - b.layout.x;
+                return a.layout.y - b.layout.y;
+            });
+
+            const newWidgets: WidgetInstance[] = [];
+            const occupied = new Set<string>();
+
+            sorted.forEach(widget => {
+                let x = 1;
+                let y = 1;
+                let found = false;
+
+                while (!found) {
+                    let fits = true;
+                    if (x + widget.layout.w - 1 > gridSize.cols) {
+                        fits = false;
+                    } else {
+                        for (let dy = 0; dy < widget.layout.h; dy++) {
+                            for (let dx = 0; dx < widget.layout.w; dx++) {
+                                if (occupied.has(`${x + dx},${y + dy}`)) {
+                                    fits = false;
+                                    break;
+                                }
+                            }
+                            if (!fits) break;
+                        }
+                    }
+
+                    if (fits) {
+                        newWidgets.push({ ...widget, layout: { ...widget.layout, x, y } });
+                        for (let dy = 0; dy < widget.layout.h; dy++) {
+                            for (let dx = 0; dx < widget.layout.w; dx++) {
+                                occupied.add(`${x + dx},${y + dy}`);
+                            }
+                        }
+                        found = true;
+                    } else {
+                        x++;
+                        if (x > gridSize.cols) {
+                            x = 1;
+                            y++;
+                        }
+                    }
+                }
+            });
+            return newWidgets;
+        });
+        setIsArrangeConfirmOpen(false);
+    };
+
+    // Calculate minimum rows needed
+    // Use layoutPreview if dragging, otherwise widgets
+    const currentDisplayWidgets = layoutPreview || widgets;
+
+    const maxWidgetY = currentDisplayWidgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
+    const displayRows = Math.max(gridSize.rows, maxWidgetY, DEFAULT_GRID_SIZE.rows);
+    const finalRows = displayRows;
 
     // Generate grid cells
     const gridCells = [];
@@ -266,8 +336,13 @@ const MainPage: React.FC = () => {
         }
     }
 
+
+
+    // ... (existing imports)
+
     return (
         <DndProvider backend={HTML5Backend}>
+            <CustomDragLayer />
             <div className="min-h-screen pb-20">
                 <Navigation />
 
@@ -293,24 +368,21 @@ const MainPage: React.FC = () => {
 
                                             <div className="w-px h-6 bg-gray-200 mx-1"></div>
 
-                                            {/* Grid Controls */}
-                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg">
-                                                <span className="text-xs font-bold text-[var(--text-secondary)] flex items-center gap-1"><Settings2 size={12} /> Grid</span>
-                                                <div className="flex items-center gap-1">
-                                                    <button onClick={() => setGridSize(p => ({ ...p, rows: Math.max(3, p.rows - 1) }))} className="p-1 hover:bg-gray-100 rounded"><Minus size={12} /></button>
-                                                    <span className="text-xs font-mono">{gridSize.cols}x{finalRows}</span>
-                                                    <button onClick={() => setGridSize(p => ({ ...p, rows: p.rows + 1 }))} className="p-1 hover:bg-gray-100 rounded"><Plus size={12} /></button>
-                                                </div>
-                                            </div>
-
-                                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-
                                             <button
                                                 onClick={() => setIsCatalogOpen(true)}
                                                 className="px-4 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] font-bold flex items-center gap-1"
                                             >
                                                 <Plus size={16} /> Add
                                             </button>
+
+                                            <button
+                                                onClick={() => setIsArrangeConfirmOpen(true)}
+                                                className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)]"
+                                                title="Auto Arrange"
+                                            >
+                                                <AlignStartVertical size={18} />
+                                            </button>
+
                                             <button
                                                 onClick={resetWidgets}
                                                 className="p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50"
@@ -340,25 +412,17 @@ const MainPage: React.FC = () => {
                                 {/* 1. Render Background Cells */}
                                 {gridCells}
 
-                                {/* 2. Render Drag Preview (Placeholder) */}
-                                {isWidgetEditMode && dragPreview && (
-                                    <div
-                                        className="bg-blue-200/50 border-2 border-blue-500 rounded-xl transition-all duration-100 z-10 pointer-events-none"
-                                        style={{
-                                            gridColumn: `${dragPreview.x} / span ${dragPreview.w}`,
-                                            gridRow: `${dragPreview.y} / span ${dragPreview.h}`,
-                                        }}
-                                    />
-                                )}
-
-                                {/* 3. Render Widgets */}
-                                {widgets.map((widget) => (
+                                {/* 2. Render Widgets (using current display widgets i.e. preview or actual) */}
+                                {currentDisplayWidgets.map((widget) => (
                                     <DraggableWidget
                                         key={widget.id}
                                         widget={widget}
                                         isEditMode={isWidgetEditMode}
                                         removeWidget={removeWidget}
                                         updateLayout={updateLayout}
+                                        onDragEnd={() => setLayoutPreview(null)}
+                                        onHover={onCellHover}
+                                        onDrop={(x, y, item) => updateWidgetPosition(item.id, x, y)}
                                     />
                                 ))}
                             </div>
@@ -407,6 +471,32 @@ const MainPage: React.FC = () => {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Auto Arrange Confirm Modal */}
+                {isArrangeConfirmOpen && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-[var(--bg-card)] w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in duration-200">
+                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">위젯 정렬</h3>
+                            <p className="text-[var(--text-secondary)] mb-6">
+                                정렬시 빈칸없이 전부 체워집니다.
+                            </p>
+                            <div className="flex gap-3 justify-end">
+                                <button
+                                    onClick={() => setIsArrangeConfirmOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] hover:bg-gray-200 transition-colors"
+                                >
+                                    아니요
+                                </button>
+                                <button
+                                    onClick={handleArrange}
+                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-white hover:opacity-90 transition-colors"
+                                >
+                                    실행
+                                </button>
                             </div>
                         </div>
                     </div>

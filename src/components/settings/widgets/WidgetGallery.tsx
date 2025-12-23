@@ -1,18 +1,24 @@
-import React from 'react';
 import {
-  AIDiary, DailyDiary, RandomDiary, TimeMachine, PhotoGallery, ExchangeDiary,
-  TodoListWidget, PastToday, MyPersona, WeatherWidget, NotificationSet,
-  EmotionAnalysis, CommunityWidget, ClockWidget, DDayList, QuickLinks,
-  StreakWidget, StatsWidget
-} from './NewWidgets';
+  AIDiary, DailyDiary, RandomDiary, ExchangeDiary, DreamLog, PastToday,
+  EmotionAnalysis, ComplimentJar, EmotionalWeather, DailyStamp
+} from './WidgetCollection/diary';
 
 import {
-  MoonPhase, WindowView, SnowGlobe, DigitalPlant, WorryShredder, ScrapNote,
-  DreamLog, DessertCase, CatChaser, DDayBalloon, FavoriteCharacter, ColorChip,
-  MovieScene, Polaroid, TicketStub, InstantBooth, FilmStrip, TextScroller,
-  NeonSign, Candle, SwitchBoard, ComplimentJar, FortuneCookie, EmotionalWeather,
-  BatteryWidget, OOTDSketch, BookCover, BubbleWrap, DailyStamp, LPPlayer
-} from './WidgetCollection';
+  TodoListWidget, ClockWidget, DDayList, DDayBalloon, QuickLinks, WeatherWidget,
+  NotificationSet, WorryShredder, StatsWidget, StreakWidget, ScrapNote, BatteryWidget
+} from './WidgetCollection/tools';
+
+import {
+  PhotoGallery, Polaroid, InstantBooth, FilmStrip, FavoriteCharacter, ColorChip,
+  MovieScene, WindowView, MoonPhase, TicketStub, NeonSign, Candle, TextScroller,
+  OOTDSketch, BookCover, BubbleWrap, FortuneCookie, SwitchBoard
+} from './WidgetCollection/decoration';
+
+import {
+  DigitalPlant, DessertCase, CatChaser, SnowGlobe, TimeMachine, CommunityWidget, LPPlayer
+} from './WidgetCollection/interactive';
+
+import { MyPersona } from './WidgetCollection/system';
 
 export function WidgetGallery() {
   const sampleImages = [
