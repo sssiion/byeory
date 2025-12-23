@@ -27,7 +27,7 @@ const EditorCanvas: React.FC<Props> = ({
                                            setViewMode, setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
                                        }) => {
     return (
-        <div className="flex-1 bg-white rounded-xl shadow-xl min-h-[800px] relative overflow-hidden flex flex-col" onClick={onBackgroundClick}>
+        <div className="w-full mx-auto flex-1 bg-white rounded-xl shadow-xl min-h-[800px] relative overflow-hidden flex flex-col max-w-[800px]" onClick={onBackgroundClick}>
 
             {/* ... 헤더 부분 (기존 동일) ... */}
             <div className="sticky top-0 bg-white/95 backdrop-blur z-20 border-b p-6 flex justify-between items-center">

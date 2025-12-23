@@ -2,10 +2,10 @@ import React, { useRef } from 'react';
 
 interface Props {
     id: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
+    x: number; // %
+    y: number; // %
+    w: number; // %
+    h: number; // %
     rotation: number;
     zIndex: number;
     isSelected: boolean;
@@ -25,41 +25,73 @@ const ResizableItem: React.FC<Props> = ({ id, x, y, w, h, rotation, zIndex, isSe
         e.stopPropagation();
 
         const target = e.target as HTMLElement;
-        // 🔹 [핵심] 클릭한 대상이 입력창(textarea, input)인지 확인
+        // 입력창(textarea)인 경우 드래그 방지
         const isInput = ['INPUT', 'TEXTAREA'].includes(target.tagName);
-
-        // 1. 입력창이면: 기본 동작(타이핑, 포커스)을 막지 않음 & 드래그 시작 안 함
         if (isInput) {
             onSelect();
-            return; // 여기서 끝냄 (드래그 로직 실행 X)
+            return;
         }
 
-        // 2. 입력창이 아니면(스티커, 손잡이 등): 드래그 모드 진입 & 기본 동작 방지
         e.preventDefault();
         onSelect();
 
         if (e.button !== 0) return;
 
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startDims = { x, y, w, h, r: rotation };
+        // 1. 부모 컨테이너 크기 정밀 계산 (getBoundingClientRect 사용)
+        const element = e.currentTarget as HTMLElement;
+        const parent = (element.offsetParent as HTMLElement) || document.body;
+        const parentRect = parent.getBoundingClientRect();
+        const parentW = parentRect.width;
+        const parentH = parentRect.height;
+
+        // 2. [핵심 수정] "화면에 그려진 크기"가 아니라 "저장된 데이터(%)"를 기준으로 시작 픽셀을 계산합니다.
+        // 이렇게 해야 클릭 순간에 크기가 튀지 않습니다.
+        const startState = {
+            mouseX: e.clientX,
+            mouseY: e.clientY,
+            // 저장된 %를 픽셀로 정확히 환산
+            wPx: (w / 100) * parentW,
+            hPx: (h / 100) * parentH,
+            // 위치도 데이터 기반 환산
+            xPx: (x / 100) * parentW,
+            yPx: (y / 100) * parentH,
+            rotation: rotation,
+            parentW,
+            parentH
+        };
 
         isDraggingRef.current = false;
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
-            const dx = moveEvent.clientX - startX;
-            const dy = moveEvent.clientY - startY;
+            const dx = moveEvent.clientX - startState.mouseX;
+            const dy = moveEvent.clientY - startState.mouseY;
 
             if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
                 isDraggingRef.current = true;
             }
 
             if (mode === 'drag') {
-                onUpdate({ x: startDims.x + dx, y: startDims.y + dy });
+                // 이동: (기존위치Px + 이동량Px) / 부모크기 * 100
+                const newXPx = startState.xPx + dx;
+                const newYPx = startState.yPx + dy;
+
+                onUpdate({
+                    x: (newXPx / startState.parentW) * 100,
+                    y: (newYPx / startState.parentH) * 100
+                });
+
             } else if (mode === 'resize') {
-                onUpdate({ w: Math.max(50, startDims.w + dx), h: Math.max(50, startDims.h + dy) });
+                // 크기: (기존크기Px + 이동량Px) / 부모크기 * 100
+                const newWidthPx = Math.max(30, startState.wPx + dx); // 최소 30px
+                const newHeightPx = Math.max(30, startState.hPx + dy);
+
+                onUpdate({
+                    w: (newWidthPx / startState.parentW) * 100,
+                    h: (newHeightPx / startState.parentH) * 100
+                });
+
             } else if (mode === 'rotate') {
-                onUpdate({ rotation: startDims.r + dx * 0.5 });
+                onUpdate({ rotation: startState.rotation + dx * 0.5 });
             }
         };
 
@@ -81,13 +113,14 @@ const ResizableItem: React.FC<Props> = ({ id, x, y, w, h, rotation, zIndex, isSe
 
     return (
         <div
-            // 본체 클릭 시: 입력창이 아니면 드래그 시도
             onMouseDown={(e) => handleMouseDown(e, 'drag')}
             onClick={handleClick}
             className={`absolute group select-none ${isSelected ? 'z-50' : 'cursor-pointer hover:ring-1 hover:ring-indigo-200'}`}
             style={{
-                left: `${x}px`, top: `${y}px`,
-                width: `${w}px`, height: `${h}px`,
+                left: `${x}%`,
+                top: `${y}%`,
+                width: `${w}%`,
+                height: `${h}%`,
                 transform: `rotate(${rotation}deg)`,
                 zIndex: isSelected ? 9999 : zIndex,
                 touchAction: 'none'
@@ -96,30 +129,29 @@ const ResizableItem: React.FC<Props> = ({ id, x, y, w, h, rotation, zIndex, isSe
             <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}>
                 {children}
 
-                {/* 컨트롤 핸들 (선택되었을 때만 표시) */}
                 {isSelected && !readOnly && (
                     <>
-                        {/* ✥ 이동 손잡이 (왼쪽 상단) - 텍스트 입력 중일 때 이걸로 이동 */}
+                        {/* 이동 핸들 (좌측 상단) */}
                         <div
                             onMouseDown={(e) => handleMouseDown(e, 'drag')}
                             className="absolute -left-3 -top-3 w-6 h-6 bg-indigo-500 text-white rounded-full cursor-move z-50 shadow-sm flex items-center justify-center text-xs hover:scale-110 transition"
-                            title="이동하려면 드래그하세요"
+                            title="이동"
                         >
                             ✥
                         </div>
-
-                        {/* ↻ 회전 핸들 (상단 중앙) */}
+                        {/* 회전 핸들 (상단 중앙) */}
                         <div
                             onMouseDown={(e) => handleMouseDown(e, 'rotate')}
                             className="absolute left-1/2 -top-8 -translate-x-1/2 w-6 h-6 bg-white border-2 border-indigo-500 text-indigo-500 rounded-full flex items-center justify-center cursor-ew-resize shadow-sm text-xs z-50 hover:scale-110 transition"
+                            title="회전"
                         >
                             ↻
                         </div>
-
-                        {/* ↔ 리사이즈 핸들 (우측 하단) */}
+                        {/* 리사이즈 핸들 (우측 하단) */}
                         <div
                             onMouseDown={(e) => handleMouseDown(e, 'resize')}
                             className="absolute -right-3 -bottom-3 w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-se-resize z-50 shadow-sm flex items-center justify-center text-[8px] text-indigo-500 hover:scale-110 transition"
+                            title="크기 조절"
                         >
                             ↔
                         </div>
