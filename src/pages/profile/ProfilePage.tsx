@@ -24,7 +24,7 @@ function ProfilePage() {
     };
 
     return (
-        <div className="min-h-screen pb-20 md:pb-0" style={{ backgroundColor: 'var(--bg-solid)', backgroundImage: 'var(--bg-gradient)' }}>
+        <div className="min-h-screen pb-20 md:pb-0">
             {/* 내비게이션 설정 */}
             <Navigation />
 

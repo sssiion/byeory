@@ -59,7 +59,7 @@ const PasswordChangeScreen: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-solid)', backgroundImage: 'var(--bg-gradient)' }}>
+        <div className="min-h-screen">
             <Navigation />
 
             <div className="pt-16 pb-24 md:pt-20 md:pb-20">

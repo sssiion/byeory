@@ -70,18 +70,29 @@ if (savedManualBgIntensity) {
   document.documentElement.style.setProperty('--manual-bg-intensity', `${parseInt(savedManualBgIntensity) / 100}`);
 }
 
-// Initialize manual gradient settings
+// Initialize manual background (Image priority > Gradient > Solid)
+const savedManualBgImage = localStorage.getItem('manualBgImage');
 const savedIsGradient = localStorage.getItem('manualIsGradient') === 'true';
 const savedGradientDirection = localStorage.getItem('manualGradientDirection');
 const savedGradientStartColor = localStorage.getItem('manualGradientStartColor');
 const savedGradientEndColor = localStorage.getItem('manualGradientEndColor');
 
-if (savedIsGradient && savedGradientDirection && savedGradientStartColor && savedGradientEndColor) {
+if (savedManualBgImage) {
+  const savedBgSize = localStorage.getItem('manualBgSize') || 'cover';
+  document.documentElement.style.setProperty('--manual-gradient', `url(${savedManualBgImage})`);
+  document.documentElement.style.setProperty('--manual-bg-intensity', '0');
+  document.documentElement.style.setProperty('--manual-bg-size', savedBgSize === 'repeat' ? 'auto' : savedBgSize);
+  document.documentElement.style.setProperty('--manual-bg-repeat', savedBgSize === 'repeat' ? 'repeat' : 'no-repeat');
+} else if (savedIsGradient && savedGradientDirection && savedGradientStartColor && savedGradientEndColor) {
   const gradientValue = `linear-gradient(${savedGradientDirection}, ${savedGradientStartColor}, ${savedGradientEndColor})`;
   document.documentElement.style.setProperty('--manual-gradient', gradientValue);
   document.documentElement.style.setProperty('--manual-bg-intensity', '0'); // Hide solid bg
+  document.documentElement.style.setProperty('--manual-bg-size', 'cover');
+  document.documentElement.style.setProperty('--manual-bg-repeat', 'no-repeat');
 } else {
   document.documentElement.style.setProperty('--manual-gradient', 'none');
+  document.documentElement.style.setProperty('--manual-bg-size', 'cover');
+  document.documentElement.style.setProperty('--manual-bg-repeat', 'no-repeat');
 }
 
 // Initialize manual button color

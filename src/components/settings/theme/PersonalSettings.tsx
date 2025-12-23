@@ -1,6 +1,6 @@
 import {
     ArrowLeft, Check, X, Type, Star, PenTool, RotateCcw, ChevronDown, Palette,
-    ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft as ArrowLeftIcon, ArrowUpLeft
+    ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft as ArrowLeftIcon, ArrowUpLeft, Image as ImageIcon
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -12,7 +12,7 @@ interface PersonalSettingsProps {
 }
 
 type Tab = 'font' | 'recommended' | 'manual';
-type ManualSubTab = 'text' | 'colors';
+type ManualSubTab = 'text' | 'colors' | 'image';
 
 const fontFamilies = [
     { name: 'Noto Sans KR', value: "'Noto Sans KR', sans-serif" },
@@ -99,6 +99,8 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
     const [isGradient, setIsGradient] = useState(() => localStorage.getItem('manualIsGradient') === 'true');
     const [manualBgColor, setManualBgColor] = useState(() => localStorage.getItem('manualBgColor') || '#ffffff'); // Solid Base
     const [manualBgIntensity, setManualBgIntensity] = useState(() => parseInt(localStorage.getItem('manualBgIntensity') || '100')); // Solid Intensity
+    const [manualBgImage, setManualBgImage] = useState(() => localStorage.getItem('manualBgImage') || '');
+    const [manualBgSize, setManualBgSize] = useState(() => localStorage.getItem('manualBgSize') || 'cover'); // 'cover' or 'repeat'
 
     // Manual Theme State - Button
     const [manualBtnColor, setManualBtnColor] = useState(() => localStorage.getItem('manualBtnColor') || '#2563eb');
@@ -166,34 +168,59 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         localStorage.setItem('manualTextIntensity', String(manualTextIntensity));
 
         // Apply Background Settings
-        localStorage.setItem('manualIsGradient', String(isGradient));
-
-        if (isGradient) {
-            const gradientValue = `linear-gradient(${gradientDirection}, ${gradientStartColor}, ${gradientEndColor})`;
-            document.documentElement.style.setProperty('--manual-gradient', gradientValue);
+        if (manualBgImage) {
+            document.documentElement.style.setProperty('--manual-gradient', `url(${manualBgImage})`);
             document.documentElement.style.setProperty('--manual-bg-intensity', '0'); // Hide solid bg
-
-            localStorage.setItem('manualGradientDirection', gradientDirection);
-            localStorage.setItem('manualGradientStartColor', gradientStartColor);
-            localStorage.setItem('manualGradientEndColor', gradientEndColor);
+            localStorage.setItem('manualBgImage', manualBgImage);
+            // Clear other bg settings from localstorage if you want exclusive behavior, 
+            // but for now we just overwrite the variable.
+            document.documentElement.style.setProperty('--manual-bg-size', manualBgSize === 'repeat' ? 'auto' : manualBgSize);
+            document.documentElement.style.setProperty('--manual-bg-repeat', manualBgSize === 'repeat' ? 'repeat' : 'no-repeat');
+        } else if (isGradient) {
+            document.documentElement.style.setProperty('--manual-gradient', `linear-gradient(${gradientDirection}, ${gradientStartColor}, ${gradientEndColor})`);
+            document.documentElement.style.setProperty('--manual-bg-intensity', '1'); // Show gradient
+            document.documentElement.style.setProperty('--manual-bg-size', 'cover');
+            document.documentElement.style.setProperty('--manual-bg-repeat', 'no-repeat');
         } else {
             document.documentElement.style.setProperty('--manual-gradient', 'none');
-
-            const br = parseInt(manualBgColor.slice(1, 3), 16);
-            const bg = parseInt(manualBgColor.slice(3, 5), 16);
-            const bb = parseInt(manualBgColor.slice(5, 7), 16);
-            document.documentElement.style.setProperty('--manual-bg-color', `${br}, ${bg}, ${bb}`);
+            const r = parseInt(manualBgColor.slice(1, 3), 16);
+            const g = parseInt(manualBgColor.slice(3, 5), 16);
+            const b = parseInt(manualBgColor.slice(5, 7), 16);
+            document.documentElement.style.setProperty('--manual-bg-color', `${r}, ${g}, ${b}`);
             document.documentElement.style.setProperty('--manual-bg-intensity', `${manualBgIntensity / 100}`);
-
-            localStorage.setItem('manualBgColor', manualBgColor);
-            localStorage.setItem('manualBgIntensity', String(manualBgIntensity));
+            document.documentElement.style.setProperty('--manual-bg-size', 'cover');
+            document.documentElement.style.setProperty('--manual-bg-repeat', 'no-repeat');
         }
 
         // Apply Button Settings
         document.documentElement.style.setProperty('--manual-btn-bg', manualBtnColor);
-        localStorage.setItem('manualBtnColor', manualBtnColor);
         document.documentElement.style.setProperty('--manual-btn-text', manualBtnTextColor);
+
+        // Save to localStorage
+        localStorage.setItem('manualTextColor', manualTextColor);
+        localStorage.setItem('manualTextIntensity', manualTextIntensity.toString());
+        localStorage.setItem('manualIsGradient', isGradient.toString());
+        localStorage.setItem('manualBgColor', manualBgColor);
+        localStorage.setItem('manualBgIntensity', manualBgIntensity.toString());
+        localStorage.setItem('manualGradientDirection', gradientDirection);
+        localStorage.setItem('manualGradientStartColor', gradientStartColor);
+        localStorage.setItem('manualGradientEndColor', gradientEndColor);
+        localStorage.setItem('manualBtnColor', manualBtnColor);
         localStorage.setItem('manualBtnTextColor', manualBtnTextColor);
+        localStorage.setItem('manualBgImage', manualBgImage);
+        localStorage.setItem('manualBgSize', manualBgSize);
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setManualBgImage(base64String);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleResetManualTheme = () => {
@@ -204,6 +231,8 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         setManualBgIntensity(100);
         setManualBtnColor('#2563eb');
         setManualBtnTextColor('#ffffff');
+        setManualBgImage(''); // Reset image
+        setManualBgSize('cover');
         setGradientDirection('to bottom right');
         setGradientStartColor('#ffffff');
         setGradientEndColor('#3b82f6');
@@ -409,6 +438,15 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                             >
                                 Colors & Buttons
                             </button>
+                            <button
+                                onClick={() => setManualSubTab('image')}
+                                className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${manualSubTab === 'image'
+                                    ? 'theme-bg-card theme-text-primary shadow-sm'
+                                    : 'theme-text-secondary hover:bg-black/5'
+                                    }`}
+                            >
+                                Image
+                            </button>
                         </div>
 
                         {/* Text Section */}
@@ -594,6 +632,75 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                             colors={['#ffffff', '#000000', ...TEXT_COLORS.slice(2)]}
                                         />
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Image Section */}
+                        {manualSubTab === 'image' && (
+                            <div className="space-y-6 animate-fadeIn">
+                                <div className="space-y-4">
+                                    <label className="text-sm font-medium theme-text-primary">배경 이미지 (Background Image)</label>
+
+                                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6 transition-colors hover:border-blue-500 bg-gray-50/50">
+                                        {manualBgImage ? (
+                                            <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md group">
+                                                <img src={manualBgImage} alt="Background Preview" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <button
+                                                        onClick={() => setManualBgImage('')}
+                                                        className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label className="flex flex-col items-center cursor-pointer w-full h-full">
+                                                <ImageIcon className="w-10 h-10 text-gray-400 mb-2" />
+                                                <span className="text-sm text-gray-500 font-medium">이미지 업로드 (Click to Upload)</span>
+                                                <span className="text-xs text-gray-400 mt-1">Supported: PNG, JPG, GIF</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+
+                                    {manualBgImage && (
+                                        <div className="space-y-3 pt-2">
+                                            <p className="text-xs text-center theme-text-secondary">
+                                                이미지가 설정되면 그라데이션 및 단색 배경보다 우선 적용됩니다.
+                                            </p>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium theme-text-primary">배경 크기 (Background Size)</label>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => setManualBgSize('cover')}
+                                                        className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-all ${manualBgSize === 'cover'
+                                                            ? 'theme-bg-card theme-border border-blue-500 text-blue-500 ring-1 ring-blue-500'
+                                                            : 'theme-bg-card-secondary border-transparent theme-text-secondary hover:bg-black/5'
+                                                            }`}
+                                                    >
+                                                        화면 채우기 (Cover)
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setManualBgSize('repeat')}
+                                                        className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-all ${manualBgSize === 'repeat'
+                                                            ? 'theme-bg-card theme-border border-blue-500 text-blue-500 ring-1 ring-blue-500'
+                                                            : 'theme-bg-card-secondary border-transparent theme-text-secondary hover:bg-black/5'
+                                                            }`}
+                                                    >
+                                                        반복 (Repeat)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

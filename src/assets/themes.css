@@ -111,6 +111,20 @@
     --btn-bg: var(--manual-btn-bg, #2563eb);
     --btn-text: var(--manual-btn-text, #ffffff);
     --btn-hover: var(--manual-btn-bg, #1d4ed8);
+
+    --bg-size: var(--manual-bg-size, cover);
+    --bg-repeat: var(--manual-bg-repeat, no-repeat);
+}
+
+body {
+    background: var(--bg-gradient, #f9fafb);
+    background-color: var(--bg-solid, #f9fafb);
+    background-size: var(--bg-size, cover);
+    background-repeat: var(--bg-repeat, no-repeat);
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    transition: background 0.3s ease;
 }
 
 /* =========================================
