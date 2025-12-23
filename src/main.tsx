@@ -88,6 +88,12 @@ if (savedIsGradient && savedGradientDirection && savedGradientStartColor && save
   document.documentElement.style.setProperty('--manual-gradient', 'none');
 }
 
+// Initialize manual button color
+const savedManualBtnColor = localStorage.getItem('manualBtnColor');
+if (savedManualBtnColor) {
+  document.documentElement.style.setProperty('--manual-btn-bg', savedManualBtnColor);
+}
+
 const RootRedirector = () => {
   const defaultPage = localStorage.getItem('defaultPage') || '/home';
   return <Navigate to={defaultPage} replace />;

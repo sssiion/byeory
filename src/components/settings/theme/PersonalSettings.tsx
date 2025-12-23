@@ -53,6 +53,34 @@ const BG_COLORS = [
     '#fefce8', '#fff7ed', '#fef2f2', '#faf5ff'
 ];
 
+const ColorPicker = ({ label, color, onChange, colors }: { label: string, color: string, onChange: (c: string) => void, colors: string[] }) => (
+    <div className="space-y-3">
+        <label className="text-sm font-medium theme-text-primary">{label}</label>
+        <div className="flex flex-wrap gap-3 p-2">
+            {colors.map((c) => (
+                <button
+                    key={c}
+                    onClick={() => onChange(c)}
+                    className={`
+                        w-10 h-10 rounded-full shadow-sm transition-transform hover:scale-110 focus:outline-none border border-gray-200
+                        ${color === c ? 'ring-2 ring-offset-2 ring-gray-400' : ''}
+                    `}
+                    style={{ backgroundColor: c }}
+                />
+            ))}
+            <div className="relative w-10 h-10 rounded-full overflow-hidden shadow-sm transition-transform hover:scale-110 cursor-pointer ring-1 ring-gray-200">
+                <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 border-0 cursor-pointer"
+                />
+                <Palette className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            </div>
+        </div>
+    </div>
+);
+
 export default function PersonalSettings({ onBack, onClose, currentTheme, onThemeChange }: PersonalSettingsProps) {
     const [activeTab, setActiveTab] = useState<Tab>('font');
     const [manualSubTab, setManualSubTab] = useState<ManualSubTab>('text');
@@ -71,6 +99,9 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
     const [isGradient, setIsGradient] = useState(() => localStorage.getItem('manualIsGradient') === 'true');
     const [manualBgColor, setManualBgColor] = useState(() => localStorage.getItem('manualBgColor') || '#ffffff'); // Solid Base
     const [manualBgIntensity, setManualBgIntensity] = useState(() => parseInt(localStorage.getItem('manualBgIntensity') || '100')); // Solid Intensity
+
+    // Manual Theme State - Button
+    const [manualBtnColor, setManualBtnColor] = useState(() => localStorage.getItem('manualBtnColor') || '#2563eb');
 
     // Gradient State
     const [gradientDirection, setGradientDirection] = useState(() => localStorage.getItem('manualGradientDirection') || 'to bottom right');
@@ -156,6 +187,10 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
             localStorage.setItem('manualBgColor', manualBgColor);
             localStorage.setItem('manualBgIntensity', String(manualBgIntensity));
         }
+
+        // Apply Button Settings
+        document.documentElement.style.setProperty('--manual-btn-bg', manualBtnColor);
+        localStorage.setItem('manualBtnColor', manualBtnColor);
     };
 
     const handleResetManualTheme = () => {
@@ -164,38 +199,13 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         setIsGradient(false);
         setManualBgColor('#ffffff');
         setManualBgIntensity(100);
+        setManualBtnColor('#2563eb');
         setGradientDirection('to bottom right');
         setGradientStartColor('#ffffff');
         setGradientEndColor('#3b82f6');
     };
 
-    const ColorPicker = ({ label, color, onChange, colors }: { label: string, color: string, onChange: (c: string) => void, colors: string[] }) => (
-        <div className="space-y-3">
-            <label className="text-sm font-medium theme-text-primary">{label}</label>
-            <div className="flex flex-wrap gap-3 p-2">
-                {colors.map((c) => (
-                    <button
-                        key={c}
-                        onClick={() => onChange(c)}
-                        className={`
-                            w-10 h-10 rounded-full shadow-sm transition-transform hover:scale-110 focus:outline-none border border-gray-200
-                            ${color === c ? 'ring-2 ring-offset-2 ring-gray-400' : ''}
-                        `}
-                        style={{ backgroundColor: c }}
-                    />
-                ))}
-                <div className="relative w-10 h-10 rounded-full overflow-hidden shadow-sm transition-transform hover:scale-110 cursor-pointer ring-1 ring-gray-200">
-                    <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => onChange(e.target.value)}
-                        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 border-0 cursor-pointer"
-                    />
-                    <Palette className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                </div>
-            </div>
-        </div>
-    );
+
 
     return (
         <div className="flex flex-col h-full">
@@ -256,10 +266,8 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                         {/* Preview Box */}
                         <div className="relative theme-bg-card-secondary rounded-xl p-8 min-h-[120px] flex flex-col justify-center transition-all duration-200"
                             style={{ fontFamily: fontFamily, fontSize: `${fontSize}px` }}>
-
                             <p className="theme-text-primary font-bold mb-2">다람쥐 헌 쳇바퀴에 타고파</p>
                             <p className="theme-text-secondary">The quick brown fox jumps over the lazy dog.</p>
-
                             {/* "미리보기" Label Positioned Bottom Right inside the box */}
                             <span className="absolute bottom-3 right-4 text-xs theme-text-secondary opacity-60 font-sans">
                                 미리보기
@@ -395,7 +403,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                     : 'theme-text-secondary hover:bg-black/5'
                                     }`}
                             >
-                                Colors
+                                Colors & Buttons
                             </button>
                         </div>
 
@@ -444,12 +452,12 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                             </div>
                         )}
 
-                        {/* Colors Section (Background) */}
+                        {/* Colors Section (Background & Buttons) */}
                         {manualSubTab === 'colors' && (
                             <div className="space-y-6">
                                 {/* Preview Box */}
                                 <div
-                                    className="relative rounded-xl p-8 min-h-[120px] flex flex-col justify-center transition-all duration-200 shadow-inner"
+                                    className="relative rounded-xl p-8 min-h-[120px] flex flex-col justify-between transition-all duration-200 shadow-inner"
                                     style={{
                                         background: isGradient
                                             ? `linear-gradient(${gradientDirection}, ${gradientStartColor}, ${gradientEndColor})`
@@ -457,8 +465,20 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                         borderColor: isGradient ? gradientEndColor : manualBgColor
                                     }}
                                 >
-                                    <p className="font-bold mb-2 theme-text-primary">다람쥐 헌 쳇바퀴에 타고파</p>
-                                    <p className="theme-text-secondary">The quick brown fox jumps over the lazy dog.</p>
+                                    <div>
+                                        <p className="font-bold mb-2 theme-text-primary">다람쥐 헌 쳇바퀴에 타고파</p>
+                                        <p className="theme-text-secondary">The quick brown fox jumps over the lazy dog.</p>
+                                    </div>
+
+                                    <div className="flex gap-2 mt-4">
+                                        <button
+                                            className="px-4 py-2 rounded-lg text-white font-medium text-sm"
+                                            style={{ backgroundColor: manualBtnColor }}
+                                        >
+                                            Button
+                                        </button>
+                                    </div>
+
                                     <span className="absolute bottom-3 right-4 text-xs theme-text-secondary opacity-60 font-sans">
                                         미리보기
                                     </span>
@@ -550,6 +570,15 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                         />
                                     </>
                                 )}
+
+                                <div className="border-t theme-border pt-4">
+                                    <ColorPicker
+                                        label="버튼 색상 (Button Color)"
+                                        color={manualBtnColor}
+                                        onChange={setManualBtnColor}
+                                        colors={TEXT_COLORS} // Reusing bright colors
+                                    />
+                                </div>
                             </div>
                         )}
 
