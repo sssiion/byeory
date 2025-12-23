@@ -1,6 +1,8 @@
-import React, { useRef, useState } from 'react';
-import { useDrag } from 'react-dnd';
+import React, { useRef, useState, useEffect } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
+import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Maximize2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { type WidgetInstance, WIDGET_REGISTRY } from './Registry';
 
 interface DraggableWidgetProps {
@@ -8,6 +10,9 @@ interface DraggableWidgetProps {
     isEditMode: boolean;
     removeWidget: (id: string) => void;
     updateLayout: (id: string, layout: Partial<WidgetInstance['layout']>) => void;
+    onDragEnd?: () => void;
+    onHover: (x: number, y: number, item: any) => void;
+    onDrop: (x: number, y: number, item: any) => void;
 }
 
 const ItemTypes = {
@@ -18,24 +23,48 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     widget,
     isEditMode,
     removeWidget,
-    updateLayout
+    updateLayout,
+    onDragEnd,
+    onHover,
+    onDrop
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
 
-    const [{ isDragging }, drag] = useDrag({
+    const [{ isDragging }, drag, preview] = useDrag({
         type: ItemTypes.WIDGET,
         item: () => {
-            return { id: widget.id, type: widget.type, layout: widget.layout };
+            return { id: widget.id, type: widget.type, layout: widget.layout, props: widget.props };
         },
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
         }),
+        end: () => {
+            if (onDragEnd) onDragEnd();
+        },
         canDrag: isEditMode,
     });
 
+    const [, drop] = useDrop({
+        accept: ItemTypes.WIDGET,
+        hover: (item: any) => {
+            if (isEditMode && onHover) {
+                onHover(widget.layout.x, widget.layout.y, item);
+            }
+        },
+        drop: (item: any) => {
+            if (isEditMode && onDrop) {
+                onDrop(widget.layout.x, widget.layout.y, item);
+            }
+        },
+    });
+
+    useEffect(() => {
+        preview(getEmptyImage(), { captureDraggingState: true });
+    }, [preview]);
+
     if (isEditMode) {
-        drag(ref);
+        drag(drop(ref));
     }
 
     const registryItem = WIDGET_REGISTRY[widget.type];
@@ -46,17 +75,20 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     const isTransparent = widget.type === 'transparent';
 
     return (
-        <div
+        <motion.div
+            layout
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             ref={ref}
-            className={`relative group rounded-2xl transition-all duration-200 overflow-hidden 
+            className={`relative group rounded-2xl transition-colors duration-200 overflow-hidden 
                 ${isTransparent
                     ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
                     : 'bg-white shadow-sm hover:shadow-md'} 
-                ${isEditMode ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}`}
+                ${isEditMode ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
+                ${isDragging ? 'pointer-events-none' : ''}`}
             style={{
                 gridColumn: `${x} / span ${w}`,
                 gridRow: `${y} / span ${h}`,
-                opacity: isDragging ? 0.5 : 1,
+                opacity: isDragging ? 0 : 1, // Hide original when dragging
                 zIndex: isDragging ? 50 : 1,
             }}
         >
@@ -108,6 +140,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     </button>
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 };
