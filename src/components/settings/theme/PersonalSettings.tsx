@@ -640,12 +640,21 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                         {manualSubTab === 'image' && (
                             <div className="space-y-6 animate-fadeIn">
                                 <div className="space-y-4">
-                                    <label className="text-sm font-medium theme-text-primary">배경 이미지 (Background Image)</label>
+                                    <label className="text-sm font-medium theme-text-primary block mb-4">배경 이미지 (Background Image)</label>
 
-                                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6 transition-colors hover:border-blue-500 bg-gray-50/50">
+                                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6 transition-colors hover:border-blue-500 bg-gray-50/50 mb-4">
                                         {manualBgImage ? (
-                                            <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md group">
-                                                <img src={manualBgImage} alt="Background Preview" className="w-full h-full object-cover" />
+                                            <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md group bg-gray-100 border border-gray-200">
+                                                {/* Live Preview Area */}
+                                                <div
+                                                    className="w-full h-full transition-all duration-300"
+                                                    style={{
+                                                        backgroundImage: `url(${manualBgImage})`,
+                                                        backgroundSize: manualBgSize === 'repeat' ? 'auto' : 'cover',
+                                                        backgroundRepeat: manualBgSize === 'repeat' ? 'repeat' : 'no-repeat',
+                                                        backgroundPosition: 'center'
+                                                    }}
+                                                />
                                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                     <button
                                                         onClick={() => setManualBgImage('')}
@@ -671,18 +680,18 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                     </div>
 
                                     {manualBgImage && (
-                                        <div className="space-y-3 pt-2">
-                                            <p className="text-xs text-center theme-text-secondary">
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-center theme-text-secondary mb-4">
                                                 이미지가 설정되면 그라데이션 및 단색 배경보다 우선 적용됩니다.
                                             </p>
 
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium theme-text-primary">배경 크기 (Background Size)</label>
-                                                <div className="flex gap-2">
+                                            <div className="space-y-3">
+                                                <label className="text-sm font-medium theme-text-primary block mb-4">배경 크기 (Background Size)</label>
+                                                <div className="flex gap-4 px-2">
                                                     <button
                                                         onClick={() => setManualBgSize('cover')}
-                                                        className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-all ${manualBgSize === 'cover'
-                                                            ? 'theme-bg-card theme-border border-blue-500 text-blue-500 ring-1 ring-blue-500'
+                                                        className={`flex-1 py-3 text-sm font-medium rounded-xl border transition-all ${manualBgSize === 'cover'
+                                                            ? 'theme-bg-card theme-border border-blue-500 text-blue-500 ring-2 ring-blue-500 ring-offset-2'
                                                             : 'theme-bg-card-secondary border-transparent theme-text-secondary hover:bg-black/5'
                                                             }`}
                                                     >
@@ -690,8 +699,8 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                                     </button>
                                                     <button
                                                         onClick={() => setManualBgSize('repeat')}
-                                                        className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-all ${manualBgSize === 'repeat'
-                                                            ? 'theme-bg-card theme-border border-blue-500 text-blue-500 ring-1 ring-blue-500'
+                                                        className={`flex-1 py-3 text-sm font-medium rounded-xl border transition-all ${manualBgSize === 'repeat'
+                                                            ? 'theme-bg-card theme-border border-blue-500 text-blue-500 ring-2 ring-blue-500 ring-offset-2'
                                                             : 'theme-bg-card-secondary border-transparent theme-text-secondary hover:bg-black/5'
                                                             }`}
                                                     >
