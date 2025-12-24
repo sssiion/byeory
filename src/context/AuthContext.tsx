@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface AuthContextType {
     isLoggedIn: boolean;
     login: (email: string) => void;
+    socialLogin: (token: string) => Promise<boolean>;
     logout: () => void;
     user: { email: string } | null;
 }
@@ -22,12 +23,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, []);
 
+
     const login = (email: string) => {
         setIsLoggedIn(true);
         setUser({ email });
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userEmail', email);
     };
+
+    const socialLogin = async (token: string) => {
+        try {
+            // Helper to decode JWT payload safely
+            const parseJwt = (token: string) => {
+                try {
+                    return JSON.parse(atob(token.split('.')[1]));
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            const payload = parseJwt(token);
+            if (!payload) throw new Error("Invalid token");
+
+            const loginData = {
+                email: payload.email,
+                provider: "GOOGLE",
+                providerId: payload.sub
+            };
+
+            const response = await fetch('http://localhost:8080/auth/social-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loginData),
+            });
+
+            const data = await response.json();
+
+            if (data.accessToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                // Use the existing login logic to update state
+                login(payload.email);
+                return true;
+            } else {
+                console.error("Login failed: No access token received");
+                return false;
+            }
+        } catch (error) {
+            console.error("Social login error:", error);
+            return false;
+        }
+    };
+
 
     const logout = () => {
         setIsLoggedIn(false);
@@ -37,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, login, logout, user }}>
+        <AuthContext.Provider value={{ isLoggedIn, login, socialLogin, logout, user }}>
             {children}
         </AuthContext.Provider>
     );
