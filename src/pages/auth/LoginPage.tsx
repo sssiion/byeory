@@ -6,17 +6,19 @@ import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 
 function LoginPage() {
     const navigate = useNavigate();
-    const { login, socialLogin } = useAuth();
+    const { socialLogin, localLogin } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         // A simple fake login using the entered email
         if (email && password) {
-            login(email);
-            navigate('/');
+            const success = await localLogin(email, password);
+            if (success) {
+                navigate('/');
+            }
         }
     };
 

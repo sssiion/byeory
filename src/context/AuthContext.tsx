@@ -2,8 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
     isLoggedIn: boolean;
-    login: (email: string) => void;
     socialLogin: (token: string) => Promise<boolean>;
+    localLogin: (email: string, password: string) => Promise<boolean>;
+    signup: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
     user: { email: string } | null;
 }
@@ -24,7 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
 
-    const login = (email: string) => {
+    const setLoginState = (email: string) => {
         setIsLoggedIn(true);
         setUser({ email });
         localStorage.setItem('isLoggedIn', 'true');
@@ -64,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
                 // Use the existing login logic to update state
-                login(payload.email);
+                setLoginState(payload.email);
                 return true;
             } else {
                 console.error("Login failed: No access token received");
@@ -72,6 +73,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         } catch (error) {
             console.error("Social login error:", error);
+            return false;
+        }
+    };
+
+    const localLogin = async (email: string, password: string): Promise<boolean> => {
+        try {
+            const response = await fetch('http://localhost:8080/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.accessToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                setLoginState(email);
+                return true;
+            } else {
+                alert("로그인 실패: " + (data.message || "이메일 또는 비밀번호를 확인하세요."));
+                return false;
+            }
+        } catch (error) {
+            console.error("Local login error:", error);
+            alert("로그인 중 오류가 발생했습니다.");
+            return false;
+        }
+    };
+
+    const signup = async (email: string, password: string): Promise<boolean> => {
+        try {
+            const joinData = {
+                email,
+                password,
+                provider: "LOCAL"
+            };
+
+            const response = await fetch('http://localhost:8080/auth/join', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(joinData),
+            });
+
+            if (response.ok) {
+                return true;
+            } else {
+                const data = await response.json().catch(() => ({}));
+                alert("회원가입 실패: " + (data.message || "다시 시도해주세요."));
+                return false;
+            }
+
+        } catch (error) {
+            console.error("Signup error:", error);
+            alert("회원가입 중 오류가 발생했습니다.");
             return false;
         }
     };
@@ -85,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, login, socialLogin, logout, user }}>
+        <AuthContext.Provider value={{ isLoggedIn, socialLogin, localLogin, signup, logout, user }}>
             {children}
         </AuthContext.Provider>
     );

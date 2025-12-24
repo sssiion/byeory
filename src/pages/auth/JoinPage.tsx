@@ -6,7 +6,7 @@ import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 
 function JoinPage() {
     const navigate = useNavigate();
-    const { socialLogin } = useAuth();
+    const { socialLogin, signup } = useAuth();
     const [email, setEmail] = useState('');
     const [nickname, setNickname] = useState('');
     const [password, setPassword] = useState('');
@@ -14,15 +14,20 @@ function JoinPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
-    const handleJoin = (e: React.FormEvent) => {
+    const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
         // Here you would typically handle the registration logic
         if (password !== passwordConfirm) {
             alert('비밀번호가 일치하지 않습니다.');
             return;
         }
-        console.log('Join attempt with:', { email, nickname, password });
-        navigate('/login');
+
+        const success = await signup(email, password);
+        if (success) {
+            alert("회원가입이 완료되었습니다."); // Or rely on the alert in AuthContext, but double doesn't hurt or just one. AuthContext alert is "signup failed" usually, I should check AuthContext. 
+            // Actually AuthContext returns boolean, and shows alert on failure.
+            navigate('/login');
+        }
     };
 
     return (
