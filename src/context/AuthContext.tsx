@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
     isLoggedIn: boolean;
-    socialLogin: (token: string) => Promise<boolean>;
+    socialLogin: (tokenOrData: string | { email: string, providerId: string }) => Promise<boolean>;
     localLogin: (email: string, password: string) => Promise<boolean>;
     signup: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
@@ -46,15 +46,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser({ email });
     };
 
-    const socialLogin = async (token: string) => {
+    const socialLogin = async (tokenOrData: string | { email: string, providerId: string }) => {
         try {
-            const payload = parseJwt(token);
-            if (!payload) throw new Error("Invalid token");
+            let email, providerId;
+
+            if (typeof tokenOrData === 'string') {
+                const payload = parseJwt(tokenOrData);
+                if (!payload) throw new Error("Invalid token");
+                email = payload.email;
+                providerId = payload.sub;
+            } else {
+                email = tokenOrData.email;
+                providerId = tokenOrData.providerId;
+            }
 
             const loginData = {
-                email: payload.email,
+                email,
                 provider: "GOOGLE",
-                providerId: payload.sub
+                providerId
             };
 
             const response = await fetch('http://localhost:8080/auth/social-login', {
@@ -70,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
                 // Use the existing login logic to update state
-                setLoginState(payload.email);
+                setLoginState(email);
                 return true;
             } else {
                 console.error("Login failed: No access token received");
@@ -127,6 +136,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (response.ok) {
                 return true;
+            } else if (response.status === 409) {
+                alert("이미 존재하는 계정입니다.");
+                return false;
             } else {
                 const data = await response.json().catch(() => ({}));
                 alert("회원가입 실패: " + (data.message || "다시 시도해주세요."));

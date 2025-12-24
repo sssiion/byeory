@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 interface GoogleLoginButtonProps {
-    onSuccess: (credential: string) => void;
+    onSuccess: (data: string | { email: string, providerId: string }) => void;
     onError?: () => void;
 }
 
@@ -12,47 +12,48 @@ declare global {
 }
 
 const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onSuccess, onError }) => {
-    const containerRef = React.useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const handleCredentialResponse = (response: any) => {
-            if (response.credential) {
-                onSuccess(response.credential);
-            } else {
-                if (onError) onError();
-            }
-        };
-
-        const initializeGoogleSignIn = () => {
-            if (window.google && window.google.accounts && containerRef.current) {
-                window.google.accounts.id.initialize({
-                    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-                    callback: handleCredentialResponse
-                });
-
-                const width = containerRef.current.offsetWidth;
-
-                window.google.accounts.id.renderButton(
-                    containerRef.current,
-                    { theme: "outline", size: "large", width: width }
-                );
-                return true;
-            }
-            return false;
-        };
-
-        if (!initializeGoogleSignIn()) {
-            const timer = setInterval(() => {
-                if (initializeGoogleSignIn()) {
-                    clearInterval(timer);
-                }
-            }, 100);
-
-            return () => clearInterval(timer);
+    const handleGoogleLogin = () => {
+        if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+            console.error("Google script not loaded");
+            if (onError) onError();
+            return;
         }
-    }, [onSuccess, onError]);
 
-    return <div id="googleSignInDiv" ref={containerRef} style={{ width: '100%' }}></div>;
+        const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            scope: 'email profile',
+            callback: async (tokenResponse: any) => {
+                if (tokenResponse.access_token) {
+                    try {
+                        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                        });
+                        const userInfo = await userInfoResponse.json();
+                        onSuccess({ email: userInfo.email, providerId: userInfo.sub });
+                    } catch (error) {
+                        console.error("Failed to fetch user info", error);
+                        if (onError) onError();
+                    }
+                } else {
+                    if (onError) onError();
+                }
+            },
+        });
+
+        client.requestAccessToken();
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full h-12 rounded-lg border theme-border theme-bg-card theme-text-primary flex items-center justify-center gap-2 transition-all hover:brightness-95 hover:shadow-md active:scale-[0.98]"
+        >
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+            <span className="font-medium">Google로 계속하기</span>
+        </button>
+    );
 };
 
 export default GoogleLoginButton;
