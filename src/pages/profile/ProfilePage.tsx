@@ -32,7 +32,7 @@ function ProfilePage() {
             <main className="pt-16 md:pt-20 px-4 animate-fade-in">
                 <div className="max-w-4xl mx-auto space-y-6">
                     {/* Header Profile Section */}
-                    <div className="rounded-2xl p-6 shadow-lg text-white" style={{ backgroundColor: 'var(--btn-bg)' }}>
+                    <div className="rounded-2xl p-6 shadow-lg text-[var(--btn-text)]" style={{ backgroundColor: 'var(--btn-bg)' }}>
                         <div className="flex items-center gap-4">
                             <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden">
                                 {false ? ( // TODO: Add profile photo to user context
