@@ -11,6 +11,7 @@ interface Props {
     onSelect: () => void;
     readOnly: boolean;
     dragHandleProps?: any;
+
 }
 
 const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUpload, onSwapLayout, isSelected, onSelect, readOnly, dragHandleProps }) => {

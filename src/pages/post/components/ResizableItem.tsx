@@ -123,7 +123,7 @@ const ResizableItem: React.FC<Props> = ({
 
     return (
         <div
-            className={`absolute select-none group ${isSelected ? 'z-50' : ''}`}
+            className={`absolute select-none group `}
             style={{
                 left: `${x}px`,
                 top: `${y}px`,

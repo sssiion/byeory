@@ -1,5 +1,17 @@
 import React from 'react';
-import { Sliders, Type, AlignLeft, AlignCenter, AlignRight, Trash2, Palette } from 'lucide-react';
+import {
+    Trash2,
+    Type,
+    Palette,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    // 👇 레이어 관련 아이콘 추가
+    BringToFront,
+    SendToBack,
+    ArrowUp,
+    ArrowDown, Sliders
+} from 'lucide-react';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../types';
 
 interface Props {
@@ -12,6 +24,22 @@ interface Props {
 
 const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete }) => {
     const itemType = (currentItem as any)?.type;
+    // 현재 z-index 가져오기 (기본값 1)
+    // 타입 가드: block이 아닌 경우에만 styles 속성이 있다고 가정 (또는 block 제외 로직)
+    const currentZIndex = (currentItem as any).zIndex || 1;
+
+    // z-index 변경 핸들러
+    const handleZIndexChange = (change: number) => {
+        const newZIndex = Math.max(1, currentZIndex + change); // 최소 1 이상
+
+        // 기존 styles 객체를 유지하면서 zIndex만 업데이트
+        const currentStyles = (currentItem as any).styles || {};
+        onUpdate(selectedId, selectedType, { zIndex: newZIndex });onUpdate(selectedId, selectedType, { zIndex: newZIndex });
+    };
+    // "맨 앞으로/맨 뒤로" 같은 극단적인 이동이 필요하다면 아래처럼 큰 숫자를 쓸 수도 있습니다.
+    // const setLayer = (mode: 'front' | 'back') => ...
+
+
 
     const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floating');
     const isImageItem = (selectedType === 'block' && itemType !== 'paragraph') || selectedType === 'sticker' || selectedType === 'floatingImage';
@@ -36,6 +64,25 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
             <div className="flex items-center gap-2 text-sm font-bold text-gray-500 border-r pr-4">
                 <Sliders size={16} className="text-indigo-600" />
                 <span>설정</span>
+            </div>
+            {/* 1. 레이어(Z-Index) 조절 섹션 */}
+            <div className="flex items-center gap-1 border-r pr-4 mr-2 border-gray-200">
+                <span className="text-xs text-gray-400 font-bold mr-1">순서</span>
+                <button
+                    onClick={() => handleZIndexChange(-1)}
+                    className="p-2 hover:bg-gray-100 rounded-full text-gray-600 tooltip-trigger"
+                    title="뒤로 보내기"
+                >
+                    <SendToBack size={18} />
+                </button>
+                <span className="text-xs font-mono w-4 text-center">{currentZIndex}</span>
+                <button
+                    onClick={() => handleZIndexChange(1)}
+                    className="p-2 hover:bg-gray-100 rounded-full text-gray-600"
+                    title="앞으로 가져오기"
+                >
+                    <BringToFront size={18} />
+                </button>
             </div>
 
             {isTextItem && (
