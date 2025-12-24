@@ -99,6 +99,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
     const [isGradient, setIsGradient] = useState(() => localStorage.getItem('manualIsGradient') === 'true');
     const [manualBgColor, setManualBgColor] = useState(() => localStorage.getItem('manualBgColor') || '#ffffff'); // Solid Base
     const [manualBgIntensity, setManualBgIntensity] = useState(() => parseInt(localStorage.getItem('manualBgIntensity') || '100')); // Solid Intensity
+    const [manualCardColor, setManualCardColor] = useState(() => localStorage.getItem('manualCardColor') || '#ffffff'); // Card Color
     const [manualBgImage, setManualBgImage] = useState(() => localStorage.getItem('manualBgImage') || '');
     const [manualBgSize, setManualBgSize] = useState(() => localStorage.getItem('manualBgSize') || 'cover'); // 'cover' or 'repeat'
 
@@ -192,6 +193,13 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
             document.documentElement.style.setProperty('--manual-bg-repeat', 'no-repeat');
         }
 
+        // Apply Card Settings
+        const cr = parseInt(manualCardColor.slice(1, 3), 16);
+        const cg = parseInt(manualCardColor.slice(3, 5), 16);
+        const cb = parseInt(manualCardColor.slice(5, 7), 16);
+        document.documentElement.style.setProperty('--manual-card-color', `${cr}, ${cg}, ${cb}`);
+        localStorage.setItem('manualCardColor', manualCardColor);
+
         // Apply Button Settings
         document.documentElement.style.setProperty('--manual-btn-bg', manualBtnColor);
         document.documentElement.style.setProperty('--manual-btn-text', manualBtnTextColor);
@@ -244,6 +252,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         setIsGradient(false);
         setManualBgColor('#ffffff');
         setManualBgIntensity(100);
+        setManualCardColor('#ffffff');
         setManualBtnColor('#2563eb');
         setManualBtnTextColor('#ffffff');
         setManualBgImage(''); // Reset image
@@ -630,6 +639,15 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                         />
                                     </>
                                 )}
+
+                                <div className="border-t theme-border pt-4">
+                                    <ColorPicker
+                                        label="카드/모달 색상 (Card Color)"
+                                        color={manualCardColor}
+                                        onChange={setManualCardColor}
+                                        colors={BG_COLORS}
+                                    />
+                                </div>
 
                                 <div className="border-t theme-border pt-4">
                                     <ColorPicker

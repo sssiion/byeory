@@ -378,7 +378,7 @@ const MainPage: React.FC = () => {
                                                 onClick={() => {
                                                     setIsWidgetEditMode(false);
                                                 }}
-                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-white shadow-md transition-colors"
+                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] shadow-md transition-colors"
                                             >
                                                 Save
                                             </button>
@@ -400,7 +400,7 @@ const MainPage: React.FC = () => {
 
                                             <button
                                                 onClick={() => setIsCatalogOpen(true)}
-                                                className="h-10 px-4 w-20 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                className="h-10 px-4 w-20 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <Plus size={18} /> Add
                                             </button>
