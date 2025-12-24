@@ -134,7 +134,7 @@ function JoinPage() {
                         </div>
 
                         {/* Submit Button */}
-                        <button type="submit" className="theme-btn w-full rounded-lg py-3 font-semibold shadow-lg">
+                        <button type="submit" className="theme-btn w-full rounded-lg h-12 font-semibold shadow-lg">
                             회원가입
                         </button>
                     </form>
@@ -147,7 +147,7 @@ function JoinPage() {
                     </div>
 
                     {/* Social Login Buttons */}
-                    <div className="space-y-3 border rounded-lg p-1">
+                    <div className="space-y-3">
                         <GoogleLoginButton
                             onSuccess={async (credential) => {
                                 const success = await socialLogin(credential);
@@ -162,7 +162,7 @@ function JoinPage() {
                     </div>
 
                     {/* Back to Login Link */}
-                    <p className="theme-text-secondary mt-6 text-center text-sm">
+                    <p className="theme-text-secondary mt-6 text-center text-sm w-full flex justify-center gap-2">
                         이미 계정이 있으신가요?{' '}
                         <Link to="/login" className="theme-text-primary font-medium hover:underline transition-colors">
                             로그인

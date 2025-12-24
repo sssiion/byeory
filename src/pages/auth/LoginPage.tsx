@@ -13,7 +13,7 @@ function LoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // A simple fake login using the entered email
+        // Login using the entered email
         if (email && password) {
             const success = await localLogin(email, password);
             if (success) {
@@ -92,7 +92,7 @@ function LoginPage() {
                         </div>
 
                         {/* Submit Button */}
-                        <button type="submit" className="theme-btn w-full rounded-lg py-3 font-semibold shadow-lg">
+                        <button type="submit" className="theme-btn w-full rounded-lg h-12 font-semibold shadow-lg">
                             로그인
                         </button>
                     </form>
@@ -105,7 +105,7 @@ function LoginPage() {
                     </div>
 
                     {/* Social Login Buttons */}
-                    <div className="space-y-3 border rounded-lg p-1">
+                    <div className="space-y-3">
                         <GoogleLoginButton
                             onSuccess={async (credential) => {
                                 const success = await socialLogin(credential);
@@ -120,7 +120,7 @@ function LoginPage() {
                     </div>
 
                     {/* Sign Up Link */}
-                    <p className="theme-text-secondary mt-6 text-center text-sm">
+                    <p className="theme-text-secondary mt-6 text-center text-sm w-full flex justify-center gap-2">
                         계정이 없으신가요?{' '}
                         <Link to="/join" className="theme-text-primary font-medium hover:underline transition-colors">
                             회원가입

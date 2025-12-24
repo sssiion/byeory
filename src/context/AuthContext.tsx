@@ -15,34 +15,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<{ email: string } | null>(null);
 
-    useEffect(() => {
-        const storedLogin = localStorage.getItem('isLoggedIn');
-        const storedEmail = localStorage.getItem('userEmail');
-        if (storedLogin === 'true') {
-            setIsLoggedIn(true);
-            setUser({ email: storedEmail || '' });
+    const parseJwt = (token: string) => {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+            return null;
         }
+    };
+
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            const payload = parseJwt(token);
+            if (payload) {
+                setIsLoggedIn(true);
+                setUser({ email: payload.email });
+            } else {
+                localStorage.removeItem('accessToken');
+            }
+        }
+
+        // Clean up legacy storage if it exists
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userEmail');
     }, []);
 
 
     const setLoginState = (email: string) => {
         setIsLoggedIn(true);
         setUser({ email });
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userEmail', email);
     };
 
     const socialLogin = async (token: string) => {
         try {
-            // Helper to decode JWT payload safely
-            const parseJwt = (token: string) => {
-                try {
-                    return JSON.parse(atob(token.split('.')[1]));
-                } catch (e) {
-                    return null;
-                }
-            };
-
             const payload = parseJwt(token);
             if (!payload) throw new Error("Invalid token");
 
@@ -139,8 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = () => {
         setIsLoggedIn(false);
         setUser(null);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userEmail');
+        localStorage.removeItem('accessToken');
     };
 
     return (

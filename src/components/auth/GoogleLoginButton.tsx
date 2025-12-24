@@ -33,7 +33,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onSuccess, onErro
 
         window.google.accounts.id.renderButton(
             document.getElementById("googleSignInDiv"),
-            { theme: "outline", size: "large", width: "100%" } // Customize as needed
+            { theme: "outline", size: "large" }
         );
     }, [onSuccess, onError]);
 
