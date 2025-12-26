@@ -51,7 +51,9 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'stats': { component: Tools.StatsWidget, label: '통계', defaultSize: 'medium', category: 'Utility' },
     'battery': { component: Tools.BatteryWidget, label: '내 에너지', defaultSize: 'medium', category: 'Utility' },
     'worry-shredder': { component: Tools.WorryShredder, label: '근심 파쇄기', defaultSize: 'medium', category: 'Utility' },
-    'scrap-note': { component: Tools.ScrapNote, label: '찢어진 노트', defaultSize: 'medium', category: 'Utility' },
+    'unit-converter': { component: Tools.UnitConverter, label: '단위 변환기', defaultSize: 'medium', category: 'Utility' },
+    'calculator': { component: Tools.Calculator, label: '계산기', defaultSize: 'medium', category: 'Utility' },
+    'markdown-viewer': { component: Tools.MarkdownViewer, label: '마크다운 뷰어', defaultSize: 'medium', category: 'Utility' },
 
     // Decoration & Collection
     'photo-gallery': { component: Decoration.PhotoGallery, label: '사진 갤러리', defaultSize: 'medium', category: 'Decoration' },
