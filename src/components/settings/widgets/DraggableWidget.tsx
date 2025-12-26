@@ -94,7 +94,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         >
             {/* Widget Content */}
             <div className={`w-full h-full transition-transform overflow-hidden rounded-2xl ${isEditMode ? 'pointer-events-none' : ''}`}>
-                <WidgetComponent {...(widget.props || {})} gridSize={{ w, h }} />
+                <WidgetComponent
+                    {...(widget.props || {})}
+                    gridSize={{ w, h }}
+                    updateLayout={(layout: any) => updateLayout(widget.id, layout)}
+                    widgetId={widget.id}
+                />
             </div>
 
             {/* Edit Overlay */}
@@ -118,7 +123,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                     [1, 1], [2, 1], [3, 1],
                                     [1, 2], [2, 2], [3, 2],
                                     [2, 3], [3, 3], [4, 2]
-                                ].map(([cw, ch]) => (
+                                ].filter(([cw, ch]) => {
+                                    if (registryItem.minW && cw < registryItem.minW) return false;
+                                    if (registryItem.minH && ch < registryItem.minH) return false;
+                                    return true;
+                                }).map(([cw, ch]) => (
                                     <button
                                         key={`${cw}x${ch}`}
                                         onClick={() => { updateLayout(widget.id, { w: cw, h: ch }); setShowSizeMenu(false); }}

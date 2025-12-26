@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Delete, Eraser, Equal, Divide, X, Minus, Plus, Settings } from 'lucide-react';
 import { evaluate } from 'mathjs';
 
 interface CalculatorProps {
     mode?: 'basic' | 'scientific';
+    updateLayout?: (layout: { w?: number, h?: number }) => void;
+    widgetId?: string;
+    gridSize?: { w: number, h: number };
 }
-
 
 interface ScientificBtnProps {
     label: string;
@@ -23,7 +25,7 @@ const ScientificBtn = ({ label, fn, onClick }: ScientificBtnProps) => (
     </button>
 );
 
-export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
+export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize }: CalculatorProps) {
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
     const [isResult, setIsResult] = useState(false);
@@ -122,13 +124,23 @@ export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
                         <label className="text-xs theme-text-secondary font-bold mb-2 block">Calculator Mode</label>
                         <div className="flex gap-2 bg-black/5 p-1 rounded-lg">
                             <button
-                                onClick={() => setMode('basic')}
+                                onClick={() => {
+                                    setMode('basic');
+                                    if (updateLayout && gridSize && gridSize.h > 2) {
+                                        updateLayout({ h: 2 });
+                                    }
+                                }}
                                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mode === 'basic' ? 'bg-white shadow-sm theme-text-primary' : 'theme-text-secondary hover:theme-text-primary'}`}
                             >
                                 Basic
                             </button>
                             <button
-                                onClick={() => setMode('scientific')}
+                                onClick={() => {
+                                    setMode('scientific');
+                                    if (updateLayout && gridSize && gridSize.h < 3) {
+                                        updateLayout({ h: 3 });
+                                    }
+                                }}
                                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${mode === 'scientific' ? 'bg-white shadow-sm theme-text-primary' : 'theme-text-secondary hover:theme-text-primary'}`}
                             >
                                 Scientific
