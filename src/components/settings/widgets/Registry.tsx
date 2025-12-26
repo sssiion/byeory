@@ -4,6 +4,29 @@ import * as Tools from './WidgetCollection/tools';
 import * as Decoration from './WidgetCollection/decoration';
 import * as Interactive from './WidgetCollection/interactive';
 import * as System from './WidgetCollection/system';
+import { Biorhythm } from './WidgetCollection/tools/Biorhythm';
+import { SkyMap } from './WidgetCollection/decoration/SkyMap';
+import { ASMRMixer } from './WidgetCollection/interactive/ASMRMixer';
+import { ReceiptPrinter } from './WidgetCollection/decoration/ReceiptPrinter';
+import { MeditationTimer } from './WidgetCollection/tools/MeditationTimer';
+import { Mandalart } from './WidgetCollection/tools/Mandalart';
+import { Bonfire } from './WidgetCollection/interactive/Bonfire';
+import { LPPlayer } from './WidgetCollection/interactive/LPPlayer';
+import { OOTDSketch } from './WidgetCollection/decoration/OOTDSketch';
+import { BirthFlower } from './WidgetCollection/decoration/BirthFlower';
+import { WeatherStickers } from './WidgetCollection/decoration/WeatherStickers';
+
+import { Polaroid } from './WidgetCollection/tools/Polaroid';
+import { OceanWave } from './WidgetCollection/decoration/OceanWave';
+import { MovieTicket } from './WidgetCollection/decoration/MovieTicket';
+import { Bookshelf } from './WidgetCollection/decoration/Bookshelf';
+import { StampCollection } from './WidgetCollection/decoration/StampCollection';
+import { RecipeCard } from './WidgetCollection/tools/RecipeCard';
+import { Payphone } from './WidgetCollection/decoration/Payphone';
+import { Typewriter } from './WidgetCollection/tools/Typewriter';
+import { WorryDoll } from './WidgetCollection/tools/WorryDoll';
+import { ColorPalette } from './WidgetCollection/tools/ColorPalette';
+import { FandomCalendar } from './WidgetCollection/tools/FandomCalendar';
 
 export interface WidgetLayout {
     x: number;
@@ -52,18 +75,21 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'battery': { component: Tools.BatteryWidget, label: '내 에너지', defaultSize: 'medium', category: 'Utility' },
     'worry-shredder': { component: Tools.WorryShredder, label: '근심 파쇄기', defaultSize: 'medium', category: 'Utility' },
     'scrap-note': { component: Tools.ScrapNote, label: '찢어진 노트', defaultSize: 'medium', category: 'Utility' },
+    'biorhythm': { component: Biorhythm, label: '바이오리듬', defaultSize: 'medium', category: 'Utility' },
 
     // Decoration & Collection
     'photo-gallery': { component: Decoration.PhotoGallery, label: '사진 갤러리', defaultSize: 'medium', category: 'Decoration' },
-    'polaroid': { component: Decoration.Polaroid, label: '폴라로이드', defaultProps: { date: '2023.12.25', src: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400' }, defaultSize: 'small', category: 'Decoration' },
+
     'instant-booth': { component: Decoration.InstantBooth, label: '인생네컷', defaultProps: { date: '2023.12.25', images: ['https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400', 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400', 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400', 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400'] }, defaultSize: 'small', category: 'Decoration' },
     'film-strip': { component: Decoration.FilmStrip, label: '필름 스트립', defaultProps: { images: ['https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400', 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400'] }, defaultSize: 'wide', category: 'Decoration' },
 
     'community': { component: Interactive.CommunityWidget, label: '커뮤니티', defaultSize: 'medium', category: 'Decoration' },
     'moon-phase': { component: Decoration.MoonPhase, label: '달의 위상', defaultSize: 'small', category: 'Decoration' },
+    'sky-map': { component: SkyMap, label: '하늘 지도', defaultSize: 'medium', category: 'Decoration' },
+    'receipt-printer': { component: ReceiptPrinter, label: '영수증', defaultSize: 'medium', category: 'Decoration' },
     'switch-board': { component: Decoration.SwitchBoard, label: '스위치', defaultSize: 'small', category: 'Decoration' },
     'fortune-cookie': { component: Decoration.FortuneCookie, label: '포춘 쿠키', defaultSize: 'small', category: 'Decoration' },
-    'ootd': { component: Decoration.OOTDSketch, label: 'OOTD', defaultSize: 'small', category: 'Decoration' },
+    'ootd': { component: OOTDSketch, label: 'OOTD (데일리룩)', defaultSize: 'small', category: 'Decoration' },
     'book-cover': { component: Decoration.BookCover, label: '읽는 책', defaultSize: 'medium', category: 'Decoration' },
     'bubble-wrap': { component: Decoration.BubbleWrap, label: '뽁뽁이', defaultSize: 'small', category: 'Decoration' },
     'transparent': { component: Decoration.TransparentSpacer, label: '투명 (공백)', defaultSize: 'small', category: 'Decoration' },
@@ -83,7 +109,27 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'dessert-case': { component: Interactive.DessertCase, label: '간식 진열대', defaultSize: 'medium', category: 'Interactive' },
     'cat-chaser': { component: Interactive.CatChaser, label: '따라오는 고양이', defaultSize: 'medium', category: 'Interactive' },
     'snow-globe': { component: Interactive.SnowGlobe, label: '스노우볼', defaultSize: 'small', category: 'Interactive' },
-    'lp-player': { component: Interactive.LPPlayer, label: '턴테이블', defaultSize: 'medium', category: 'Interactive' },
+    'lp-player': { component: LPPlayer, label: '턴테이블', defaultSize: 'medium', category: 'Interactive' },
+    'asmr-mixer': { component: ASMRMixer, label: 'ASMR 믹서', defaultSize: 'medium', category: 'Interactive' },
+    'bonfire': { component: Bonfire, label: '모닥불', defaultSize: 'medium', category: 'Interactive' },
+
+    // Tools (New)
+    'meditation-timer': { component: MeditationTimer, label: '명상 타이머', defaultSize: 'medium', category: 'Utility' },
+    'mandalart': { component: Mandalart, label: '만다라트 계획표', defaultSize: 'medium', category: 'Utility' },
+    'birth-flower': { component: BirthFlower, label: '탄생화', defaultSize: 'medium', category: 'Decoration' },
+    'weather-stickers': { component: WeatherStickers, label: '날씨 스티커', defaultSize: 'small', category: 'Decoration' },
+
+    'polaroid': { component: Polaroid, label: '폴라로이드', defaultSize: 'medium', category: 'Tool' },
+    'ocean-wave': { component: OceanWave, label: '바다 (파도)', defaultSize: 'medium', category: 'Decoration' },
+    'movie-ticket': { component: MovieTicket, label: '영화 티켓', defaultSize: 'medium', category: 'Collection' },
+    'bookshelf': { component: Bookshelf, label: '책장', defaultSize: 'medium', category: 'Collection' },
+    'stamp-collection': { component: StampCollection, label: '우표 수집', defaultSize: 'medium', category: 'Collection' },
+    'recipe-card': { component: RecipeCard, label: '레시피 카드', defaultSize: 'medium', category: 'Utility' },
+    'payphone': { component: Payphone, label: '공중전화', defaultSize: 'medium', category: 'Interactive' },
+    'typewriter': { component: Typewriter, label: '타자기', defaultSize: 'wide', category: 'Tool' },
+    'worry-doll': { component: WorryDoll, label: '걱정 인형', defaultSize: 'medium', category: 'Utility' },
+    'color-palette': { component: ColorPalette, label: '컬러 팔레트', defaultSize: 'medium', category: 'Tool' },
+    'fandom-calendar': { component: FandomCalendar, label: '덕질 캘린더', defaultSize: 'medium', category: 'Utility' },
 };
 
 export type WidgetType = keyof typeof WIDGET_REGISTRY;

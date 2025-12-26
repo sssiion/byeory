@@ -94,7 +94,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         >
             {/* Widget Content */}
             <div className={`w-full h-full transition-transform overflow-hidden rounded-2xl ${isEditMode ? 'pointer-events-none' : ''}`}>
-                <WidgetComponent {...(widget.props || {})} />
+                <WidgetComponent {...(widget.props || {})} gridSize={{ w, h }} />
             </div>
 
             {/* Edit Overlay */}
