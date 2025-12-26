@@ -9,6 +9,8 @@ import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { clampWidget, resolveCollisions } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
+import {usePostEditor} from "./post/hooks/usePostEditor.ts";
+import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder.tsx";
 
 
 // Default Grid Size
@@ -350,7 +352,43 @@ const MainPage: React.FC = () => {
             );
         }
     }
+    // 🆕 [추가] 위젯 제작 화면을 열지 말지 결정하는 스위치
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
+    // 🆕 [추가] WidgetBuilder에 전달할 에디터 엔진(Hook) 초기화
+    // (이 훅은 isBuilderOpen일 때만 사용되지만, 컴포넌트 최상단에 있어야 합니다)
+    const editor = usePostEditor();
+
+    // 🆕 [추가] WidgetBuilder에 전달할 이미지 업로드 함수
+    const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            Promise.all(files.map(f => new Promise<string>(r => {
+                const rd = new FileReader(); rd.onloadend = () => r(rd.result as string); rd.readAsDataURL(f);
+            }))).then(u => editor.setTempImages(p => [...p, ...u]));
+        }
+    };
+
+    // 🆕 [추가] 위젯 제작이 완료(저장)되었을 때 실행할 함수
+    const handleWidgetSave = async () => {
+        await editor.handleSave(); // 1. 에디터 내용 저장
+        setIsBuilderOpen(false);   // 2. 빌더 닫기
+        // 3. 여기서 setWidgets를 호출해서 대시보드에 새 위젯을 바로 추가하는 로직을 넣을 수도 있습니다.
+        alert("위젯이 저장되었습니다!");
+    };
+
+    // ------------------------------------------------------------------
+    // 🌟 [핵심 연결] 빌더 모드가 켜져있으면 대시보드 대신 빌더를 보여줌
+    // ------------------------------------------------------------------
+    if (isBuilderOpen) {
+        return (
+            <WidgetBuilder
+                editor={editor}
+                onExit={() => setIsBuilderOpen(false)} // 뒤로가기 누르면 빌더 닫기
+                handleImagesUpload={handleImagesUpload}
+            />
+        );
+    }
 
 
     // ... (existing imports)
@@ -403,6 +441,16 @@ const MainPage: React.FC = () => {
                                                 className="h-10 px-4 w-20 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <Plus size={18} /> Add
+                                            </button>
+
+                                            {/* ✅ 여기에 새로운 버튼 코드를 추가하세요 ✅ */}
+                                            <button
+                                                onClick={() => {
+                                                    editor.handleStartWriting(); // 에디터 초기화 (새 종이)
+                                                    setIsBuilderOpen(true);}} // 원하는 기능을 여기에 넣으세요
+                                                className="h-10 px-4 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                            >
+                                                <span>새 버튼</span>
                                             </button>
 
                                             <button

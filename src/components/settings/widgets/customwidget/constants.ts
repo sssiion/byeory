@@ -1,0 +1,53 @@
+import type { WidgetSize } from './types';
+
+
+// 1. 위젯 사이즈별 최대 용량 (Capacity)
+export const WIDGET_SIZES: Record<string, WidgetSize & { capacity: number }> = {
+    '2x1': { w: 340, h: 160, label: 'Small (2x1)', capacity: 4 },   // 작음: 텍스트 4줄 정도
+    '2x2': { w: 340, h: 340, label: 'Square (2x2)', capacity: 10 }, // 중간: 텍스트 10줄 정도
+    '4x2': { w: 700, h: 340, label: 'Wide (4x2)', capacity: 10 },   // 와이드: 높이는 중간과 같음
+    '4x4': { w: 700, h: 700, label: 'Large (4x4)', capacity: 22 },  // 대형
+};
+
+// 2. 블록 타입별 비용 (Cost)
+// 높이를 많이 차지할수록 높은 비용
+export const BLOCK_COSTS: Record<string, number> = {
+    // 텍스트류 (작음)
+    'text': 1,
+    'heading3': 1,
+    'bullet-list': 1,
+    'number-list': 1,
+    'todo-list': 1,
+    'toggle-list': 1,
+    'footnote': 1,
+    'highlight': 1,
+    'spoiler': 1,
+    'callout': 2,    // 예시 비용
+
+
+    // 중간 크기
+    'heading2': 1.5,
+    'heading1': 2,
+    'button': 1.5,
+    'quote': 2,
+    'divider': 0.5,
+    'scroll-text': 1.5,
+    'typing-text': 1,
+
+    // 대형 (차트, 캘린더 등)
+    'chart': 5,      // 높이 많이 차지함
+    'calendar': 6,   // 꽤 큼
+    'image': 4,
+    'accordion': 3,  // 펼쳐질 수 있으므로 여유 필요
+    'vertical-text': 4,
+    'columns': 3,    // 내부에 또 블록이 들어가지만 일단 기본 비용
+    'math': 2,
+    'chart-pie': 4, 'chart-bar': 4, 'chart-radar': 5, 'heatmap': 3,
+    'counter': 1.5, 'rating': 1.5, 'progress-bar': 1, 'database': 6,
+
+    'unit-converter': 2, 'calculator': 3, 'random-picker': 2, 'map-pin': 3,
+    'zip-viewer': 2, 'rss-reader': 3, 'link-bookmark': 2, 'pdf-viewer': 4,
+    'export-button': 1,
+
+    'flash-card': 2, 'mind-map': 5, 'code-sandbox': 4, 'word-book': 3, 'book-info': 2,
+};
