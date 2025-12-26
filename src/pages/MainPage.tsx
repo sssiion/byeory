@@ -142,9 +142,11 @@ const MainPage: React.FC = () => {
         const registryItem = WIDGET_REGISTRY[type];
 
         let w = 1, h = 1;
-        if (registryItem.defaultSize === 'wide') { w = 4; h = 1; }
-        else if (registryItem.defaultSize === 'large') { w = 2; h = 2; }
-        else if (registryItem.defaultSize === 'medium') { w = 2; h = 1; }
+        if (registryItem.defaultSize) {
+            const [wStr, hStr] = registryItem.defaultSize.split('x');
+            w = parseInt(wStr, 10) || 1;
+            h = parseInt(hStr, 10) || 1;
+        }
 
         if (w > gridSize.cols) w = gridSize.cols;
 

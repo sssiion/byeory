@@ -7,10 +7,16 @@ export function RSSReader() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchFeed = async (e?: React.FormEvent) => {
+    const fetchFeed = async (e?: React.FormEvent, overrideUrl?: string) => {
         if (e) e.preventDefault();
+
+        const targetUrl = overrideUrl || url;
+        if (!targetUrl) return;
+
         setLoading(true);
         setError(null);
+
+        if (overrideUrl) setUrl(overrideUrl);
 
         // CORS Issue Note:
         // Browsers block fetching XML/RSS from different domains.
@@ -19,7 +25,7 @@ export function RSSReader() {
         // Let's use rss2json generic API for demo purposes as it returns JSON.
 
         try {
-            const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
+            const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(targetUrl)}`;
             const res = await fetch(apiUrl);
             const data = await res.json();
 
@@ -60,6 +66,25 @@ export function RSSReader() {
                     <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                 </button>
             </form>
+
+            {/* Presets */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide">
+                {[
+                    { label: '뉴스', url: 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko' },
+                    { label: '과학/기술', url: 'https://news.google.com/rss/headlines/section/topic/SCITECH?hl=ko&gl=KR&ceid=KR:ko' },
+                    { label: '엔터', url: 'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=ko&gl=KR&ceid=KR:ko' },
+                    { label: '경제', url: 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ko&gl=KR&ceid=KR:ko' },
+                    { label: '스포츠', url: 'https://news.google.com/rss/headlines/section/topic/SPORTS?hl=ko&gl=KR&ceid=KR:ko' },
+                ].map((preset) => (
+                    <button
+                        key={preset.label}
+                        onClick={() => fetchFeed(undefined, preset.url)}
+                        className="flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-bold theme-bg-card-secondary theme-text-secondary border theme-border hover:theme-bg-primary hover:text-white transition-colors"
+                    >
+                        {preset.label}
+                    </button>
+                ))}
+            </div>
 
             {/* Error */}
             {error && (
