@@ -9,8 +9,8 @@ interface DefaultPageSettingsProps {
 const pages = [
     { id: 'home', name: 'Home', path: '/home', icon: Home },
     { id: 'post', name: '포스트', path: '/post', icon: FileText },
-    { id: 'todo', name: 'Todo', path: '/todo', icon: CheckSquare },
     { id: 'community', name: '커뮤니티', path: '/community', icon: Users },
+    { id: 'market', name: '마켓', path: '/market', icon: CheckSquare },
 ];
 
 export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSettingsProps) {
@@ -26,9 +26,25 @@ export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSett
         }
     }, []);
 
-    const handleSelect = (path: string) => {
+    const handleSelect = async (path: string) => {
         setSelectedPath(path);
         localStorage.setItem('defaultPage', path);
+
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                await fetch('http://localhost:8080/api/setting/page', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ defaultPage: path })
+                });
+            } catch (e) {
+                console.error("Failed to save default page to backend", e);
+            }
+        }
     };
 
     return (

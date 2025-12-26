@@ -6,7 +6,7 @@ import PostPage from './pages/post/PostPage'
 import TodoPage from './pages/todo/TodoPage'
 import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
-import { ThemeProvider } from './components/settings/theme/ThemeContext';
+import { ThemeProvider } from './context/ThemeContext';
 import MarketPage from './pages/market/MarketPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditScreen from './pages/profile/ProfileEditScreen';
@@ -47,6 +47,7 @@ const savedManualTextColor = localStorage.getItem('manualTextColor');
 const savedManualTextIntensity = localStorage.getItem('manualTextIntensity');
 const savedManualBgColor = localStorage.getItem('manualBgColor');
 const savedManualBgIntensity = localStorage.getItem('manualBgIntensity');
+const savedManualCardColor = localStorage.getItem('manualCardColor'); // New
 
 if (savedManualTextColor) {
   const r = parseInt(savedManualTextColor.slice(1, 3), 16);
@@ -68,6 +69,13 @@ if (savedManualBgColor) {
 
 if (savedManualBgIntensity) {
   document.documentElement.style.setProperty('--manual-bg-intensity', `${parseInt(savedManualBgIntensity) / 100}`);
+}
+
+if (savedManualCardColor) {
+  const r = parseInt(savedManualCardColor.slice(1, 3), 16);
+  const g = parseInt(savedManualCardColor.slice(3, 5), 16);
+  const b = parseInt(savedManualCardColor.slice(5, 7), 16);
+  document.documentElement.style.setProperty('--manual-card-color', `${r}, ${g}, ${b}`);
 }
 
 // Initialize manual background (Image priority > Gradient > Solid)
@@ -116,8 +124,8 @@ const RootRedirector = () => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <DndProvider backend={Backend} options={backendOptions}>
-      <MenuProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <MenuProvider>
           <ThemeProvider>
             <BrowserRouter>
               <Routes>
@@ -136,8 +144,8 @@ createRoot(document.getElementById('root')!).render(
               </Routes>
             </BrowserRouter>
           </ThemeProvider>
-        </AuthProvider>
-      </MenuProvider>
+        </MenuProvider>
+      </AuthProvider>
     </DndProvider>
   </StrictMode >,
 );

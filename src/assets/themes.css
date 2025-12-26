@@ -28,6 +28,8 @@
     /* Manual Theme Defaults */
     --manual-bg-color: 255, 255, 255;
     --manual-bg-intensity: 1;
+    --manual-card-color: 255, 255, 255;
+    /* New: Card Base Color */
     --manual-text-color: 26, 26, 26;
     --manual-text-intensity: 1;
 }
@@ -82,7 +84,7 @@
     --text-gradient: none;
     --text-fill-color: #60a5fa;
     --text-secondary: #cbd5e1;
-    --border-color: #334155;
+    --border-color: #475569;
     --icon-color: #94a3b8;
     --btn-bg: #3b82f6;
     --btn-text: #ffffff;
@@ -94,10 +96,10 @@
 [data-theme='custom'] {
     --bg-gradient: var(--manual-gradient, none);
     --bg-solid: rgba(var(--manual-bg-color), var(--manual-bg-intensity));
-    --bg-header: rgba(255, 255, 255, 0.6);
-    --bg-modal: rgba(255, 255, 255, 0.9);
-    --bg-card: rgba(255, 255, 255, 0.6);
-    --bg-card-secondary: rgba(255, 255, 255, 0.4);
+    --bg-header: rgba(var(--manual-card-color), 0.6);
+    --bg-modal: rgba(var(--manual-card-color), 0.9);
+    --bg-card: rgba(var(--manual-card-color), 0.6);
+    --bg-card-secondary: rgba(var(--manual-card-color), 0.4);
 
     /* Use the manual text color for primary text/icons */
     --text-primary: rgba(var(--manual-text-color), var(--manual-text-intensity));

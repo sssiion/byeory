@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Block } from './types';
-import  { LAYOUT_PRESETS } from './constants';
+import { LAYOUT_PRESETS } from './constants';
 
-const GEMINI_API_KEY = "AIzaSyCwqFuqZ2cuV9gaAAKq2_fmgCB-UyjyqkY"; // 실제 키 사용 시 주의
-const SUPABASE_URL = "https://eshgkaxpdjrnydyijtpp.supabase.co";
-const SUPABASE_KEY = "sb_publishable_nOSbz6httzI14l7vWyJ3yw_WZRBE7fT";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 // 🏡 백엔드 API 주소 (로컬 개발 환경 예시)
 const API_BASE_URL = "http://localhost:8080/api/posts";
 export const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
