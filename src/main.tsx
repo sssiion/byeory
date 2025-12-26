@@ -124,8 +124,8 @@ const RootRedirector = () => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <DndProvider backend={Backend} options={backendOptions}>
-      <MenuProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <MenuProvider>
           <ThemeProvider>
             <BrowserRouter>
               <Routes>
@@ -144,8 +144,8 @@ createRoot(document.getElementById('root')!).render(
               </Routes>
             </BrowserRouter>
           </ThemeProvider>
-        </AuthProvider>
-      </MenuProvider>
+        </MenuProvider>
+      </AuthProvider>
     </DndProvider>
   </StrictMode >,
 );
