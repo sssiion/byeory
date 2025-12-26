@@ -147,6 +147,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             if (response.ok) {
                 const data = await response.json();
+
+                // Handle Theme
                 if (data.theme) {
                     saveToLocalStorage(data);
                     setTheme(data.theme.mode);
@@ -155,9 +157,30 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     const currentTheme = localStorage.getItem('theme') || 'default';
                     applyStyles(currentTheme);
                 }
+
+                // Handle Default Page
+                if (data.page && data.page.defaultPage) {
+                    localStorage.setItem('defaultPage', data.page.defaultPage);
+                }
             } else {
                 const currentTheme = localStorage.getItem('theme') || 'default';
                 applyStyles(currentTheme);
+            }
+
+            // Explicitly fetch page setting as requested
+            try {
+                const pageRes = await fetch('http://localhost:8080/api/setting/page', {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (pageRes.ok) {
+                    const pageData = await pageRes.json();
+                    if (pageData.defaultPage) {
+                        localStorage.setItem('defaultPage', pageData.defaultPage);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch specific page setting", e);
             }
         } catch (error) {
             console.error("Error fetching settings:", error);
