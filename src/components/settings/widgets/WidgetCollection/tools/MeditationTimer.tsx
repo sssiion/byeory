@@ -30,7 +30,7 @@ export function MeditationTimer({ gridSize }: MeditationTimerProps) {
         return () => clearInterval(interval);
     }, [isActive, timeLeft]);
 
-    // Breathing Cycle Logic (4-4-4 Box Breathing or similar)
+    // Breathing Cycle Logic (4-4-4 Box Breathing)
     useEffect(() => {
         if (!isActive) return;
 
@@ -110,13 +110,26 @@ export function MeditationTimer({ gridSize }: MeditationTimerProps) {
                     </button>
                 </div>
 
-                {/* Main Display */}
-                <div className="flex flex-col items-center">
-                    <div className="text-3xl font-bold font-mono text-slate-700 dark:text-slate-200 tabular-nums">
-                        {formatTime(timeLeft)}
-                    </div>
-                    <div className={`text-xs font-medium mt-1 transition-colors duration-500 ${isActive ? 'text-emerald-500' : 'text-slate-400'}`}>
-                        {isActive ? phase.toUpperCase() : 'READY'}
+                {/* Main Display - Healing Circle Animation */}
+                <div className="flex-1 flex items-center justify-center w-full relative my-2">
+                    {/* Outer Glow Ring */}
+                    <div className={`absolute w-32 h-32 rounded-full border-2 border-emerald-200 dark:border-emerald-800 transition-all duration-[4000ms] ${isActive && phase === 'Inhale' ? 'scale-110 opacity-100' : 'scale-90 opacity-50'}`} />
+
+                    {/* Breathing Circle */}
+                    <div className={`
+                        w-24 h-24 rounded-full flex flex-col items-center justify-center transition-all duration-[4000ms] ease-in-out
+                        ${isActive
+                            ? (phase === 'Inhale' ? 'bg-emerald-100 dark:bg-emerald-900/50 scale-125 shadow-[0_0_30px_rgba(52,211,153,0.3)]' :
+                                (phase === 'Hold' ? 'bg-emerald-100 dark:bg-emerald-900/50 scale-125' :
+                                    'bg-slate-100 dark:bg-slate-800 scale-90 shadow-none'))
+                            : 'bg-slate-50 dark:bg-slate-800/50 scale-100'}
+                    `}>
+                        <div className="text-2xl font-bold font-mono text-slate-700 dark:text-slate-200 tabular-nums">
+                            {formatTime(timeLeft)}
+                        </div>
+                        <div className={`text-[10px] font-bold mt-1 transition-colors duration-500 ${isActive ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {isActive ? (phase === 'Inhale' ? '들이마시기' : (phase === 'Hold' ? '멈춤' : '내뱉기')) : '준비'}
+                        </div>
                     </div>
                 </div>
 

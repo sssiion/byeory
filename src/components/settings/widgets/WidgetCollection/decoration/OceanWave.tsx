@@ -1,39 +1,99 @@
-import { WidgetWrapper } from '../Common';
+import { useEffect, useState } from 'react';
+import { WidgetWrapper } from '../../Shared';
 
 interface OceanWaveProps {
     gridSize?: { w: number; h: number };
 }
 
-export function OceanWave({ gridSize }: OceanWaveProps) {
+export function OceanWave({ }: OceanWaveProps) {
+    const [isNight, setIsNight] = useState(false);
+
+    useEffect(() => {
+        const hour = new Date().getHours();
+        // Night from 6 PM (18) to 6 AM (6)
+        setIsNight(hour >= 18 || hour < 6);
+    }, []);
+
+    // Theme Configuration
+    const theme = isNight ? {
+        sky: 'from-indigo-950 to-slate-900',
+        body: 'bg-white/10 shadow-[0_0_30px_rgba(255,255,255,0.2)]', // Moon
+        waves: [
+            'fill-[#1e3a8a] opacity-40', // Deep Blue
+            'fill-[#172554] opacity-70', // Darker Blue
+            'fill-[#0f172a] opacity-90'  // Nearly Black
+        ],
+        star: true
+    } : {
+        sky: 'from-cyan-300 to-blue-400', // Cooler, crisper sky
+        body: 'bg-yellow-100 shadow-[0_0_50px_rgba(255,255,200,0.8)]', // Brighter Sun
+        waves: [
+            'fill-[#67e8f9] opacity-40', // Cyan 300 (Cool/Minty)
+            'fill-[#0ea5e9] opacity-60', // Sky 500 (Vibrant Blue)
+            'fill-[#0284c7] opacity-90'  // Sky 600 (Deep Blue)
+        ],
+        star: false
+    };
+
     return (
-        <WidgetWrapper className="bg-sky-900 border-none relative overflow-hidden p-0">
-            {/* Sky Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-indigo-900 to-sky-700 h-[60%]">
-                {/* Moon/Sun Reflect */}
-                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white/5 rounded-full blur-xl"></div>
-            </div>
+        <WidgetWrapper className={`border-none p-0 relative overflow-hidden transition-colors duration-1000 bg-gradient-to-b ${theme.sky}`}>
+
+            {/* Celestial Body (Sun/Moon) */}
+            <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full blur-md transition-all duration-1000 ${theme.body}`}></div>
+
+            {/* Stars (Night Only) */}
+            {theme.star && (
+                <div className="absolute inset-0 pointer-events-none">
+                    {[...Array(15)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="absolute bg-white rounded-full animate-pulse"
+                            style={{
+                                width: Math.random() * 2 + 'px',
+                                height: Math.random() * 2 + 'px',
+                                top: Math.random() * 40 + '%',
+                                left: Math.random() * 100 + '%',
+                                opacity: Math.random() * 0.7,
+                                animationDelay: Math.random() * 3 + 's'
+                            }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Reflection on Water */}
+            <div className={`absolute top-[45%] left-1/2 -translate-x-1/2 w-8 h-32 ${isNight ? 'bg-white/5' : 'bg-yellow-200/20'} blur-xl rounded-full transform scale-x-150`}></div>
+
 
             {/* Waves Container */}
-            <div className="absolute bottom-0 left-0 right-0 h-[50%] overflow-hidden">
-
-                {/* Back Wave */}
-                <div className="absolute bottom-0 w-[200%] h-full animate-wave-slow opacity-60">
-                    <svg viewBox="0 0 1440 320" className="w-full h-full" preserveAspectRatio="none">
-                        <path fill="#0ea5e9" fillOpacity="1" d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,224C672,245,768,267,864,261.3C960,256,1056,224,1152,197.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            <div className="absolute bottom-0 left-0 right-0 h-[60%] overflow-hidden">
+                {/* Back Wave - Smoothest rolling */}
+                <div className="absolute bottom-0 w-[200%] h-full flex animate-wave-slow pointer-events-none">
+                    <svg viewBox="0 0 1440 320" className="w-1/2 h-full" preserveAspectRatio="none">
+                        <path className={`transition-colors duration-1000 ${theme.waves[0]}`} d="M0,192 C320,160 420,160 720,192 C1020,224 1120,224 1440,192 L1440,320 L0,320 Z"></path>
+                    </svg>
+                    <svg viewBox="0 0 1440 320" className="w-1/2 h-full" preserveAspectRatio="none">
+                        <path className={`transition-colors duration-1000 ${theme.waves[0]}`} d="M0,192 C320,160 420,160 720,192 C1020,224 1120,224 1440,192 L1440,320 L0,320 Z"></path>
                     </svg>
                 </div>
 
-                {/* Middle Wave */}
-                <div className="absolute bottom-[-10%] w-[200%] h-full animate-wave opacity-80">
-                    <svg viewBox="0 0 1440 320" className="w-full h-full" preserveAspectRatio="none">
-                        <path fill="#0284c7" fillOpacity="1" d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                {/* Middle Wave - Offset phase */}
+                <div className="absolute bottom-[-5%] w-[200%] h-full flex animate-wave pointer-events-none">
+                    <svg viewBox="0 0 1440 320" className="w-1/2 h-full" preserveAspectRatio="none">
+                        <path className={`transition-colors duration-1000 ${theme.waves[1]}`} d="M0,224 C360,256 500,256 720,224 C940,192 1080,192 1440,224 L1440,320 L0,320 Z"></path>
+                    </svg>
+                    <svg viewBox="0 0 1440 320" className="w-1/2 h-full" preserveAspectRatio="none">
+                        <path className={`transition-colors duration-1000 ${theme.waves[1]}`} d="M0,224 C360,256 500,256 720,224 C940,192 1080,192 1440,224 L1440,320 L0,320 Z"></path>
                     </svg>
                 </div>
 
-                {/* Front Wave */}
-                <div className="absolute bottom-[-20%] w-[200%] h-full animate-wave-fast">
-                    <svg viewBox="0 0 1440 320" className="w-full h-full" preserveAspectRatio="none">
-                        <path fill="#0369a1" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,208C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                {/* Front Wave - Highest frequency detail */}
+                <div className="absolute bottom-[-10%] w-[200%] h-full flex animate-wave-fast pointer-events-none">
+                    <svg viewBox="0 0 1440 320" className="w-1/2 h-full" preserveAspectRatio="none">
+                        <path className={`transition-colors duration-1000 ${theme.waves[2]}`} d="M0,256 C240,240 480,240 720,256 C960,272 1200,272 1440,256 L1440,320 L0,320 Z"></path>
+                    </svg>
+                    <svg viewBox="0 0 1440 320" className="w-1/2 h-full" preserveAspectRatio="none">
+                        <path className={`transition-colors duration-1000 ${theme.waves[2]}`} d="M0,256 C240,240 480,240 720,256 C960,272 1200,272 1440,256 L1440,320 L0,320 Z"></path>
                     </svg>
                 </div>
             </div>
