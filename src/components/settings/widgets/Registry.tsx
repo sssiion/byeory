@@ -54,6 +54,11 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'unit-converter': { component: Tools.UnitConverter, label: '단위 변환기', defaultSize: 'medium', category: 'Utility' },
     'calculator': { component: Tools.Calculator, label: '계산기', defaultSize: 'medium', category: 'Utility' },
     'markdown-viewer': { component: Tools.MarkdownViewer, label: '마크다운 뷰어', defaultSize: 'medium', category: 'Utility' },
+    'random-picker': { component: Tools.RandomPicker, label: '랜덤 뽑기', defaultSize: 'medium', category: 'Utility' },
+    'ladder-game': { component: Tools.LadderGame, label: '사다리 타기', defaultSize: 'medium', category: 'Utility' },
+    'map-pin': { component: Tools.MapPin, label: '지도 핀', defaultSize: 'medium', category: 'Utility' },
+    'rss-reader': { component: Tools.RSSReader, label: 'RSS 리더', defaultSize: 'medium', category: 'Utility' },
+    'file-viewer': { component: Tools.FileViewer, label: '파일 뷰어', defaultSize: 'medium', category: 'Utility' },
 
     // Decoration & Collection
     'photo-gallery': { component: Decoration.PhotoGallery, label: '사진 갤러리', defaultSize: 'medium', category: 'Decoration' },
