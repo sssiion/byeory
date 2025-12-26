@@ -96,6 +96,16 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'receipt-printer': { component: ReceiptPrinter, label: '영수증', defaultSize: '2x1', category: 'Decoration' },
     'weather-stickers': { component: WeatherStickers, label: '날씨 스티커', defaultSize: '1x1', category: 'Decoration' },
 
+    'unit-converter': { component: Tools.UnitConverter, label: '단위 변환기', defaultSize: '2x2', category: 'Utility' },
+    'calculator': { component: Tools.Calculator, label: '계산기', defaultSize: '2x2', category: 'Utility' },
+    'markdown-viewer': { component: Tools.MarkdownViewer, label: '마크다운 뷰어', defaultSize: '2x1', category: 'Utility' },
+    'random-picker': { component: Tools.RandomPicker, label: '랜덤 뽑기', defaultSize: '2x1', category: 'Utility' },
+    'ladder-game': { component: Tools.LadderGame, label: '사다리 타기', defaultSize: '2x1', category: 'Utility' },
+    'map-pin': { component: Tools.MapPin, label: '지도 핀', defaultSize: '2x1', category: 'Utility' },
+    'rss-reader': { component: Tools.RSSReader, label: 'RSS 리더', defaultSize: '2x1', category: 'Utility' },
+    'file-viewer': { component: Tools.FileViewer, label: '파일 뷰어', defaultSize: '2x1', category: 'Utility' },
+
+
     'community': { component: Interactive.CommunityWidget, label: '커뮤니티', defaultSize: '2x1', category: 'Decoration' },
     'moon-phase': { component: Decoration.MoonPhase, label: '달의 위상', defaultSize: '1x1', category: 'Decoration' },
     'switch-board': { component: Decoration.SwitchBoard, label: '스위치', defaultSize: '1x1', category: 'Decoration' },
@@ -126,6 +136,7 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'lp-player': { component: LPPlayer, label: '턴테이블', defaultSize: '2x1', category: 'Interactive' },
     'asmr-mixer': { component: ASMRMixer, label: 'ASMR 믹서', defaultSize: '2x1', category: 'Interactive' },
     'bonfire': { component: Bonfire, label: '모닥불', defaultSize: '2x1', category: 'Interactive' },
+
 };
 
 export type WidgetType = keyof typeof WIDGET_REGISTRY;
