@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Pencil, Save, X, Eye } from 'lucide-react';
+import { Pencil, Eye } from 'lucide-react';
 
 interface MarkdownViewerProps {
     initialContent?: string;

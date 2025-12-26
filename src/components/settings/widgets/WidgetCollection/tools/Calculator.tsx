@@ -6,13 +6,29 @@ interface CalculatorProps {
     mode?: 'basic' | 'scientific';
 }
 
+
+interface ScientificBtnProps {
+    label: string;
+    fn: string;
+    onClick: (fn: string) => void;
+}
+
+const ScientificBtn = ({ label, fn, onClick }: ScientificBtnProps) => (
+    <button
+        type="button"
+        onClick={() => onClick(fn)}
+        className="h-10 rounded-lg theme-bg-card-secondary text-xs font-bold theme-text-secondary hover:bg-[var(--btn-bg)] hover:text-white transition-colors"
+    >
+        {label}
+    </button>
+);
+
 export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
     const [isResult, setIsResult] = useState(false);
     const [mode, setMode] = useState<'basic' | 'scientific'>(initialMode);
     const [history, setHistory] = useState<string[]>([]);
-
     const [showHistory, setShowHistory] = useState(false);
 
     const handleInput = (val: string) => {
@@ -56,18 +72,18 @@ export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
 
     const calculate = () => {
         try {
-            // Combine equation and current display
-            let fullEq = equation + display;
+            // 2. let 대신 const 사용 (ESLint: prefer-const)
+            const fullEq = equation + display;
             const result = evaluate(fullEq);
 
-            // Format
             const final = Number(result).toLocaleString(undefined, { maximumFractionDigits: 8 });
 
-            setHistory(prev => [fullEq + ' = ' + final, ...prev].slice(0, 10)); // Keep last 10
+            setHistory(prev => [fullEq + ' = ' + final, ...prev].slice(0, 10));
             setDisplay(String(result));
             setEquation('');
             setIsResult(true);
-        } catch (e) {
+        } catch {
+            // 3. 사용하지 않는 매개변수 'e' 제거 (ESLint: no-unused-vars)
             setDisplay('Error');
             setIsResult(true);
         }
@@ -77,18 +93,8 @@ export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
         setHistory([]);
     };
 
-    const ScientificBtn = ({ label, fn }: { label: string, fn: string }) => (
-        <button
-            onClick={() => handleInput(fn)}
-            className="h-10 rounded-lg theme-bg-card-secondary text-xs font-bold theme-text-secondary hover:bg-[var(--btn-bg)] hover:text-white transition-colors"
-        >
-            {label}
-        </button>
-    );
-
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border relative overflow-hidden">
-
             {/* Top Toolbar */}
             <div className="absolute top-2 left-2 z-20 flex gap-2">
                 <button
@@ -100,7 +106,6 @@ export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
                 </button>
             </div>
 
-            {/* Content or Overlay */}
             {showHistory ? (
                 <div className="absolute inset-0 z-30 theme-bg-card p-4 flex flex-col animate-in fade-in slide-in-from-bottom-5">
                     <div className="flex items-center justify-between mb-4 border-b theme-border pb-2">
@@ -142,21 +147,19 @@ export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-hide">
-                            <React.Fragment>
-                                {history.length === 0 ? (
-                                    <div className="text-center py-8 opacity-30 text-xs">
-                                        No history yet
-                                    </div>
-                                ) : (
-                                    history.map((item, idx) => (
-                                        <div key={idx} className="p-2 rounded bg-black/5 text-right">
-                                            <div className="text-xs theme-text-primary font-mono select-all">
-                                                {item}
-                                            </div>
+                            {history.length === 0 ? (
+                                <div className="text-center py-8 opacity-30 text-xs">
+                                    No history yet
+                                </div>
+                            ) : (
+                                history.map((item, idx) => (
+                                    <div key={idx} className="p-2 rounded bg-black/5 text-right">
+                                        <div className="text-xs theme-text-primary font-mono select-all">
+                                            {item}
                                         </div>
-                                    ))
-                                )}
-                            </React.Fragment>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -175,14 +178,14 @@ export function Calculator({ mode: initialMode = 'basic' }: CalculatorProps) {
                     {/* Scientific Keypad */}
                     {mode === 'scientific' && (
                         <div className="grid grid-cols-4 gap-2 mb-2 animate-in fade-in zoom-in-95">
-                            <ScientificBtn label="sin" fn="sin(" />
-                            <ScientificBtn label="cos" fn="cos(" />
-                            <ScientificBtn label="tan" fn="tan(" />
-                            <ScientificBtn label="π" fn="pi" />
-                            <ScientificBtn label="(" fn="(" />
-                            <ScientificBtn label=")" fn=")" />
-                            <ScientificBtn label="^" fn="^" />
-                            <ScientificBtn label="√" fn="sqrt(" />
+                            <ScientificBtn label="sin" fn="sin(" onClick={handleInput} />
+                            <ScientificBtn label="cos" fn="cos(" onClick={handleInput} />
+                            <ScientificBtn label="tan" fn="tan(" onClick={handleInput} />
+                            <ScientificBtn label="π" fn="pi" onClick={handleInput} />
+                            <ScientificBtn label="(" fn="(" onClick={handleInput} />
+                            <ScientificBtn label=")" fn=")" onClick={handleInput} />
+                            <ScientificBtn label="^" fn="^" onClick={handleInput} />
+                            <ScientificBtn label="√" fn="sqrt(" onClick={handleInput} />
                         </div>
                     )}
 
