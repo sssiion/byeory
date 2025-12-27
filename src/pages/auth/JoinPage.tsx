@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 
@@ -8,7 +8,6 @@ function JoinPage() {
     const navigate = useNavigate();
     const { socialLogin, signup } = useAuth();
     const [email, setEmail] = useState('');
-    const [nickname, setNickname] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -16,7 +15,6 @@ function JoinPage() {
 
     const handleJoin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Here you would typically handle the registration logic
         if (password !== passwordConfirm) {
             alert('비밀번호가 일치하지 않습니다.');
             return;
@@ -24,8 +22,7 @@ function JoinPage() {
 
         const success = await signup(email, password);
         if (success) {
-            alert("회원가입이 완료되었습니다."); // Or rely on the alert in AuthContext, but double doesn't hurt or just one. AuthContext alert is "signup failed" usually, I should check AuthContext. 
-            // Actually AuthContext returns boolean, and shows alert on failure.
+            alert("회원가입이 완료되었습니다.");
             navigate('/login');
         }
     };
@@ -59,25 +56,6 @@ function JoinPage() {
                                     className="theme-border theme-text-primary placeholder:text-gray-400 w-full rounded-lg border bg-transparent px-4 py-3 pl-10 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
                                 />
                                 <Mail className="theme-icon absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70" />
-                            </div>
-                        </div>
-
-                        {/* Nickname Input */}
-                        <div className="space-y-2">
-                            <label htmlFor="nickname" className="theme-text-primary block text-sm font-medium">
-                                닉네임
-                            </label>
-                            <div className="relative border rounded-lg">
-                                <input
-                                    id="nickname"
-                                    type="text"
-                                    value={nickname}
-                                    onChange={(e) => setNickname(e.target.value)}
-                                    placeholder="닉네임 입력"
-                                    required
-                                    className="theme-border theme-text-primary placeholder:text-gray-400 w-full rounded-lg border bg-transparent px-4 py-3 pl-10 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
-                                />
-                                <User className="theme-icon absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70" />
                             </div>
                         </div>
 
