@@ -19,10 +19,22 @@ function ProfilePage() {
         bio?: string;
     } | null>(null);
 
+    const [provider, setProvider] = useState<string>('LOCAL');
+
     useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('accessToken');
             if (!token) return;
+
+            // Decode token to check provider
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.provider) {
+                    setProvider(payload.provider);
+                }
+            } catch (e) {
+                console.error("Token decode error", e);
+            }
 
             try {
                 const response = await fetch('http://localhost:8080/api/user/profile', {
@@ -147,22 +159,24 @@ function ProfilePage() {
                         <h3 className="px-6 py-4 border-b font-medium theme-text-primary theme-border">계정</h3>
                         <button
                             onClick={() => navigate('/profile/edit')}
-                            className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"
+                            className={`w-full px-6 py-4 text-left transition-colors flex items-center justify-between ${provider === 'GOOGLE' ? '' : 'border-b'} hover:opacity-80 theme-border`}
                         >
                             <div className="flex items-center gap-3">
                                 <User className="w-5 h-5 theme-text-secondary" />
                                 <span className="theme-text-primary">프로필 수정</span>
                             </div>
                         </button>
-                        <button
-                            onClick={() => navigate('/profile/password')}
-                            className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80"
-                        >
-                            <div className="flex items-center gap-3">
-                                <Lock className="w-5 h-5 theme-text-secondary" />
-                                <span className="theme-text-primary">비밀번호 변경</span>
-                            </div>
-                        </button>
+                        {provider !== 'GOOGLE' && (
+                            <button
+                                onClick={() => navigate('/profile/password')}
+                                className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Lock className="w-5 h-5 theme-text-secondary" />
+                                    <span className="theme-text-primary">비밀번호 변경</span>
+                                </div>
+                            </button>
+                        )}
                     </div>
 
                     {/* General Settings */}
