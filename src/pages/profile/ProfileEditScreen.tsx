@@ -155,6 +155,8 @@ const ProfileEditScreen: React.FC = () => {
                 alert("프로필이 수정되었습니다.");
                 navigate('/profile', { replace: true });
                 window.location.reload();
+            } else if (response.status === 409) {
+                alert("이미 존재하는 닉네임입니다.");
             } else {
                 const errorData = await response.text();
                 console.error("Profile update failed:", errorData);

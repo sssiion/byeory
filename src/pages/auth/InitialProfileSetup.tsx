@@ -101,6 +101,8 @@ const InitialProfileSetup: React.FC = () => {
                 // Force a reload or simply navigate to ensure all contexts (like Auth/Theme) refresh if needed
                 navigate('/home', { replace: true });
                 window.location.reload();
+            } else if (response.status === 409) {
+                alert("이미 존재하는 닉네임입니다.");
             } else {
                 const errorData = await response.text();
                 console.error("Profile update failed:", errorData);
