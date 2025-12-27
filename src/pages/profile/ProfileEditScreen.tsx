@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowLeft, User, Mail, Phone, Calendar, Camera } from 'lucide-react';
-
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, User, Calendar, Smile, Phone, FileText, Camera, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../../components/Header/Navigation';
 import { useAuth } from '../../context/AuthContext';
@@ -9,15 +8,73 @@ const ProfileEditScreen: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    const [name, setName] = useState(user?.email?.split('@')[0] || "User");
+    const [name, setName] = useState("");
     const [nickname, setNickname] = useState("");
-    const [gender, setGender] = useState("unspecified");
-    const [email, setEmail] = useState(user?.email || "");
-    const [phone, setPhone] = useState("");
+    const [email, setEmail] = useState(""); // Added email state
     const [birthDate, setBirthDate] = useState("");
+    const [gender, setGender] = useState("unspecified");
+    const [phone, setPhone] = useState("");
     const [bio, setBio] = useState("");
     const [profilePhoto, setProfilePhoto] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert("로그인 정보가 없습니다.");
+                navigate('/login');
+                return;
+            }
+
+            try {
+                // Try fetching from API first
+                const response = await fetch('http://localhost:8080/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setName(data.name || "");
+                    setNickname(data.nickname || "");
+                    setBirthDate(data.birthDate || "");
+                    setPhone(data.phone || "");
+                    setBio(data.bio || "");
+                    setProfilePhoto(data.profilePhoto || "");
+
+                    // Map backend gender to frontend state
+                    if (data.gender === "MALE") setGender("male");
+                    else if (data.gender === "FEMALE") setGender("female");
+                    else setGender("unspecified");
+
+                    // Handle Email: API > Token > Empty
+                    if (data.email) {
+                        setEmail(data.email);
+                    } else {
+                        // Fallback: Decode JWT
+                        try {
+                            const payload = token.split('.')[1];
+                            const decoded = JSON.parse(atob(payload));
+                            setEmail(decoded.sub || decoded.email || "");
+                        } catch (e) {
+                            console.error("Failed to decode token for email", e);
+                        }
+                    }
+                } else {
+                    console.error("Failed to fetch profile");
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [navigate]);
 
     const handlePhotoUpload = () => {
         const input = document.createElement('input');
@@ -27,7 +84,6 @@ const ProfileEditScreen: React.FC = () => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
                 setIsUploading(true);
-                // Simulate upload delay
                 setTimeout(() => {
                     const reader = new FileReader();
                     reader.onloadend = () => {
@@ -35,7 +91,7 @@ const ProfileEditScreen: React.FC = () => {
                         setIsUploading(false);
                     };
                     reader.readAsDataURL(file);
-                }, 1000);
+                }, 800);
             }
         };
         input.click();
@@ -43,32 +99,75 @@ const ProfileEditScreen: React.FC = () => {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            alert("이름을 입력해주세요");
+            alert("이름을 입력해주세요!");
             return;
         }
-        if (!email.trim()) {
-            alert("이메일을 입력해주세요");
+        if (!nickname.trim()) {
+            alert("닉네임을 입력해주세요!");
             return;
         }
+
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인 정보가 없습니다.");
+            navigate('/login');
+            return;
+        }
+
+        // Map gender to expected backend enum
+        let mappedGender = "PRIVATE";
+        if (gender === 'male') mappedGender = "MALE";
+        else if (gender === 'female') mappedGender = "FEMALE";
+
+        const payload = {
+            profilePhoto: profilePhoto || "",
+            name: name,
+            nickname: nickname,
+            birthDate: birthDate,
+            phone: phone,
+            gender: mappedGender,
+            bio: bio
+        };
 
         try {
-            // Since AuthContext doesn't have updateProfile, we'll just log it for now
-            // or use a mock update. In a real app we'd call an API.
-            console.log("Updating profile:", { name, nickname, gender, email, phone, birthDate, bio, profilePhoto });
+            const response = await fetch('http://localhost:8080/api/user/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
 
-            // Navigate back
-            navigate('/profile');
+            if (response.ok) {
+                alert("프로필이 수정되었습니다.");
+                // Ensure context refresh if needed, then navigate back
+                navigate('/profile', { replace: true });
+                window.location.reload();
+            } else {
+                const errorData = await response.text();
+                console.error("Profile update failed:", errorData);
+                alert("프로필 수정에 실패했습니다.");
+            }
         } catch (error) {
-            console.error('Failed to update profile:', error);
-            alert("프로필 업데이트에 실패했습니다.");
+            console.error("Error updating profile:", error);
+            alert("서버와 통신 중 오류가 발생했습니다.");
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen">
             <Navigation />
 
-            <div className="pt-16 pb-24 md:pt-20 md:pb-20">
+            <div className="pt-16 pb-24 md:pt-15 md:pb-15">
                 <div className="max-w-2xl mx-auto px-4">
                     {/* Header */}
                     <div className="mb-6 flex items-center gap-4">
@@ -81,174 +180,178 @@ const ProfileEditScreen: React.FC = () => {
                         <h1 className="text-xl font-bold theme-text-primary">프로필 수정</h1>
                     </div>
 
-                    <div className="rounded-2xl p-6 shadow-sm border theme-bg-card theme-border space-y-6">
-                        {/* Profile Photo */}
-                        <div className="flex flex-col items-center gap-4">
-                            <div className="relative">
-                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg flex items-center justify-center theme-bg-card">
-                                    {profilePhoto ? (
-                                        <img
-                                            src={profilePhoto}
-                                            alt="Profile"
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '';
-                                                setProfilePhoto('');
-                                            }}
-                                        />
-                                    ) : (
-                                        <User className="w-16 h-16 theme-icon" />
-                                    )}
+                    <div className="theme-bg-card rounded-3xl shadow-sm p-8 border theme-border relative overflow-hidden">
+                        {/* Decorative Elements */}
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[var(--btn-bg)] to-[var(--icon-color)] opacity-50"></div>
+
+                        <div className="space-y-5">
+                            {/* Photo Upload */}
+                            <div className="flex flex-col items-center">
+                                <div className="relative group cursor-pointer" onClick={handlePhotoUpload}>
+                                    <div className="w-24 h-24 rounded-full overflow-hidden theme-border border-4 shadow-lg flex items-center justify-center theme-bg-card-secondary transition-transform group-hover:scale-105">
+                                        {profilePhoto ? (
+                                            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <User className="w-10 h-10 theme-icon opacity-50" />
+                                        )}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 w-8 h-8 theme-btn rounded-full flex items-center justify-center shadow-md">
+                                        {isUploading ? <span className="text-[10px]">...</span> : <Camera size={14} />}
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Email (Read Only) */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">이메일</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        readOnly
+                                        disabled
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl theme-bg-card-secondary theme-border border focus:outline-none opacity-60 cursor-not-allowed theme-text-primary"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Name */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">이름 <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            placeholder="실명 입력"
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl theme-bg-card-secondary theme-border border focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] theme-text-primary"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Nickname */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">닉네임 <span className="text-red-500">*</span></label>
+                                    <div className="relative">
+                                        <Smile className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                        <input
+                                            type="text"
+                                            value={nickname}
+                                            onChange={(e) => setNickname(e.target.value)}
+                                            placeholder="별명 입력"
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl theme-bg-card-secondary theme-border border focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] theme-text-primary"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Birth Date */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">생년월일</label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                        <input
+                                            type="date"
+                                            value={birthDate}
+                                            onChange={(e) => setBirthDate(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl theme-bg-card-secondary theme-border border focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] theme-text-primary"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Phone */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">전화번호</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={(e) => {
+                                                const raw = e.target.value.replace(/\D/g, '');
+                                                let formatted = raw;
+                                                if (raw.length > 3 && raw.length <= 7) {
+                                                    formatted = `${raw.slice(0, 3)}-${raw.slice(3)}`;
+                                                } else if (raw.length > 7) {
+                                                    formatted = `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7, 11)}`;
+                                                }
+                                                setPhone(formatted);
+                                            }}
+                                            maxLength={13}
+                                            placeholder="010-0000-0000"
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl theme-bg-card-secondary theme-border border focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] theme-text-primary"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Gender */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">성별</label>
+                                <div className="relative flex p-1 theme-bg-card-secondary rounded-xl theme-border border">
+                                    {/* Sliding Background */}
+                                    <div
+                                        className="absolute top-1 bottom-1 rounded-lg theme-btn shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                                        style={{
+                                            width: 'calc((100% - 8px) / 3)',
+                                            left: '4px',
+                                            transform: `translateX(${['male', 'female', 'unspecified'].indexOf(gender) * 100}%)`
+                                        }}
+                                    />
+                                    {['male', 'female', 'unspecified'].map((g) => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setGender(g)}
+                                            className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${gender === g
+                                                ? 'text-[var(--btn-text)]'
+                                                : 'theme-text-secondary hover:theme-text-primary'
+                                                }`}
+                                        >
+                                            {g === 'male' ? '남성' : g === 'female' ? '여성' : '비공개'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Bio */}
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">자기소개</label>
+                                <div className="relative">
+                                    <FileText className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                    <textarea
+                                        value={bio}
+                                        onChange={(e) => setBio(e.target.value)}
+                                        maxLength={50}
+                                        placeholder="자신을 자유롭게 소개해주세요 (최대 50자)"
+                                        rows={3}
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl theme-bg-card-secondary theme-border border focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] theme-text-primary resize-none"
+                                    />
+                                    <div className="absolute right-3 bottom-3 text-xs theme-text-secondary opacity-70 pointer-events-none">
+                                        {bio.length}/50
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 pt-4">
                                 <button
-                                    onClick={handlePhotoUpload}
-                                    disabled={isUploading}
-                                    className="absolute bottom-0 right-0 w-10 h-10 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-all theme-btn"
+                                    onClick={() => navigate('/profile')}
+                                    className="flex-1 py-3 rounded-xl transition-colors font-medium theme-bg-card theme-text-primary border theme-border hover:bg-black/5 dark:hover:bg-white/5"
                                 >
-                                    {isUploading ? (
-                                        <span className="animate-spin text-white">⏳</span>
-                                    ) : (
-                                        <Camera className="w-5 h-5 text-white" />
-                                    )}
+                                    취소
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    className="flex-1 py-3 rounded-xl shadow-lg transition-all font-medium theme-btn hover:opacity-90"
+                                >
+                                    저장
                                 </button>
                             </div>
-                            <p className="text-sm theme-text-secondary">프로필 사진을 변경하려면 카메라 버튼을 클릭하세요</p>
-                        </div>
-
-                        {/* Name Input */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <User className="w-5 h-5 theme-icon" />
-                                <span>이름</span>
-                                <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="이름을 입력하세요"
-                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all theme-bg-card theme-border theme-text-primary"
-                                maxLength={20}
-                            />
-                            <p className="text-xs theme-text-secondary">{name.length}/20자</p>
-                        </div>
-
-                        {/* Nickname Input */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <span className="text-xl">😊</span>
-                                <span>닉네임</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
-                                placeholder="닉네임을 입력하세요"
-                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all theme-bg-card theme-border theme-text-primary"
-                                maxLength={15}
-                            />
-                        </div>
-
-                        {/* Gender Selection */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <User className="w-5 h-5 theme-icon" />
-                                <span>성별</span>
-                            </label>
-                            <div className="flex gap-4">
-                                {['male', 'female', 'unspecified'].map((g) => (
-                                    <label key={g} className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="gender"
-                                            value={g}
-                                            checked={gender === g}
-                                            onChange={(e) => setGender(e.target.value)}
-                                            className="accent-[var(--btn-bg)] w-5 h-5"
-                                        />
-                                        <span className="theme-text-primary">
-                                            {g === 'male' ? '남성' : g === 'female' ? '여성' : '선택 안함'}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Email Input */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <Mail className="w-5 h-5 theme-icon" />
-                                <span>이메일</span>
-                                <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="email@example.com"
-                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all theme-bg-card theme-border theme-text-primary"
-                            />
-                        </div>
-
-                        {/* Phone Input */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <Phone className="w-5 h-5 theme-icon" />
-                                <span>전화번호</span>
-                            </label>
-                            <input
-                                type="tel"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                placeholder="010-0000-0000"
-                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all theme-bg-card theme-border theme-text-primary"
-                            />
-                        </div>
-
-                        {/* Birth Date Input */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <Calendar className="w-5 h-5 theme-icon" />
-                                <span>생년월일</span>
-                            </label>
-                            <input
-                                type="date"
-                                value={birthDate}
-                                onChange={(e) => setBirthDate(e.target.value)}
-                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all theme-bg-card theme-border theme-text-primary"
-                            />
-                        </div>
-
-                        {/* Bio Input */}
-                        <div className="space-y-2">
-                            <label className="flex items-center gap-2 font-medium theme-text-primary">
-                                <span>소개</span>
-                            </label>
-                            <textarea
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                placeholder="자신을 소개해주세요..."
-                                rows={4}
-                                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none theme-bg-card theme-border theme-text-primary"
-                                maxLength={200}
-                            />
-                            <p className="text-xs theme-text-secondary">{bio.length}/200자</p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3 pt-4">
-                            <button
-                                onClick={() => navigate('/profile')}
-                                className="flex-1 py-3 rounded-xl transition-colors font-medium theme-bg-card theme-text-primary border theme-border"
-                            >
-                                취소
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                className="flex-1 py-3 rounded-xl shadow-lg transition-all font-medium text-white theme-btn"
-                            >
-                                저장
-                            </button>
                         </div>
                     </div>
                 </div>
