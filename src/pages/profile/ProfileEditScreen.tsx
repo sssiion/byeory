@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Calendar, Smile, Phone, FileText, Camera, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../../components/Header/Navigation';
-import { useAuth } from '../../context/AuthContext';
 
 const ProfileEditScreen: React.FC = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
 
     const [name, setName] = useState("");
     const [nickname, setNickname] = useState("");
-    const [email, setEmail] = useState(""); // Added email state
+    const [email, setEmail] = useState("");
     const [birthDate, setBirthDate] = useState("");
     const [gender, setGender] = useState("unspecified");
     const [phone, setPhone] = useState("");
@@ -29,7 +27,6 @@ const ProfileEditScreen: React.FC = () => {
             }
 
             try {
-                // Try fetching from API first
                 const response = await fetch('http://localhost:8080/api/user/profile', {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -45,16 +42,13 @@ const ProfileEditScreen: React.FC = () => {
                     setBio(data.bio || "");
                     setProfilePhoto(data.profilePhoto || "");
 
-                    // Map backend gender to frontend state
                     if (data.gender === "MALE") setGender("male");
                     else if (data.gender === "FEMALE") setGender("female");
                     else setGender("unspecified");
 
-                    // Handle Email: API > Token > Empty
                     if (data.email) {
                         setEmail(data.email);
                     } else {
-                        // Fallback: Decode JWT
                         try {
                             const payload = token.split('.')[1];
                             const decoded = JSON.parse(atob(payload));
@@ -114,7 +108,6 @@ const ProfileEditScreen: React.FC = () => {
             return;
         }
 
-        // Map gender to expected backend enum
         let mappedGender = "PRIVATE";
         if (gender === 'male') mappedGender = "MALE";
         else if (gender === 'female') mappedGender = "FEMALE";
@@ -141,7 +134,6 @@ const ProfileEditScreen: React.FC = () => {
 
             if (response.ok) {
                 alert("프로필이 수정되었습니다.");
-                // Ensure context refresh if needed, then navigate back
                 navigate('/profile', { replace: true });
                 window.location.reload();
             } else {
