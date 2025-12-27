@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Header/Navigation';
 import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings';
 import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
+import { WidgetGallery } from '../components/settings/widgets/WidgetGallery';
 import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
 import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
@@ -128,6 +129,18 @@ const MainPage: React.FC = () => {
             }, { replace: true });
         }
     }, [searchParams]);
+
+    // Lock body scroll when catalog is open
+    useEffect(() => {
+        if (isCatalogOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isCatalogOpen]);
 
     // Snapshot widgets when entering edit mode
     useEffect(() => {
@@ -466,43 +479,13 @@ const MainPage: React.FC = () => {
                 {/* Widget Catalog Modal */}
                 {isCatalogOpen && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-[var(--bg-card)] w-full max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-200">
+                        <div className="bg-[var(--bg-card)] w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-200">
                             <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)]">
                                 <h3 className="text-lg font-bold text-[var(--text-primary)]">위젯 보관함</h3>
                                 <button onClick={() => setIsCatalogOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X /></button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                                {Object.entries(
-                                    Object.entries(WIDGET_REGISTRY).reduce((acc, [type, item]) => {
-                                        const cat = (item as any).category || 'Other';
-                                        if (!acc[cat]) acc[cat] = [];
-                                        acc[cat].push({ type, item });
-                                        return acc;
-                                    }, {} as Record<string, { type: string, item: any }[]>)
-                                ).map(([category, items]) => (
-                                    <div key={category}>
-                                        <h4 className="text-sm font-bold text-[var(--text-secondary)] mb-3 px-1">{category}</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {items.map(({ type, item }) => (
-                                                <div
-                                                    key={type}
-                                                    onClick={() => addWidget(type as WidgetType)}
-                                                    className="cursor-pointer group flex flex-col gap-2 p-2 rounded-xl hover:bg-[var(--bg-card-secondary)] border border-transparent hover:border-[var(--btn-bg)] transition-all"
-                                                >
-                                                    <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative pointer-events-none">
-                                                        <div className="w-full h-full flex items-center justify-center bg-[var(--bg-card)] text-[var(--text-secondary)] text-xs font-bold p-2 text-center border border-[var(--border-color)]">
-                                                            {item.label}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-bold text-[var(--text-primary)]">{item.label}</span>
-                                                        <Plus size={14} className="text-[var(--btn-bg)] opacity-0 group-hover:opacity-100" />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="flex-1 min-h-0 flex flex-col relative">
+                                <WidgetGallery onSelect={addWidget} />
                             </div>
                         </div>
                     </div>
