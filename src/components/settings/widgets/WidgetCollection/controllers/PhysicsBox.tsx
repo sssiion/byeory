@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EffectController } from './SharedController';
 import { Box, X, Activity } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 interface ComponentProps {
     className?: string;
@@ -73,18 +74,13 @@ const PortalEffectWithProps = ({ multiplier }: { multiplier: number }) => {
 export const PhysicsBox = ({ className, style }: ComponentProps) => {
     const [showSettings, setShowSettings] = useState(false);
 
-    // Initialize state from localStorage, with safer parsing
-    const [settings, setSettings] = useState(() => {
-        const savedMultiplier = localStorage.getItem('physics-multiplier');
-        return {
-            multiplier: savedMultiplier ? Number(savedMultiplier) : 0.5,
-        };
+    // Initialize state from localStorage using SDK
+    const [settings, setSettings] = useWidgetStorage('widget-physics-box', {
+        multiplier: 0.5
     });
 
     const updateSetting = (key: keyof typeof settings, value: number) => {
-        const newSettings = { ...settings, [key]: value };
-        setSettings(newSettings);
-        localStorage.setItem(`physics-${key}`, String(value));
+        setSettings({ ...settings, [key]: value });
     };
 
     return (

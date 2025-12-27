@@ -1,33 +1,38 @@
 import React, { useState } from 'react';
-import { Cloud } from 'lucide-react';
-import { WidgetWrapper as SharedWidgetWrapper } from '../../Shared';
+import { Cloud, Settings } from 'lucide-react';
 import { WidgetWrapper as CommonWidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 // 15. D-Day List (디데이 리스트)
 export const DDayList = React.memo(function DDayList() {
-    const events = [
+    const [events, setEvents] = useWidgetStorage('widget-dday-list', [
         { title: '여름 휴가', dday: -45 },
         { title: '친구 생일', dday: -12 },
         { title: '프로젝트 마감', dday: -3 }
-    ];
+    ]);
 
     return (
-        <SharedWidgetWrapper title="D-DAY" className="bg-pink-50/50">
+        <CommonWidgetWrapper title="D-DAY" className="bg-pink-50/50 dark:bg-pink-900/10">
             <div className="p-2 flex flex-col gap-2">
                 {events.map((e, i) => (
-                    <div key={i} className="flex items-center justify-between bg-white p-2 rounded-lg shadow-sm border border-pink-100">
-                        <span className="text-xs font-medium text-gray-700">{e.title}</span>
+                    <div key={i} className="flex items-center justify-between bg-white dark:bg-pink-900/20 p-2 rounded-lg shadow-sm border border-pink-100 dark:border-pink-800">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{e.title}</span>
                         <span className="text-xs font-bold text-pink-500">D{e.dday}</span>
                     </div>
                 ))}
-                <button className="text-[10px] text-center text-gray-400 hover:text-pink-500 mt-1">+ Add Event</button>
+                <button className="text-[10px] text-center text-gray-400 hover:text-pink-500 mt-1">+ Add Event (Coming Soon)</button>
             </div>
-        </SharedWidgetWrapper>
+        </CommonWidgetWrapper>
     );
 });
 
+interface DDayData {
+    title: string;
+    targetDate: string;
+}
+
 // --- 6. D-Day Balloon (풍선 디데이) ---
-export function DDayBalloon({ onUpdate, targetDate, title = "D-Day" }: { onUpdate?: (data: any) => void, targetDate?: string, title?: string }) {
+export function DDayBalloon({ onUpdate, targetDate, title = "D-Day" }: { onUpdate?: (data: DDayData) => void, targetDate?: string, title?: string }) {
     const [isEditing, setIsEditing] = useState(false);
     const today = new Date();
     const target = targetDate ? new Date(targetDate) : new Date(new Date().setDate(today.getDate() + 7)); // Default +7 days

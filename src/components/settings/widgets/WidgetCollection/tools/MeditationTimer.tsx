@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Play, Square, Settings, Wind } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetInterval, useWidgetStorage } from '../SDK';
 
 interface MeditationTimerProps {
     gridSize?: { w: number; h: number };
@@ -9,7 +10,7 @@ interface MeditationTimerProps {
 export function MeditationTimer({ gridSize }: MeditationTimerProps) {
     const [timeLeft, setTimeLeft] = useState(60); // Seconds
     const [isActive, setIsActive] = useState(false);
-    const [duration, setDuration] = useState(60); // 1 min default
+    const [duration, setDuration] = useWidgetStorage('widget-meditation-duration', 60);
     const [showSettings, setShowSettings] = useState(false);
     const [phase, setPhase] = useState<'Inhale' | 'Hold' | 'Exhale'>('Inhale');
 
@@ -17,35 +18,51 @@ export function MeditationTimer({ gridSize }: MeditationTimerProps) {
     const w = gridSize?.w || 2;
     const isSmall = w === 1;
 
+    useWidgetInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+    }, isActive && timeLeft > 0 ? 1000 : null);
+
     useEffect(() => {
-        let interval: any = null;
-        if (isActive && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
-            }, 1000);
-        } else if (timeLeft === 0) {
+        if (timeLeft === 0) {
             setIsActive(false);
             setPhase('Inhale');
         }
-        return () => clearInterval(interval);
-    }, [isActive, timeLeft]);
+    }, [timeLeft]);
 
     // Breathing Cycle Logic (4-4-4 Box Breathing)
-    useEffect(() => {
-        if (!isActive) return;
-
+    useWidgetInterval(() => {
         const cycleLength = 12000; // 4s In, 4s Hold, 4s Out
-        const startTime = Date.now();
+        const now = Date.now();
+        // Note: Simple timer drift is acceptable for visual widget guidance
+        // Ideally we'd compare against start timestamp, but interval logic suffices for UI.
+        // Let's keep it simple: Phase rotates based on timeLeft for perfect sync? 
+        // Or just run a separate animation loop? 
+        // SDK interval is good.
 
-        const breathInterval = setInterval(() => {
-            const elapsed = (Date.now() - startTime) % cycleLength;
-            if (elapsed < 4000) setPhase('Inhale');
-            else if (elapsed < 8000) setPhase('Hold');
-            else setPhase('Exhale');
-        }, 100);
+        // Actually, to keep cycle consistent we need a ref timestamp.
+        // But for this refactor, let's keep it simple state rotation or just 100ms checks.
+        // However, useWidgetInterval doesn't pass elapsed time.
+        // We'll trust the component state logic or stick to standard useEffect for complex animation loops 
+        // IF useWidgetInterval isn't flexible enough.
+        // But actually, useWidgetInterval is just a wrapper for setInterval.
+        // So we can use it.
+    }, isActive ? 100 : null);
 
-        return () => clearInterval(breathInterval);
+    // Re-implementing the breath cycle more cleanly with a timestamp ref if possible, 
+    // but to avoid massive changes, I'll stick to the existing logic pattern but use useWidgetInterval logic.
+    const [startTime, setStartTime] = useState<number>(0);
+
+    useEffect(() => {
+        if (isActive) setStartTime(Date.now());
     }, [isActive]);
+
+    useWidgetInterval(() => {
+        const cycleLength = 12000;
+        const elapsed = (Date.now() - startTime) % cycleLength;
+        if (elapsed < 4000) setPhase('Inhale');
+        else if (elapsed < 8000) setPhase('Hold');
+        else setPhase('Exhale');
+    }, isActive ? 100 : null);
 
     const toggleTimer = () => {
         setIsActive(!isActive);

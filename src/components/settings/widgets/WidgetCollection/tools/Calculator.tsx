@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Delete, Eraser, Equal, Divide, X, Minus, Plus, Settings } from 'lucide-react';
 import { evaluate } from 'mathjs';
+import { useWidgetStorage } from '../SDK';
 
 interface CalculatorProps {
     mode?: 'basic' | 'scientific';
@@ -29,8 +30,11 @@ export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
     const [isResult, setIsResult] = useState(false);
-    const [mode, setMode] = useState<'basic' | 'scientific'>(initialMode);
-    const [history, setHistory] = useState<string[]>([]);
+
+    // SDK Storage
+    const [mode, setMode] = useWidgetStorage<'basic' | 'scientific'>('widget-calculator-mode', initialMode);
+    const [history, setHistory] = useWidgetStorage<string[]>('widget-calculator-history', []);
+
     const [showHistory, setShowHistory] = useState(false);
 
     const handleInput = (val: string) => {

@@ -60,10 +60,10 @@ export function Polaroid({ gridSize }: PolaroidProps) {
             {/* Background Texture */}
             <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] pointer-events-none"></div>
 
-            <div className="relative bg-white p-3 shadow-xl transform rotate-[-2deg] transition-transform hover:rotate-0 duration-300 max-w-full max-h-full flex flex-col items-center pb-8 group">
+            <div className="relative bg-white dark:bg-zinc-800 p-3 shadow-xl transform rotate-[-2deg] transition-transform hover:rotate-0 duration-300 max-w-full max-h-full flex flex-col items-center pb-8 group">
                 {/* Photo Area */}
                 <div
-                    className="w-48 h-48 bg-gray-100 relative overflow-hidden cursor-pointer mb-4 flex items-center justify-center border border-gray-100"
+                    className="w-48 h-48 bg-gray-100 dark:bg-zinc-700 relative overflow-hidden cursor-pointer mb-4 flex items-center justify-center border border-gray-100 dark:border-zinc-600"
                     onClick={() => fileInputRef.current?.click()}
                 >
                     {image ? (
@@ -71,7 +71,7 @@ export function Polaroid({ gridSize }: PolaroidProps) {
                             <img src={image} alt="Polaroid" className="w-full h-full object-cover" />
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center text-gray-300">
+                        <div className="flex flex-col items-center text-gray-300 dark:text-zinc-500">
                             <Camera size={32} strokeWidth={1.5} />
                             <span className="text-[10px] mt-2">Upload Photo</span>
                         </div>
@@ -89,7 +89,7 @@ export function Polaroid({ gridSize }: PolaroidProps) {
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
                     placeholder="Write a caption..."
-                    className="w-full text-center font-['Caveat',sans-serif] text-gray-600 outline-none bg-transparent placeholder:text-gray-300 text-lg" // Assuming a handwriting font is available or generic sans-serif fallback
+                    className="w-full text-center font-['Caveat',sans-serif] text-gray-600 dark:text-gray-300 outline-none bg-transparent placeholder:text-gray-300 dark:placeholder:text-zinc-600 text-lg"
                     style={{ fontFamily: '"Comic Sans MS", "Chalkboard SE", sans-serif' }}
                 />
 

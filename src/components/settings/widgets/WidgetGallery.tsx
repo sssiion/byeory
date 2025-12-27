@@ -146,20 +146,31 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                       onClick={() => onSelect?.(widget.type)}
                     >
                       <WidgetContainer title={widget.label}>
-                        <img
-                          src={`/thumbnails/${widget.type}.png`}
-                          alt={widget.label}
-                          className="w-full h-full object-contain pointer-events-none select-none transition-transform hover:scale-105"
-                          loading="lazy"
-                          onError={(e) => {
-                            // Fallback if image fails
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                            const icon = document.createElement('div');
-                            icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-400"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                            e.currentTarget.parentElement?.appendChild(icon);
-                          }}
-                        />
+                        {widget.category === 'Global' ? (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400">
+                            <div className="p-4 rounded-full bg-white shadow-sm border border-gray-100">
+                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-[spin_10s_linear_infinite]">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={`/thumbnails/${widget.type}.png`}
+                            alt={widget.label}
+                            className="w-full h-full object-contain pointer-events-none select-none transition-transform hover:scale-105"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Fallback if image fails
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                              const icon = document.createElement('div');
+                              icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-400"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                              e.currentTarget.parentElement?.appendChild(icon);
+                            }}
+                          />
+                        )}
                       </WidgetContainer>
                     </div>
                   ))}

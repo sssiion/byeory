@@ -30,12 +30,12 @@ export function Typewriter(_: TypewriterProps) {
                     onChange={handleChange}
                     className="w-full h-full bg-transparent border-none outline-none font-serif text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 resize-none placeholder:italic placeholder:opacity-50"
                     placeholder="Type something..."
-                    style={{ fontFamily: '"Courier New", Courier, monospace' }}
+                    style={{ fontFamily: 'var(--font-mono, monospace)' }}
                 />
 
                 {/* Caret Blinker custom */}
                 <style>{`
-                    textarea::placeholder { color: #888; }
+                    textarea::placeholder { color: currentColor; opacity: 0.5; }
                  `}</style>
             </div>
         </WidgetWrapper>

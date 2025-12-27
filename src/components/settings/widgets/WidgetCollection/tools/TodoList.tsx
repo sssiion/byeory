@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
+import { useWidgetStorage } from '../SDK';
 
 // 7. Todo List (할 일)
 export function TodoListWidget() {

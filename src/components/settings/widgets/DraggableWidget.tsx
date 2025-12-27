@@ -47,12 +47,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
     const [, drop] = useDrop({
         accept: ItemTypes.WIDGET,
-        hover: (item: any) => {
+        hover: (item: { type: string, id?: string }) => {
             if (isEditMode && onHover) {
                 onHover(widget.layout.x, widget.layout.y, item);
             }
         },
-        drop: (item: any) => {
+        drop: (item: { type: string, id?: string }) => {
             if (isEditMode && onDrop) {
                 onDrop(widget.layout.x, widget.layout.y, item);
             }
@@ -82,7 +82,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 overflow-hidden 
                 ${isTransparent
                     ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
-                    : 'bg-white shadow-sm hover:shadow-md'} 
+                    : 'theme-bg-card shadow-sm hover:shadow-md'} 
                 ${isEditMode ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
                 ${isDragging ? 'pointer-events-none' : ''}`}
             style={{
@@ -97,7 +97,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                 <WidgetComponent
                     {...(widget.props || {})}
                     gridSize={{ w, h }}
-                    updateLayout={(layout: any) => updateLayout(widget.id, layout)}
+                    updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
                     widgetId={widget.id}
                 />
             </div>
@@ -119,7 +119,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                             </button>
 
                             {showSizeMenu && (
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-50 w-32 grid grid-cols-2 gap-1 animate-in zoom-in duration-200">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-2 z-50 w-32 grid grid-cols-2 gap-1 animate-in zoom-in duration-200">
                                     {[
                                         [1, 1], [2, 1], [3, 1],
                                         [1, 2], [2, 2], [3, 2],
@@ -132,7 +132,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         <button
                                             key={`${cw}x${ch}`}
                                             onClick={() => { updateLayout(widget.id, { w: cw, h: ch }); setShowSizeMenu(false); }}
-                                            className={`text-[10px] p-1 rounded hover:bg-gray-100 border ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-gray-100 text-gray-600'}`}
+                                            className={`text-[10px] p-1 rounded hover:bg-[var(--bg-card-secondary)] border ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
                                         >
                                             {cw}x{ch}
                                         </button>

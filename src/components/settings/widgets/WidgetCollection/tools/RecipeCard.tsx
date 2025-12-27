@@ -14,7 +14,7 @@ export function RecipeCard({ gridSize }: RecipeCardProps) {
     const [checked, setChecked] = useState<boolean[]>([false, false, false]);
 
     useEffect(() => {
-        let interval: any = null;
+        let interval: ReturnType<typeof setInterval> | null = null;
         if (isActive && timeLeft > 0) {
             interval = setInterval(() => {
                 setTimeLeft((prev) => prev - 1);
@@ -22,7 +22,9 @@ export function RecipeCard({ gridSize }: RecipeCardProps) {
         } else if (timeLeft === 0) {
             setIsActive(false);
         }
-        return () => clearInterval(interval);
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, [isActive, timeLeft]);
 
     const toggleTimer = () => setIsActive(!isActive);
