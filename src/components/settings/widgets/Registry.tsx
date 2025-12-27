@@ -4,6 +4,7 @@ import * as Tools from './WidgetCollection/tools';
 import * as Decoration from './WidgetCollection/decoration';
 import * as Interactive from './WidgetCollection/interactive';
 import * as System from './WidgetCollection/system';
+import * as Controllers from './WidgetCollection/controllers';
 import { Biorhythm } from './WidgetCollection/tools/Biorhythm';
 import { SkyMap } from './WidgetCollection/decoration/SkyMap';
 import { ASMRMixer } from './WidgetCollection/interactive/ASMRMixer';
@@ -137,6 +138,19 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'asmr-mixer': { component: ASMRMixer, label: 'ASMR 믹서', defaultSize: '2x1', category: 'Interactive' },
     'bonfire': { component: Bonfire, label: '모닥불', defaultSize: '2x1', category: 'Interactive' },
 
+    // New Standard Widgets
+    'chat-diary': { component: Diary.ChatDiary, label: '나와의 채팅', defaultSize: '2x2', category: 'Diary & Emotion' },
+    'tag-cloud': { component: Tools.TagCloud, label: '태그 구름', defaultSize: '2x2', category: 'Utility' },
+    'timeline': { component: Tools.Timeline, label: '세로 타임라인', defaultSize: '1x2', category: 'Utility' },
+    'scratch-card': { component: Interactive.ScratchCard, label: '복권 긁기', defaultSize: '1x1', category: 'Interactive' },
+    'switches': { component: Interactive.Switches, label: '스위치 & 레버', defaultSize: '2x1', category: 'Interactive' },
+
+    // Global Effect Controllers
+    'cursor-trail': { component: Controllers.CursorTrail, label: '커서 트레일', defaultSize: '1x1', category: 'Global' },
+    'highlighter': { component: Controllers.Highlighter, label: '형광펜 모드', defaultSize: '1x1', category: 'Global' },
+    'physics-box': { component: Controllers.PhysicsBox, label: '물리 상자', defaultSize: '1x1', category: 'Global' },
+    'magnifier': { component: Controllers.Magnifier, label: '돋보기', defaultSize: '1x1', category: 'Global' },
+    'ruby-text': { component: Controllers.RubyText, label: '루비 문자', defaultSize: '1x1', category: 'Global' },
 };
 
 export type WidgetType = keyof typeof WIDGET_REGISTRY;

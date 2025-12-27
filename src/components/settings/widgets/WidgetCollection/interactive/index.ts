@@ -5,3 +5,7 @@ export * from './SnowGlobe';
 export * from './TimeMachine';
 export * from './Community';
 export * from './LPPlayer';
+export * from './ASMRMixer';
+export * from './Bonfire';
+export * from './ScratchCard';
+export * from './Switches';

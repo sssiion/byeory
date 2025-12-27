@@ -18,3 +18,5 @@ export * from './LadderGame';
 export * from './MapPin';
 export * from './RSSReader';
 export * from './FileViewer';
+export * from './TagCloud';
+export * from './Timeline';
