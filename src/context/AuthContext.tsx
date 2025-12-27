@@ -78,6 +78,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
+                // Clear potential stale data first
+                localStorage.removeItem('isProfileSetupCompleted');
+
+                // Verify profile status
+                try {
+                    const profileRes = await fetch('http://localhost:8080/api/user/profile', {
+                        headers: { 'Authorization': `Bearer ${data.accessToken}` }
+                    });
+                    if (profileRes.ok) {
+                        localStorage.setItem('isProfileSetupCompleted', 'true');
+                    }
+                } catch (e) {
+                    console.error("Profile check failed", e);
+                }
+
                 // Use the existing login logic to update state
                 setLoginState(email);
                 return true;
@@ -105,6 +120,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (response.ok && data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
+                // Clear potential stale data first
+                localStorage.removeItem('isProfileSetupCompleted');
+
+                // Verify profile status
+                try {
+                    const profileRes = await fetch('http://localhost:8080/api/user/profile', {
+                        headers: { 'Authorization': `Bearer ${data.accessToken}` }
+                    });
+                    if (profileRes.ok) {
+                        localStorage.setItem('isProfileSetupCompleted', 'true');
+                    }
+                } catch (e) {
+                    console.error("Profile check failed", e);
+                }
+
                 setLoginState(email);
                 return true;
             } else {
@@ -157,6 +187,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoggedIn(false);
         setUser(null);
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('isProfileSetupCompleted');
+        localStorage.removeItem('userEmail'); // Ensure this is cleared too if used
     };
 
     return (

@@ -101,6 +101,25 @@ const ProfileEditScreen: React.FC = () => {
             return;
         }
 
+        // Validate Birth Date
+        if (birthDate) {
+            const birthYear = new Date(birthDate).getFullYear();
+            const currentYear = new Date().getFullYear();
+            if (birthYear < 1900 || birthYear > currentYear) {
+                alert(`생년월일 연도는 1900년부터 ${currentYear}년 사이여야 합니다.`);
+                return;
+            }
+        }
+
+        // Validate Phone Number
+        if (phone) {
+            const cleanPhone = phone.replace(/-/g, '');
+            if (cleanPhone.length !== 11) {
+                alert("전화번호는 11자리여야 합니다.");
+                return;
+            }
+        }
+
         const token = localStorage.getItem('accessToken');
         if (!token) {
             alert("로그인 정보가 없습니다.");

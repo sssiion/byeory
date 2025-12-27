@@ -45,6 +45,25 @@ const InitialProfileSetup: React.FC = () => {
             return;
         }
 
+        // Validate Birth Date
+        if (birthDate) {
+            const birthYear = new Date(birthDate).getFullYear();
+            const currentYear = new Date().getFullYear();
+            if (birthYear < 1900 || birthYear > currentYear) {
+                alert(`생년월일 연도는 1900년부터 ${currentYear}년 사이여야 합니다.`);
+                return;
+            }
+        }
+
+        // Validate Phone Number
+        if (phone) {
+            const cleanPhone = phone.replace(/-/g, '');
+            if (cleanPhone.length !== 11) {
+                alert("전화번호는 11자리여야 합니다.");
+                return;
+            }
+        }
+
         const token = localStorage.getItem('accessToken');
         if (!token) {
             alert("로그인 정보가 없습니다. 다시 로그인해주세요.");
@@ -129,7 +148,7 @@ const InitialProfileSetup: React.FC = () => {
                         <div className="space-y-1">
                             <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">이름 <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <User className="absolute left-3 top-3 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                <User className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
                                 <input
                                     type="text"
                                     value={name}
@@ -144,7 +163,7 @@ const InitialProfileSetup: React.FC = () => {
                         <div className="space-y-1">
                             <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">닉네임 <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <Smile className="absolute left-3 top-3 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                <Smile className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
                                 <input
                                     type="text"
                                     value={nickname}
@@ -161,7 +180,7 @@ const InitialProfileSetup: React.FC = () => {
                         <div className="space-y-1">
                             <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">생년월일</label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-3 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                <Calendar className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
                                 <input
                                     type="date"
                                     value={birthDate}
@@ -175,7 +194,7 @@ const InitialProfileSetup: React.FC = () => {
                         <div className="space-y-1">
                             <label className="text-xs font-bold theme-text-secondary uppercase tracking-wider ml-1">전화번호</label>
                             <div className="relative">
-                                <Phone className="absolute left-3 top-3 theme-icon w-5 h-5 scale-90 opacity-70" />
+                                <Phone className="absolute left-3 top-4 theme-icon w-5 h-5 scale-90 opacity-70" />
                                 <input
                                     type="tel"
                                     value={phone}

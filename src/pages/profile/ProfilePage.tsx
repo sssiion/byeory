@@ -1,21 +1,65 @@
+import { useState, useEffect } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Fingerprint, Key, Image as ImageIcon } from "lucide-react";
 
 function ProfilePage() {
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
-    // Use user data from context or fallbacks
-    const userName = user?.email ? user.email.split('@')[0] : '사용자';
-    const userEmail = user?.email || 'email@example.com';
+    const [profile, setProfile] = useState<{
+        name?: string;
+        nickname?: string;
+        email?: string;
+        profilePhoto?: string;
+        birthDate?: string;
+        phone?: string;
+        gender?: string;
+        bio?: string;
+    } | null>(null);
 
-    // Stats (mocking for now as they were before)
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+
+            try {
+                const response = await fetch('http://localhost:8080/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setProfile(data);
+                } else if (response.status === 404) {
+                    // Profile not found -> Redirect to setup
+                    console.log("Profile not found, redirecting to setup...");
+                    navigate('/setup-profile');
+                } else if (response.status === 401 || response.status === 403) {
+                    // Invalid token -> Logout
+                    logout();
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    // Use user data from fetch
+    const userName = profile?.nickname || profile?.name || '';
+    const userEmail = profile?.email || '';
+
+    // Stats (Initialize to 0 as there is no API for this yet)
     const stats = {
-        totalEntries: 42,
-        streakDays: 7,
-        exchangeRooms: 3
+        totalEntries: 0,
+        streakDays: 0,
+        exchangeRooms: 0
     };
 
     const handleLogout = () => {
@@ -35,8 +79,8 @@ function ProfilePage() {
                     <div className="rounded-2xl p-6 shadow-lg text-[var(--btn-text)]" style={{ backgroundColor: 'var(--btn-bg)' }}>
                         <div className="flex items-center gap-4">
                             <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden">
-                                {false ? ( // TODO: Add profile photo to user context
-                                    <img src="" alt="Profile" className="w-full h-full object-cover" />
+                                {profile?.profilePhoto ? (
+                                    <img src={profile.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                     <User className="w-10 h-10 text-white" />
                                 )}
