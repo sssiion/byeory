@@ -17,7 +17,9 @@ function LoginPage() {
         if (email && password) {
             const success = await localLogin(email, password);
             if (success) {
-                navigate('/');
+                // Check if profile setup is done
+                const isSetup = localStorage.getItem('isProfileSetupCompleted');
+                navigate(isSetup === 'true' ? '/' : '/setup-profile');
             }
         }
     };
@@ -110,7 +112,9 @@ function LoginPage() {
                             onSuccess={async (credential) => {
                                 const success = await socialLogin(credential);
                                 if (success) {
-                                    navigate('/');
+                                    // Check if profile setup is done
+                                    const isSetup = localStorage.getItem('isProfileSetupCompleted');
+                                    navigate(isSetup === 'true' ? '/' : '/setup-profile');
                                 } else {
                                     alert("Social Login Failed");
                                 }

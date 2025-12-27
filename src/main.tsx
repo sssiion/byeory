@@ -11,6 +11,7 @@ import MarketPage from './pages/market/MarketPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditScreen from './pages/profile/ProfileEditScreen';
 import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
+import InitialProfileSetup from './pages/auth/InitialProfileSetup';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -141,6 +142,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/profile/edit" element={<ProfileEditScreen />} />
                 <Route path="/profile/password" element={<PasswordChangeScreen />} />
+                <Route path="/setup-profile" element={<InitialProfileSetup />} />
               </Routes>
             </BrowserRouter>
           </ThemeProvider>
