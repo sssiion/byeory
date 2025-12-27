@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeftRight, Repeat } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeftRight } from 'lucide-react';
 
 const UNIT_CATEGORIES = {
     length: {
@@ -75,26 +75,6 @@ export function UnitConverter() {
     const [rates, setRates] = useState<any>(UNIT_CATEGORIES.length.rates);
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-    // Initial setup when category changes
-    useEffect(() => {
-        const cat = UNIT_CATEGORIES[category];
-        const units = Object.keys(cat.units);
-        setFromUnit(units[0]);
-        setToUnit(units[1] || units[0]);
-
-        if (category === 'currency') {
-            fetchCurrencyRates();
-        } else {
-            setRates(cat.rates);
-            setLastUpdated(null);
-        }
-    }, [category]);
-
-    // Recalculate when inputs change
-    useEffect(() => {
-        calculate(fromValue, fromUnit, toUnit);
-    }, [fromValue, fromUnit, toUnit, rates]);
-
     const fetchCurrencyRates = async () => {
         const CACHE_KEY = 'exchange_rates_cache';
         const updatedCache = localStorage.getItem(CACHE_KEY);
@@ -139,57 +119,39 @@ export function UnitConverter() {
             return;
         }
 
-        // Conversion logic: (Value / FromRate) * ToRate for base-relative systems
-        // Actually for the "rates" defined above:
-        // Length/Weight/Area: 1 BaseUnit (e.g. m, m2, kg) = Rate * Unit
-        // So Value(m) = Value(Unit) / Rate(Unit)
-        // TargetValue(TargetUnit) = Value(m) * Rate(TargetUnit)
-
-        // Wait, check rates definitions:
-        // m: 1, cm: 100 -> 1m = 100cm. Correct.
-        // So conversion is: (Value / FromRate) * ToRate? No.
-        // Value(cm) -> Value(m) = Value(cm) / 100.
-        // Value(m) -> Value(mm) = Value(m) * 1000.
-        // So: BaseValue = Value / Rate. TargetValue = BaseValue * TargetRate.
-
-        // For Currency (Base USD):
-        // USD: 1, KRW: 1400.
-        // Value(USD) = Value(KRW) / 1400.
-        // TargetValue(JPY) = Value(USD) * 150.
-        // Yes, the logic matches.
-
-        // Special case: Currency API usually gives "1 USD = X Unit".
-        // My hardcoded rates: "m: 1, cm: 100" means "1 m = 100 cm".
-        // API response "USD: 1, KRW: 1445" means "1 USD = 1445 KRW".
-        // So the logic IS: (Value / FromRate) * ToRate? 
-        // Let's trace: 100 cm to m. 
-        // Base(m) = 100 / 100 = 1. Target(m) = 1 * 1 = 1. Correct.
-        // 1 USD to KRW.
-        // Base(USD) = 1 / 1 = 1. Target(KRW) = 1 * 1445 = 1445. Correct.
-
         if (!rates[from] || !rates[to]) return;
 
         const baseValue = num / rates[from];
         const result = baseValue * rates[to];
 
-        // Format
-        let formatted = result.toLocaleString(undefined, { maximumFractionDigits: 4 });
-        if (category === 'currency') {
-            formatted = result.toLocaleString(undefined, { maximumFractionDigits: 2 });
-        }
-
-        // Use scientific notation if too long but allow user input
-        if (result > 1000000000 || (result < 0.0001 && result > 0)) {
-            // simple format
-        }
-
         // Simply set string
         setToValue(parseFloat(result.toFixed(6)).toString());
     };
 
+    // Initial setup when category changes
+    useEffect(() => {
+        const cat = UNIT_CATEGORIES[category];
+        const units = Object.keys(cat.units);
+        setFromUnit(units[0]);
+        setToUnit(units[1] || units[0]);
+
+        if (category === 'currency') {
+            fetchCurrencyRates();
+        } else {
+            setRates(cat.rates);
+            setLastUpdated(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [category]);
+
+    // Recalculate when inputs change
+    useEffect(() => {
+        calculate(fromValue, fromUnit, toUnit);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fromValue, fromUnit, toUnit, rates]);
+
     const handleSwap = () => {
         const tempUnit = fromUnit;
-        const tempVal = fromValue;
         setFromUnit(toUnit);
         setToUnit(tempUnit);
 
@@ -233,7 +195,7 @@ export function UnitConverter() {
                             onChange={(e) => setFromUnit(e.target.value)}
                             className="w-24 bg-transparent theme-text-primary text-sm font-bold outline-none border-b-2 border-transparent focus:border-[var(--btn-bg)] transition-colors text-right"
                         >
-                            {Object.entries(UNIT_CATEGORIES[category].units).map(([u, label]) => (
+                            {Object.entries(UNIT_CATEGORIES[category].units).map(([u]) => (
                                 <option key={u} value={u}>{u}</option>
                             ))}
                         </select>
@@ -265,7 +227,7 @@ export function UnitConverter() {
                             onChange={(e) => setToUnit(e.target.value)}
                             className="w-24 bg-transparent theme-text-primary text-sm font-bold outline-none border-b-2 border-transparent focus:border-[var(--btn-bg)] transition-colors text-right"
                         >
-                            {Object.entries(UNIT_CATEGORIES[category].units).map(([u, label]) => (
+                            {Object.entries(UNIT_CATEGORIES[category].units).map(([u]) => (
                                 <option key={u} value={u}>{u}</option>
                             ))}
                         </select>

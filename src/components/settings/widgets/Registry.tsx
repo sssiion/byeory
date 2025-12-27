@@ -42,7 +42,7 @@ export interface WidgetInstance {
     layout: WidgetLayout;
 }
 
-export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<any>, label: string, defaultProps?: any, defaultSize?: string, category: string }> = {
+export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<any>, label: string, defaultProps?: any, defaultSize?: string, category: string, minW?: number, minH?: number }> = {
     // System
     'welcome': { component: System.WelcomeWidget, label: '환영 메시지', defaultSize: '4x1', category: 'System' },
     'theme-guide': { component: System.ThemeGuideWidget, label: '테마 가이드', defaultSize: '2x1', category: 'System' },
@@ -97,7 +97,7 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'weather-stickers': { component: WeatherStickers, label: '날씨 스티커', defaultSize: '1x1', category: 'Decoration' },
 
     'unit-converter': { component: Tools.UnitConverter, label: '단위 변환기', defaultSize: '2x2', category: 'Utility' },
-    'calculator': { component: Tools.Calculator, label: '계산기', defaultSize: '2x2', category: 'Utility' },
+    'calculator': { component: Tools.Calculator, label: '계산기', defaultSize: '2x2', category: 'Utility', minH: 2 },
     'markdown-viewer': { component: Tools.MarkdownViewer, label: '마크다운 뷰어', defaultSize: '2x1', category: 'Utility' },
     'random-picker': { component: Tools.RandomPicker, label: '랜덤 뽑기', defaultSize: '2x1', category: 'Utility' },
     'ladder-game': { component: Tools.LadderGame, label: '사다리 타기', defaultSize: '2x1', category: 'Utility' },

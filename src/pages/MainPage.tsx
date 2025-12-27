@@ -7,7 +7,7 @@ import { DraggableWidget } from '../components/settings/widgets/DraggableWidget'
 import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { clampWidget, resolveCollisions } from '../components/settings/widgets/layoutUtils';
+import { clampWidget, resolveCollisions, compactLayout } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
 
 
@@ -260,7 +260,7 @@ const MainPage: React.FC = () => {
             const movedWidget = { ...activeWidget, layout: clamped };
             const resolved = resolveCollisions(prev, movedWidget);
 
-            return resolved;
+            return compactLayout(resolved);
         });
     };
 
