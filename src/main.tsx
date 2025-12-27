@@ -116,9 +116,16 @@ if (savedManualBtnTextColor) {
   document.documentElement.style.setProperty('--manual-btn-text', savedManualBtnTextColor);
 }
 
-const RootRedirector = () => {
+import WelcomePage from './pages/WelcomePage';
+
+const RootRouting = () => {
+  const token = localStorage.getItem('accessToken');
   const defaultPage = localStorage.getItem('defaultPage') || '/home';
-  return <Navigate to={defaultPage} replace />;
+
+  if (token) {
+    return <Navigate to={defaultPage} replace />;
+  }
+  return <WelcomePage />;
 };
 
 
@@ -130,7 +137,7 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider>
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<RootRedirector />} />
+                <Route path="/" element={<RootRouting />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/join" element={<JoinPage />} />
                 <Route path="/find-password" element={<FindPasswordPage />} />
