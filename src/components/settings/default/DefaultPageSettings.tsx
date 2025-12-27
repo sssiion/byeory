@@ -26,9 +26,25 @@ export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSett
         }
     }, []);
 
-    const handleSelect = (path: string) => {
+    const handleSelect = async (path: string) => {
         setSelectedPath(path);
         localStorage.setItem('defaultPage', path);
+
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                await fetch('http://localhost:8080/api/setting/page', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ defaultPage: path })
+                });
+            } catch (e) {
+                console.error("Failed to save default page to backend", e);
+            }
+        }
     };
 
     return (

@@ -18,6 +18,35 @@ export default function ThemeSettings({ onBack, onClose }: ThemeSettingsProps) {
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', selectedTheme);
         localStorage.setItem('theme', selectedTheme);
+
+        const saveTheme = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+
+            if (selectedTheme !== 'manual') {
+                try {
+                    const fontFamily = localStorage.getItem('fontFamily') || "'Noto Sans KR', sans-serif";
+                    const fontSize = localStorage.getItem('fontSize') || "16px";
+
+                    await fetch('http://localhost:8080/api/setting/theme', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            mode: selectedTheme,
+                            font: {
+                                family: fontFamily,
+                                size: fontSize
+                            },
+                            manualConfig: null
+                        })
+                    });
+                } catch (e) { console.error(e); }
+            }
+        };
+        saveTheme();
     }, [selectedTheme]);
 
     const themes = [

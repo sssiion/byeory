@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Home, FileText, CheckSquare, Users, Save, XCircle, MousePointerClick } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
+
 
 /* -------------------------------------------------------------------------------------------------
  * Menu Context & Provider Logic
@@ -34,35 +36,89 @@ interface MenuContextType {
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
 export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const { isLoggedIn } = useAuth();
     const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_ITEMS);
     const [isEditMode, setIsEditMode] = useState(false);
     const [originalItems, setOriginalItems] = useState<MenuItem[]>(DEFAULT_ITEMS);
 
-    // Initialize from localStorage
+    const applyMenuOrder = (orderIds: string[]) => {
+        const reordered = orderIds
+            .map(id => DEFAULT_ITEMS.find(item => item.id === id))
+            .filter((item): item is MenuItem => item !== undefined);
+
+        if (reordered.length === DEFAULT_ITEMS.length) {
+            setMenuItems(reordered);
+            setOriginalItems(reordered);
+        }
+    };
+
+    // Initialize from localStorage immediately
     useEffect(() => {
         const savedOrder = localStorage.getItem('menuOrder');
         if (savedOrder) {
             try {
                 const orderIds = JSON.parse(savedOrder) as string[];
-                const reordered = orderIds
-                    .map(id => DEFAULT_ITEMS.find(item => item.id === id))
-                    .filter((item): item is MenuItem => item !== undefined);
-
-                // If we found valid items, set them.
-                if (reordered.length === DEFAULT_ITEMS.length) {
-                    setMenuItems(reordered);
-                }
+                applyMenuOrder(orderIds);
             } catch (e) {
-                console.error("Failed to parse menu order", e);
+                console.error("Failed to parse local menu order", e);
             }
         }
     }, []);
 
-    const saveMenuOrder = () => {
+    // Fetch from backend when logged in
+    useEffect(() => {
+        const fetchMenuOrder = async () => {
+            if (!isLoggedIn) return;
+
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+
+            try {
+                const response = await fetch('http://localhost:8080/api/setting/menu', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.menuOrder && Array.isArray(data.menuOrder)) {
+                        applyMenuOrder(data.menuOrder);
+                        localStorage.setItem('menuOrder', JSON.stringify(data.menuOrder));
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch menu order", e);
+            }
+        };
+
+        fetchMenuOrder();
+    }, [isLoggedIn]);
+
+    const saveMenuOrder = async () => {
         const orderIds = menuItems.map(item => item.id);
+
+        // 1. Save to Local
         localStorage.setItem('menuOrder', JSON.stringify(orderIds));
-        setOriginalItems(menuItems); // Update original to current
+        setOriginalItems(menuItems);
         setIsEditMode(false);
+
+        // 2. Save to Backend
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                await fetch('http://localhost:8080/api/setting/menu', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ menuOrder: orderIds })
+                });
+            } catch (e) {
+                console.error("Failed to save menu order to backend", e);
+            }
+        }
     };
 
     const cancelMenuOrder = () => {
