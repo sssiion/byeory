@@ -1,52 +1,57 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EffectController } from './SharedController';
-import { Box, Settings, X, Activity } from 'lucide-react';
+import { Box, X, Activity } from 'lucide-react';
 
 interface ComponentProps {
     className?: string;
     style?: React.CSSProperties;
 }
 
-const PortalEffectWithProps = ({ multiplier, sensitivity }: { multiplier: number, sensitivity: number }) => {
+const PortalEffectWithProps = ({ multiplier }: { multiplier: number }) => {
     const requestRef = useRef<number>(0);
+    const mouseRef = useRef({ x: -1000, y: -1000 });
 
     useEffect(() => {
-        let shakeIntensity = 0;
-        let lastX = 0;
-        let lastY = 0;
-        let activeBodies: HTMLElement[] = [];
-
         const handleMouseMove = (e: MouseEvent) => {
-            const dx = Math.abs(e.clientX - lastX);
-            const dy = Math.abs(e.clientY - lastY);
-
-            if (dx + dy > sensitivity) {
-                shakeIntensity = Math.min(shakeIntensity + 5, 20);
-                if (activeBodies.length === 0 || Math.random() < 0.1) {
-                    activeBodies = Array.from(document.querySelectorAll('.global-physics-widget'));
-                }
-            }
-            lastX = e.clientX;
-            lastY = e.clientY;
+            mouseRef.current = { x: e.clientX, y: e.clientY };
         };
 
         const updateLoop = () => {
-            if (shakeIntensity > 0.1) {
-                shakeIntensity *= 0.9;
-                activeBodies.forEach((b) => {
-                    const force = shakeIntensity * multiplier;
+            const widgets = document.querySelectorAll('.global-physics-widget');
+            const { x: mx, y: my } = mouseRef.current;
+            const radius = 500; // Detection radius
+
+            widgets.forEach((widget) => {
+                const rect = widget.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+
+                // Calculate distance from mouse to widget center
+                const dist = Math.sqrt(Math.pow(mx - cx, 2) + Math.pow(my - cy, 2));
+
+                if (dist < radius) {
+                    // Normalize distance: 1 (center) to 0 (edge)
+                    // const intensity = (1 - dist / radius) * multiplier * 20; 
+                    // Actually user just said "adjust shake force", so let's stick to the multiplier
+                    // Maybe just straight random shake if inside radius? 
+                    // Let's add a slight distance falloff for better feel
+                    const falloff = 1 - (dist / radius);
+                    const force = multiplier * 15 * falloff; // 15 is arbitrary base power
+
                     const rx = (Math.random() - 0.5) * force;
                     const ry = (Math.random() - 0.5) * force;
                     const rr = (Math.random() - 0.5) * force * 0.5;
-                    b.style.transform = `translate(${rx}px, ${ry}px) rotate(${rr}deg)`;
-                });
-            } else if (shakeIntensity !== 0) {
-                shakeIntensity = 0;
-                activeBodies.forEach((b) => {
-                    b.style.transform = '';
-                });
-            }
+                    (widget as HTMLElement).style.transform = `translate(${rx}px, ${ry}px) rotate(${rr}deg)`;
+                } else {
+                    // Reset if out of range (check if it has transform first to avoid style trashing?)
+                    // Simple check: if style.transform is set, clear it.
+                    if ((widget as HTMLElement).style.transform) {
+                        (widget as HTMLElement).style.transform = '';
+                    }
+                }
+            });
+
             requestRef.current = requestAnimationFrame(updateLoop);
         };
 
@@ -60,7 +65,7 @@ const PortalEffectWithProps = ({ multiplier, sensitivity }: { multiplier: number
                 (b as HTMLElement).style.transform = '';
             });
         };
-    }, [multiplier, sensitivity]);
+    }, [multiplier]);
 
     return null;
 };
@@ -71,10 +76,8 @@ export const PhysicsBox = ({ className, style }: ComponentProps) => {
     // Initialize state from localStorage, with safer parsing
     const [settings, setSettings] = useState(() => {
         const savedMultiplier = localStorage.getItem('physics-multiplier');
-        const savedSensitivity = localStorage.getItem('physics-sensitivity');
         return {
-            multiplier: savedMultiplier ? Number(savedMultiplier) : 1,
-            sensitivity: savedSensitivity ? Number(savedSensitivity) : 30
+            multiplier: savedMultiplier ? Number(savedMultiplier) : 0.5,
         };
     });
 
@@ -94,7 +97,7 @@ export const PhysicsBox = ({ className, style }: ComponentProps) => {
             onSettingsClick={() => setShowSettings(true)}
         >
             <>
-                <PortalEffectWithProps multiplier={settings.multiplier} sensitivity={settings.sensitivity} />
+                <PortalEffectWithProps multiplier={settings.multiplier} />
 
                 {showSettings && createPortal(
                     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50" onClick={() => setShowSettings(false)}>
@@ -113,29 +116,14 @@ export const PhysicsBox = ({ className, style }: ComponentProps) => {
                                 <div>
                                     <div className="flex justify-between mb-2">
                                         <span className="text-sm font-medium text-gray-700">Shake Force (Intensity)</span>
-                                        <span className="text-sm font-bold text-blue-600">{settings.multiplier}x</span>
+                                        <span className="text-sm font-bold text-blue-600">{(settings.multiplier * 10).toFixed(0)}</span>
                                     </div>
                                     <input
-                                        type="range" min="0.5" max="3" step="0.1"
-                                        value={settings.multiplier}
-                                        onChange={(e) => updateSetting('multiplier', parseFloat(e.target.value))}
+                                        type="range" min="1" max="10" step="1"
+                                        value={settings.multiplier * 10}
+                                        onChange={(e) => updateSetting('multiplier', parseFloat(e.target.value) / 10)}
                                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
                                     />
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Sensitivity (Threshold)</span>
-                                        <span className="text-xs text-gray-500">{settings.sensitivity < 20 ? 'High' : settings.sensitivity > 50 ? 'Low' : 'Medium'}</span>
-                                    </div>
-                                    <input
-                                        type="range" min="10" max="100" step="5"
-                                        value={settings.sensitivity}
-                                        onChange={(e) => updateSetting('sensitivity', parseInt(e.target.value))}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
-                                        style={{ direction: 'rtl' }}
-                                    />
-                                    <p className="text-xs text-gray-400 mt-1">Lower value = Easiest to trigger</p>
                                 </div>
                             </div>
 

@@ -29,6 +29,8 @@ import { WorryDoll } from './WidgetCollection/tools/WorryDoll';
 import { ColorPalette } from './WidgetCollection/tools/ColorPalette';
 import { FandomCalendar } from './WidgetCollection/tools/FandomCalendar';
 
+import * as Logic from './WidgetCollection/logic';
+
 export interface WidgetLayout {
     x: number;
     y: number;
@@ -48,6 +50,12 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'welcome': { component: System.WelcomeWidget, label: '환영 메시지', defaultSize: '4x1', category: 'System' },
     'theme-guide': { component: System.ThemeGuideWidget, label: '테마 가이드', defaultSize: '2x1', category: 'System' },
     'feature-card': { component: System.FeatureCard, label: '기능 카드', defaultSize: '1x1', category: 'System' },
+
+    // Data & Logic (New)
+    'formula-block': { component: Logic.FormulaBlock, label: '수식 블록', defaultSize: '2x1', category: 'Data & Logic' },
+    'relation-link': { component: Logic.RelationLink, label: '관계형 링크', defaultSize: '2x1', category: 'Data & Logic' },
+    'rollup': { component: Logic.Rollup, label: '롤업', defaultSize: '2x1', category: 'Data & Logic' },
+    'property-toggle': { component: Logic.PropertyToggle, label: '속성 토글', defaultSize: '2x1', category: 'Data & Logic' },
 
     // Diary & Emotion
     'ai-diary': { component: Diary.AIDiary, label: 'AI 감정 분석', defaultSize: '2x1', category: 'Diary & Emotion' },
