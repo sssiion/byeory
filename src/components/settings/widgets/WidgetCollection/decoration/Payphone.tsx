@@ -6,6 +6,11 @@ interface PayphoneProps {
     gridSize?: { w: number; h: number };
 }
 
+export const PayphoneConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
+};
+
 export function Payphone({ gridSize }: PayphoneProps) {
     const [message, setMessage] = useState('');
     const [isSent, setIsSent] = useState(false);

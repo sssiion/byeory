@@ -19,7 +19,12 @@ const FLOWERS: Record<number, { name: string; lang: string; color: string }> = {
     12: { name: 'Narcissus', lang: 'Hope', color: 'text-yellow-200' },
 };
 
-export function BirthFlower() {
+export const BirthFlowerConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+};
+
+export function BirthFlower({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [dateStr, setDateStr] = useState(() => localStorage.getItem('userBirthDate') || '');
     const [isEditing, setIsEditing] = useState(!dateStr);
 

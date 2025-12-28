@@ -9,7 +9,13 @@ interface DigitalPlantData {
 }
 
 // --- 4. Digital Plant (반려 식물) ---
-export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: propName }: { onUpdate?: (data: DigitalPlantData) => void, level?: number, exp?: number, name?: string }) {
+export const DigitalPlantConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 2], [2, 2], [2, 3]] as [number, number][],
+};
+
+// --- 4. Digital Plant (반려 식물) ---
+export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: propName, gridSize: _ }: { onUpdate?: (data: DigitalPlantData) => void, level?: number, exp?: number, name?: string, gridSize?: { w: number; h: number } }) {
     // Persist plant state
     const [plantState, setPlantState] = useWidgetStorage('widget-digital-plant', {
         level: propLevel || 1,

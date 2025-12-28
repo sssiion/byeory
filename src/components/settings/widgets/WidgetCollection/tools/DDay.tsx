@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cloud, Calendar, Plus } from 'lucide-react';
+import { Cloud, Plus } from 'lucide-react';
 import { WidgetWrapper as CommonWidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 
@@ -13,8 +13,17 @@ interface DDayItem {
 }
 
 // 15. D-Day List (디데이 리스트)
-export const DDayList = React.memo(function DDayList() {
-    const [events, setEvents] = useWidgetStorage<DDayItem[]>('widget-dday-list', [
+export const DDayListConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
+};
+
+interface DDayListProps {
+    gridSize?: { w: number; h: number };
+}
+
+export const DDayList = React.memo(function DDayList({ gridSize: _ }: DDayListProps) {
+    const [events] = useWidgetStorage<DDayItem[]>('widget-dday-list', [
         { id: 1, title: 'Summer Vacation', targetDate: '2024-07-20' },
         { id: 2, title: 'Project Due', targetDate: '2024-05-15' },
     ]);
@@ -71,7 +80,19 @@ interface DDayData {
 }
 
 // --- 6. D-Day Balloon (풍선 디데이) ---
-export function DDayBalloon({ onUpdate, targetDate, title = "D-Day" }: { onUpdate?: (data: DDayData) => void, targetDate?: string, title?: string }) {
+export const DDayBalloonConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
+};
+
+interface DDayBalloonProps {
+    onUpdate?: (data: DDayData) => void;
+    targetDate?: string;
+    title?: string;
+    gridSize?: { w: number; h: number };
+}
+
+export function DDayBalloon({ onUpdate, targetDate, title = "D-Day", gridSize: _ }: DDayBalloonProps) {
     const [isEditing, setIsEditing] = useState(false);
     const today = new Date();
     const target = targetDate ? new Date(targetDate) : new Date(new Date().setDate(today.getDate() + 7)); // Default +7 days

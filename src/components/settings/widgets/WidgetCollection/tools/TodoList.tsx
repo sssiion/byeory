@@ -6,7 +6,16 @@ import { useSharedTodo } from '../../../../Todo/useSharedTodo';
 import { TodoItem } from '../../../../Todo/CheckTodo';
 import type { Todo } from '../../../../Todo/types';
 
-export function TodoListWidget() {
+export const TodoListConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
+interface TodoListWidgetProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
     const navigate = useNavigate();
     const { getTodayTodos, addTodo, toggleTodo, updateTodo } = useSharedTodo();
     const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -96,35 +105,37 @@ export function TodoListWidget() {
                     </div>
                 </div>
 
-                {/* Add Input */}
-                <div className="p-2 border-t border-gray-100 dark:border-zinc-800">
-                    {isAdding ? (
-                        <div className="flex gap-2 items-center animate-in slide-in-from-bottom-2 duration-200">
-                            <input
-                                autoFocus
-                                value={newTodoTitle}
-                                onChange={(e) => setNewTodoTitle(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                                placeholder="New Task..."
-                                className="flex-1 text-xs bg-transparent outline-none min-w-0 dark:text-gray-200"
-                            />
-                            <button onClick={handleAdd} className="p-1 rounded bg-[var(--btn-bg)] text-white">
-                                <Plus size={14} />
+                {/* Add Input - Only show if height >= 2 or if adding (temporary override) */}
+                {(gridSize?.h || 2) >= 2 && (
+                    <div className="p-2 border-t border-gray-100 dark:border-zinc-800">
+                        {isAdding ? (
+                            <div className="flex gap-2 items-center animate-in slide-in-from-bottom-2 duration-200">
+                                <input
+                                    autoFocus
+                                    value={newTodoTitle}
+                                    onChange={(e) => setNewTodoTitle(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                                    placeholder="New Task..."
+                                    className="flex-1 text-xs bg-transparent outline-none min-w-0 dark:text-gray-200"
+                                />
+                                <button onClick={handleAdd} className="p-1 rounded bg-[var(--btn-bg)] text-white">
+                                    <Plus size={14} />
+                                </button>
+                                <button onClick={() => setIsAdding(false)} className="text-xs text-gray-400 hover:text-gray-600">
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setIsAdding(true)}
+                                className="w-full flex items-center justify-center gap-2 py-1.5 rounded border border-dashed border-gray-200 dark:border-zinc-700 text-xs text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-[var(--btn-bg)] hover:border-[var(--btn-bg)] transition-all"
+                            >
+                                <Plus size={12} />
+                                <span>Add Task</span>
                             </button>
-                            <button onClick={() => setIsAdding(false)} className="text-xs text-gray-400 hover:text-gray-600">
-                                Cancel
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setIsAdding(true)}
-                            className="w-full flex items-center justify-center gap-2 py-1.5 rounded border border-dashed border-gray-200 dark:border-zinc-700 text-xs text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-[var(--btn-bg)] hover:border-[var(--btn-bg)] transition-all"
-                        >
-                            <Plus size={12} />
-                            <span>Add Task</span>
-                        </button>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
             </div>
         </WidgetWrapper>
     );

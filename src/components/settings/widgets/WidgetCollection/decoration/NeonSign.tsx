@@ -1,6 +1,11 @@
 import React from 'react';
 
-export const NeonSign = React.memo(function NeonSign({ text, color = '#ff00ff' }: { text: string; color?: string }) {
+export const NeonSignConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [3, 1], [3, 2]] as [number, number][],
+};
+
+export const NeonSign = React.memo(function NeonSign({ text, color = '#ff00ff', gridSize }: { text: string; color?: string; gridSize?: { w: number; h: number } }) {
     const glowStyle = {
         textShadow: `
       0 0 5px #fff,

@@ -1,6 +1,11 @@
 import React from 'react';
 
-export const TicketStub = React.memo(function TicketStub({ title, date, seat }: { title: string; date: string; seat: string }) {
+export const TicketStubConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1]] as [number, number][],
+};
+
+export const TicketStub = ({ title = 'Movie Night', date = '24.12.24', seat = 'H12', gridSize: _ }: { title?: string, date?: string, seat?: string, gridSize?: { w: number; h: number } }) => {
     return (
         <div className="w-full h-full flex bg-[#fffbf0] rounded-lg overflow-hidden shadow-sm border border-[#e5e0d0]">
             <div className="flex-1 p-2 flex flex-col justify-center border-r-2 border-dashed border-[#dcdcdc] relative min-w-0">
@@ -14,4 +19,4 @@ export const TicketStub = React.memo(function TicketStub({ title, date, seat }: 
             </div>
         </div>
     );
-});
+

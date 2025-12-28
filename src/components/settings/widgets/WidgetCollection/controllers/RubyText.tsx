@@ -27,7 +27,12 @@ const PortalEffect = () => {
     `}</style>;
 };
 
-export const RubyText = ({ className, style }: ComponentProps) => {
+export const RubyTextConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1]] as [number, number][],
+};
+
+export const RubyText = ({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     return (
         <EffectController
             className={className}

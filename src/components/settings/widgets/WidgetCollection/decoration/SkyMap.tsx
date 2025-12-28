@@ -64,6 +64,11 @@ const CONSTELLATIONS: Constellation[] = [
     }
 ];
 
+export const SkyMapConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+};
+
 export function SkyMap({ gridSize }: SkyMapProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [currentIndex, setCurrentIndex] = useState(0);

@@ -5,7 +5,12 @@ interface OceanWaveProps {
     gridSize?: { w: number; h: number };
 }
 
-export function OceanWave({ }: OceanWaveProps) {
+export const OceanWaveConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [4, 1], [4, 2]] as [number, number][],
+};
+
+export function OceanWave({ gridSize }: OceanWaveProps) {
     const [isNight, setIsNight] = useState(false);
 
     useEffect(() => {

@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../../context/AuthContext';
 import { User, Palette } from 'lucide-react';
 
-export function WelcomeWidget() {
+export const WelcomeWidgetConfig = {
+    defaultSize: '4x2',
+    validSizes: [[2, 1], [2, 2], [3, 2], [4, 2], [4, 3]] as [number, number][],
+};
+
+export function WelcomeWidget({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     const { user } = useAuth();
     const navigate = useNavigate();
 

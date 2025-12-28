@@ -16,6 +16,8 @@ interface ScientificBtnProps {
     onClick: (fn: string) => void;
 }
 
+
+
 const ScientificBtn = ({ label, fn, onClick }: ScientificBtnProps) => (
     <button
         type="button"
@@ -25,6 +27,11 @@ const ScientificBtn = ({ label, fn, onClick }: ScientificBtnProps) => (
         {label}
     </button>
 );
+
+export const CalculatorConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 2]] as [number, number][],
+};
 
 export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize }: CalculatorProps) {
     const [display, setDisplay] = useState('0');

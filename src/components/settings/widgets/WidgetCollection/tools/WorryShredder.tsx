@@ -2,8 +2,13 @@ import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 
+export const WorryShredderConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2]] as [number, number][],
+};
+
 // --- 1. Worry Shredder (근심 파쇄기) ---
-export function WorryShredder() {
+export function WorryShredder({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [text, setText] = useWidgetStorage('widget-shredder-text', '');
     const [isShredding, setIsShredding] = useState(false);
 

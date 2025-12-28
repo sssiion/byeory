@@ -3,7 +3,16 @@ import { PenTool } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
 // 1. AI Diary (AI 다이어리)
-export function AIDiary() {
+export const AIDiaryConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
+interface AIDiaryProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function AIDiary({ gridSize }: AIDiaryProps) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [result, setResult] = useState('');
 

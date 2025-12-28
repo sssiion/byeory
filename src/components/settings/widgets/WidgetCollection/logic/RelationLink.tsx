@@ -2,7 +2,12 @@ import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 import { ArrowUpRight, Link2, Database } from 'lucide-react';
 
-export const RelationLink = ({ style }: { style?: React.CSSProperties }) => {
+export const RelationLinkConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 1], [2, 2], [3, 2]] as [number, number][],
+};
+
+export const RelationLink = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     return (
         <WidgetWrapper className="bg-white" style={style}>
             <div className="w-full h-full flex flex-col p-3 justify-center">

@@ -7,6 +7,11 @@ interface WorryDollProps {
     gridSize?: { w: number; h: number };
 }
 
+export const WorryDollConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
+};
+
 export function WorryDoll({ gridSize }: WorryDollProps) {
     const [worry, setWorry] = useState('');
     // Persis 'hasWorry' state (and the worry text itself if needed, but logic implies we just keep "that we have a worry")

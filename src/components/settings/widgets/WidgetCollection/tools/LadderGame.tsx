@@ -2,7 +2,16 @@ import { useState, useRef, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { useWidgetStorage } from '../SDK';
 
-export function LadderGame() {
+export const LadderGameConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
+interface LadderGameProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function LadderGame({ gridSize }: LadderGameProps) {
     const [players, setPlayers] = useWidgetStorage<string[]>('widget-ladder-players', ['A', 'B', 'C', 'D']);
     const [results] = useWidgetStorage<string[]>('widget-ladder-results', ['꽝', '당첨', '꽝', '통과']);
     const [isPlaying, setIsPlaying] = useState(false);

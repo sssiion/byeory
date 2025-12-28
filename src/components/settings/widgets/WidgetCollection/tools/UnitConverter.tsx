@@ -67,7 +67,12 @@ const UNIT_CATEGORIES = {
 
 const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
 
-export function UnitConverter() {
+export const UnitConverterConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3], [4, 3]] as [number, number][],
+};
+
+export function UnitConverter({ gridSize }: { gridSize?: { w: number; h: number } }) {
     // Persist user selection
     const [settings, setSettings] = useWidgetStorage('widget-unit-converter', {
         category: 'length' as keyof typeof UNIT_CATEGORIES,

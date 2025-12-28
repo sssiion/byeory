@@ -15,6 +15,11 @@ interface StampCollectionProps {
     gridSize?: { w: number; h: number };
 }
 
+export const StampCollectionConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2], [3, 2]] as [number, number][],
+};
+
 export function StampCollection({ gridSize }: StampCollectionProps) {
     const [collected, setCollected] = useState<number[]>(() => {
         const saved = localStorage.getItem('collected_stamps');

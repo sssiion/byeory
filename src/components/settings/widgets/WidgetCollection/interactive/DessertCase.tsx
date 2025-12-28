@@ -1,7 +1,13 @@
 import { WidgetWrapper } from '../Common';
 
 // --- 4. Dessert Case (간식 진열대) ---
-export function DessertCase({ onUpdate, items = [] }: { onUpdate?: (data: any) => void, items?: string[] }) {
+export const DessertCaseConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+};
+
+// --- 4. Dessert Case (간식 진열대) ---
+export function DessertCase({ onUpdate, items = [], gridSize: _ }: { onUpdate?: (data: any) => void, items?: string[], gridSize?: { w: number; h: number } }) {
     const desserts = ['🍩', '🍪', '🍰', '🧁', '🍮', '🍭', '🍫', '🍦'];
 
     const addItem = (icon: string) => {

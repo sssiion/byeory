@@ -2,7 +2,12 @@ import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 
 // 9. My Persona (나의 페르소나)
-export const MyPersona = React.memo(function MyPersona() {
+export const MyPersonaConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
+};
+
+export const MyPersona = React.memo(function MyPersona({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     return (
         <WidgetWrapper className="bg-gradient-to-tr from-purple-100 to-white">
             <div className="w-full h-full flex flex-col items-center justify-center p-3">

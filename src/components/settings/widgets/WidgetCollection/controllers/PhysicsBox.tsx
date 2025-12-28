@@ -71,7 +71,12 @@ const PortalEffectWithProps = ({ multiplier }: { multiplier: number }) => {
     return null;
 };
 
-export const PhysicsBox = ({ className, style }: ComponentProps) => {
+export const PhysicsBoxConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1]] as [number, number][],
+};
+
+export const PhysicsBox = ({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [showSettings, setShowSettings] = useState(false);
 
     // Initialize state from localStorage using SDK

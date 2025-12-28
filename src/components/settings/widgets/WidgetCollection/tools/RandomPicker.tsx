@@ -3,7 +3,12 @@ import { Play, Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWidgetStorage } from '../SDK';
 
-export function RandomPicker() {
+export const RandomPickerConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 3]] as [number, number][],
+};
+
+export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [items, setItems] = useWidgetStorage<string[]>('widget-random-picker-items', ['짜장면', '짬뽕', '탕수육', '볶음밥', '마라탕', '쌀국수', '돈까스', '제육볶음']);
     const [newItem, setNewItem] = useState('');
     const [result, setResult] = useState<string | null>(null);

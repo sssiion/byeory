@@ -15,6 +15,11 @@ interface WeatherStickersProps {
     gridSize?: { w: number; h: number };
 }
 
+export const WeatherStickersConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2], [3, 2]] as [number, number][],
+};
+
 export function WeatherStickers({ gridSize }: WeatherStickersProps) {
     const [selectedId, setSelectedId] = useState('sun');
 

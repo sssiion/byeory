@@ -3,7 +3,16 @@ import { WidgetWrapper } from '../../Shared';
 import { useWidgetStorage } from '../SDK';
 
 // 2. Daily Diary (오늘의 일기)
-export const DailyDiary = memo(function DailyDiary() {
+export const DailyDiaryConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2]] as [number, number][],
+};
+
+interface DailyDiaryProps {
+    gridSize?: { w: number; h: number };
+}
+
+export const DailyDiary = memo(function DailyDiary({ gridSize }: DailyDiaryProps) {
     const [content, setContent] = useWidgetStorage('widget-daily-diary', '');
 
     return (

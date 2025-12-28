@@ -1,7 +1,12 @@
 import React from 'react';
 import { WidgetWrapper } from '../Common';
 
-export const Candle = React.memo(function Candle() {
+export const CandleConfig = {
+    defaultSize: '1x2',
+    validSizes: [[1, 2]] as [number, number][],
+};
+
+export const Candle = React.memo(function Candle({ gridSize }: { gridSize?: { w: number; h: number } }) {
     return (
         <WidgetWrapper className="bg-gray-900 border-gray-800">
             <div className="flex flex-col items-center justify-end h-full relative min-h-[60px] w-full">

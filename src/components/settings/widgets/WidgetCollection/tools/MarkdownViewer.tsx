@@ -8,7 +8,12 @@ interface MarkdownViewerProps {
     title?: string;
 }
 
-export function MarkdownViewer({ initialContent = "# Hello Markdown\n\n- Write\n- Your\n- Notes", title = "Markdown Note" }: MarkdownViewerProps) {
+export const MarkdownViewerConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3], [4, 4]] as [number, number][],
+};
+
+export function MarkdownViewer({ initialContent = "# Hello Markdown\n\n- Write\n- Your\n- Notes", title = "Markdown Note", gridSize }: MarkdownViewerProps & { gridSize?: { w: number; h: number } }) {
     const [content, setContent] = useWidgetStorage('widget-markdown-content', initialContent);
     const [isEditing, setIsEditing] = useState(false);
 

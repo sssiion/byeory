@@ -1,6 +1,11 @@
 import React from 'react';
 
-export const ColorChip = React.memo(function ColorChip({ color, name, code }: { color: string; name: string; code: string }) {
+export const ColorChipConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1]] as [number, number][],
+};
+
+export const ColorChip = React.memo(function ColorChip({ color, name, code, gridSize }: { color: string; name: string; code: string; gridSize?: { w: number; h: number } }) {
     return (
         <div className="w-full h-full bg-white shadow-sm rounded-lg overflow-hidden flex flex-col border border-gray-100">
             <div className="flex-1 w-full" style={{ backgroundColor: color }} />

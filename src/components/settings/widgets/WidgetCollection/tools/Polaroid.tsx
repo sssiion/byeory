@@ -7,6 +7,11 @@ interface PolaroidProps {
     gridSize?: { w: number; h: number };
 }
 
+export const PolaroidConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2], [2, 3]] as [number, number][],
+};
+
 export function Polaroid({ gridSize }: PolaroidProps) {
     // SDK Storage
     const [image, setImage] = useWidgetStorage<string | null>('widget-polaroid-img', null);

@@ -24,7 +24,12 @@ const DEFAULT_TAGS = [
     { text: 'Space', value: 2 },
 ];
 
-export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS }: ComponentProps) => {
+export const TagCloudConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3], [4, 3]] as [number, number][],
+};
+
+export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS, gridSize }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [tags, setTags] = useWidgetStorage('widget-tagcloud-tags', initialTags);
 
     const shuffledTags = useMemo(() => {

@@ -13,6 +13,11 @@ interface MandalartProps {
 // 3 4 5  <- 4 is Center
 // 6 7 8
 
+export const MandalartConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 3]] as [number, number][],
+};
+
 export function Mandalart({ gridSize }: MandalartProps) {
     // SDK Storage
     const [goals, setGoals] = useWidgetStorage<string[]>('widget-mandalart-core', Array(9).fill(''));

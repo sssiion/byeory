@@ -16,6 +16,11 @@ interface BookshelfProps {
     gridSize?: { w: number; h: number };
 }
 
+export const BookshelfConfig = {
+    defaultSize: '4x2',
+    validSizes: [[4, 1], [4, 2], [4, 3]] as [number, number][],
+};
+
 export function Bookshelf({ gridSize }: BookshelfProps) {
     const [books, setBooks] = useState<Book[]>(() => {
         const saved = localStorage.getItem('bookshelf_data');

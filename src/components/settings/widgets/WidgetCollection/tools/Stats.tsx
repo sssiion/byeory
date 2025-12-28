@@ -1,8 +1,13 @@
 import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 
+export const StatsWidgetConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [4, 2]] as [number, number][],
+};
+
 // 18. Stats Widget (기록 통계)
-export const StatsWidget = React.memo(function StatsWidget() {
+export const StatsWidget = React.memo(function StatsWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
     return (
         <WidgetWrapper title="Monthly Log" className="bg-white">
             <div className="w-full h-full flex flex-col items-end justify-end p-3 pb-0 relative">

@@ -6,9 +6,15 @@ interface ComponentProps {
     className?: string;
     style?: React.CSSProperties;
     initialMessages?: Array<{ id: number; text: string; sender: 'me' | 'other'; time: string }>;
+    gridSize?: { w: number; h: number };
 }
 
-export const ChatDiary = ({ className, style, initialMessages = [] }: ComponentProps) => {
+export const ChatDiaryConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3]] as [number, number][],
+};
+
+export const ChatDiary = ({ className, style, initialMessages = [], gridSize }: ComponentProps) => {
     const [messages, setMessages] = useState(initialMessages.length > 0 ? initialMessages : [
         { id: 1, text: '오늘 하루는 어땠어?', sender: 'other', time: '09:00' },
     ]);
@@ -85,8 +91,8 @@ export const ChatDiary = ({ className, style, initialMessages = [] }: ComponentP
                                 )}
                                 <div
                                     className={`px-3 py-2 rounded-[12px] text-sm shadow-sm break-words ${msg.sender === 'me'
-                                            ? 'bg-[#ffeb3b] text-black rounded-tr-[4px]'
-                                            : 'bg-white text-black rounded-tl-[4px]'
+                                        ? 'bg-[#ffeb3b] text-black rounded-tr-[4px]'
+                                        : 'bg-white text-black rounded-tl-[4px]'
                                         }`}
                                 >
                                     {msg.text}

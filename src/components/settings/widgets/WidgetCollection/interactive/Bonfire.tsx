@@ -5,6 +5,11 @@ interface BonfireProps {
     gridSize?: { w: number; h: number };
 }
 
+export const BonfireConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 1], [2, 2], [3, 2], [3, 3]] as [number, number][],
+};
+
 export function Bonfire({ gridSize }: BonfireProps) {
     const w = gridSize?.w || 2;
     const h = gridSize?.h || 1;

@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { WidgetWrapper } from '../../Shared';
 import { SlidersHorizontal, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 
-export const PropertyToggle = ({ style }: { style?: React.CSSProperties }) => {
+export const PropertyToggleConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+};
+
+export const PropertyToggle = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [props, setProps] = useState([
         { id: 1, name: 'Status', visible: true },

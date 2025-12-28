@@ -2,7 +2,12 @@ import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 import { Sigma, BarChart3 } from 'lucide-react';
 
-export const Rollup = ({ style }: { style?: React.CSSProperties }) => {
+export const RollupConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2]] as [number, number][],
+};
+
+export const Rollup = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     return (
         <WidgetWrapper className="bg-white" style={style}>
             <div className="w-full h-full flex flex-col p-4">

@@ -7,6 +7,11 @@ interface ColorPaletteProps {
     gridSize?: { w: number; h: number };
 }
 
+export const ColorPaletteConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [1, 1]] as [number, number][],
+};
+
 export function ColorPalette({ gridSize }: ColorPaletteProps) {
     // SDK Storage
     const [colors, setColors] = useWidgetStorage<string[]>('widget-palette-colors', ['#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#073B4C']);

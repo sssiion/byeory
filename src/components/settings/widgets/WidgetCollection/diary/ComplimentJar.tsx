@@ -2,7 +2,16 @@ import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 2. Compliment Jar (칭찬 저금통)
-export function ComplimentJar() {
+export const ComplimentJarConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
+};
+
+interface ComplimentJarProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function ComplimentJar({ gridSize }: ComplimentJarProps) {
     const compliments = [
         "오늘도 빛나고 있어! ✨",
         "너의 미소가 최고야 😊",

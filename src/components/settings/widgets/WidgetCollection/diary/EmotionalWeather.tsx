@@ -3,7 +3,16 @@ import { Sun, Cloud, CloudRain } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 
 // --- 4. Emotional Weather (마음 날씨)
-export function EmotionalWeather() {
+export const EmotionalWeatherConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
+};
+
+interface EmotionalWeatherProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function EmotionalWeather({ gridSize }: EmotionalWeatherProps) {
     const [weather, setWeather] = useState<'sun' | 'cloud' | 'rain'>('sun');
 
     return (

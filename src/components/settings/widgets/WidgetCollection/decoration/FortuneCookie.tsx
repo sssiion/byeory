@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 
+export const FortuneCookieConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1]] as [number, number][],
+};
+
 // --- 3. Fortune Cookie (포춘 쿠키)
-export function FortuneCookie() {
+export function FortuneCookie({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [isCracked, setIsCracked] = useState(false);
     const fortunes = ["대길! 🍀", "행운 가득!", "기대해!", "좋은 예감"];
     const [fortune, setFortune] = useState("");

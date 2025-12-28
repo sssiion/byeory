@@ -14,6 +14,11 @@ interface BiorhythmProps {
     gridSize?: { w: number; h: number };
 }
 
+export const BiorhythmConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [3, 1], [1, 1]] as [number, number][],
+};
+
 export function Biorhythm({ gridSize }: BiorhythmProps) {
     // SDK Storage for birthDate
     const [birthDateStr, setBirthDateStr] = useWidgetStorage('widget-biorhythm-birthdate', '');

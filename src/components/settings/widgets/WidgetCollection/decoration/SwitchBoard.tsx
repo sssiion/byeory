@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 1. Switch Board (똑딱이)
-export function SwitchBoard() {
+export const SwitchBoardConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1]] as [number, number][],
+};
+
+export const SwitchBoard = ({ gridSize: _ }: { gridSize?: { w: number; h: number } }) => {
     const [isOn, setIsOn] = useState(false);
 
     return (

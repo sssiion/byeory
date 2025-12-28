@@ -13,7 +13,18 @@ interface DreamLogData {
 }
 
 // --- 3. Dream Log (꿈 기록장) ---
-export function DreamLog({ onUpdate, logs: propLogs = [] }: { onUpdate?: (data: DreamLogData) => void, logs?: DreamLogEntry[] }) {
+export const DreamLogConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
+interface DreamLogProps {
+    onUpdate?: (data: DreamLogData) => void;
+    logs?: DreamLogEntry[];
+    gridSize?: { w: number; h: number };
+}
+
+export function DreamLog({ onUpdate, logs: propLogs = [], gridSize }: DreamLogProps) {
     const [mode, setMode] = useState<'list' | 'write'>('list');
     const [input, setInput] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

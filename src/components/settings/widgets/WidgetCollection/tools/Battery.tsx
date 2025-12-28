@@ -3,7 +3,16 @@ import { Zap } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 
 // --- 5. Battery Widget (내 에너지)
-export const BatteryWidget = React.memo(function BatteryWidget() {
+export const BatteryWidgetConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
+interface BatteryWidgetProps {
+    gridSize?: { w: number; h: number };
+}
+
+export const BatteryWidget = React.memo(function BatteryWidget({ gridSize }: BatteryWidgetProps) {
     const [level, setLevel] = useState(50);
 
     return (

@@ -1,8 +1,13 @@
 import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 
+export const PhotoGalleryConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 3], [4, 4]] as [number, number][],
+};
+
 // 5. Photo Gallery (내 사진들)
-export const PhotoGallery = React.memo(function PhotoGallery() {
+export const PhotoGallery = React.memo(function PhotoGallery({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const images = [
         'https://images.unsplash.com/photo-1492633423870-43d1cd2775eb?w=300&h=300&fit=crop',
         'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop',
@@ -24,7 +29,12 @@ export const PhotoGallery = React.memo(function PhotoGallery() {
     );
 });
 
-export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0 }: { src: string; date: string; rotation?: number }) {
+export const PolaroidConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 2], [2, 2], [2, 3]] as [number, number][],
+};
+
+export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0, gridSize }: { src: string; date: string; rotation?: number; gridSize?: { w: number; h: number } }) {
     return (
         <div className="w-full h-full flex items-center justify-center p-2">
             <div
@@ -42,7 +52,12 @@ export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0 }
     );
 });
 
-export const InstantBooth = React.memo(function InstantBooth({ images, date }: { images: string[]; date: string }) {
+export const InstantBoothConfig = {
+    defaultSize: '1x2',
+    validSizes: [[1, 2], [1, 3], [2, 3]] as [number, number][],
+};
+
+export const InstantBooth = React.memo(function InstantBooth({ images, date, gridSize }: { images: string[]; date: string; gridSize?: { w: number; h: number } }) {
     return (
         <div className="w-full h-full flex items-center justify-center p-1">
             <div className="h-full max-h-full aspect-[1/2.5] bg-[#1a1a1a] p-1.5 pb-3 shadow-lg flex flex-col gap-1 items-center justify-between overflow-hidden rounded-sm">
@@ -57,7 +72,12 @@ export const InstantBooth = React.memo(function InstantBooth({ images, date }: {
     );
 });
 
-export const FilmStrip = React.memo(function FilmStrip({ images }: { images: string[] }) {
+export const FilmStripConfig = {
+    defaultSize: '4x2',
+    validSizes: [[4, 1], [4, 2]] as [number, number][],
+};
+
+export const FilmStrip = React.memo(function FilmStrip({ images, gridSize }: { images: string[]; gridSize?: { w: number; h: number } }) {
     return (
         <div className="relative w-full h-full bg-black p-1 md:p-2 overflow-x-auto scrollbar-hide rounded-lg flex items-center shadow-lg">
             <div className="flex gap-2 min-w-max h-full">

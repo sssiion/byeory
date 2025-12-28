@@ -120,7 +120,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
                             {showSizeMenu && (
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-2 z-50 w-32 grid grid-cols-2 gap-1 animate-in zoom-in duration-200">
-                                    {[
+                                    {(registryItem.validSizes || [
                                         [1, 1], [2, 1], [3, 1],
                                         [1, 2], [2, 2], [3, 2],
                                         [2, 3], [3, 3], [4, 2]
@@ -128,10 +128,37 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         if (registryItem.minW && cw < registryItem.minW) return false;
                                         if (registryItem.minH && ch < registryItem.minH) return false;
                                         return true;
-                                    }).map(([cw, ch]) => (
+                                    })).map(([cw, ch]) => (
                                         <button
                                             key={`${cw}x${ch}`}
-                                            onClick={() => { updateLayout(widget.id, { w: cw, h: ch }); setShowSizeMenu(false); }}
+                                            onClick={() => {
+                                                // Update layout
+                                                updateLayout(widget.id, { w: cw, h: ch });
+
+                                                // Save to DB (localStorage) for persistence
+                                                try {
+                                                    const key = `widget-config-${widget.type}`;
+                                                    const existing = localStorage.getItem(key);
+                                                    const config = existing ? JSON.parse(existing) : {};
+
+                                                    const newConfig = {
+                                                        ...config,
+                                                        defaultSize: `${cw}x${ch}`
+                                                    };
+
+                                                    localStorage.setItem(key, JSON.stringify(newConfig));
+
+                                                    // Update in-memory registry so immediate re-adds use new size
+                                                    const registryItem = WIDGET_REGISTRY[widget.type];
+                                                    if (registryItem) {
+                                                        registryItem.defaultSize = `${cw}x${ch}`;
+                                                    }
+                                                } catch (e) {
+                                                    console.warn('Failed to save widget config:', e);
+                                                }
+
+                                                setShowSizeMenu(false);
+                                            }}
                                             className={`text-[10px] p-1 rounded hover:bg-[var(--bg-card-secondary)] border ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
                                         >
                                             {cw}x{ch}

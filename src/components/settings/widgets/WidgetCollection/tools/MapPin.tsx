@@ -4,7 +4,16 @@ import { useWidgetStorage } from '../SDK';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-export function MapPin() {
+export const MapPinConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [3, 2], [4, 3]] as [number, number][],
+};
+
+interface MapPinProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function MapPin({ gridSize }: MapPinProps) {
     // SDK Storage
     const [query, setQuery] = useWidgetStorage('widget-mappin-query', 'Seoul');
     const [memo, setMemo] = useWidgetStorage('widget-mappin-memo', '');

@@ -7,6 +7,11 @@ interface MeditationTimerProps {
     gridSize?: { w: number; h: number };
 }
 
+export const MeditationTimerConfig = {
+    defaultSize: '2x1',
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+};
+
 export function MeditationTimer({ gridSize }: MeditationTimerProps) {
     const [timeLeft, setTimeLeft] = useState(60); // Seconds
     const [isActive, setIsActive] = useState(false);

@@ -2,8 +2,13 @@ import React from 'react';
 import { Calendar, Image as ImageIcon, User, Link, Youtube, Github, Mail, Search } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
+export const QuickLinksConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [4, 1], [4, 2]] as [number, number][],
+};
+
 // 16. Quick Links (즐겨찾기)
-export const QuickLinks = React.memo(function QuickLinks() {
+export const QuickLinks = React.memo(function QuickLinks({ gridSize }: { gridSize?: { w: number; h: number } }) {
     return (
         <WidgetWrapper className="bg-gray-100 dark:bg-zinc-800">
             <div className="grid grid-cols-4 grid-rows-2 w-full h-full gap-2 p-2">
