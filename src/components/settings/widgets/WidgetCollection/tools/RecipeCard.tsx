@@ -1,31 +1,25 @@
-import { useState, useEffect } from 'react';
 import { ChefHat, Timer, Play, Pause, RotateCcw } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage, useWidgetInterval } from '../SDK';
 
 interface RecipeCardProps {
     gridSize?: { w: number; h: number };
 }
 
 export function RecipeCard({ gridSize }: RecipeCardProps) {
-    const [timeLeft, setTimeLeft] = useState(0); // in seconds
-    const [isActive, setIsActive] = useState(false);
+    const [timeLeft, setTimeLeft] = useWidgetStorage('widget-recipe-time', 180); // Default 3 min, synced
+    const [isActive, setIsActive] = useWidgetStorage('widget-recipe-active', false);
 
     // Ingredients demo state
-    const [checked, setChecked] = useState<boolean[]>([false, false, false]);
+    const [checked, setChecked] = useWidgetStorage<boolean[]>('widget-recipe-checked', [false, false, false]);
 
-    useEffect(() => {
-        let interval: ReturnType<typeof setInterval> | null = null;
-        if (isActive && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
-            }, 1000);
-        } else if (timeLeft === 0) {
+    useWidgetInterval(() => {
+        if (timeLeft > 0) {
+            setTimeLeft(timeLeft - 1);
+        } else {
             setIsActive(false);
         }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isActive, timeLeft]);
+    }, isActive ? 1000 : null);
 
     const toggleTimer = () => setIsActive(!isActive);
     const resetTimer = () => { setIsActive(false); setTimeLeft(180); }; // Default 3 min

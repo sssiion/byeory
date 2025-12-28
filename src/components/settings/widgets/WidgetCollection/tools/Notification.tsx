@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
+import { useWidgetStorage } from '../SDK';
 
 // 11. Notification (알림 설정)
 export function NotificationSet() {
-    const [isOn, setIsOn] = useState(true);
+    const [isOn, setIsOn] = useWidgetStorage('widget-notification-ison', true);
 
     return (
         <WidgetWrapper className="bg-gray-50">

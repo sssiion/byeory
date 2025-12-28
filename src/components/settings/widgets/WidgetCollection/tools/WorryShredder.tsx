@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 // --- 1. Worry Shredder (근심 파쇄기) ---
 export function WorryShredder() {
-    const [text, setText] = useState('');
+    const [text, setText] = useWidgetStorage('widget-shredder-text', '');
     const [isShredding, setIsShredding] = useState(false);
 
     const handleShred = () => {

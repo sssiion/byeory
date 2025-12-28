@@ -4,35 +4,28 @@ import { DailyView } from '../../components/Todo/Daily';
 import { WeeklyView } from '../../components/Todo/Weekly';
 import { MonthlyView } from '../../components/Todo/Monthly';
 import type { Todo } from '../../components/Todo/types';
+import { useSharedTodo } from '../../components/Todo/useSharedTodo';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
 const TodoPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
-    const [todos, setTodos] = useState<Todo[]>([]);
+    const { todos, addTodo, updateTodo, deleteTodo, toggleTodo } = useSharedTodo();
 
     const handleAddTodo = (newTodo: Omit<Todo, 'id'>) => {
-        const todo: Todo = {
-            ...newTodo,
-            id: Math.random().toString(36).substr(2, 9)
-        };
-        setTodos([...todos, todo]);
+        addTodo(newTodo);
     };
 
     const handleUpdateTodo = (id: string, updates: Partial<Todo>) => {
-        setTodos(todos.map(todo =>
-            todo.id === id ? { ...todo, ...updates } : todo
-        ));
+        updateTodo(id, updates);
     };
 
     const handleDeleteTodo = (id: string) => {
-        setTodos(todos.filter(todo => todo.id !== id));
+        deleteTodo(id);
     };
 
     const handleToggleComplete = (id: string) => {
-        setTodos(todos.map(todo =>
-            todo.id === id ? { ...todo, completed: !todo.completed } : todo
-        ));
+        toggleTodo(id);
     };
 
     return (

@@ -1,16 +1,15 @@
-import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 interface TypewriterProps {
     gridSize?: { w: number; h: number };
 }
 
 export function Typewriter(_: TypewriterProps) {
-    const [text, setText] = useState(() => localStorage.getItem('typewriter_text') || '');
+    const [text, setText] = useWidgetStorage('widget-typewriter-text', '');
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setText(e.target.value);
-        localStorage.setItem('typewriter_text', e.target.value);
         // Play sound effect hook here if requested later
     };
 

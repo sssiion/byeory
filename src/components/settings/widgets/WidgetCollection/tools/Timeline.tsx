@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 import { Plus, Trash2 } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 interface ComponentProps {
     className?: string;
@@ -15,7 +16,7 @@ interface TimelineEvent {
 }
 
 export const Timeline = ({ className, style }: ComponentProps) => {
-    const [events, setEvents] = useState<TimelineEvent[]>([
+    const [events, setEvents] = useWidgetStorage<TimelineEvent[]>('widget-timeline-events', [
         { id: 1, date: '2025.12.27', title: '프로젝트 시작', description: '위젯 만들기' },
         { id: 2, date: '2026.01.01', title: '새해', description: '해돋이 보러가기' },
     ]);

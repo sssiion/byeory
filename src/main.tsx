@@ -7,7 +7,7 @@ import TodoPage from './pages/todo/TodoPage'
 import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 import { ThemeProvider } from './components/settings/theme/ThemeContext';
-import MarketPage from './pages/market/MarketPage'
+import MarketPage from './pages/Market/MarketPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditScreen from './pages/profile/ProfileEditScreen';
 import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
@@ -26,6 +26,7 @@ import LoginPage from './pages/auth/LoginPage'
 import JoinPage from './pages/auth/JoinPage'
 import FindPasswordPage from './pages/auth/FindPasswordPage'
 import { AuthProvider } from './context/AuthContext'
+import { TodoProvider } from './context/TodoContext'
 
 // Initialize theme from localStorage
 const savedTheme = localStorage.getItem('theme') || 'default';
@@ -127,22 +128,24 @@ createRoot(document.getElementById('root')!).render(
       <MenuProvider>
         <AuthProvider>
           <ThemeProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<RootRedirector />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/join" element={<JoinPage />} />
-                <Route path="/find-password" element={<FindPasswordPage />} />
-                <Route path="/home" element={<MainPage />} />
-                <Route path="/post" element={<PostPage />} />
-                <Route path="/todo" element={<TodoPage />} />
-                <Route path="/community" element={<CommunityPage />} />
-                <Route path="/market" element={<MarketPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/profile/edit" element={<ProfileEditScreen />} />
-                <Route path="/profile/password" element={<PasswordChangeScreen />} />
-              </Routes>
-            </BrowserRouter>
+            <TodoProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<RootRedirector />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/join" element={<JoinPage />} />
+                  <Route path="/find-password" element={<FindPasswordPage />} />
+                  <Route path="/home" element={<MainPage />} />
+                  <Route path="/post" element={<PostPage />} />
+                  <Route path="/todo" element={<TodoPage />} />
+                  <Route path="/community" element={<CommunityPage />} />
+                  <Route path="/market" element={<MarketPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/profile/edit" element={<ProfileEditScreen />} />
+                  <Route path="/profile/password" element={<PasswordChangeScreen />} />
+                </Routes>
+              </BrowserRouter>
+            </TodoProvider>
           </ThemeProvider>
         </AuthProvider>
       </MenuProvider>

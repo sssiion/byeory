@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Smile, MessageCircle } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 interface WorryDollProps {
     gridSize?: { w: number; h: number };
@@ -8,19 +9,21 @@ interface WorryDollProps {
 
 export function WorryDoll({ gridSize }: WorryDollProps) {
     const [worry, setWorry] = useState('');
-    const [hasWorry, setHasWorry] = useState(() => !!localStorage.getItem('worry_doll_val'));
+    // Persis 'hasWorry' state (and the worry text itself if needed, but logic implies we just keep "that we have a worry")
+    // Actually the original code stored the worry text in 'worry_doll_val' and checked availability.
+    const [storedWorry, setStoredWorry] = useWidgetStorage<string | null>('widget-worry-doll-val', null);
+
+    const hasWorry = !!storedWorry;
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const handleGiveWorry = () => {
         if (!worry.trim()) return;
-        localStorage.setItem('worry_doll_val', worry);
-        setHasWorry(true);
+        setStoredWorry(worry);
         setWorry('');
     };
 
     const handleClearWorry = () => {
-        localStorage.removeItem('worry_doll_val');
-        setHasWorry(false);
+        setStoredWorry(null);
     };
 
     const w = gridSize?.w || 2;

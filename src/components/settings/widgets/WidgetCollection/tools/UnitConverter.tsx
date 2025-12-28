@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 const UNIT_CATEGORIES = {
     length: {
@@ -67,9 +68,22 @@ const UNIT_CATEGORIES = {
 const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
 
 export function UnitConverter() {
-    const [category, setCategory] = useState<keyof typeof UNIT_CATEGORIES>('length');
-    const [fromUnit, setFromUnit] = useState<string>('m');
-    const [toUnit, setToUnit] = useState<string>('cm');
+    // Persist user selection
+    const [settings, setSettings] = useWidgetStorage('widget-unit-converter', {
+        category: 'length' as keyof typeof UNIT_CATEGORIES,
+        fromUnit: 'm',
+        toUnit: 'cm'
+    });
+
+    // Derived state setters for compatibility with existing code structure
+    const category = settings.category;
+    const fromUnit = settings.fromUnit;
+    const toUnit = settings.toUnit;
+
+    const setCategory = (c: keyof typeof UNIT_CATEGORIES) => setSettings({ ...settings, category: c });
+    const setFromUnit = (u: string) => setSettings({ ...settings, fromUnit: u });
+    const setToUnit = (u: string) => setSettings({ ...settings, toUnit: u });
+
     const [fromValue, setFromValue] = useState<string>('1');
     const [toValue, setToValue] = useState<string>('');
     const [rates, setRates] = useState<any>(UNIT_CATEGORIES.length.rates);
@@ -128,21 +142,30 @@ export function UnitConverter() {
         setToValue(parseFloat(result.toFixed(6)).toString());
     };
 
-    // Initial setup when category changes
-    useEffect(() => {
-        const cat = UNIT_CATEGORIES[category];
+    // Initial setup handled by storage/state init.
+    // When category changes via user input, we should update units.
+    const handleCategoryChange = (c: keyof typeof UNIT_CATEGORIES) => {
+        const cat = UNIT_CATEGORIES[c];
         const units = Object.keys(cat.units);
-        setFromUnit(units[0]);
-        setToUnit(units[1] || units[0]);
+        setSettings({
+            category: c,
+            fromUnit: units[0],
+            toUnit: units[1] || units[0]
+        });
 
-        if (category === 'currency') {
+        if (c === 'currency') {
             fetchCurrencyRates();
         } else {
             setRates(cat.rates);
             setLastUpdated(null);
         }
+    };
+
+    // Load rates on mount if currency
+    useEffect(() => {
+        if (category === 'currency') fetchCurrencyRates();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [category]);
+    }, []);
 
     // Recalculate when inputs change
     useEffect(() => {
@@ -166,7 +189,7 @@ export function UnitConverter() {
                 {Object.entries(UNIT_CATEGORIES).map(([key, info]) => (
                     <button
                         key={key}
-                        onClick={() => setCategory(key as any)}
+                        onClick={() => handleCategoryChange(key as any)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors
                             ${category === key
                                 ? 'theme-bg-primary text-white'

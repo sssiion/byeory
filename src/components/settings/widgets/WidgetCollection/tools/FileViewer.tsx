@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FileText, FileArchive, Upload, Eye } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 export function FileViewer() {
-    const [fileType, setFileType] = useState<'pdf' | 'zip' | 'none'>('none');
-    const [fileName, setFileName] = useState('');
+    // Persist mock file state
+    const [fileState, setFileState] = useWidgetStorage('widget-file-viewer', { type: 'none' as 'pdf' | 'zip' | 'none', name: '' });
+
+    // Derived state for compatibility
+    const fileType = fileState.type;
+    const fileName = fileState.name;
+
+    const setFileType = (type: 'pdf' | 'zip' | 'none') => setFileState({ ...fileState, type });
+    const setFileName = (name: string) => setFileState({ ...fileState, name });
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
@@ -63,7 +71,7 @@ export function FileViewer() {
                     </div>
 
                     <button
-                        onClick={() => { setFileType('none'); setFileName(''); }}
+                        onClick={() => setFileState({ type: 'none', name: '' })}
                         className="mt-2 text-[10px] text-red-500 hover:underline text-center"
                     >
                         Close / Clear

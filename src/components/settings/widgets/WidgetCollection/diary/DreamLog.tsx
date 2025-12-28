@@ -20,7 +20,7 @@ export function DreamLog({ onUpdate, logs: propLogs = [] }: { onUpdate?: (data: 
 
     // Internal state priority, fallback to props only on init if needed (standard pattern)
     // Actually, stick to storage as primary source for widget.
-    const [logs, setLogs] = useWidgetStorage<DreamLogEntry[]>('widget-dream-log', []);
+    const [logs, setLogs] = useWidgetStorage<DreamLogEntry[]>('widget-dream-log', propLogs);
 
     const addLog = () => {
         if (!input) return;

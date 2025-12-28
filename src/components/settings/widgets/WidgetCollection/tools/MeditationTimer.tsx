@@ -29,24 +29,7 @@ export function MeditationTimer({ gridSize }: MeditationTimerProps) {
         }
     }, [timeLeft]);
 
-    // Breathing Cycle Logic (4-4-4 Box Breathing)
-    useWidgetInterval(() => {
-        const cycleLength = 12000; // 4s In, 4s Hold, 4s Out
-        const now = Date.now();
-        // Note: Simple timer drift is acceptable for visual widget guidance
-        // Ideally we'd compare against start timestamp, but interval logic suffices for UI.
-        // Let's keep it simple: Phase rotates based on timeLeft for perfect sync? 
-        // Or just run a separate animation loop? 
-        // SDK interval is good.
 
-        // Actually, to keep cycle consistent we need a ref timestamp.
-        // But for this refactor, let's keep it simple state rotation or just 100ms checks.
-        // However, useWidgetInterval doesn't pass elapsed time.
-        // We'll trust the component state logic or stick to standard useEffect for complex animation loops 
-        // IF useWidgetInterval isn't flexible enough.
-        // But actually, useWidgetInterval is just a wrapper for setInterval.
-        // So we can use it.
-    }, isActive ? 100 : null);
 
     // Re-implementing the breath cycle more cleanly with a timestamp ref if possible, 
     // but to avoid massive changes, I'll stick to the existing logic pattern but use useWidgetInterval logic.

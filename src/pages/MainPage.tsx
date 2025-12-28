@@ -5,7 +5,7 @@ import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
 import { WidgetGallery } from '../components/settings/widgets/WidgetGallery';
 import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
-import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical } from 'lucide-react';
+import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical, ArrowUp } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { clampWidget, resolveCollisions, compactLayout } from '../components/settings/widgets/layoutUtils';
@@ -58,6 +58,7 @@ const GridCell: React.FC<GridCellProps> = ({ x, y, onDrop, onHover, isEditMode }
 const MainPage: React.FC = () => {
     const { isEditMode: isMenuEditMode } = useMenu();
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false); // State for scroll button visibility
     const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
     const [widgetSnapshot, setWidgetSnapshot] = useState<WidgetInstance[] | null>(null);
     const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
@@ -141,6 +142,28 @@ const MainPage: React.FC = () => {
             document.body.style.overflow = '';
         };
     }, [isCatalogOpen]);
+
+    // Handle Scroll Listener for "Scroll to Top" button
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                setShowScrollTop(true);
+            } else {
+                setShowScrollTop(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to Top Function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    };
 
     // Snapshot widgets when entering edit mode
     useEffect(() => {
@@ -542,6 +565,15 @@ const MainPage: React.FC = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Scroll To Top Button */}
+                <button
+                    onClick={scrollToTop}
+                    className={`fixed bottom-24 md:bottom-8 right-8 p-3 rounded-full bg-[var(--btn-bg)] text-white shadow-lg transition-all duration-300 z-40 hover:scale-110 active:scale-95 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+                    aria-label="Scroll to top"
+                >
+                    <ArrowUp size={24} />
+                </button>
             </div>
         </DndProvider>
     );

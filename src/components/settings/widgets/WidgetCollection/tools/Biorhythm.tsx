@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Settings, TrendingUp } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 // 바이오리듬 계산을 위한 유틸리티
 const getBiorhythm = (birthDate: Date, targetDate: Date, cycle: number) => {
@@ -14,8 +15,8 @@ interface BiorhythmProps {
 }
 
 export function Biorhythm({ gridSize }: BiorhythmProps) {
-    // 로컬 스토리지에서 생년월일 가져오기
-    const [birthDateStr, setBirthDateStr] = useState(() => localStorage.getItem('userBirthDate') || '');
+    // SDK Storage for birthDate
+    const [birthDateStr, setBirthDateStr] = useWidgetStorage('widget-biorhythm-birthdate', '');
     const [isEditing, setIsEditing] = useState(!birthDateStr);
     const [tempDate, setTempDate] = useState(birthDateStr);
 
@@ -29,7 +30,6 @@ export function Biorhythm({ gridSize }: BiorhythmProps) {
     // 생년월일 저장 핸들러
     const handleSave = () => {
         if (tempDate) {
-            localStorage.setItem('userBirthDate', tempDate);
             setBirthDateStr(tempDate);
             setIsEditing(false);
         }

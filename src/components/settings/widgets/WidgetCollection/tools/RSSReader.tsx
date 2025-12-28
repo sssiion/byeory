@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Rss, ExternalLink, RefreshCw } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 export function RSSReader() {
-    const [url, setUrl] = useState('');
+    const [url, setUrl] = useWidgetStorage('widget-rss-url', '');
     const [feed, setFeed] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,14 @@ export function RSSReader() {
             setLoading(false);
         }
     };
+
+    // Auto-load on mount if URL exists
+    useEffect(() => {
+        if (url) {
+            fetchFeed(undefined, url);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">

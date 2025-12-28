@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { WidgetWrapper } from '../../Shared';
 import { RefreshCw } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 interface ComponentProps {
     className?: string;
@@ -24,7 +25,7 @@ const DEFAULT_TAGS = [
 ];
 
 export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS }: ComponentProps) => {
-    const [tags, setTags] = useState(initialTags);
+    const [tags, setTags] = useWidgetStorage('widget-tagcloud-tags', initialTags);
 
     const shuffledTags = useMemo(() => {
         return [...tags].sort(() => Math.random() - 0.5);

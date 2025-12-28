@@ -1,28 +1,24 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Camera, Upload } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 interface PolaroidProps {
     gridSize?: { w: number; h: number };
 }
 
 export function Polaroid({ gridSize }: PolaroidProps) {
-    const [image, setImage] = useState<string | null>(() => localStorage.getItem('polaroid_img') || null);
-    const [caption, setCaption] = useState(() => localStorage.getItem('polaroid_caption') || '');
+    // SDK Storage
+    const [image, setImage] = useWidgetStorage<string | null>('widget-polaroid-img', null);
+    const [caption, setCaption] = useWidgetStorage('widget-polaroid-caption', '');
+
     const [isDeveloping, setIsDeveloping] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const w = gridSize?.w || 2;
     const isSmall = w === 1;
 
-    // Persist changes
-    useEffect(() => {
-        if (image) localStorage.setItem('polaroid_img', image);
-    }, [image]);
-
-    useEffect(() => {
-        localStorage.setItem('polaroid_caption', caption);
-    }, [caption]);
+    // Manual persistence effects removed (handled by SDK)
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
