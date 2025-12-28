@@ -24,7 +24,7 @@ export const BirthFlowerConfig = {
     validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
 };
 
-export function BirthFlower({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function BirthFlower() {
     const [dateStr, setDateStr] = useState(() => localStorage.getItem('userBirthDate') || '');
     const [isEditing, setIsEditing] = useState(!dateStr);
 

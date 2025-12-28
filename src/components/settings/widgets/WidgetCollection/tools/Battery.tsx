@@ -8,11 +8,7 @@ export const BatteryWidgetConfig = {
     validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
-interface BatteryWidgetProps {
-    gridSize?: { w: number; h: number };
-}
-
-export const BatteryWidget = React.memo(function BatteryWidget({ gridSize }: BatteryWidgetProps) {
+export const BatteryWidget = React.memo(function BatteryWidget() {
     const [level, setLevel] = useState(50);
 
     return (

@@ -21,10 +21,9 @@ export const DreamLogConfig = {
 interface DreamLogProps {
     onUpdate?: (data: DreamLogData) => void;
     logs?: DreamLogEntry[];
-    gridSize?: { w: number; h: number };
 }
 
-export function DreamLog({ onUpdate, logs: propLogs = [], gridSize }: DreamLogProps) {
+export function DreamLog({ onUpdate, logs: propLogs = [] }: DreamLogProps) {
     const [mode, setMode] = useState<'list' | 'write'>('list');
     const [input, setInput] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);

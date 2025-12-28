@@ -9,11 +9,7 @@ export const MapPinConfig = {
     validSizes: [[2, 1], [3, 2], [4, 3]] as [number, number][],
 };
 
-interface MapPinProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function MapPin({ gridSize }: MapPinProps) {
+export function MapPin() {
     // SDK Storage
     const [query, setQuery] = useWidgetStorage('widget-mappin-query', 'Seoul');
     const [memo, setMemo] = useWidgetStorage('widget-mappin-memo', '');

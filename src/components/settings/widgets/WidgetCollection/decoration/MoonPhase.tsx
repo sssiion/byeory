@@ -7,7 +7,7 @@ export const MoonPhaseConfig = {
 };
 
 // --- 1. Moon Phase (달의 위상) ---
-export function MoonPhase({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function MoonPhase() {
     const [phase, setPhase] = useState(0);
     const [phaseName, setPhaseName] = useState('');
 

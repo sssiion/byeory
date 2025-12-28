@@ -7,11 +7,7 @@ export const ComplimentJarConfig = {
     validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-interface ComplimentJarProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function ComplimentJar({ gridSize }: ComplimentJarProps) {
+export function ComplimentJar() {
     const compliments = [
         "오늘도 빛나고 있어! ✨",
         "너의 미소가 최고야 😊",

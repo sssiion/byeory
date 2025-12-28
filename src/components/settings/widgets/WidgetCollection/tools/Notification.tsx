@@ -8,7 +8,7 @@ export const NotificationConfig = {
 };
 
 // 11. Notification (알림 설정)
-export function NotificationSet({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function NotificationSet() {
     const [isOn, setIsOn] = useWidgetStorage('widget-notification-ison', true);
 
     return (

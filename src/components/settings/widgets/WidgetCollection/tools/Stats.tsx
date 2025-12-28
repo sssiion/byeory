@@ -7,7 +7,7 @@ export const StatsWidgetConfig = {
 };
 
 // 18. Stats Widget (기록 통계)
-export const StatsWidget = React.memo(function StatsWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export const StatsWidget = React.memo(function StatsWidget() {
     return (
         <WidgetWrapper title="Monthly Log" className="bg-white">
             <div className="w-full h-full flex flex-col items-end justify-end p-3 pb-0 relative">

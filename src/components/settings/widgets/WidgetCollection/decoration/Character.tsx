@@ -6,7 +6,7 @@ export const FavoriteCharacterConfig = {
     validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const FavoriteCharacter = React.memo(function FavoriteCharacter({ src, name, gridSize }: { src: string; name: string; gridSize?: { w: number; h: number } }) {
+export const FavoriteCharacter = React.memo(function FavoriteCharacter({ src, name }: { src: string; name: string; gridSize?: { w: number; h: number } }) {
     return (
         <WidgetWrapper className="bg-gradient-to-br from-pink-50 to-white">
             <div className="relative w-full aspect-square max-w-[100px] rounded-full overflow-hidden border-2 border-[var(--btn-bg)] shadow-md transition-transform hover:scale-105">

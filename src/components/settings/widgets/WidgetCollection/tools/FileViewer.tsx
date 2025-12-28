@@ -7,11 +7,7 @@ export const FileViewerConfig = {
     validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
-interface FileViewerProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function FileViewer({ gridSize }: FileViewerProps) {
+export function FileViewer() {
     // Persist mock file state
     const [fileState, setFileState] = useWidgetStorage('widget-file-viewer', { type: 'none' as 'pdf' | 'zip' | 'none', name: '' });
 

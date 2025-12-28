@@ -8,7 +8,7 @@ export const BookCoverConfig = {
 };
 
 // --- 7. Book Cover (읽는 책)
-export const BookCover = React.memo(function BookCover({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export const BookCover = React.memo(function BookCover() {
     const [page] = useState(42);
     const total = 300;
     const progress = Math.min(100, Math.round((page / total) * 100));

@@ -7,11 +7,7 @@ export const DailyStampConfig = {
     validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-interface DailyStampProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function DailyStamp({ gridSize }: DailyStampProps) {
+export function DailyStamp() {
     const [stamps, setStamps] = useState<{ x: number, y: number }[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
 

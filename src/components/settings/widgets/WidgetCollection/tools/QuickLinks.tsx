@@ -8,7 +8,7 @@ export const QuickLinksConfig = {
 };
 
 // 16. Quick Links (즐겨찾기)
-export const QuickLinks = React.memo(function QuickLinks({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export const QuickLinks = React.memo(function QuickLinks() {
     return (
         <WidgetWrapper className="bg-gray-100 dark:bg-zinc-800">
             <div className="grid grid-cols-4 grid-rows-2 w-full h-full gap-2 p-2">

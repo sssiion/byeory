@@ -8,11 +8,7 @@ export const DailyDiaryConfig = {
     validSizes: [[2, 2], [3, 2]] as [number, number][],
 };
 
-interface DailyDiaryProps {
-    gridSize?: { w: number; h: number };
-}
-
-export const DailyDiary = memo(function DailyDiary({ gridSize }: DailyDiaryProps) {
+export const DailyDiary = memo(function DailyDiary() {
     const [content, setContent] = useWidgetStorage('widget-daily-diary', '');
 
     return (

@@ -8,7 +8,7 @@ export const WorryShredderConfig = {
 };
 
 // --- 1. Worry Shredder (근심 파쇄기) ---
-export function WorryShredder({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function WorryShredder() {
     const [text, setText] = useWidgetStorage('widget-shredder-text', '');
     const [isShredding, setIsShredding] = useState(false);
 

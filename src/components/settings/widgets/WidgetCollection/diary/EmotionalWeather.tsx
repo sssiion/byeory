@@ -8,11 +8,7 @@ export const EmotionalWeatherConfig = {
     validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-interface EmotionalWeatherProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function EmotionalWeather({ gridSize }: EmotionalWeatherProps) {
+export function EmotionalWeather() {
     const [weather, setWeather] = useState<'sun' | 'cloud' | 'rain'>('sun');
 
     return (

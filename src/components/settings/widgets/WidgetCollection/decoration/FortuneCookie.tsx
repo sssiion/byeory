@@ -7,7 +7,7 @@ export const FortuneCookieConfig = {
 };
 
 // --- 3. Fortune Cookie (포춘 쿠키)
-export function FortuneCookie({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function FortuneCookie() {
     const [isCracked, setIsCracked] = useState(false);
     const fortunes = ["대길! 🍀", "행운 가득!", "기대해!", "좋은 예감"];
     const [fortune, setFortune] = useState("");

@@ -7,7 +7,7 @@ export const BubbleWrapConfig = {
 };
 
 // --- 8. Bubble Wrap (뽁뽁이)
-export function BubbleWrap({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function BubbleWrap() {
     const [popped, setPopped] = useState<Set<number>>(new Set());
 
     const pop = (i: number) => {

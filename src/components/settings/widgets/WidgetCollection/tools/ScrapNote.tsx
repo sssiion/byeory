@@ -10,7 +10,7 @@ export const ScrapNoteConfig = {
     validSizes: [[2, 2], [3, 2], [4, 2]] as [number, number][],
 };
 
-export function ScrapNote({ text: initialText = '', gridSize }: { text?: string; gridSize?: { w: number; h: number } }) {
+export function ScrapNote({ text: initialText = '' }: { text?: string; gridSize?: { w: number; h: number } }) {
     const [text, setText] = useWidgetStorage('widget-scrap-note', initialText);
     const [copied, setCopied] = useState(false);
 

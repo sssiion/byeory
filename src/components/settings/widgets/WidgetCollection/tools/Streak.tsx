@@ -8,7 +8,7 @@ export const StreakWidgetConfig = {
 };
 
 // 17. Streak Widget (연속 기록)
-export const StreakWidget = React.memo(function StreakWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export const StreakWidget = React.memo(function StreakWidget() {
     return (
         <WidgetWrapper className="bg-gradient-to-b from-orange-50 to-white">
             <div className="w-full h-full flex flex-col items-center justify-center p-2">

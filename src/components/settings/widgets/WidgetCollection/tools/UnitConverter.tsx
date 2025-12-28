@@ -72,7 +72,7 @@ export const UnitConverterConfig = {
     validSizes: [[2, 2], [3, 2], [3, 3], [4, 3]] as [number, number][],
 };
 
-export function UnitConverter({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function UnitConverter() {
     // Persist user selection
     const [settings, setSettings] = useWidgetStorage('widget-unit-converter', {
         category: 'length' as keyof typeof UNIT_CATEGORIES,
@@ -85,7 +85,7 @@ export function UnitConverter({ gridSize }: { gridSize?: { w: number; h: number 
     const fromUnit = settings.fromUnit;
     const toUnit = settings.toUnit;
 
-    const setCategory = (c: keyof typeof UNIT_CATEGORIES) => setSettings({ ...settings, category: c });
+
     const setFromUnit = (u: string) => setSettings({ ...settings, fromUnit: u });
     const setToUnit = (u: string) => setSettings({ ...settings, toUnit: u });
 

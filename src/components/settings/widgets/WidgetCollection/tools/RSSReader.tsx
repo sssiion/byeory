@@ -7,7 +7,7 @@ export const RSSReaderConfig = {
     validSizes: [[2, 2], [3, 2], [3, 3], [4, 3]] as [number, number][],
 };
 
-export function RSSReader({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function RSSReader() {
     const [url, setUrl] = useWidgetStorage('widget-rss-url', '');
     const [feed, setFeed] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);

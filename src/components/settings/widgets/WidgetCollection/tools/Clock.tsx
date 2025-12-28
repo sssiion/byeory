@@ -8,11 +8,7 @@ export const ClockWidgetConfig = {
     validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-interface ClockWidgetProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function ClockWidget({ gridSize }: ClockWidgetProps) {
+export function ClockWidget() {
     const [time, setTime] = useState(new Date());
     const [type, setType] = useWidgetStorage<'digital' | 'analog' | 'flip'>('widget-clock-type', 'analog');
 

@@ -10,7 +10,7 @@ export const WeatherWidgetConfig = {
 };
 
 // 10. Weather Widget (날씨)
-export function WeatherWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function WeatherWidget() {
     const [weather, setWeather] = useWidgetStorage<WeatherType>('widget-weather-state', 'sun');
 
     const nextWeather = () => {

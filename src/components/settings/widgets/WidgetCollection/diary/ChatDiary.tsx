@@ -14,7 +14,7 @@ export const ChatDiaryConfig = {
     validSizes: [[2, 2], [2, 3]] as [number, number][],
 };
 
-export const ChatDiary = ({ className, style, initialMessages = [], gridSize }: ComponentProps) => {
+export const ChatDiary = ({ className, style, initialMessages = [] }: ComponentProps) => {
     const [messages, setMessages] = useState(initialMessages.length > 0 ? initialMessages : [
         { id: 1, text: '오늘 하루는 어땠어?', sender: 'other', time: '09:00' },
     ]);

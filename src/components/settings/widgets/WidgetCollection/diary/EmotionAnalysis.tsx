@@ -7,11 +7,7 @@ export const EmotionAnalysisConfig = {
     validSizes: [[2, 1], [3, 1]] as [number, number][],
 };
 
-interface EmotionAnalysisProps {
-    gridSize?: { w: number; h: number };
-}
-
-export const EmotionAnalysis = memo(function EmotionAnalysis({ gridSize }: EmotionAnalysisProps) {
+export const EmotionAnalysis = memo(function EmotionAnalysis() {
     return (
         <WidgetWrapper title="이번 달 감정" className="bg-white">
             <div className="w-full h-full flex items-center justify-center p-2">

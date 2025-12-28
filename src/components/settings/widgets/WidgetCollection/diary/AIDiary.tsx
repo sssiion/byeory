@@ -8,11 +8,7 @@ export const AIDiaryConfig = {
     validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
-interface AIDiaryProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function AIDiary({ gridSize }: AIDiaryProps) {
+export function AIDiary() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [result, setResult] = useState('');
 

@@ -8,11 +8,7 @@ export const PastTodayConfig = {
     validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
-interface PastTodayProps {
-    gridSize?: { w: number; h: number };
-}
-
-export const PastToday = memo(function PastToday({ gridSize }: PastTodayProps) {
+export const PastToday = memo(function PastToday() {
     return (
         <WidgetWrapper className="bg-slate-50 border-slate-100">
             <div className="w-full h-full p-3 flex flex-col justify-between">

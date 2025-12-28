@@ -7,11 +7,7 @@ export const LadderGameConfig = {
     validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
-interface LadderGameProps {
-    gridSize?: { w: number; h: number };
-}
-
-export function LadderGame({ gridSize }: LadderGameProps) {
+export function LadderGame() {
     const [players, setPlayers] = useWidgetStorage<string[]>('widget-ladder-players', ['A', 'B', 'C', 'D']);
     const [results] = useWidgetStorage<string[]>('widget-ladder-results', ['꽝', '당첨', '꽝', '통과']);
     const [isPlaying, setIsPlaying] = useState(false);
