@@ -1,8 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, ChevronRight, Plus } from 'lucide-react';
+import { Search, ChevronRight, Plus, HelpCircle, X } from 'lucide-react';
 import { WIDGET_REGISTRY, type WidgetType } from './Registry';
 
-function WidgetContainer({ children, title, className = '' }: { children: React.ReactNode; title: string; className?: string }) {
+const CATEGORY_TRANSLATIONS: Record<string, string> = {
+  'System': '시스템',
+  'Data & Logic': '데이터 & 로직',
+  'Diary & Emotion': '다이어리 & 감정',
+  'Utility': '유틸리티',
+  'Decoration': '꾸미기',
+  'Collection': '수집품',
+  'Interactive': '인터랙티브',
+  'Tool': '도구',
+  'Global': '글로벌 효과',
+};
+
+function WidgetContainer({ children, title, className = '', onInfoClick }: { children: React.ReactNode; title: string; className?: string; onInfoClick?: (e: React.MouseEvent) => void }) {
   return (
     <div className={`flex flex-col w-full h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:border-blue-400 hover:shadow-md transition-all duration-200 ${className}`}>
       {/* Thumbnail Area */}
@@ -15,8 +27,16 @@ function WidgetContainer({ children, title, className = '' }: { children: React.
         <h2 className="text-xs text-gray-700 font-bold truncate pr-2">
           {title}
         </h2>
-        <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all">
-          <Plus size={14} strokeWidth={3} />
+        <div className="flex items-center gap-1 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all">
+          <button
+            onClick={onInfoClick}
+            className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <HelpCircle size={12} />
+          </button>
+          <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+            <Plus size={14} strokeWidth={3} />
+          </div>
         </div>
       </div>
     </div>
@@ -34,6 +54,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [selectedInfoWidget, setSelectedInfoWidget] = useState<WidgetEntry | null>(null);
 
   // Debounce Logic
   useEffect(() => {
@@ -104,7 +125,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
-            placeholder="Search widgets (e.g. 'clock', 'todo')..."
+            placeholder="위젯 검색 (ex: 날씨, 할 일)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-card-secondary)] border border-transparent focus:bg-white focus:border-blue-500 transition-all outline-none text-sm"
@@ -117,7 +138,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 overscroll-contain">
         {categories.length === 0 ? (
           <div className="text-center py-10 text-[var(--text-secondary)]">
-            <p className="text-sm">No widgets found matching "{debouncedSearch}"</p>
+            <p className="text-sm">{debouncedSearch}에 대한 검색 결과가 없습니다.</p>
           </div>
         ) : (
           categories.map(category => (
@@ -130,7 +151,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                   <div className={`transition-transform duration-200 ${expandedCategories.has(category) ? 'rotate-90 text-[var(--btn-bg)]' : 'text-gray-400'}`}>
                     <ChevronRight size={16} />
                   </div>
-                  <span className="text-sm font-bold text-[var(--text-primary)]">{category}</span>
+                  <span className="text-sm font-bold text-[var(--text-primary)]">{CATEGORY_TRANSLATIONS[category] || category}</span>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 bg-[var(--bg-card)] text-[var(--text-secondary)] rounded-full border border-[var(--border-color)]">
                   {groupedWidgets[category].length}
@@ -145,7 +166,13 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                       className="h-[120px] cursor-pointer"
                       onClick={() => onSelect?.(widget.type)}
                     >
-                      <WidgetContainer title={widget.label}>
+                      <WidgetContainer
+                        title={widget.label}
+                        onInfoClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedInfoWidget(widget);
+                        }}
+                      >
                         {widget.category === 'Global' ? (
                           <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400">
                             <div className="p-4 rounded-full bg-white shadow-sm border border-gray-100">
@@ -180,6 +207,77 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
           ))
         )}
       </div>
+
+      {/* Description Modal */}
+      {selectedInfoWidget && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedInfoWidget(null)}>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-800">{selectedInfoWidget.label}</h3>
+              <button
+                onClick={() => setSelectedInfoWidget(null)}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="aspect-video bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-100">
+                {/* Reuse same thumbnail logic or different display */}
+                {selectedInfoWidget.category === 'Global' ? (
+                  <div className="text-gray-400">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </div>
+                ) : (
+                  <img
+                    src={`/thumbnails/${selectedInfoWidget.type}.png`}
+                    className="w-full h-full object-contain"
+                    alt={selectedInfoWidget.label}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                    {selectedInfoWidget.description || '이 위젯에 대한 설명이 없습니다.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="bg-gray-50 rounded-lg p-2.5">
+                    <span className="text-[10px] text-gray-400 block mb-0.5">Category</span>
+                    <span className="text-xs font-medium text-gray-700">{CATEGORY_TRANSLATIONS[selectedInfoWidget.category] || selectedInfoWidget.category}</span>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-2.5">
+                    <span className="text-[10px] text-gray-400 block mb-0.5">Size</span>
+                    <span className="text-xs font-medium text-gray-700 font-mono">{selectedInfoWidget.defaultSize}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  onSelect?.(selectedInfoWidget.type);
+                  setSelectedInfoWidget(null);
+                }}
+                className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={16} />
+                위젯 추가하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
