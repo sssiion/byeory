@@ -5,7 +5,7 @@ import { WidgetWrapper } from '../../Shared';
 // 1. AI Diary (AI 다이어리)
 export const AIDiaryConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function AIDiary({ gridSize }: { gridSize?: { w: number; h: number } }) {
@@ -20,7 +20,7 @@ export function AIDiary({ gridSize }: { gridSize?: { w: number; h: number } }) {
         }, 2000);
     };
 
-    const isSmall = (gridSize?.w || 2) < 2;
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
 
     if (isSmall) {
         return (

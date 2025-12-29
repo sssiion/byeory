@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
-import { Shirt } from 'lucide-react';
+import { Palette } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 const COLORS = [
     'bg-white', 'bg-gray-200', 'bg-black',
@@ -14,14 +15,13 @@ interface OOTDSketchProps {
 
 export const OOTDSketchConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function OOTDSketch({ gridSize }: OOTDSketchProps) {
-    const [topColorIdx, setTopColorIdx] = useState(0);
-    const [bottomColorIdx, setBottomColorIdx] = useState(2);
-
-    // Save selection logic omitted for brevity, would use localStorage
+    const [topColorIdx, setTopColorIdx] = useWidgetStorage('ootd-top', 0);
+    const [bottomColorIdx, setBottomColorIdx] = useWidgetStorage('ootd-bottom', 2);
+    const [showPalette, setShowPalette] = useState<'top' | 'bottom' | null>(null);
 
     const w = gridSize?.w || 2;
     const h = gridSize?.h || 1;
@@ -29,14 +29,33 @@ export function OOTDSketch({ gridSize }: OOTDSketchProps) {
     // Small logic: If w=1 and h=1, crop to upper body
     const isSmall = w === 1 && h === 1;
 
-    const cycleColor = (current: number, setFunc: (n: number) => void) => {
-        setFunc((current + 1) % COLORS.length);
-    };
+    const ColorPicker = ({ onSelect }: { onSelect: (idx: number) => void }) => (
+        <div className="absolute inset-0 bg-white/90 z-50 flex items-center justify-center p-4">
+            <div className="grid grid-cols-3 gap-2">
+                {COLORS.map((c, i) => (
+                    <button
+                        key={i}
+                        className={`w-8 h-8 rounded-full border border-gray-300 shadow-sm ${c} hover:scale-110 transition-transform`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelect(i);
+                            setShowPalette(null);
+                        }}
+                    />
+                ))}
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); setShowPalette(null); }} className="absolute top-1 right-1 text-gray-400">✕</button>
+        </div>
+    );
 
     return (
         <WidgetWrapper className="bg-[#f0f0f0] dark:bg-slate-800 border-none relative overflow-hidden group">
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#999 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+
+            {showPalette && (
+                <ColorPicker onSelect={(idx) => showPalette === 'top' ? setTopColorIdx(idx) : setBottomColorIdx(idx)} />
+            )}
 
             <div className="absolute top-2 left-2 text-[8px] font-bold text-gray-400 bg-white dark:bg-black px-1 border border-gray-200 rounded z-20">
                 OOTD
@@ -57,7 +76,7 @@ export function OOTDSketch({ gridSize }: OOTDSketchProps) {
                     {/* Top (Clickable) */}
                     <div
                         className={`w-16 h-16 rounded-t-xl rounded-b-md border-2 border-slate-600 shadow-sm transition-colors cursor-pointer relative z-10 ${COLORS[topColorIdx]} ${COLORS[topColorIdx] === 'bg-white' ? 'dark:bg-slate-600' : ''}`}
-                        onClick={() => cycleColor(topColorIdx, setTopColorIdx)}
+                        onClick={() => setShowPalette('top')}
                     >
                         {/* Arms Hint */}
                         <div className="absolute -left-2 top-0 w-3 h-10 bg-inherit border-l-2 border-y-2 border-slate-600 rounded-l-md -rotate-12 origin-top-right"></div>
@@ -65,17 +84,21 @@ export function OOTDSketch({ gridSize }: OOTDSketchProps) {
 
                         {/* Label hint on hover */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-                            <Shirt size={12} className="text-black/20" />
+                            <Palette size={12} className="text-black/20" />
                         </div>
                     </div>
 
                     {/* Bottom (Clickable) */}
                     <div
                         className={`w-14 h-20 mt-[-4px] rounded-t-sm rounded-b-sm border-2 border-slate-600 shadow-sm transition-colors cursor-pointer relative z-0 ${COLORS[bottomColorIdx]}`}
-                        onClick={() => cycleColor(bottomColorIdx, setBottomColorIdx)}
+                        onClick={() => setShowPalette('bottom')}
                     >
                         {/* Legs Separation */}
                         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[2px] h-3/4 bg-black/10"></div>
+                        {/* Label hint on hover */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                            <Palette size={12} className="text-black/20" />
+                        </div>
                     </div>
 
                     {/* Shoes */}

@@ -21,7 +21,7 @@ const FLOWERS: Record<number, { name: string; lang: string; color: string }> = {
 
 export const BirthFlowerConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 interface BirthFlowerProps {
@@ -48,7 +48,10 @@ export function BirthFlower({ gridSize }: BirthFlowerProps) {
     };
 
     const w = gridSize?.w || 2;
-    const isSmall = w < 2;
+    const h = gridSize?.h || 2;
+    const isSmall = w === 1 && h === 1;
+    const isTall = w === 1 && h >= 2;
+    const isWide = w >= 2 && h === 1;
 
     if (isSmall && flower) {
         return (
@@ -81,20 +84,42 @@ export function BirthFlower({ gridSize }: BirthFlowerProps) {
         );
     }
 
+    // Tall Layout (1x2) - Vertical Centered
+    if (isTall) {
+        return (
+            <WidgetWrapper className="bg-white dark:bg-slate-800 relative overflow-hidden group">
+                <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-10 ${flower.color.replace('text-', 'bg-')}`}></div>
+                <div className="p-3 h-full flex flex-col items-center justify-center gap-2 text-center">
+                    <div className={`w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-700 flex items-center justify-center ${flower.color}`}>
+                        <Flower size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Birth Flower</p>
+                        <h3 className="text-sm font-serif font-bold text-slate-700 dark:text-slate-200 leading-tight my-1">{flower.name}</h3>
+                        <p className={`text-[9px] font-medium italic opacity-80 ${flower.color}`}>{flower.lang}</p>
+                    </div>
+                    <button onClick={() => setIsEditing(true)} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white/50 rounded-full">
+                        <Flower size={10} className="text-gray-400" />
+                    </button>
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
     return (
         <WidgetWrapper className="bg-white dark:bg-slate-800 relative overflow-hidden group">
             {/* Background Decor */}
             <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-10 ${flower.color.replace('text-', 'bg-')}`}></div>
 
-            <div className="p-3 h-full flex flex-row items-center gap-3">
-                <div className={`w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-700 flex items-center justify-center ${flower.color}`}>
+            <div className={`p-3 h-full flex flex-row items-center gap-3 ${isWide ? 'justify-between' : ''}`}>
+                <div className={`w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-700 flex items-center justify-center ${flower.color} flex-shrink-0`}>
                     <Flower size={24} />
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                     <p className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Birth Flower</p>
-                    <h3 className="text-lg font-serif font-bold text-slate-700 dark:text-slate-200 leading-none my-0.5">{flower.name}</h3>
-                    <p className={`text-[10px] font-medium italic opacity-80 ${flower.color}`}>{flower.lang}</p>
+                    <h3 className="text-lg font-serif font-bold text-slate-700 dark:text-slate-200 leading-none my-0.5 truncate">{flower.name}</h3>
+                    <p className={`text-[10px] font-medium italic opacity-80 ${flower.color} truncate`}>{flower.lang}</p>
                 </div>
 
                 <button

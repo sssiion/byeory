@@ -8,7 +8,7 @@ interface PayphoneProps {
 
 export const PayphoneConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function Payphone({ gridSize }: PayphoneProps) {
@@ -26,7 +26,8 @@ export function Payphone({ gridSize }: PayphoneProps) {
     };
 
     const w = gridSize?.w || 2;
-    const isSmall = w === 1;
+    const h = gridSize?.h || 2;
+    const isSmall = w === 1 && h === 1;
 
     if (isSmall) {
         return (

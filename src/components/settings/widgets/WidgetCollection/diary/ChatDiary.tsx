@@ -11,7 +11,7 @@ interface ComponentProps {
 
 export const ChatDiaryConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export const ChatDiary = ({ className, style, initialMessages = [], gridSize }: ComponentProps) => {
@@ -53,7 +53,7 @@ export const ChatDiary = ({ className, style, initialMessages = [], gridSize }: 
         }
     };
 
-    const isSmall = (gridSize?.w || 2) < 2;
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
 
     if (isSmall) {
         return (

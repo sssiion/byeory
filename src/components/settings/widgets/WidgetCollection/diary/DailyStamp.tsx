@@ -1,46 +1,60 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 9. Daily Stamp (참잘했어요)
 export const DailyStampConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function DailyStamp() {
-    const [stamps, setStamps] = useState<{ x: number, y: number }[]>([]);
-    const containerRef = useRef<HTMLDivElement>(null);
+    // stamps array of 'YYYY-MM-DD'
+    const [stamps, setStamps] = useState<string[]>([]);
 
-    const addStamp = (e: React.MouseEvent) => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        setStamps([...stamps, { x, y }]);
+    // Simple calendar for current month
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    const toggleStamp = (day: number) => {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        setStamps(prev => {
+            if (prev.includes(dateStr)) return prev.filter(d => d !== dateStr);
+            return [...prev, dateStr];
+        });
     };
 
     return (
-        <WidgetWrapper className="bg-white p-0 overflow-hidden relative group">
-            <div
-                ref={containerRef}
-                onClick={addStamp}
-                className="w-full h-full relative cursor-cell bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"
-            >
-                <span className="absolute top-2 left-2 text-[10px] text-gray-400 font-mono">DAILY LOG</span>
-                {stamps.map((s, i) => (
-                    <div
-                        key={i}
-                        className="absolute w-8 h-8 flex items-center justify-center text-red-500 font-bold border-2 border-red-500 rounded-full text-[8px] rotate-[-15deg] animate-in zoom-in fade-in duration-200 pointer-events-none"
-                        style={{ left: s.x - 16, top: s.y - 16 }}
-                    >
-                        Good!
-                    </div>
-                ))}
-                {stamps.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs pointer-events-none group-hover:hidden">
-                        Click anywhere!
-                    </div>
-                )}
+        <WidgetWrapper className="bg-white p-2">
+            <div className="flex flex-col h-full w-full">
+                <div className="flex justify-between items-center mb-2 px-1">
+                    <span className="text-xs font-bold text-gray-500">{today.toLocaleString('default', { month: 'long' })}</span>
+                    <span className="text-[10px] text-gray-400">Great Job!</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1 flex-1 content-start overflow-y-auto">
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isStamped = stamps.includes(dateStr);
+                        return (
+                            <button
+                                key={day}
+                                onClick={() => toggleStamp(day)}
+                                className={`aspect-square rounded flex items-center justify-center text-[10px] font-medium transition-all relative overflow-hidden group
+                                    ${isStamped ? 'bg-red-50 text-red-500 border border-red-200' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}
+                                `}
+                            >
+                                <span className={isStamped ? 'opacity-0' : 'opacity-100'}>{day}</span>
+                                {isStamped && (
+                                    <div className="absolute inset-0 flex items-center justify-center animate-in zoom-in duration-200">
+                                        💮
+                                    </div>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         </WidgetWrapper>
     );

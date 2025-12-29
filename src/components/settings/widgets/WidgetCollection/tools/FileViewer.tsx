@@ -4,7 +4,7 @@ import { useWidgetStorage } from '../SDK';
 
 export const FileViewerConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
 export function FileViewer({ gridSize }: { gridSize?: { w: number; h: number } }) {
@@ -17,27 +17,6 @@ export function FileViewer({ gridSize }: { gridSize?: { w: number; h: number } }
 
     const setFileType = (type: 'pdf' | 'zip' | 'none') => setFileState({ ...fileState, type });
     const setFileName = (name: string) => setFileState({ ...fileState, name });
-
-    const isSmall = (gridSize?.w || 2) < 2;
-
-    if (isSmall) {
-        return (
-            <div
-                className="h-full w-full flex flex-col items-center justify-center p-2 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-            >
-                {fileType === 'none' ? (
-                    <Upload size={20} className="text-gray-400" />
-                ) : (
-                    fileType === 'pdf' ? <FileText size={24} className="text-red-500" /> : <FileArchive size={24} className="text-yellow-500" />
-                )}
-                <span className="text-[9px] mt-1 font-bold theme-text-primary px-1 truncate w-full text-center">
-                    {fileName || 'Drop'}
-                </span>
-            </div>
-        );
-    }
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();

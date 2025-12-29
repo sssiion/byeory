@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useWidgetStorage } from '../SDK';
 
 export const RandomPickerConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    defaultSize: '2x1',
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number } }) {
@@ -55,37 +55,19 @@ export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number }
 
     const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'];
 
-    const isSmall = (gridSize?.w || 2) < 2;
-
-    if (isSmall) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border p-1 relative overflow-hidden">
-                <button
-                    onClick={spin}
-                    disabled={isSpinning}
-                    className="w-full h-full flex flex-col items-center justify-center hover:bg-gray-50 dark:hover:bg-white/5 active:scale-95 transition-all"
-                >
-                    {result && !isSpinning ? (
-                        <span className="text-[10px] font-bold text-[var(--btn-bg)] text-center animate-in zoom-in">{result}</span>
-                    ) : (
-                        <>
-                            <Play size={20} className={isSpinning ? 'animate-spin' : ''} />
-                            <span className="text-[8px] font-bold mt-1 max-w-full truncate">{isSpinning ? '...' : 'SPIN'}</span>
-                        </>
-                    )}
-                </button>
-            </div>
-        );
-    }
+    const w = gridSize?.w || 2;
+    const h = gridSize?.h || 2;
+    const isWide = w >= 2 && h === 1;
+    const isTall = w === 1 && h >= 2;
 
     return (
-        <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">
+        <div className={`h-full flex ${isWide ? 'flex-row items-center' : 'flex-col'} p-2 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden gap-2`}>
 
             {/* Main Area: Wheel or Result */}
-            <div className="flex-1 flex flex-col items-center justify-center relative min-h-0">
-                <div className="relative w-48 h-48 sm:w-56 sm:h-56">
+            <div className={`flex-1 flex flex-col items-center justify-center relative min-h-0 ${isWide ? 'max-w-[50%]' : ''}`}>
+                <div className={`relative ${isWide || isTall ? 'w-24 h-24' : 'w-40 h-40 sm:w-48 sm:h-48'}`}>
                     {/* Pointer */}
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-red-500 drop-shadow-md"></div>
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[16px] border-t-red-500 drop-shadow-md"></div>
 
                     {/* Wheel */}
                     <div
@@ -93,15 +75,12 @@ export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number }
                         style={{ transform: `rotate(${rotation}deg)` }}
                     >
                         {items.map((_, index) => {
-                            const angle = 360 / items.length;
-                            const rotate = angle * index;
-
                             return (
                                 <div
                                     key={index}
                                     className="absolute w-full h-full top-0 left-0 flex justify-center pt-2 origin-[50%_50%]"
                                     style={{
-                                        transform: `rotate(${rotate}deg)`,
+                                        transform: `rotate(${(index * 360) / items.length}deg)`,
                                     }}
                                 >
                                 </div>
@@ -149,7 +128,7 @@ export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number }
                                         width: '50%'
                                     }}
                                 >
-                                    <span className="text-white text-[10px] font-bold truncate px-2 ml-4 w-20 text-center drop-shadow-sm" style={{ transform: 'rotate(90deg)' }}>
+                                    <span className="text-white text-[8px] font-bold truncate px-1 ml-2 w-16 text-center drop-shadow-sm" style={{ transform: 'rotate(90deg)' }}>
                                         {item}
                                     </span>
                                 </div>
@@ -167,14 +146,14 @@ export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number }
                             exit={{ scale: 0, opacity: 0 }}
                             className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-xl z-30"
                         >
-                            <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-2 animate-bounce-slow">
-                                <span className="text-sm text-gray-500">당첨!</span>
-                                <h3 className="text-2xl font-bold text-[var(--btn-bg)]">{result}</h3>
+                            <div className="bg-white p-4 rounded-xl shadow-xl flex flex-col items-center gap-2 animate-bounce-slow min-w-[100px]">
+                                <span className="text-[10px] text-gray-500">Winner!</span>
+                                <h3 className="text-lg font-bold text-[var(--btn-bg)]">{result}</h3>
                                 <button
                                     onClick={() => setResult(null)}
-                                    className="mt-2 px-4 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-600 hover:bg-gray-200"
+                                    className="mt-1 px-3 py-1 bg-gray-100 rounded-full text-[10px] font-bold text-gray-600 hover:bg-gray-200"
                                 >
-                                    확인
+                                    OK
                                 </button>
                             </div>
                         </motion.div>
@@ -183,40 +162,47 @@ export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number }
             </div>
 
             {/* Controls */}
-            <div className="mt-4 flex flex-col gap-2">
-                <div className="flex gap-2">
-                    <form onSubmit={handleAddItem} className="flex-1 flex gap-2">
-                        <input
-                            type="text"
-                            value={newItem}
-                            onChange={(e) => setNewItem(e.target.value)}
-                            placeholder="Add item..."
-                            className="flex-1 text-xs px-2 py-1 theme-bg-input rounded border theme-border outline-none focus:border-[var(--btn-bg)]"
-                        />
-                        <button type="submit" disabled={isSpinning} className="p-1 rounded bg-[var(--btn-bg)] text-white hover:opacity-90 disabled:opacity-50">
-                            <Plus size={16} />
-                        </button>
-                    </form>
+            <div className={`flex flex-col gap-1 ${isWide ? 'flex-1 h-full overflow-hidden' : 'w-full'}`}>
+                {/* Inputs Row */}
+                <div className={`flex ${isTall ? 'flex-col gap-1' : 'gap-1'}`}>
+                    {!(isTall) && (
+                        <form onSubmit={handleAddItem} className="flex-1 flex gap-1">
+                            <input
+                                type="text"
+                                value={newItem}
+                                onChange={(e) => setNewItem(e.target.value)}
+                                placeholder="Add..."
+                                className="flex-1 text-[10px] px-2 py-1 theme-bg-input rounded border theme-border outline-none focus:border-[var(--btn-bg)] w-full"
+                            />
+                            <button type="submit" disabled={isSpinning} className="p-1 rounded bg-[var(--btn-bg)] text-white hover:opacity-90 disabled:opacity-50 shrink-0">
+                                <Plus size={14} />
+                            </button>
+                        </form>
+                    )}
                     <button
                         onClick={spin}
                         disabled={isSpinning || items.length < 2}
-                        className="px-4 py-1 lg:py-2 bg-[var(--btn-bg)] text-white font-bold rounded-lg shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center gap-1"
+                        className={`bg-[var(--btn-bg)] text-white font-bold rounded shadow-md hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1
+                        ${isTall ? 'py-1 text-xs w-full' : 'px-3 py-1 text-xs shrink-0'}
+                        `}
                     >
-                        <Play size={16} fill="currentColor" /> SPIN
+                        <Play size={12} fill="currentColor" /> {isSpinning ? '...' : (isTall ? 'SPIN!' : 'SPIN')}
                     </button>
                 </div>
 
                 {/* List of items (manage) */}
-                <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto mt-1 scrollbar-hide">
-                    {items.map((item, idx) => (
-                        <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full theme-bg-card-secondary theme-text-secondary flex items-center gap-1 border border-gray-100">
-                            {item}
-                            {items.length > 2 && !isSpinning && (
-                                <button onClick={() => handleRemoveItem(idx)} className="hover:text-red-500"><X size={10} /></button>
-                            )}
-                        </span>
-                    ))}
-                </div>
+                {!isTall && (
+                    <div className="flex flex-wrap gap-1 overflow-y-auto mt-1 scrollbar-hide flex-1 content-start">
+                        {items.map((item, idx) => (
+                            <span key={idx} className="text-[9px] px-1.5 py-0.5 rounded-full theme-bg-card-secondary theme-text-secondary flex items-center gap-1 border border-gray-100">
+                                {item}
+                                {items.length > 2 && !isSpinning && (
+                                    <button onClick={() => handleRemoveItem(idx)} className="hover:text-red-500"><X size={8} /></button>
+                                )}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

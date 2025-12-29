@@ -26,10 +26,10 @@ const DEFAULT_TAGS = [
 
 export const TagCloudConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS, gridSize }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
+export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [tags, setTags] = useWidgetStorage('widget-tagcloud-tags', initialTags);
 
     const shuffledTags = useMemo(() => {
@@ -45,23 +45,6 @@ export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS, gridSiz
         if (maxValue === minValue) return (maxSize + minSize) / 2;
         return minSize + ((value - minValue) / (maxValue - minValue)) * (maxSize - minSize);
     };
-
-    const isSmall = (gridSize?.w || 2) < 2;
-
-    if (isSmall) {
-        // Find top tag
-        const topTag = tags.reduce((prev, current) => (prev.value > current.value) ? prev : current);
-
-        return (
-            <WidgetWrapper className={`bg-white text-gray-800 flex items-center justify-center p-2 ${className || ''}`} style={style}>
-                <div className="text-center">
-                    <span className="block text-[8px] text-gray-400 uppercase tracking-widest mb-0.5">TOP TAG</span>
-                    <span className="block font-bold text-[#5b3c3c] leading-tight" style={{ fontSize: '14px' }}>{topTag.text}</span>
-                    <span className="block text-[8px] text-gray-400 mt-0.5">{topTag.value} posts</span>
-                </div>
-            </WidgetWrapper>
-        );
-    }
 
     const getOpacity = (value: number) => {
         if (maxValue === minValue) return 1;

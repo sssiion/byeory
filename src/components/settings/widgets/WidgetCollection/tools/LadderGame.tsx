@@ -4,10 +4,10 @@ import { useWidgetStorage } from '../SDK';
 
 export const LadderGameConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
 };
 
-export function LadderGame({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function LadderGame({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     const [players, setPlayers] = useWidgetStorage<string[]>('widget-ladder-players', ['A', 'B', 'C', 'D']);
     const [results] = useWidgetStorage<string[]>('widget-ladder-results', ['꽝', '당첨', '꽝', '통과']);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -161,10 +161,6 @@ export function LadderGame({ gridSize }: { gridSize?: { w: number; h: number } }
     };
 
     const drawPath = (ctx: CanvasRenderingContext2D, colW: number, padX: number, rowH: number) => {
-        // Re-calculate trace to draw up to 'currentPathIndex'
-        // This is redundant calculation but safer given React render cycle quirks
-        // In real app, memoize 'trace'.
-
         let col = selectedPlayer!;
         const trace: { x: number, y: number }[] = [];
         const playerCount = players.length;
@@ -177,52 +173,38 @@ export function LadderGame({ gridSize }: { gridSize?: { w: number; h: number } }
 
             trace.push({ x: padX + col * colW, y: yMid });
 
-            if (col < playerCount - 1 && paths[col][r]) col++;
-            else if (col > 0 && paths[col - 1][r]) col--;
+            if (col < playerCount - 1 && paths[col][r]) {
+                trace.push({ x: padX + (col + 0.5) * colW, y: yMid }); // Midpoint for smoothness
+                col++;
+            } else if (col > 0 && paths[col - 1][r]) {
+                trace.push({ x: padX + (col - 0.5) * colW, y: yMid }); // Midpoint
+                col--;
+            }
 
-            trace.push({ x: padX + col * colW, y: yMid }); // Redundant point for corner crispness? or just logic fix
+            trace.push({ x: padX + col * colW, y: yMid });
             trace.push({ x: padX + col * colW, y: yEnd });
         }
 
         // Draw trace
         ctx.beginPath();
         ctx.strokeStyle = '#EF4444'; // Red-500
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+        ctx.shadowBlur = 10;
 
         if (trace.length > 0) {
             ctx.moveTo(trace[0].x, trace[0].y);
-            // Draw only up to currentPathIndex
-            // Note: trace array above is slightly different logic than animatePath trace (I simplified trace generation above for clarity, maybe inconsistent)
-            // Let's use the exact same logic.
-            // Actually, `currentPathIndex` is just a mock 'time' value.
-            // The `animatePath` logic drives the UX (isPlaying time).
-            // But we need to persistently render the path in canvas.
-            // Let's just draw the FULL path if selectedPlayer is set AND !isPlaying (finished)
-            // Or progressive if playing.
+            const limit = isPlaying ? Math.min(trace.length, currentPathIndex) : trace.length;
 
-            // To be robust:
-            // Just draw full line for now to ensure it works.
-
-            for (let i = 1; i < trace.length; i++) {
-                // If animating, maybe limit?
-                // Visual simplicity: Just draw full valid path for the selected player instantly for this POC
-                // The user sees the result.
+            for (let i = 1; i < limit; i++) {
                 ctx.lineTo(trace[i].x, trace[i].y);
             }
         }
         ctx.stroke();
+        ctx.shadowBlur = 0; // Reset
     };
-
-    const isSmall = (gridSize?.w || 2) < 2;
-
-    if (isSmall) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border p-2">
-                <RotateCcw size={24} className="text-gray-400 mb-1" />
-                <span className="text-[9px] font-bold theme-text-secondary">Ladder</span>
-            </div>
-        );
-    }
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">

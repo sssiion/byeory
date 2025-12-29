@@ -5,7 +5,7 @@ import { WidgetWrapper } from '../Common';
 // --- 4. Emotional Weather (마음 날씨)
 export const EmotionalWeatherConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
+    validSizes: [[1, 1]] as [number, number][],
 };
 
 export function EmotionalWeather() {

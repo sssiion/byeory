@@ -4,8 +4,8 @@ import { WidgetWrapper } from '../Common';
 
 // --- 5. Battery Widget (내 에너지)
 export const BatteryWidgetConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
 interface BatteryWidgetProps {

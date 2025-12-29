@@ -17,7 +17,7 @@ interface StampCollectionProps {
 
 export const StampCollectionConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function StampCollection({ gridSize }: StampCollectionProps) {
@@ -27,7 +27,8 @@ export function StampCollection({ gridSize }: StampCollectionProps) {
     });
 
     const w = gridSize?.w || 2;
-    const isSmall = w === 1;
+    const h = gridSize?.h || 2;
+    const isSmall = w === 1 && h === 1;
 
     const toggleStamp = (id: number) => {
         let newCollected;
@@ -70,7 +71,7 @@ export function StampCollection({ gridSize }: StampCollectionProps) {
                     <span className="text-[9px] text-stone-400">{collected.length} / {STAMPS.length}</span>
                 </div>
 
-                <div className="flex-1 grid grid-cols-3 gap-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-stone-300">
+                <div className={`flex-1 grid gap-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-stone-300 ${w === 1 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                     {STAMPS.map((stamp) => {
                         const isUnlocked = collected.includes(stamp.id);
                         return (

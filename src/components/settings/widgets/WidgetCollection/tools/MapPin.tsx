@@ -5,8 +5,8 @@ import { useWidgetStorage } from '../SDK';
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 export const MapPinConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 2], [4, 2], [4, 3]] as [number, number][],
 };
 
 export function MapPin({ gridSize }: { gridSize?: { w: number; h: number } }) {

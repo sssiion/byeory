@@ -4,7 +4,7 @@ import { WidgetWrapper } from '../Common';
 // --- 3. Snow Globe (스노우볼) ---
 export const SnowGlobeConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 // --- 3. Snow Globe (스노우볼) ---
@@ -85,8 +85,15 @@ export function SnowGlobe({ gridSize }: { gridSize?: { w: number; h: number } })
     };
 
     useEffect(() => {
-        requestRef.current = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(requestRef.current);
+        let animationFrameId: number;
+
+        const loop = () => {
+            animate();
+            animationFrameId = requestAnimationFrame(loop);
+        };
+        loop();
+
+        return () => cancelAnimationFrame(animationFrameId);
     }, [isShaking]); // Re-bind when shake state changes
 
     const handleShake = () => {

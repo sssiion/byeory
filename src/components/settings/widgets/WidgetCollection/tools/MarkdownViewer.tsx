@@ -10,7 +10,7 @@ interface MarkdownViewerProps {
 
 export const MarkdownViewerConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2], [3, 2]] as [number, number][],
+    validSizes: [[2, 2], [3, 2]] as [number, number][],
 };
 
 export function MarkdownViewer({ initialContent = "# Hello Markdown\n\n- Write\n- Your\n- Notes", title = "Markdown Note", gridSize }: MarkdownViewerProps & { gridSize?: { w: number; h: number } }) {
@@ -21,17 +21,6 @@ export function MarkdownViewer({ initialContent = "# Hello Markdown\n\n- Write\n
     // For a widget, transient is expected unless we persist props update.
     // But widgets props update requires callback to parent layout.
     // Since we are inside the widget, let's allow "local" state.
-
-    const isSmall = (gridSize?.w || 2) < 2;
-
-    if (isSmall) {
-        return (
-            <div className="w-full h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border">
-                <span className="text-xl">📝</span>
-                <span className="text-[9px] font-bold theme-text-secondary mt-1">MD</span>
-            </div>
-        );
-    }
 
     return (
         <div className="h-full flex flex-col theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden relative group">

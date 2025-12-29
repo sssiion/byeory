@@ -7,7 +7,7 @@ import { useWidgetStorage } from '../SDK';
 
 export const ScrapNoteConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 2]] as [number, number][],
 };
 
 export function ScrapNote({ text: initialText = '', gridSize }: { text?: string; gridSize?: { w: number; h: number } }) {
@@ -23,20 +23,6 @@ export function ScrapNote({ text: initialText = '', gridSize }: { text?: string;
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
-
-    const isSmall = (gridSize?.w || 2) < 2;
-
-    if (isSmall) {
-        return (
-            <div className="w-full h-full bg-[#f0e6d2] dark:bg-[#3d3830] p-2 shadow-sm relative overflow-hidden flex flex-col group cursor-pointer"
-                title={text}>
-                <div className="w-8 h-2 bg-[#e6dcc8] dark:bg-[#4a443a] opacity-50 mx-auto mb-1"></div>
-                <p className="text-[10px] text-[#5c4a35] dark:text-[#d4c9b3] jua-regular leading-tight break-words line-clamp-4 text-center">
-                    {text || 'Empty Note'}
-                </p>
-            </div>
-        );
-    }
 
     return (
         <div className="w-full h-full bg-[#f0e6d2] dark:bg-[#3d3830] p-4 shadow-md relative overflow-hidden flex flex-col group transition-colors"

@@ -1,10 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
+import { Star } from 'lucide-react';
+
+const SimpleConfetti = ({ active, onComplete }: { active: boolean; onComplete: () => void }) => {
+    if (!active) return null;
+
+    // Create particles
+    const particles = Array.from({ length: 30 }).map((_, i) => {
+        const angle = Math.random() * 360;
+        const velocity = 2 + Math.random() * 3;
+        const tx = Math.cos(angle * Math.PI / 180) * velocity * 50;
+        const ty = Math.sin(angle * Math.PI / 180) * velocity * 50;
+        const color = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff'][Math.floor(Math.random() * 5)];
+
+        return (
+            <div
+                key={i}
+                className="absolute left-1/2 top-1/2 w-2 h-2 rounded-full"
+                style={{
+                    backgroundColor: color,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 50,
+                    animation: `confetti-explode 1s ease-out forwards`,
+                    // @ts-ignore - custom property for animation
+                    '--tx': `${tx}px`,
+                    '--ty': `${ty}px`,
+                }}
+            />
+        );
+    });
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" onAnimationEnd={onComplete}>
+            <style>{`
+                @keyframes confetti-explode {
+                    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); }
+                }
+            `}</style>
+            {particles}
+        </div>
+    );
+};
 
 // --- 1. Switch Board (똑딱이)
 export const SwitchBoardConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 2], [4, 2]] as [number, number][],
 };
 
 export const SwitchBoard = ({ gridSize }: { gridSize?: { w: number; h: number } }) => {
@@ -15,6 +57,7 @@ export const SwitchBoard = ({ gridSize }: { gridSize?: { w: number; h: number } 
 
     // Initialize states array
     const [switches, setSwitches] = useState<boolean[]>(Array(total).fill(false));
+    const [showConfetti, setShowConfetti] = useState(false);
 
     if (switches.length !== total) {
         setSwitches(prev => {
@@ -27,7 +70,14 @@ export const SwitchBoard = ({ gridSize }: { gridSize?: { w: number; h: number } 
     const toggle = (index: number) => {
         setSwitches(prev => {
             const next = [...prev];
-            next[index] = !next[index];
+            const newState = !next[index];
+            next[index] = newState;
+
+            // Star Switch Logic: If it's the last switch and it's turned ON
+            if (index === total - 1 && newState) {
+                setShowConfetti(true);
+                setTimeout(() => setShowConfetti(false), 1000);
+            }
             return next;
         });
     };
@@ -53,13 +103,14 @@ export const SwitchBoard = ({ gridSize }: { gridSize?: { w: number; h: number } 
                                 <div className={`w-6 h-10 rounded-lg border-2 ${isOn ? 'bg-white border-gray-200 shadow-[0_4px_0_0_rgba(0,0,0,0.1)] translate-y-[-2px]' : 'bg-[#333] border-black shadow-[0_-4px_0_0_rgba(255,255,255,0.1)] translate-y-[2px]'} transition-all`}></div>
                                 <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                             </button>
-                            <span className={`mt-1 text-[10px] font-bold ${isOn ? 'text-gray-200 border-b border-gray-200' : 'text-gray-600'}`}>
-                                {isOn ? 'ON' : 'OFF'}
+                            <span className={`mt-1 text-[10px] font-bold flex items-center gap-1 ${isOn ? 'text-gray-200 border-b border-gray-200' : 'text-gray-600'}`}>
+                                {i === total - 1 ? <><Star size={8} fill={isOn ? "currentColor" : "none"} /> STAR</> : (isOn ? 'ON' : 'OFF')}
                             </span>
                         </div>
                     );
                 })}
             </div>
+            <SimpleConfetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
         </WidgetWrapper>
     );
 }
