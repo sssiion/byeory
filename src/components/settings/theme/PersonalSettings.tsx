@@ -15,9 +15,25 @@ type Tab = 'font' | 'recommended' | 'manual';
 type ManualSubTab = 'text' | 'colors' | 'image';
 
 const fontFamilies = [
-    { name: 'Noto Sans KR', value: "'Noto Sans KR', sans-serif" },
-    { name: 'Jua', value: "'Jua', sans-serif" },
-    { name: 'Nanum Gothic', value: "'Nanum Gothic', sans-serif" },
+    { name: 'Noto Sans KR (기본)', value: "'Noto Sans KR', sans-serif" },
+    { name: 'Nanum Gothic (나눔고딕)', value: "'Nanum Gothic', sans-serif" },
+    { name: 'Nanum Myeongjo (나눔명조)', value: "'Nanum Myeongjo', serif" },
+    { name: 'Gowun Dodum (고운돋움)', value: "'Gowun Dodum', sans-serif" },
+    { name: 'Gowun Batang (고운바탕)', value: "'Gowun Batang', serif" },
+    { name: 'Song Myung (송명)', value: "'Song Myung', serif" },
+    { name: 'Black Han Sans (검은고딕)', value: "'Black Han Sans', sans-serif" },
+    { name: 'Do Hyeon (도현)', value: "'Do Hyeon', sans-serif" },
+    { name: 'Jua (주아)', value: "'Jua', sans-serif" },
+    { name: 'Yeon Sung (연성)', value: "'Yeon Sung', cursive" },
+    { name: 'Sunflower (해바라기)', value: "'Sunflower', sans-serif" },
+    { name: 'Gothic A1 (고딕 A1)', value: "'Gothic A1', sans-serif" },
+    { name: 'Hi Melody (하이멜로디)', value: "'Hi Melody', cursive" },
+    { name: 'Gamja Flower (감자꽃)', value: "'Gamja Flower', cursive" },
+    { name: 'Poor Story (서툰이야기)', value: "'Poor Story', cursive" },
+    { name: 'IBM Plex Sans KR', value: "'IBM Plex Sans KR', sans-serif" },
+    { name: 'Bagel Fat One (베이글)', value: "'Bagel Fat One', cursive" },
+    { name: 'Dongle (동글)', value: "'Dongle', sans-serif" },
+    { name: 'Single Day (싱글데이)', value: "'Single Day', cursive" },
     { name: 'Roboto', value: "'Roboto', sans-serif" },
     { name: 'System Default', value: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" },
 ];

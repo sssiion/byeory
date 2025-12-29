@@ -3,8 +3,6 @@ import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fe
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } from '../types';
 
 // 캔버스 크기 고정 (EditorCanvas.tsx와 동일하게 설정)
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 1000; // 최소 높이 (스크롤 생기면 더 커질 수 있음)
 
 export const usePostEditor = () => {
     // ... (상태 변수들 기존과 동일) ...
@@ -12,12 +10,19 @@ export const usePostEditor = () => {
     const [posts, setPosts] = useState<PostData[]>([]);
     const [currentPostId, setCurrentPostId] = useState<number | null>(null);
     const [title, setTitle] = useState("");
+    const [titleStyles, setTitleStyles] = useState({
+        fontSize: '30px',
+        fontWeight: 'bold',
+        fontFamily: "'Noto Sans KR', sans-serif",
+        color: '#000000',
+        textAlign: 'left'
+    });
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [stickers, setStickers] = useState<Sticker[]>([]);
     const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
     const [floatingImages, setFloatingImages] = useState<FloatingImage[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [selectedType, setSelectedType] = useState<'block' | 'sticker' | 'floating' | 'floatingImage' | null>(null);
+    const [selectedType, setSelectedType] = useState<'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null>(null);
     const [rawInput, setRawInput] = useState("");
     const [tempImages, setTempImages] = useState<string[]>([]);
     const [selectedLayoutId, setSelectedLayoutId] = useState('type-a');
@@ -27,25 +32,61 @@ export const usePostEditor = () => {
 
     useEffect(() => { if (supabase) fetchPosts(); }, []);
 
-    // 1️⃣ [수정] 데이터 불러오기: PX 단위 그대로 사용
+    // 1️⃣ [수정] 데이터 불러오기: PX 단위 그대로 사용 + 메타데이터 블록 파싱
     const fetchPosts = async () => {
         const data = await fetchPostsFromApi();
         if (data) {
-            setPosts(data.map((p: any) => ({
-                id: p.id,
-                title: p.title,
-                date: new Date(p.createdAt || p.created_at).toLocaleDateString(),
-                blocks: p.blocks || [],
-                // 🔴 [수정] DB에 저장된 PX 값을 그대로 가져옵니다 (더 이상 * CANVAS_WIDTH 안 함)
-                stickers: p.stickers || [],
-                floatingTexts: p.floatingTexts || [],
-                floatingImages: p.floatingImages || []
-            })));
+            setPosts(data.map((p: any) => {
+                const rawBlocks = p.blocks || [];
+                const contentBlocks: Block[] = [];
+                // 기본값 설정
+                let parsedTitleStyles = p.titleStyles || null;
+
+                // 메타데이터 블록 추출
+                rawBlocks.forEach((b: Block) => {
+                    if (b.type === 'paragraph' && b.text && b.text.startsWith('<!--METADATA:')) {
+                        try {
+                            const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
+                            const metadata = JSON.parse(json);
+                            if (metadata.titleStyles) parsedTitleStyles = metadata.titleStyles;
+                        } catch (e) {
+                            console.error('Failed to parse metadata block', e);
+                        }
+                    } else {
+                        contentBlocks.push(b);
+                    }
+                });
+
+                return {
+                    id: p.id,
+                    title: p.title,
+                    date: new Date(p.createdAt || p.created_at).toLocaleDateString(),
+                    blocks: contentBlocks,
+                    // 🔴 [수정] DB에 저장된 PX 값을 그대로 가져옵니다 (더 이상 * CANVAS_WIDTH 안 함)
+                    stickers: p.stickers || [],
+                    floatingTexts: p.floatingTexts || [],
+                    floatingImages: p.floatingImages || [],
+                    titleStyles: parsedTitleStyles || {
+                        fontSize: '30px',
+                        fontWeight: 'bold',
+                        fontFamily: "'Noto Sans KR', sans-serif",
+                        color: '#000000',
+                        textAlign: 'left'
+                    }
+                };
+            }));
         }
     };
 
     const handleStartWriting = () => {
         setCurrentPostId(null); setTitle(""); setRawInput("");
+        setTitleStyles({
+            fontSize: '30px',
+            fontWeight: 'bold',
+            fontFamily: "'Noto Sans KR', sans-serif",
+            color: '#000000',
+            textAlign: 'left'
+        });
         setBlocks([{ id: `b-${Date.now()}`, type: 'paragraph', text: '' }]);
         setStickers([]); setFloatingTexts([]); setFloatingImages([]); setTempImages([]);
         setSelectedId(null); setSelectedType(null);
@@ -54,26 +95,43 @@ export const usePostEditor = () => {
 
     const handlePostClick = (post: PostData) => {
         setCurrentPostId(post.id); setTitle(post.title);
+        setTitleStyles((post.titleStyles as any) || {
+            fontSize: '30px',
+            fontWeight: 'bold',
+            fontFamily: "'Noto Sans KR', sans-serif",
+            color: '#000000',
+            textAlign: 'left'
+        });
         setBlocks(post.blocks); setStickers(post.stickers);
         setFloatingTexts(post.floatingTexts || []);
         setFloatingImages(post.floatingImages || []);
         setViewMode('read');
     };
 
-    // 2️⃣ [수정] 저장하기: PX 단위 그대로 저장
+    // 2️⃣ [수정] 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
     const handleSave = async () => {
         if (!title.trim()) return alert("제목을 입력해주세요!");
 
         // 🔴 [삭제] convertToPercent 함수 삭제! (이제 필요 없음)
         // 캔버스가 고정 픽셀(800px)이므로 변환 없이 그대로 저장합니다.
 
+        // ✨ 메타데이터 블록 생성 (제목 스타일 저장용)
+        const metadata = { titleStyles };
+        const metadataBlock: Block = {
+            id: `meta-${Date.now()}`,
+            type: 'paragraph',
+            text: `<!--METADATA:${JSON.stringify(metadata)}-->`,
+            styles: { display: 'none' }
+        };
+
         const postData = {
             id: currentPostId,
             title,
-            blocks,
+            blocks: [...blocks, metadataBlock], // 마지막에 숨김 블록 추가
             stickers,        // 있는 그대로 저장
             floatingTexts,   // 있는 그대로 저장
-            floatingImages   // 있는 그대로 저장
+            floatingImages,   // 있는 그대로 저장
+            titleStyles     // 백엔드 지원 시 사용 (현재는 무시됨)
         };
 
         setIsSaving(true);
@@ -100,7 +158,7 @@ export const usePostEditor = () => {
         finally { setIsAiProcessing(false); }
     };
 
-    const handleUpdate = (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage', keyOrObj: any, value?: any) => {
+    const handleUpdate = (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', keyOrObj: any, value?: any) => {
         let updates: any = {};
         if (typeof keyOrObj === 'string') updates[keyOrObj] = value;
         else updates = keyOrObj;
@@ -108,6 +166,11 @@ export const usePostEditor = () => {
         if (type === 'block') setBlocks(p => p.map(b => b.id === id ? { ...b, styles: { ...b.styles, ...updates } } : b));
         else if (type === 'sticker') setStickers(p => p.map(s => s.id === id ? { ...s, ...updates } : s));
         else if (type === 'floatingImage') setFloatingImages(p => p.map(img => img.id === id ? { ...img, ...updates } : img));
+        else if (type === 'title') {
+            // titleStyles update
+            if (updates.styles) setTitleStyles(p => ({ ...p, ...updates.styles }));
+            else setTitleStyles(p => ({ ...p, ...updates }));
+        }
         else if (type === 'floating') setFloatingTexts(p => p.map(f => {
             if (f.id !== id) return f;
             const newStyles = { ...f.styles };
@@ -129,6 +192,11 @@ export const usePostEditor = () => {
         else if (selectedType === 'sticker') setStickers(p => p.filter(s => s.id !== selectedId));
         else if (selectedType === 'floating') setFloatingTexts(p => p.filter(f => f.id !== selectedId));
         else if (selectedType === 'floatingImage') setFloatingImages(p => p.filter(i => i.id !== selectedId));
+        else if (selectedType === 'title') {
+            // Title cannot be deleted, maybe just reset styles?
+            // Or do nothing.
+            alert("제목은 삭제할 수 없습니다.");
+        }
         setSelectedId(null); setSelectedType(null);
     };
 
@@ -156,7 +224,7 @@ export const usePostEditor = () => {
             x: 350, // 800px 너비 기준 중앙 (400 - width/2)
             y: getSpawnPosition(),
             w: 100, h: 100, // px 단위 크기
-            rotation: (Math.random()*20)-10, opacity: 1, zIndex: getMaxZ() + 1
+            rotation: (Math.random() * 20) - 10, opacity: 1, zIndex: getMaxZ() + 1
         };
         setStickers([...stickers, newSticker]);
         setSelectedId(newSticker.id); setSelectedType('sticker');
@@ -169,7 +237,7 @@ export const usePostEditor = () => {
             y: getSpawnPosition(),
             w: 200, h: 100, // px 단위
             rotation: 0, zIndex: getMaxZ() + 1,
-            styles: { fontSize: '18px', fontWeight: 'normal', textAlign: 'center', color: '#000000', backgroundColor: 'transparent' }
+            styles: { fontSize: '18px', fontWeight: 'normal', textAlign: 'center', color: '#000000', backgroundColor: 'transparent', fontFamily: "'Noto Sans KR', sans-serif" }
         };
         setFloatingTexts([...floatingTexts, newText]);
         setSelectedId(newText.id); setSelectedType('floating');
@@ -203,7 +271,7 @@ export const usePostEditor = () => {
         if (url) setBlocks(p => p.map(b => b.id === id ? { ...b, [imgIndex === 1 ? 'imageUrl' : 'imageUrl2']: url } : b));
     };
 
-    const changeZIndex = (dir: 'up'|'down') => {
+    const changeZIndex = (dir: 'up' | 'down') => {
         const change = dir === 'up' ? 1 : -1;
         const updateZ = (item: any) => item.id === selectedId ? { ...item, zIndex: item.zIndex + change } : item;
         if (selectedType === 'sticker') setStickers(p => p.map(updateZ));
@@ -212,7 +280,7 @@ export const usePostEditor = () => {
     };
 
     return {
-        viewMode, setViewMode, posts, title, setTitle,
+        viewMode, setViewMode, posts, title, setTitle, titleStyles, setTitleStyles,
         blocks, setBlocks, stickers, floatingTexts, floatingImages,
         selectedId, setSelectedId, selectedType, setSelectedType,
         rawInput, setRawInput, tempImages, setTempImages,

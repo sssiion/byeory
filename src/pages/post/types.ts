@@ -51,4 +51,5 @@ export interface PostData {
     stickers: Sticker[];
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
+    titleStyles?: Record<string, any>;
 }

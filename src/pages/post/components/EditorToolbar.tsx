@@ -14,9 +14,9 @@ import { FONT_FAMILIES } from '../constants';
 
 interface Props {
     selectedId: string;
-    selectedType: 'block' | 'sticker' | 'floating' | 'floatingImage';
+    selectedType: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title';
     currentItem: Block | Sticker | FloatingText | FloatingImage | any;
-    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage', changes: any) => void;
+    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
     onDelete?: () => void;
 }
 
@@ -29,7 +29,7 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
         onUpdate(selectedId, selectedType, { zIndex: newZIndex });
     };
 
-    const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floating');
+    const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floating') || (selectedType === 'title');
     const isImageItem = (selectedType === 'block' && itemType !== 'paragraph') || selectedType === 'sticker' || selectedType === 'floatingImage';
 
     const handleTextUpdate = (key: string, value: any) => {

@@ -10,25 +10,26 @@ import { Image as ImageIcon, Type, Trash2, ArrowUp, ArrowDown, LayoutTemplate, A
 interface Props {
     title: string;
     setTitle: (v: string) => void;
+    titleStyles: Record<string, any>;
     viewMode: 'editor' | 'read';
     blocks: Block[];
     stickers: Sticker[];
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
     selectedId: string | null;
-    selectedType?: 'block' | 'sticker' | 'floating' | 'floatingImage' | null;
+    selectedType?: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null;
 
     setViewMode: (m: 'editor') => void;
     setBlocks: React.Dispatch<React.SetStateAction<Block[]>>;
-    onSelect: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage') => void;
-    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage', changes: any) => void;
+    onSelect: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title') => void;
+    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
     onDelete: () => void;
     onBlockImageUpload: (id: string, file: File, idx?: number) => void;
     onBackgroundClick: () => void;
 }
 
 const EditorCanvas: React.FC<Props> = ({
-    title, setTitle, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
+    title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
     setViewMode, setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
 }) => {
 
@@ -89,6 +90,7 @@ const EditorCanvas: React.FC<Props> = ({
     const getDetectedType = () => {
         if (selectedType) return selectedType; // 부모가 줬으면 그거 씀
         if (!selectedId) return null;
+        if (selectedId === 'title') return 'title';
         if (blocks.some(b => b.id === selectedId)) return 'block';
         if (stickers.some(s => s.id === selectedId)) return 'sticker';
         if (floatingTexts.some(t => t.id === selectedId)) return 'floating';
@@ -101,6 +103,7 @@ const EditorCanvas: React.FC<Props> = ({
     // 현재 선택된 아이템 데이터 찾기
     const getSelectedItem = () => {
         if (!selectedId || !detectedType) return null;
+        if (detectedType === 'title') return { id: 'title', type: 'title', styles: titleStyles };
         if (detectedType === 'block') return blocks.find(b => b.id === selectedId);
         if (detectedType === 'sticker') return stickers.find(s => s.id === selectedId);
         if (detectedType === 'floating') return floatingTexts.find(t => t.id === selectedId); // 👈 포스트잇 찾기 추가
@@ -123,13 +126,25 @@ const EditorCanvas: React.FC<Props> = ({
             <div className="w-[800px] min-w-[800px] bg-white rounded-xl shadow-xl min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden">
 
                 {/* 헤더 */}
-                <div className="sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-center rounded-t-xl z-1000">
+                <div
+                    className={`sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-center rounded-t-xl z-20 transition-all ${selectedId === 'title' ? 'ring-2 ring-indigo-200' : ''}`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (viewMode === 'editor') onSelect('title', 'title');
+                    }}
+                >
                     <input
                         value={title}
                         onChange={e => setTitle(e.target.value)}
                         placeholder="제목을 입력하세요"
                         readOnly={viewMode === 'read'}
-                        className="w-full text-3xl font-bold outline-none bg-transparent placeholder-gray-300"
+                        className="w-full outline-none bg-transparent placeholder-gray-300"
+                        style={{
+                            ...titleStyles,
+                            // 기본 스타일이 덮어씌워지지 않도록 명시
+                            fontSize: titleStyles.fontSize || '30px',
+                            fontWeight: titleStyles.fontWeight || 'bold',
+                        }}
                     />
                     {viewMode === 'read' && <button onClick={() => setViewMode('editor')} className="ml-4 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition ">🛠️ 수정하기</button>}
                 </div>
@@ -297,7 +312,7 @@ const EditorCanvas: React.FC<Props> = ({
                         selectedType={detectedType}
                         currentItem={currentItem}
                         onUpdate={onUpdate}
-                        onDelete={onDelete}
+                        onDelete={detectedType === 'title' ? undefined : onDelete}
                     />
                 )}
             </div>

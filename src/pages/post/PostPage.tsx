@@ -42,6 +42,7 @@ const Post: React.FC = () => {
                         {/* 메인 캔버스 */}
                         <EditorCanvas
                             title={editor.title} setTitle={editor.setTitle}
+                            titleStyles={editor.titleStyles}
                             viewMode={editor.viewMode} setViewMode={editor.setViewMode as any}
                             blocks={editor.blocks} setBlocks={editor.setBlocks}
                             stickers={editor.stickers} floatingTexts={editor.floatingTexts}
