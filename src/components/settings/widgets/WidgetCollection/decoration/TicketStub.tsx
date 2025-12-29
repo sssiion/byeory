@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useWidgetStorage } from '../../SDK';
+import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
 export const TicketStubConfig = {

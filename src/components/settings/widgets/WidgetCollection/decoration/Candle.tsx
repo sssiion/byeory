@@ -1,6 +1,6 @@
 import React from 'react';
 import { WidgetWrapper } from '../Common';
-import { useWidgetStorage } from '../../SDK';
+import { useWidgetStorage } from '../SDK';
 
 export const CandleConfig = {
     defaultSize: '1x2',
@@ -15,7 +15,7 @@ export const Candle = React.memo(function Candle({ gridSize }: { gridSize?: { w:
     const candleCount = w;
 
     return (
-        <WidgetWrapper className="bg-gray-900 border-gray-800 p-2 cursor-pointer" onClick={() => setIsOn(!isOn)}>
+        <WidgetWrapper className="bg-gray-900 border-gray-800 p-2">
             <style>{`
           @keyframes flicker {
             0%, 100% { transform: scale(1); opacity: 0.9; }
@@ -24,7 +24,7 @@ export const Candle = React.memo(function Candle({ gridSize }: { gridSize?: { w:
             75% { transform: scale(0.95, 1.05); opacity: 0.85; }
           }
         `}</style>
-            <div className="flex flex-row items-end justify-around h-full w-full gap-2">
+            <div className="flex flex-row items-end justify-around h-full w-full gap-2 cursor-pointer" onClick={() => setIsOn(!isOn)}>
                 {Array.from({ length: candleCount }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center justify-end h-full relative min-h-[60px] w-full max-w-[80px]">
                         <div

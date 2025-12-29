@@ -2,7 +2,7 @@ export * from './Gallery';
 export * from './Character';
 export * from './ColorChip';
 export * from './MovieScene';
-export * from './WindowView';
+
 export * from './MoonPhase';
 export * from './TicketStub';
 export * from './NeonSign';

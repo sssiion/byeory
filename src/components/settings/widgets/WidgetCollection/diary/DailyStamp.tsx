@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 // --- 9. Daily Stamp (참잘했어요)
 export const DailyStampConfig = {
@@ -9,7 +9,7 @@ export const DailyStampConfig = {
 
 export function DailyStamp() {
     // stamps array of 'YYYY-MM-DD'
-    const [stamps, setStamps] = useState<string[]>([]);
+    const [stamps, setStamps] = useWidgetStorage<string[]>('widget-daily-stamps', []);
 
     // Simple calendar for current month
     const today = new Date();
