@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Check } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 import { useSharedTodo } from '../../../../Todo/useSharedTodo';
-import { TodoItem } from '../../../../Todo/CheckTodo';
 import type { Todo } from '../../../../Todo/types';
 
 export const TodoListConfig = {
@@ -51,21 +50,15 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
     };
 
     const isSmall = (gridSize?.w || 2) < 2;
-    // const isLarge = (gridSize?.h || 2) >= 3 || (gridSize?.w || 2) >= 4; 
-    // Actually, let's stick to the user's rule: low density vs high density.
-    // 1x1: Progress + Count
-    // 2x1, 2x2: List
-    // 4x2: List + Input (Full)
 
     // Small View
     if (isSmall) {
         return (
-            <WidgetWrapper className="bg-white dark:bg-zinc-900 cursor-pointer" onClick={handleNavigate}>
+            <WidgetWrapper className="theme-bg-card cursor-pointer" onClick={handleNavigate}>
                 <div className="flex flex-col items-center justify-center h-full relative">
-                    {/* Circular Progress (CSS only for simplicity) */}
                     <div className="relative w-16 h-16 flex items-center justify-center">
                         <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-gray-100 dark:text-zinc-800" />
+                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="theme-text-secondary opacity-20" />
                             <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent"
                                 className={`${progress === 100 ? 'text-green-500' : 'text-[var(--btn-bg)]'} transition-all duration-1000 ease-out`}
                                 strokeDasharray={175.9}
@@ -73,10 +66,10 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
                             />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-sm font-bold">{Math.round(progress)}%</span>
+                            <span className="text-sm font-bold theme-text-primary">{Math.round(progress)}%</span>
                         </div>
                     </div>
-                    <span className="text-[10px] text-gray-500 mt-2 font-medium">{completed}/{total} Tasks</span>
+                    <span className="text-[10px] theme-text-secondary mt-2 font-medium">{completed}/{total} Tasks</span>
                 </div>
             </WidgetWrapper>
         );
@@ -84,16 +77,17 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
 
     // Standard/Large View
     return (
+
         <WidgetWrapper
             title="TODAY'S TASKS"
-            className="bg-white dark:bg-zinc-900"
+            className="theme-bg-card"
             headerRight={
-                <div className="text-[10px] text-gray-400 font-mono cursor-pointer hover:text-[var(--btn-bg)]" onClick={handleNavigate}>
+                <div className="text-xs font-bold theme-text-secondary cursor-pointer hover:text-[var(--btn-bg)] uppercase tracking-wide" onClick={handleNavigate}>
                     VIEW ALL
                 </div>
             }
         >
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full overflow-hidden">
                 {/* Progress Bar (Linear) */}
                 <div className="px-3 pt-2 pb-1">
                     <div className="w-full h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
@@ -107,7 +101,7 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
                 {/* List */}
                 <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
                     {todayTodos.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-300 gap-2">
+                        <div className="flex flex-col items-center justify-center h-full theme-text-secondary gap-2 opacity-50">
                             <Check size={24} />
                             <span className="text-xs">No tasks for today!</span>
                         </div>
@@ -115,12 +109,33 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
 
                     <div className="space-y-2">
                         {todayTodos.slice(0, (gridSize?.h || 2) < 2 ? 3 : 10).map(todo => (
-                            <div key={todo.id} className="transform scale-90 origin-top-left w-[111%] -mb-2">
-                                <TodoItem
-                                    todo={todo}
-                                    onToggleComplete={toggleTodo}
-                                    onEdit={(t) => updateTodo(t.id, t)}
-                                />
+                            <div
+                                key={todo.id}
+                                className={`flex items-center gap-3 p-3 rounded-xl theme-bg-card-secondary border theme-border transition-all hover:brightness-95 ${todo.completed ? 'opacity-60' : ''}`}
+                            >
+                                <button
+                                    onClick={() => toggleTodo(todo.id)}
+                                    className="flex-shrink-0 theme-text-secondary hover:text-[var(--btn-bg)] transition-colors"
+                                    style={{ color: todo.completed ? 'var(--btn-bg)' : undefined }}
+                                >
+                                    {todo.completed ? (
+                                        <Check size={18} className="stroke-[3]" />
+                                    ) : (
+                                        <div className="w-[18px] h-[18px] rounded-full border-2 border-current opacity-50" />
+                                    )}
+                                </button>
+
+                                <div className="flex-1 min-w-0 flex items-center gap-2">
+                                    <span className={`text-sm font-medium truncate ${todo.completed ? 'line-through theme-text-secondary' : 'theme-text-primary'}`}>
+                                        {todo.title}
+                                    </span>
+                                    {/* Simple Time Display inline if needed */}
+                                    {!todo.allDay && (
+                                        <span className="text-xs theme-text-secondary whitespace-nowrap">
+                                            - {todo.startTime}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -128,7 +143,7 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
 
                 {/* Add Input - Optimized for available space */}
                 {(gridSize?.h || 2) >= 2 && (
-                    <div className="p-2 border-t border-gray-100 dark:border-zinc-800">
+                    <div className="p-2 border-t theme-border mt-auto">
                         {isAdding ? (
                             <div className="flex gap-2 items-center animate-in slide-in-from-bottom-2 duration-200">
                                 <input
@@ -136,19 +151,19 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
                                     value={newTodoTitle}
                                     onChange={(e) => setNewTodoTitle(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                                    placeholder="New..."
-                                    className="flex-1 text-xs bg-transparent outline-none min-w-0 dark:text-gray-200"
+                                    placeholder="New task..."
+                                    className="flex-1 text-sm bg-transparent outline-none min-w-0 theme-text-primary placeholder:text-gray-400 py-2"
                                 />
-                                <button onClick={handleAdd} className="p-1 rounded bg-[var(--btn-bg)] text-white">
-                                    <Plus size={14} />
+                                <button onClick={handleAdd} className="p-2 rounded bg-[var(--btn-bg)] text-white hover:opacity-90 transition-opacity">
+                                    <Plus size={18} />
                                 </button>
                             </div>
                         ) : (
                             <button
                                 onClick={() => setIsAdding(true)}
-                                className="w-full flex items-center justify-center gap-2 py-1.5 rounded border border-dashed border-gray-200 dark:border-zinc-700 text-xs text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-[var(--btn-bg)] hover:border-[var(--btn-bg)] transition-all"
+                                className="w-full flex items-center justify-center gap-2 py-3 rounded-lg border border-dashed theme-border text-sm theme-text-secondary hover:text-[var(--btn-bg)] hover:border-[var(--btn-bg)] hover:bg-[var(--btn-bg)] hover:bg-opacity-5 transition-all"
                             >
-                                <Plus size={12} />
+                                <Plus size={16} />
                                 <span>Add Task</span>
                             </button>
                         )}
