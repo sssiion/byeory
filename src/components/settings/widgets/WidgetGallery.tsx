@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronRight, Plus, HelpCircle, X } from 'lucide-react';
 import { WIDGET_REGISTRY, type WidgetType } from './Registry';
+import { matchKoreanSearch } from '../../../utils/searchUtils';
 
 const CATEGORY_TRANSLATIONS: Record<string, string> = {
   'System': '시스템',
@@ -67,7 +68,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
   // Group Widgets by Category
   const groupedWidgets = useMemo(() => {
     const groups: Record<string, WidgetEntry[]> = {};
-    const lowerSearch = debouncedSearch.toLowerCase();
+    const normalizedSearch = debouncedSearch.toLowerCase().replace(/\s+/g, '');
 
     // Default sort: Category > Label
     const sortedEntries = Object.entries(WIDGET_REGISTRY).sort(([, a], [, b]) => {
@@ -76,8 +77,16 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
     });
 
     for (const [key, widget] of sortedEntries) {
-      // Search Filter (Case-insensitive)
-      if (lowerSearch && !widget.label.toLowerCase().includes(lowerSearch) && !widget.category.toLowerCase().includes(lowerSearch)) {
+      // Search Filter (Enhanced: Case/Space/Chosung/Description)
+      // Chosung search is enabled only for Label and Keywords to reduce noise
+
+      const isMatch =
+        matchKoreanSearch(widget.label, debouncedSearch, { useChosung: true }) ||
+        matchKoreanSearch(widget.category, debouncedSearch, { useChosung: false }) ||
+        (widget.description && matchKoreanSearch(widget.description, debouncedSearch, { useChosung: false })) ||
+        (widget.keywords && widget.keywords.some(k => matchKoreanSearch(k, debouncedSearch, { useChosung: true })));
+
+      if (debouncedSearch && !isMatch) {
         continue;
       }
 
@@ -125,7 +134,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
-            placeholder="위젯 검색 (ex: 날씨, 할 일)"
+            placeholder="위젯 검색 (ex: 날씨, 할 일, ㅎㅇ)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-card-secondary)] border border-transparent focus:bg-white focus:border-blue-500 transition-all outline-none text-sm"
@@ -228,7 +237,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                 {selectedInfoWidget.category === 'Global' ? (
                   <div className="text-gray-400">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
                   </div>

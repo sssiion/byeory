@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Fingerprint, Key, Image as ImageIcon } from "lucide-react";
+import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Key, Image as ImageIcon, Clock } from "lucide-react";
 
 function ProfilePage() {
     const { logout } = useAuth();
@@ -20,6 +20,12 @@ function ProfilePage() {
     } | null>(null);
 
     const [provider, setProvider] = useState<string>('LOCAL');
+    const [showSessionTimer, setShowSessionTimer] = useState(false);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('showSessionTimer');
+        if (saved === 'true') setShowSessionTimer(true);
+    }, []);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -220,16 +226,24 @@ function ProfilePage() {
                                 <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
                             </div>
                         </button>
-                        <button className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border">
+                        <button
+                            onClick={() => {
+                                const newValue = !showSessionTimer;
+                                setShowSessionTimer(newValue);
+                                localStorage.setItem('showSessionTimer', newValue.toString());
+                                window.dispatchEvent(new CustomEvent('session-timer-change', { detail: { show: newValue } }));
+                            }}
+                            className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"
+                        >
                             <div className="flex items-center gap-3">
-                                <Fingerprint className="w-5 h-5 theme-text-secondary" />
+                                <Clock className="w-5 h-5 theme-text-secondary" />
                                 <div>
-                                    <span className="block theme-text-primary">생체 인증</span>
-                                    <span className="text-sm theme-text-secondary">지문 또는 Face ID</span>
+                                    <span className="block theme-text-primary">접속 시간 표시</span>
+                                    <span className="text-sm theme-text-secondary">상단바에 현재 접속 시간 표시</span>
                                 </div>
                             </div>
-                            <div className="w-12 h-6 rounded-full relative cursor-pointer" style={{ backgroundColor: 'var(--btn-bg)' }}>
-                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
+                            <div className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${showSessionTimer ? 'bg-[var(--btn-bg)]' : 'bg-gray-300'}`}>
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showSessionTimer ? 'right-1' : 'left-1'}`}></div>
                             </div>
                         </button>
                         <button className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80">

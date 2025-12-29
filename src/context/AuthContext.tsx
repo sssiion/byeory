@@ -7,6 +7,7 @@ interface AuthContextType {
     signup: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
     user: { email: string } | null;
+    sessionStartTime: number | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<{ email: string } | null>(null);
+    const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
 
     const parseJwt = (token: string) => {
         try {
@@ -30,9 +32,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (payload) {
                 setIsLoggedIn(true);
                 setUser({ email: payload.email });
+
+                // Restore session start time or set new one if missing
+                const storedStartTime = localStorage.getItem('sessionStartTime');
+                if (storedStartTime) {
+                    setSessionStartTime(parseInt(storedStartTime, 10));
+                } else {
+                    const now = Date.now();
+                    setSessionStartTime(now);
+                    localStorage.setItem('sessionStartTime', now.toString());
+                }
             } else {
                 localStorage.removeItem('accessToken');
+                localStorage.removeItem('sessionStartTime');
             }
+        } else {
+            localStorage.removeItem('sessionStartTime');
         }
 
         // Clean up legacy storage if it exists
@@ -44,9 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const setLoginState = (email: string) => {
         setIsLoggedIn(true);
         setUser({ email });
+
+        const now = Date.now();
+        setSessionStartTime(now);
+        localStorage.setItem('sessionStartTime', now.toString());
     };
 
     const socialLogin = async (tokenOrData: string | { email: string, providerId: string }) => {
+        // ... (existing logic) ...
+        // Note: setLoginState is called inside socialLogin which handles the time setting
         try {
             let email, providerId;
 
@@ -107,6 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const localLogin = async (email: string, password: string): Promise<boolean> => {
+        // ... (existing logic) ...
         try {
             const response = await fetch('http://localhost:8080/auth/login', {
                 method: 'POST',
@@ -167,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const signup = async (email: string, password: string): Promise<boolean> => {
+        // ... (existing logic) ...
         try {
             const joinData = {
                 email,
@@ -204,13 +227,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = () => {
         setIsLoggedIn(false);
         setUser(null);
+        setSessionStartTime(null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('isProfileSetupCompleted');
-        localStorage.removeItem('userEmail'); // Ensure this is cleared too if used
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('sessionStartTime');
     };
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, socialLogin, localLogin, signup, logout, user }}>
+        <AuthContext.Provider value={{ isLoggedIn, socialLogin, localLogin, signup, logout, user, sessionStartTime }}>
             {children}
         </AuthContext.Provider>
     );

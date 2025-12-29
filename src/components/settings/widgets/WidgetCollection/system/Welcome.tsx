@@ -23,10 +23,7 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
     // Assuming we can't find a direct hook, we'll make it navigate to home or toggle a global event.
     // For now, removing the invalid hook call.
     const openThemeSettings = () => {
-        // TODO: Implement actual theme opening logic
-        console.log("Open theme settings");
-        // Maybe dispatch a custom event?
-        window.dispatchEvent(new CustomEvent('open-theme-settings'));
+        window.dispatchEvent(new CustomEvent('open-settings-modal', { detail: { view: 'theme' } }));
     };
 
     const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
@@ -58,7 +55,7 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
 
             <div className="flex gap-2 relative z-10 mt-4">
                 <button
-                    onClick={() => navigate('/profile/edit')}
+                    onClick={() => navigate('/profile')}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all shadow-sm text-sm font-medium text-gray-600 group/btn"
                 >
                     <User size={14} className="text-gray-400 group-hover/btn:text-blue-500 transition-colors" />

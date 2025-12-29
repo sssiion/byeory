@@ -79,17 +79,17 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             layout
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             ref={ref}
-            className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 overflow-hidden 
+            className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 
                 ${isTransparent
                     ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
                     : 'theme-bg-card shadow-sm hover:shadow-md'} 
-                ${isEditMode ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
+                ${isEditMode ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2 overflow-visible' : 'overflow-hidden'}
                 ${isDragging ? 'pointer-events-none' : ''}`}
             style={{
                 gridColumn: `${x} / span ${w}`,
                 gridRow: `${y} / span ${h}`,
                 opacity: isDragging ? 0 : 1, // Hide original when dragging
-                zIndex: isDragging ? 50 : 1,
+                zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
             }}
         >
             {/* Widget Content */}
@@ -119,7 +119,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                             </button>
 
                             {showSizeMenu && (
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-2 z-50 w-32 grid grid-cols-2 gap-1 animate-in zoom-in duration-200">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-2 z-[100] w-36 grid grid-cols-2 gap-1 animate-in zoom-in duration-200 max-h-60 overflow-y-auto custom-scrollbar">
                                     {(registryItem.validSizes || [
                                         [1, 1], [2, 1], [3, 1],
                                         [1, 2], [2, 2], [3, 2],
@@ -159,7 +159,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
                                                 setShowSizeMenu(false);
                                             }}
-                                            className={`text-[10px] p-1 rounded hover:bg-[var(--bg-card-secondary)] border ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
+                                            className={`text-[10px] p-2 rounded hover:bg-[var(--bg-card-secondary)] border transition-colors ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
                                         >
                                             {cw}x{ch}
                                         </button>

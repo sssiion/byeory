@@ -9,7 +9,7 @@ interface OceanWaveProps {
 
 export const OceanWaveConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 1], [3, 2], [4, 1], [4, 2]] as [number, number][],
 };
 
 export function OceanWave({ gridSize: _gridSize }: OceanWaveProps) {
@@ -32,7 +32,7 @@ export function OceanWave({ gridSize: _gridSize }: OceanWaveProps) {
     // Theme Configuration
     const theme = isNight ? {
         sky: 'from-indigo-950 to-slate-900',
-        body: 'bg-white/10 shadow-[0_0_30px_rgba(255,255,255,0.2)]', // Moon
+        body: 'bg-stone-200 shadow-[0_0_40px_rgba(255,255,255,0.5)]', // Moon
         waves: [
             'fill-[#1e3a8a] opacity-40', // Deep Blue
             'fill-[#172554] opacity-70', // Darker Blue

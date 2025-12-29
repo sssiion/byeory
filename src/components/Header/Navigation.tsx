@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SettingsModal from '../settings/Settings';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Settings } from 'lucide-react';
@@ -113,25 +113,85 @@ const Navigation: React.FC = () => {
     // Menu Context
     const { menuItems, isEditMode, setIsEditMode, moveMenuItem } = useMenu();
 
+    const [settingsInitialView, setSettingsInitialView] = useState<'main' | 'theme' | 'custom' | 'defaultPage' | 'widget'>('main');
+
+    // Listen for custom event to open settings
+    React.useEffect(() => {
+        const handleOpenSettings = (e: CustomEvent) => {
+            const view = e.detail?.view || 'main';
+            setSettingsInitialView(view);
+            setIsSettingsOpen(true);
+        };
+
+        window.addEventListener('open-settings-modal', handleOpenSettings as EventListener);
+        return () => window.removeEventListener('open-settings-modal', handleOpenSettings as EventListener);
+    }, []);
+
     const isActive = (path: string) => {
         if (path === '/' && location.pathname !== '/') return false;
         return location.pathname.startsWith(path);
     };
 
+    // Session Timer Logic
+    const { sessionStartTime } = useAuth();
+    const [elapsedTime, setElapsedTime] = useState<string>('');
+    const [showTimer, setShowTimer] = useState(false);
+
+    useEffect(() => {
+        const checkTimerSetting = () => {
+            const saved = localStorage.getItem('showSessionTimer') === 'true';
+            setShowTimer(saved);
+        };
+
+        checkTimerSetting();
+
+        const handleTimerChange = (e: CustomEvent) => {
+            setShowTimer(e.detail.show);
+        };
+
+        window.addEventListener('session-timer-change', handleTimerChange as EventListener);
+        return () => window.removeEventListener('session-timer-change', handleTimerChange as EventListener);
+    }, []);
+
+    useEffect(() => {
+        if (!showTimer || !sessionStartTime) {
+            setElapsedTime('');
+            return;
+        }
+
+        const updateTimer = () => {
+            const now = Date.now();
+            const diff = now - sessionStartTime;
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setElapsedTime(
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            );
+        };
+
+        const interval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+
+        return () => clearInterval(interval);
+    }, [showTimer, sessionStartTime]);
+
     return (
         <>
             {/* Top Header */}
-            <header className={`sticky top-0 z-50 flex justify-between items-center px-4 md:px-6 py-3 md:py-4 theme-bg-header shadow-sm border-b theme-border transition-colors duration-300`}>
+            <header className={`sticky top-0 z-50 flex md:grid md:grid-cols-3 justify-between md:items-center px-4 md:px-6 py-3 md:py-4 theme-bg-header shadow-sm border-b theme-border transition-colors duration-300`}>
                 {/* Logo */}
                 <div
-                    className={`flex items-center ${isEditMode ? 'cursor-default opacity-50' : 'cursor-pointer'}`}
+                    className={`flex items-center justify-self-start ${isEditMode ? 'cursor-default opacity-50' : 'cursor-pointer'}`}
                     onClick={() => !isEditMode && navigate('/')}
                 >
                     <img src="/logo.png" alt="Logo" className="w-18 md:w-20" />
                 </div>
 
                 {/* Desktop Center Navigation */}
-                <nav className="hidden md:flex items-center justify-center">
+                <nav className="hidden md:flex items-center justify-center justify-self-center">
                     {menuItems.map((item, index) => {
                         return (
                             <DraggableMenuItem
@@ -157,7 +217,12 @@ const Navigation: React.FC = () => {
                 </nav>
 
                 {/* Right Icons */}
-                <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary">
+                <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary justify-self-end">
+                    {showTimer && elapsedTime && (
+                        <div className="hidden md:block font-mono text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-3 py-1.5 rounded-full border theme-border">
+                            {elapsedTime}
+                        </div>
+                    )}
                     <button
                         className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => {
@@ -214,6 +279,7 @@ const Navigation: React.FC = () => {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
+                initialView={settingsInitialView}
                 onMenuEditMode={() => {
                     setIsEditMode(true);
                     navigate('/home');
