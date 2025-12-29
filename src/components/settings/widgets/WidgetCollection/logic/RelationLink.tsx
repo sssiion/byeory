@@ -4,10 +4,24 @@ import { ArrowUpRight, Link2, Database } from 'lucide-react';
 
 export const RelationLinkConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 1], [2, 2], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const RelationLink = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+export const RelationLink = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-white" style={style}>
+                <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                    <div className="w-6 h-6 rounded bg-blue-50 text-blue-500 flex items-center justify-center mb-1">
+                        <Link2 size={14} />
+                    </div>
+                    <span className="text-[9px] font-bold text-gray-700 truncate max-w-full">Alpha</span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
     return (
         <WidgetWrapper className="bg-white" style={style}>
             <div className="w-full h-full flex flex-col p-3 justify-center">

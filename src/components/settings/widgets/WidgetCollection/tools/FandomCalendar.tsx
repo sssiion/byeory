@@ -15,7 +15,7 @@ interface FandomCalendarProps {
 
 export const FandomCalendarConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function FandomCalendar({ gridSize }: FandomCalendarProps) {

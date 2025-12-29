@@ -5,10 +5,10 @@ import { useWidgetStorage } from '../SDK';
 
 export const FormulaBlockConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const FormulaBlock = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+export const FormulaBlock = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     const [code, setCode] = useWidgetStorage('widget-formula-code', 'const a = 10;\nconst b = 20;\nreturn a + b;');
     const [result, setResult] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -25,6 +25,29 @@ export const FormulaBlock = ({ style, gridSize: _ }: { style?: React.CSSProperti
             setResult(null);
         }
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-white flex flex-col items-center justify-center p-1 relative group" style={style}>
+                <div className="flex items-center gap-1 mb-1 text-gray-500">
+                    <Terminal size={14} />
+                </div>
+                <div className="text-xs font-bold text-blue-600 truncate w-full text-center">
+                    {result !== null ? result : 'Ready'}
+                </div>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        runCode();
+                    }}
+                    className="absolute inset-0 w-full h-full cursor-pointer z-10"
+                    title="Click to run"
+                />
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-white" style={style}>

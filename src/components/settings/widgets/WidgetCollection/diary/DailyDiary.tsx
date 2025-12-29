@@ -5,11 +5,24 @@ import { useWidgetStorage } from '../SDK';
 // 2. Daily Diary (오늘의 일기)
 export const DailyDiaryConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const DailyDiary = memo(function DailyDiary() {
+export const DailyDiary = memo(function DailyDiary({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [content, setContent] = useWidgetStorage('widget-daily-diary', '');
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-[#fff9e6] flex flex-col items-center justify-center p-1 border-4 border-[#e6dcc8] border-double">
+                <div className="font-serif font-bold text-gray-800 text-sm">Dec 12</div>
+                <div className="w-8 h-10 border border-gray-300 bg-white mt-1 shadow-sm flex items-center justify-center">
+                    <span className="text-[8px] text-gray-400">log</span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-[#fff9e6]">

@@ -4,10 +4,10 @@ import { useWidgetStorage } from '../SDK';
 
 export const RSSReaderConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [3, 3], [4, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export function RSSReader() {
+export function RSSReader({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [url, setUrl] = useWidgetStorage('widget-rss-url', '');
     const [feed, setFeed] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -54,6 +54,23 @@ export function RSSReader() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-2 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden group">
+                <Rss size={20} className="text-orange-500 mb-1" />
+                {feed.length > 0 ? (
+                    <span className="text-[8px] leading-tight font-bold theme-text-primary text-center line-clamp-2">
+                        {feed[0].title}
+                    </span>
+                ) : (
+                    <span className="text-[8px] theme-text-secondary">RSS</span>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">

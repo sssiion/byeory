@@ -5,10 +5,10 @@ import { useWidgetStorage } from '../SDK';
 
 export const RandomPickerConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export function RandomPicker() {
+export function RandomPicker({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [items, setItems] = useWidgetStorage<string[]>('widget-random-picker-items', ['짜장면', '짬뽕', '탕수육', '볶음밥', '마라탕', '쌀국수', '돈까스', '제육볶음']);
     const [newItem, setNewItem] = useState('');
     const [result, setResult] = useState<string | null>(null);
@@ -54,6 +54,29 @@ export function RandomPicker() {
     };
 
     const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'];
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border p-1 relative overflow-hidden">
+                <button
+                    onClick={spin}
+                    disabled={isSpinning}
+                    className="w-full h-full flex flex-col items-center justify-center hover:bg-gray-50 dark:hover:bg-white/5 active:scale-95 transition-all"
+                >
+                    {result && !isSpinning ? (
+                        <span className="text-[10px] font-bold text-[var(--btn-bg)] text-center animate-in zoom-in">{result}</span>
+                    ) : (
+                        <>
+                            <Play size={20} className={isSpinning ? 'animate-spin' : ''} />
+                            <span className="text-[8px] font-bold mt-1 max-w-full truncate">{isSpinning ? '...' : 'SPIN'}</span>
+                        </>
+                    )}
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">

@@ -7,7 +7,20 @@ export const MyPersonaConfig = {
     validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const MyPersona = React.memo(function MyPersona({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
+export const MyPersona = React.memo(function MyPersona({ gridSize }: { gridSize?: { w: number; h: number } }) {
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-gradient-to-tr from-purple-100 to-white flex items-center justify-center p-1">
+                <div className="w-12 h-12 rounded-full bg-white p-1 shadow-sm">
+                    <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix" alt="Profile" className="w-full h-full rounded-full bg-purple-50" />
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
     return (
         <WidgetWrapper className="bg-gradient-to-tr from-purple-100 to-white">
             <div className="w-full h-full flex flex-col items-center justify-center p-3">
@@ -23,4 +36,5 @@ export const MyPersona = React.memo(function MyPersona({ gridSize: _ }: { gridSi
             </div>
         </WidgetWrapper>
     );
+
 });

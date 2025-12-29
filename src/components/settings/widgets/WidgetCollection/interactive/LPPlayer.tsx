@@ -8,7 +8,7 @@ interface LPPlayerProps {
 
 export const LPPlayerConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 export function LPPlayer({ gridSize }: LPPlayerProps) {

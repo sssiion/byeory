@@ -11,11 +11,11 @@ interface DigitalPlantData {
 // --- 4. Digital Plant (반려 식물) ---
 export const DigitalPlantConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 2], [2, 3]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 2]] as [number, number][],
 };
 
 // --- 4. Digital Plant (반려 식물) ---
-export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: propName, gridSize: _ }: { onUpdate?: (data: DigitalPlantData) => void, level?: number, exp?: number, name?: string, gridSize?: { w: number; h: number } }) {
+export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: propName, gridSize }: { onUpdate?: (data: DigitalPlantData) => void, level?: number, exp?: number, name?: string, gridSize?: { w: number; h: number } }) {
     // Persist plant state
     const [plantState, setPlantState] = useWidgetStorage('widget-digital-plant', {
         level: propLevel || 1,
@@ -23,12 +23,14 @@ export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: p
         name: propName || '새싹이'
     });
 
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
+
     const { level, exp, name } = plantState;
     const [isWatering, setIsWatering] = useState(false);
     const maxExp = level * 100;
 
     const water = () => {
-        if (isWatering) return;
+        if (isWatering || level >= 4) return;
         setIsWatering(true);
 
         // Calculate new exp
@@ -40,8 +42,6 @@ export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: p
             newLevel = Math.min(level + 1, 4); // Max level 4
         }
 
-        // Save state immediately (or after delay? interactive needs immediate feedback usually, but animation is delay)
-        // Let's update state in timeout to match animation
         setTimeout(() => {
             setPlantState({ ...plantState, level: newLevel, exp: newExp });
             if (onUpdate) onUpdate({ level: newLevel, exp: newExp });
@@ -51,24 +51,39 @@ export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: p
 
     const getPlantImage = () => {
         if (level === 1) return (
-            <div className="text-2xl animate-bounce">🌱</div>
+            <div className={`text-2xl animate-bounce ${isSmall ? 'text-4xl' : ''}`}>🌱</div>
         );
         if (level === 2) return (
-            <div className="text-4xl animate-pulse">🌿</div>
+            <div className={`text-4xl animate-pulse ${isSmall ? 'text-5xl' : ''}`}>🌿</div>
         );
         if (level === 3) return (
             <div className="relative">
-                <div className="text-5xl">🪴</div>
+                <div className={`text-5xl ${isSmall ? 'text-6xl' : ''}`}>🪴</div>
                 <div className="absolute -top-2 -right-2 text-xl animate-bounce delay-100">✨</div>
             </div>
         );
         return (
             <div className="relative">
-                <div className="text-6xl">🌺</div>
+                <div className={`text-6xl ${isSmall ? 'text-7xl' : ''}`}>🌺</div>
                 <div className="absolute -top-2 -right-2 text-xl animate-spin-slow">🐝</div>
             </div>
         );
     };
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-green-50/50 dark:bg-green-900/20 border-green-100 dark:border-green-800">
+                <div className="w-full h-full flex flex-col items-center justify-center relative cursor-pointer" onClick={water}>
+                    <div className="absolute top-1 right-1 text-[8px] bg-green-200 dark:bg-green-800 px-1 rounded-full">{level}</div>
+                    {getPlantImage()}
+                    {isWatering && <div className="absolute text-xl animate-pour">🚿</div>}
+                    <div className="absolute bottom-1 w-3/4 h-1 bg-green-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${(exp / maxExp) * 100}%` }} />
+                    </div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-green-50/50 dark:bg-green-900/20 border-green-100 dark:border-green-800">

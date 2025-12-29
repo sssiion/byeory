@@ -2,7 +2,7 @@ import React from 'react';
 
 export const TextScrollerConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [3, 1], [4, 1]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
 export const TextScroller = React.memo(({ text = 'HELLO WORLD', gridSize: _ }: { text?: string, gridSize?: { w: number; h: number } }) => {

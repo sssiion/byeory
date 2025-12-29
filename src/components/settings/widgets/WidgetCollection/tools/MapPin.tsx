@@ -6,10 +6,10 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 export const MapPinConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [3, 2], [4, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-export function MapPin() {
+export function MapPin({ gridSize }: { gridSize?: { w: number; h: number } }) {
     // SDK Storage
     const [query, setQuery] = useWidgetStorage('widget-mappin-query', 'Seoul');
     const [memo, setMemo] = useWidgetStorage('widget-mappin-memo', '');
@@ -41,6 +41,17 @@ export function MapPin() {
         // Using Embed API
         setSrc(`https://www.google.com/maps/embed/v1/place?key=${mapKey}&q=${encodedQuery}`);
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border p-1">
+                <MapPinIcon size={20} className="text-red-500 mb-1" />
+                <span className="text-[9px] font-bold theme-text-primary truncate max-w-full text-center">{query}</span>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">

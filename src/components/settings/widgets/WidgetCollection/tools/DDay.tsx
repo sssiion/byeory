@@ -22,7 +22,7 @@ interface DDayListProps {
     gridSize?: { w: number; h: number };
 }
 
-export const DDayList = React.memo(function DDayList({ gridSize: _ }: DDayListProps) {
+export const DDayList = React.memo(function DDayList({ gridSize }: DDayListProps) {
     const [events] = useWidgetStorage<DDayItem[]>('widget-dday-list', [
         { id: 1, title: 'Summer Vacation', targetDate: '2024-07-20' },
         { id: 2, title: 'Project Due', targetDate: '2024-05-15' },
@@ -44,12 +44,41 @@ export const DDayList = React.memo(function DDayList({ gridSize: _ }: DDayListPr
         return progress;
     };
 
+    const isSmall = (gridSize?.w || 1) < 2;
+
+    // Sort by nearest D-Day (excluding past if desired, but simplest is just sort by date)
+    const sortedEvents = [...events].sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
+    const nearestEvent = sortedEvents.find(e => calculateDDay(e.targetDate) >= 0) || sortedEvents[0]; // Nearest future or just first
+
+    if (isSmall && nearestEvent) {
+        const dday = calculateDDay(nearestEvent.targetDate);
+        const isPast = dday < 0;
+        return (
+            <CommonWidgetWrapper className="bg-pink-50/50 dark:bg-pink-900/10">
+                <div className="flex flex-col items-center justify-center h-full p-2 text-center">
+                    <div className={`text-2xl font-bold ${isPast ? 'text-gray-400' : 'text-pink-500'}`}>
+                        {dday === 0 ? 'D-Day' : isPast ? `D+${Math.abs(dday)}` : `D-${dday}`}
+                    </div>
+                    <div className="text-xs font-bold text-gray-700 dark:text-gray-200 mt-1 line-clamp-2 leading-tight">
+                        {nearestEvent.title}
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-200 dark:bg-pink-950/30 rounded-full overflow-hidden mt-3">
+                        <div
+                            className={`h-full ${isPast ? 'bg-gray-300' : 'bg-pink-400'} transition-all duration-1000`}
+                            style={{ width: `${getProgress(nearestEvent.targetDate)}%` }}
+                        />
+                    </div>
+                </div>
+            </CommonWidgetWrapper>
+        );
+    }
+
     return (
         <CommonWidgetWrapper title="D-DAY" className="bg-pink-50/50 dark:bg-pink-900/10"
             headerRight={<button className="text-[10px] text-pink-400 hover:text-pink-600"><Plus size={14} /></button>}
         >
             <div className="p-2 flex flex-col gap-2 h-full overflow-y-auto custom-scrollbar">
-                {events.map((e) => {
+                {sortedEvents.map((e) => {
                     const dday = calculateDDay(e.targetDate);
                     const isPast = dday < 0;
                     return (

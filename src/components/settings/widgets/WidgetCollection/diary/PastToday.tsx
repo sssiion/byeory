@@ -5,10 +5,21 @@ import { WidgetWrapper } from '../../Shared';
 // 8. Past Today (과거의 오늘)
 export const PastTodayConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const PastToday = memo(function PastToday() {
+export const PastToday = memo(function PastToday({ gridSize }: { gridSize?: { w: number; h: number } }) {
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-slate-50 border-slate-100 flex flex-col items-center justify-center p-1">
+                <History size={20} className="text-slate-400 mb-1" />
+                <span className="text-[8px] font-bold text-slate-500">1 YEAR AGO</span>
+            </WidgetWrapper>
+        );
+    }
     return (
         <WidgetWrapper className="bg-slate-50 border-slate-100">
             <div className="w-full h-full p-3 flex flex-col justify-between">
@@ -25,3 +36,4 @@ export const PastToday = memo(function PastToday() {
         </WidgetWrapper>
     );
 });
+

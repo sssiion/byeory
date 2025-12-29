@@ -2,10 +2,24 @@ import React from 'react';
 
 export const TicketStubConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-export const TicketStub = ({ title = 'Movie Night', date = '24.12.24', seat = 'H12', gridSize: _ }: { title?: string, date?: string, seat?: string, gridSize?: { w: number; h: number } }) => {
+export const TicketStub = ({ title = 'Movie Night', date = '24.12.24', seat = 'H12', gridSize }: { title?: string, date?: string, seat?: string, gridSize?: { w: number; h: number } }) => {
+    const isSmall = (gridSize?.w || 2) < 2;
+    if (isSmall) {
+        return (
+            <div className="w-full h-full flex flex-col bg-[#fffbf0] rounded-lg overflow-hidden shadow-sm border border-[#e5e0d0]">
+                <div className="flex-1 flex items-center justify-center p-1 bg-[#2c2c2c] text-[#fffbf0]">
+                    <span className="text-xs font-bold">{seat}</span>
+                </div>
+                <div className="h-2/3 p-1 flex flex-col justify-center items-center text-center">
+                    <span className="text-[9px] font-bold text-[#2c2c2c] leading-tight truncate w-full">{title}</span>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full h-full flex bg-[#fffbf0] rounded-lg overflow-hidden shadow-sm border border-[#e5e0d0]">
             <div className="flex-1 p-2 flex flex-col justify-center border-r-2 border-dashed border-[#dcdcdc] relative min-w-0">

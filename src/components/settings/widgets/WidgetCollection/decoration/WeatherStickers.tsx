@@ -17,7 +17,7 @@ interface WeatherStickersProps {
 
 export const WeatherStickersConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 export function WeatherStickers({ gridSize }: WeatherStickersProps) {

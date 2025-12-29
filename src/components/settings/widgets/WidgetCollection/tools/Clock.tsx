@@ -8,13 +8,13 @@ export const ClockWidgetConfig = {
     validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-export function ClockWidget() {
+export function ClockWidget({ gridSize }: { gridSize?: { w: number, h: number } }) {
     const [time, setTime] = useState(new Date());
     const [type, setType] = useWidgetStorage<'digital' | 'analog' | 'flip'>('widget-clock-type', 'analog');
 
     useWidgetInterval(() => {
         setTime(new Date());
-    }, 1000 / 60); // 60fps for smooth analog
+    }, 1000 / 60);
 
     const toggleType = () => {
         if (type === 'digital') setType('analog');
@@ -22,7 +22,43 @@ export function ClockWidget() {
         else setType('digital');
     };
 
+    const isSmall = (gridSize?.w || 1) < 2;
+
     const renderContent = () => {
+        /* [Small View] 1x1 */
+        if (isSmall) {
+            // Simplified Analog for Small
+            if (type === 'analog') {
+                const seconds = time.getSeconds() + time.getMilliseconds() / 1000;
+                const minutes = time.getMinutes() + seconds / 60;
+                const hours = (time.getHours() % 12) + minutes / 60;
+                return (
+                    <div className="relative w-24 h-24 rounded-full bg-white border border-gray-100 flex items-center justify-center">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="absolute w-1 h-2 bg-gray-300"
+                                style={{ top: '6px', left: '50%', transform: `translateX(-50%) rotate(${i * 90}deg)`, transformOrigin: '50% 42px' }} />
+                        ))}
+                        <div className="absolute w-1 h-6 bg-gray-800 rounded-full origin-bottom left-1/2 -ml-[2px] bottom-1/2" style={{ transform: `rotate(${hours * 30}deg)` }} />
+                        <div className="absolute w-0.5 h-9 bg-gray-600 rounded-full origin-bottom left-1/2 -ml-[1px] bottom-1/2" style={{ transform: `rotate(${minutes * 6}deg)` }} />
+                        <div className="absolute w-0.5 h-10 bg-orange-500 rounded-full origin-bottom left-1/2 -ml-[1px] bottom-1/2" style={{ transform: `rotate(${seconds * 6}deg)` }} />
+                        <div className="w-2 h-2 bg-white border-2 border-orange-500 rounded-full z-20 relative" />
+                    </div>
+                );
+            }
+            // Simplified Digital/Flip for Small
+            return (
+                <div className="flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold tracking-tighter text-gray-800">
+                        {time.getHours()}:{time.getMinutes().toString().padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] font-medium text-gray-500 uppercase mt-1">
+                        {time.toLocaleDateString('ko-KR', { weekday: 'short' })}
+                    </div>
+                </div>
+            );
+        }
+
+        /* [Medium/Large View] */
         // Digital Clock (Modern)
         if (type === 'digital') {
             return (
@@ -48,11 +84,10 @@ export function ClockWidget() {
             );
         }
 
-        // New Flip Clock Style
+        // Flip Clock
         if (type === 'flip') {
             const h = time.getHours().toString().padStart(2, '0');
             const m = time.getMinutes().toString().padStart(2, '0');
-
             return (
                 <div className="flex flex-col items-center justify-center gap-3">
                     <div className="flex gap-2 items-center">
@@ -75,41 +110,21 @@ export function ClockWidget() {
 
         return (
             <div className="relative w-32 h-32 rounded-full bg-white shadow-[inset_0_2px_8px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-center">
-                {/* Clock Face Markers */}
                 {[...Array(12)].map((_, i) => (
                     <div
                         key={i}
                         className={`absolute w-0.5 bg-gray-300 ${i % 3 === 0 ? 'h-3 bg-gray-400' : 'h-1.5'}`}
                         style={{
-                            top: '4px',
-                            left: '50%',
-                            transformOrigin: '50% 64px', // 64 = w/2
+                            top: '4px', left: '50%', transformOrigin: '50% 64px',
                             transform: `translateX(-50%) rotate(${i * 30}deg)`
                         }}
                     />
                 ))}
-
-                {/* Hour Hand */}
-                <div
-                    className="absolute w-1.5 h-8 bg-gray-800 rounded-full origin-bottom left-1/2 -ml-[3px] bottom-1/2 shadow-sm"
-                    style={{ transform: `rotate(${hours * 30}deg)` }}
-                ></div>
-
-                {/* Minute Hand */}
-                <div
-                    className="absolute w-1 h-12 bg-gray-600 rounded-full origin-bottom left-1/2 -ml-[2px] bottom-1/2 shadow-sm"
-                    style={{ transform: `rotate(${minutes * 6}deg)` }}
-                ></div>
-
-                {/* Second Hand (Smooth) */}
-                <div
-                    className="absolute w-0.5 h-14 bg-orange-500 rounded-full origin-bottom left-1/2 -ml-[1px] bottom-1/2 z-10"
-                    style={{ transform: `rotate(${seconds * 6}deg)` }}
-                >
+                <div className="absolute w-1.5 h-8 bg-gray-800 rounded-full origin-bottom left-1/2 -ml-[3px] bottom-1/2 shadow-sm" style={{ transform: `rotate(${hours * 30}deg)` }}></div>
+                <div className="absolute w-1 h-12 bg-gray-600 rounded-full origin-bottom left-1/2 -ml-[2px] bottom-1/2 shadow-sm" style={{ transform: `rotate(${minutes * 6}deg)` }}></div>
+                <div className="absolute w-0.5 h-14 bg-orange-500 rounded-full origin-bottom left-1/2 -ml-[1px] bottom-1/2 z-10" style={{ transform: `rotate(${seconds * 6}deg)` }}>
                     <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-orange-500 rounded-full shadow-sm" />
                 </div>
-
-                {/* Center Pin */}
                 <div className="w-2 h-2 bg-white border-2 border-orange-500 rounded-full z-20 shadow-sm relative"></div>
             </div>
         );
@@ -123,9 +138,11 @@ export function ClockWidget() {
                 title="클릭하여 스타일 변경"
             >
                 {renderContent()}
-                <div className="absolute bottom-2 right-2 text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {type.toUpperCase()}
-                </div>
+                {!isSmall && (
+                    <div className="absolute bottom-2 right-2 text-[10px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {type.toUpperCase()}
+                    </div>
+                )}
             </div>
         </WidgetWrapper>
     );

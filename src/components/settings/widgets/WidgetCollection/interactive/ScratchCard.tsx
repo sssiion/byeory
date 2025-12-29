@@ -11,7 +11,7 @@ interface ComponentProps {
 
 export const ScratchCardConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 export const ScratchCard = ({ className, style, text = "Lucky Day!", imageSrc, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {

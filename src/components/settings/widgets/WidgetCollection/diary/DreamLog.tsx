@@ -15,7 +15,7 @@ interface DreamLogData {
 // --- 3. Dream Log (꿈 기록장) ---
 export const DreamLogConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
 interface DreamLogProps {
@@ -23,7 +23,7 @@ interface DreamLogProps {
     logs?: DreamLogEntry[];
 }
 
-export function DreamLog({ onUpdate, logs: propLogs = [] }: DreamLogProps) {
+export function DreamLog({ onUpdate, logs: propLogs = [], gridSize }: DreamLogProps & { gridSize?: { w: number; h: number } }) {
     const [mode, setMode] = useState<'list' | 'write'>('list');
     const [input, setInput] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -46,6 +46,22 @@ export function DreamLog({ onUpdate, logs: propLogs = [] }: DreamLogProps) {
         setLogs(newLogs);
         if (onUpdate) onUpdate({ logs: newLogs });
     };
+
+
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-[#1a1b26] border-[#24283b] flex flex-col items-center justify-center p-1">
+                <div className="relative mb-1">
+                    <div className="text-xl">🌙</div>
+                    <div className="absolute top-0 right-0 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                </div>
+                <span className="text-[8px] text-purple-300 font-bold">DREAM</span>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-[#1a1b26] border-[#24283b]">

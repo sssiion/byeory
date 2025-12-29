@@ -8,7 +8,7 @@ interface RecipeCardProps {
 
 export const RecipeCardConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2], [2, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 export function RecipeCard({ gridSize }: RecipeCardProps) {

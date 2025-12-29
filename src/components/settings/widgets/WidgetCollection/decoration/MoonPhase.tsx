@@ -3,7 +3,7 @@ import { WidgetWrapper } from '../Common';
 
 export const MoonPhaseConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 // --- 1. Moon Phase (달의 위상) ---

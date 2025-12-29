@@ -30,7 +30,7 @@ const ScientificBtn = ({ label, fn, onClick }: ScientificBtnProps) => (
 
 export const CalculatorConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2], [2, 3]] as [number, number][],
 };
 
 export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize }: CalculatorProps) {
@@ -105,6 +105,17 @@ export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize
     const clearHistory = () => {
         setHistory([]);
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border">
+                <div className="text-2xl font-bold theme-text-primary">=</div>
+                <div className="text-[10px] theme-text-secondary mt-1 font-mono">CALC</div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border relative overflow-hidden">
