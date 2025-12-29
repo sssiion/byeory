@@ -68,8 +68,6 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
   // Group Widgets by Category
   const groupedWidgets = useMemo(() => {
     const groups: Record<string, WidgetEntry[]> = {};
-    const normalizedSearch = debouncedSearch.toLowerCase().replace(/\s+/g, '');
-
     // Default sort: Category > Label
     const sortedEntries = Object.entries(WIDGET_REGISTRY).sort(([, a], [, b]) => {
       if (a.category === b.category) return a.label.localeCompare(b.label);

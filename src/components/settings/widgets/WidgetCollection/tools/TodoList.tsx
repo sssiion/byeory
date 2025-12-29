@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Check } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
@@ -32,6 +32,19 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
     const progressColor = progress === 100 ? 'bg-green-500' : 'bg-[var(--btn-bg)]';
 
     const handleNavigate = () => navigate('/todo');
+
+    // Auto-stamp logic
+    useEffect(() => {
+        if (total > 0 && completed === total) {
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+            // Dispatch event for other widgets (like Daily Stamp)
+            window.dispatchEvent(new CustomEvent('todo-all-completed', {
+                detail: { date: dateStr }
+            }));
+        }
+    }, [total, completed]);
 
     const handleAdd = () => {
         if (!newTodoTitle.trim()) return;
