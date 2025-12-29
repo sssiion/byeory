@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { WidgetWrapper } from '../../Shared';
+import { Star } from 'lucide-react';
 
 interface ComponentProps {
     className?: string;
@@ -18,6 +19,29 @@ export const Switches = ({ className, style, gridSize }: ComponentProps & { grid
         const newStates = [...states];
         newStates[index] = !newStates[index];
         setStates(newStates);
+
+        if (index === 2 && !states[index]) {
+            fireConfetti();
+        }
+    };
+
+    // Confetti Logic
+    const [particles, setParticles] = useState<{ id: number; x: number; y: number; color: string; angle: number; velocity: number }[]>([]);
+
+    const fireConfetti = () => {
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
+        const newParticles = Array.from({ length: 20 }).map((_, i) => ({
+            id: Date.now() + i,
+            x: 50, // Center %
+            y: 50, // Center %
+            color: colors[Math.floor(Math.random() * colors.length)],
+            angle: Math.random() * 360,
+            velocity: Math.random() * 10 + 5
+        }));
+        setParticles(newParticles);
+
+        // Cleanup happens via animation end or timeout, but handled in render for simplicity
+        setTimeout(() => setParticles([]), 1000);
     };
 
     const w = gridSize?.w || 2;
@@ -56,15 +80,37 @@ export const Switches = ({ className, style, gridSize }: ComponentProps & { grid
                         </div>
                     )}
 
-                    {/* Switch 3: Push Button */}
-                    <div className="flex items-center justify-center">
+                    {/* Switch 3: Star Button (Confetti) */}
+                    <div className="flex items-center justify-center relative">
                         <button
                             onClick={() => toggle(2)}
-                            className={`w-8 h-8 rounded-full border-2 border-gray-300 shadow-md active:shadow-inner active:translate-y-0.5 transition-all text-gray-500 text-[8px] font-bold ${states[2] ? 'bg-red-500 text-white border-red-300 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-gray-100'
+                            className={`w-10 h-10 rounded-full border-2 border-yellow-300 shadow-md active:shadow-inner active:scale-95 transition-all flex items-center justify-center ${states[2] ? 'bg-yellow-400 text-white shadow-[0_0_15px_rgba(250,204,21,0.6)]' : 'bg-white text-yellow-400'
                                 }`}
                         >
-                            {states[2] ? 'ON' : 'OFF'}
+                            <Star size={20} fill={states[2] ? "currentColor" : "none"} />
                         </button>
+
+                        {/* Confetti Particles */}
+                        {particles.map(p => (
+                            <div
+                                key={p.id}
+                                className="absolute w-1.5 h-1.5 rounded-full pointer-events-none animate-fade-out"
+                                style={{
+                                    backgroundColor: p.color,
+                                    left: '50%',
+                                    top: '50%',
+                                    transform: `translate(-50%, -50%) rotate(${p.angle}deg) translate(${p.velocity * 4}px)`,
+                                    opacity: 0,
+                                    animation: `confetti-explode 0.8s ease-out forwards`
+                                }}
+                            />
+                        ))}
+                        <style>{`
+                            @keyframes confetti-explode {
+                                0% { transform: translate(-50%, -50%) rotate(0deg) translate(0px); opacity: 1; }
+                                100% { transform: translate(-50%, -50%) rotate(var(--tw-rotate)) translate(100px); opacity: 0; }
+                            }
+                        `}</style>
                     </div>
 
                     {/* Switch 4: Lever (Vertical Toggle) */}
