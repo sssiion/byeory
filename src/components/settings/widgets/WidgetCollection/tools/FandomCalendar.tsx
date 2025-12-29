@@ -13,6 +13,11 @@ interface FandomCalendarProps {
     gridSize?: { w: number; h: number };
 }
 
+export const FandomCalendarConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
 export function FandomCalendar({ gridSize }: FandomCalendarProps) {
     const [events, setEvents] = useState<FandomEvent[]>(() => {
         const saved = localStorage.getItem('fandom_events');

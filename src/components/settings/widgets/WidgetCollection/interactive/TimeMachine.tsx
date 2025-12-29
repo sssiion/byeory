@@ -3,7 +3,12 @@ import { Lock } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
 // 4. Time Machine (타임캡슐)
-export const TimeMachine = React.memo(function TimeMachine() {
+export const TimeMachineConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2]] as [number, number][],
+};
+
+export const TimeMachine = React.memo(function TimeMachine({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     return (
         <WidgetWrapper className="bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] bg-amber-900 border-amber-950">
             <div className="w-full h-full flex flex-col items-center justify-center text-amber-100 relative">

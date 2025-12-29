@@ -2,6 +2,11 @@ import { Send } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
 // 6. Exchange Diary (교환 일기)
+export const ExchangeDiaryConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
 export function ExchangeDiary() {
     return (
         <WidgetWrapper className="bg-pink-50" title="너와 나의 교환일기">

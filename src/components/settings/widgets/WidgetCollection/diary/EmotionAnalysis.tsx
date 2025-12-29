@@ -2,6 +2,11 @@ import { memo } from 'react';
 import { WidgetWrapper } from '../../Shared';
 
 // 12. Emotion Analysis (감정 분석)
+export const EmotionAnalysisConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [3, 1]] as [number, number][],
+};
+
 export const EmotionAnalysis = memo(function EmotionAnalysis() {
     return (
         <WidgetWrapper title="이번 달 감정" className="bg-white">

@@ -1,16 +1,21 @@
 import { useState, useRef } from 'react';
 import { Copy, Palette as PaletteIcon } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 interface ColorPaletteProps {
     gridSize?: { w: number; h: number };
 }
 
+export const ColorPaletteConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [1, 1]] as [number, number][],
+};
+
 export function ColorPalette({ gridSize }: ColorPaletteProps) {
-    const [colors, setColors] = useState<string[]>(() => {
-        const saved = localStorage.getItem('palette_colors');
-        return saved ? JSON.parse(saved) : ['#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#073B4C'];
-    });
+    // SDK Storage
+    const [colors, setColors] = useWidgetStorage<string[]>('widget-palette-colors', ['#FFD166', '#06D6A0', '#118AB2', '#EF476F', '#073B4C']);
+
     const [image, setImage] = useState<string | null>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -59,7 +64,6 @@ export function ColorPalette({ gridSize }: ColorPaletteProps) {
         while (palette.length < 5) palette.push('#cccccc');
 
         setColors(palette);
-        localStorage.setItem('palette_colors', JSON.stringify(palette));
     };
 
     const copyToClipboard = (hex: string) => {

@@ -1,16 +1,41 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
+
+interface DreamLogEntry {
+    date: string;
+    content: string;
+}
+
+interface DreamLogData {
+    logs: DreamLogEntry[];
+}
 
 // --- 3. Dream Log (꿈 기록장) ---
-export function DreamLog({ onUpdate, logs = [] }: { onUpdate?: (data: any) => void, logs?: { date: string, content: string }[] }) {
+export const DreamLogConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
+interface DreamLogProps {
+    onUpdate?: (data: DreamLogData) => void;
+    logs?: DreamLogEntry[];
+}
+
+export function DreamLog({ onUpdate, logs: propLogs = [] }: DreamLogProps) {
     const [mode, setMode] = useState<'list' | 'write'>('list');
     const [input, setInput] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
+    // Internal state priority, fallback to props only on init if needed (standard pattern)
+    // Actually, stick to storage as primary source for widget.
+    const [logs, setLogs] = useWidgetStorage<DreamLogEntry[]>('widget-dream-log', propLogs);
+
     const addLog = () => {
         if (!input) return;
         const newLogs = [{ date, content: input }, ...logs];
+        setLogs(newLogs);
         if (onUpdate) onUpdate({ logs: newLogs });
         setInput('');
         setMode('list');
@@ -18,6 +43,7 @@ export function DreamLog({ onUpdate, logs = [] }: { onUpdate?: (data: any) => vo
 
     const deleteLog = (index: number) => {
         const newLogs = logs.filter((_, i) => i !== index);
+        setLogs(newLogs);
         if (onUpdate) onUpdate({ logs: newLogs });
     };
 

@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { MapPin as MapPinIcon, Search } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+export const MapPinConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [3, 2], [4, 3]] as [number, number][],
+};
+
 export function MapPin() {
-    const [query, setQuery] = useState('Seoul');
-    const [src, setSrc] = useState('');
-    const [memo, setMemo] = useState('');
+    // SDK Storage
+    const [query, setQuery] = useWidgetStorage('widget-mappin-query', 'Seoul');
+    const [memo, setMemo] = useWidgetStorage('widget-mappin-memo', '');
+
+    // SRC can be derived or persisted. Let's persist to avoid re-embed if not needed, 
+    // or just re-generate on mount if query exists. 
+    // Actually, let's persist src to ensure exact view is kept if possible, 
+    // but the original code sets src on submit.
+    const [src, setSrc] = useWidgetStorage('widget-mappin-src', '');
 
     const searchMap = (e?: React.FormEvent) => {
         if (e) e.preventDefault();

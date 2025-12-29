@@ -19,6 +19,7 @@
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.560.0",
     "mathjs": "^15.1.0",
+    "puppeteer": "^24.34.0",
     "react": "^19.0.3",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",

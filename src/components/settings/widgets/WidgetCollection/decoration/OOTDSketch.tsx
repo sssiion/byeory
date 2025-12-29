@@ -12,6 +12,11 @@ interface OOTDSketchProps {
     gridSize?: { w: number; h: number };
 }
 
+export const OOTDSketchConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+};
+
 export function OOTDSketch({ gridSize }: OOTDSketchProps) {
     const [topColorIdx, setTopColorIdx] = useState(0);
     const [bottomColorIdx, setBottomColorIdx] = useState(2);

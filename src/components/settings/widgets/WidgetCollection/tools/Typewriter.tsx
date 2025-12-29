@@ -1,16 +1,20 @@
-import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 interface TypewriterProps {
     gridSize?: { w: number; h: number };
 }
 
+export const TypewriterConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [4, 2]] as [number, number][],
+};
+
 export function Typewriter(_: TypewriterProps) {
-    const [text, setText] = useState(() => localStorage.getItem('typewriter_text') || '');
+    const [text, setText] = useWidgetStorage('widget-typewriter-text', '');
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setText(e.target.value);
-        localStorage.setItem('typewriter_text', e.target.value);
         // Play sound effect hook here if requested later
     };
 
@@ -30,12 +34,12 @@ export function Typewriter(_: TypewriterProps) {
                     onChange={handleChange}
                     className="w-full h-full bg-transparent border-none outline-none font-serif text-sm leading-relaxed text-zinc-800 dark:text-zinc-200 resize-none placeholder:italic placeholder:opacity-50"
                     placeholder="Type something..."
-                    style={{ fontFamily: '"Courier New", Courier, monospace' }}
+                    style={{ fontFamily: 'var(--font-mono, monospace)' }}
                 />
 
                 {/* Caret Blinker custom */}
                 <style>{`
-                    textarea::placeholder { color: #888; }
+                    textarea::placeholder { color: currentColor; opacity: 0.5; }
                  `}</style>
             </div>
         </WidgetWrapper>

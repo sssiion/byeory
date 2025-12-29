@@ -1,6 +1,11 @@
 
 
-export function ThemeGuideWidget() {
+export const ThemeGuideWidgetConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2]] as [number, number][],
+};
+
+export function ThemeGuideWidget({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     return (
         <div className="theme-bg-card-secondary theme-border border rounded-xl p-6 transition-colors duration-300 h-full">
             <h2 className="text-xl font-semibold theme-text-primary mb-4">보조 섹션</h2>

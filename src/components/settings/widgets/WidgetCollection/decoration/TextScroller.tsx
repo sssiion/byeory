@@ -1,6 +1,11 @@
 import React from 'react';
 
-export const TextScroller = React.memo(function TextScroller({ text }: { text: string }) {
+export const TextScrollerConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [3, 1], [4, 1]] as [number, number][],
+};
+
+export const TextScroller = React.memo(({ text = 'HELLO WORLD', gridSize: _ }: { text?: string, gridSize?: { w: number; h: number } }) => {
     return (
         <div className="w-full h-full bg-black text-[#00ff00] p-2 rounded-lg overflow-hidden font-mono flex items-center relative border-2 md:border-4 border-gray-800 shadow-inner">
             <style>{`

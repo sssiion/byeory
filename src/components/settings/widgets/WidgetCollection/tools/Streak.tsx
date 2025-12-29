@@ -2,6 +2,11 @@ import React from 'react';
 import { Flame } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
+export const StreakWidgetConfig = {
+    defaultSize: '2x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
+};
+
 // 17. Streak Widget (연속 기록)
 export const StreakWidget = React.memo(function StreakWidget() {
     return (

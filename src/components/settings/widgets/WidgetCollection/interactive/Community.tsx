@@ -2,7 +2,13 @@
 import { WidgetWrapper } from '../../Shared';
 
 // 13. Community Widget (커뮤니티)
-export function CommunityWidget() {
+export const CommunityWidgetConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+};
+
+// 13. Community Widget (커뮤니티)
+export function CommunityWidget({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     const posts = [
         { title: "오늘 다꾸 팁 공유해요! 🎀", likes: 12 },
         { title: "위젯 배치 좀 봐주세요 ㅎㅎ", likes: 8 },

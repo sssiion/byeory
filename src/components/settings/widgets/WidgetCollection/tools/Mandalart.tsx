@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
 
 interface MandalartProps {
     gridSize?: { w: number; h: number };
@@ -12,12 +13,14 @@ interface MandalartProps {
 // 3 4 5  <- 4 is Center
 // 6 7 8
 
+export const MandalartConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 3]] as [number, number][],
+};
+
 export function Mandalart({ gridSize }: MandalartProps) {
-    // Load from local storage key unique to widget/user if possible, but simplified here with one global key
-    const [goals, setGoals] = useState<string[]>(() => {
-        const saved = localStorage.getItem('mandalart_core');
-        return saved ? JSON.parse(saved) : Array(9).fill('');
-    });
+    // SDK Storage
+    const [goals, setGoals] = useWidgetStorage<string[]>('widget-mandalart-core', Array(9).fill(''));
 
     const [editIdx, setEditIdx] = useState<number | null>(null);
 
@@ -28,7 +31,6 @@ export function Mandalart({ gridSize }: MandalartProps) {
         const newGoals = [...goals];
         newGoals[idx] = val;
         setGoals(newGoals);
-        localStorage.setItem('mandalart_core', JSON.stringify(newGoals));
         setEditIdx(null);
     };
 

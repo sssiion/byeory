@@ -2,6 +2,11 @@ import { useState, useRef } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 9. Daily Stamp (참잘했어요)
+export const DailyStampConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+};
+
 export function DailyStamp() {
     const [stamps, setStamps] = useState<{ x: number, y: number }[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);

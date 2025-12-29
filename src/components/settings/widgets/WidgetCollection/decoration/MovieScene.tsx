@@ -1,5 +1,10 @@
 import React from 'react';
 
+export const MovieSceneConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+};
+
 export const MovieScene = React.memo(function MovieScene({ src, quote }: { src: string; quote: string }) {
     return (
         <div className="relative w-full h-full rounded-lg overflow-hidden shadow-md group border border-gray-800">

@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 
+export const BubbleWrapConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 3], [4, 4]] as [number, number][],
+};
+
 // --- 8. Bubble Wrap (뽁뽁이)
 export function BubbleWrap() {
     const [popped, setPopped] = useState<Set<number>>(new Set());

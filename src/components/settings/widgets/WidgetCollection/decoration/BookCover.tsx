@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { BookOpen } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 
+export const BookCoverConfig = {
+    defaultSize: '2x1',
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+};
+
 // --- 7. Book Cover (읽는 책)
 export const BookCover = React.memo(function BookCover() {
     const [page] = useState(42);

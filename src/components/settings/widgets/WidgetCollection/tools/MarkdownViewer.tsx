@@ -1,14 +1,20 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Pencil, Eye } from 'lucide-react';
+import { useWidgetStorage } from '../SDK';
 
 interface MarkdownViewerProps {
     initialContent?: string;
     title?: string;
 }
 
-export function MarkdownViewer({ initialContent = "# Hello Markdown\n\n- Write\n- Your\n- Notes", title = "Markdown Note" }: MarkdownViewerProps) {
-    const [content, setContent] = useState(initialContent);
+export const MarkdownViewerConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [3, 2], [3, 3], [4, 4]] as [number, number][],
+};
+
+export function MarkdownViewer({ initialContent = "# Hello Markdown\n\n- Write\n- Your\n- Notes", title = "Markdown Note" }: MarkdownViewerProps & { gridSize?: { w: number; h: number } }) {
+    const [content, setContent] = useWidgetStorage('widget-markdown-content', initialContent);
     const [isEditing, setIsEditing] = useState(false);
 
     // Save locally for now? Or just transient state.

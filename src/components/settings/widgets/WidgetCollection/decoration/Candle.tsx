@@ -1,6 +1,11 @@
 import React from 'react';
 import { WidgetWrapper } from '../Common';
 
+export const CandleConfig = {
+    defaultSize: '1x2',
+    validSizes: [[1, 2]] as [number, number][],
+};
+
 export const Candle = React.memo(function Candle() {
     return (
         <WidgetWrapper className="bg-gray-900 border-gray-800">

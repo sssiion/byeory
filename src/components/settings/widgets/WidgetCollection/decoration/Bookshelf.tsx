@@ -12,11 +12,14 @@ interface Book {
 // Preset colors for random spine generation
 const COLORS = ['bg-red-700', 'bg-blue-800', 'bg-green-800', 'bg-amber-900', 'bg-slate-700', 'bg-stone-600', 'bg-indigo-900', 'bg-teal-800'];
 
-interface BookshelfProps {
-    gridSize?: { w: number; h: number };
-}
 
-export function Bookshelf({ gridSize }: BookshelfProps) {
+
+export const BookshelfConfig = {
+    defaultSize: '4x2',
+    validSizes: [[4, 1], [4, 2], [4, 3]] as [number, number][],
+};
+
+export function Bookshelf() {
     const [books, setBooks] = useState<Book[]>(() => {
         const saved = localStorage.getItem('bookshelf_data');
         if (saved) return JSON.parse(saved);

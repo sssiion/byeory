@@ -2,7 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 5. Cat Chaser (따라오는 고양이) ---
-export function CatChaser() {
+export const CatChaserConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2], [3, 3]] as [number, number][],
+};
+
+export function CatChaser({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     const [eyes, setEyes] = useState({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 

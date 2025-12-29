@@ -3,6 +3,11 @@ import { History } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
 // 8. Past Today (과거의 오늘)
+export const PastTodayConfig = {
+    defaultSize: '2x1',
+    validSizes: [[2, 1], [2, 2]] as [number, number][],
+};
+
 export const PastToday = memo(function PastToday() {
     return (
         <WidgetWrapper className="bg-slate-50 border-slate-100">

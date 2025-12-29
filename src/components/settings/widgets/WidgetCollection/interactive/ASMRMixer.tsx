@@ -19,6 +19,11 @@ interface ASMRMixerProps {
     gridSize?: { w: number; h: number };
 }
 
+export const ASMRMixerConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2], [3, 2], [4, 2]] as [number, number][],
+};
+
 export function ASMRMixer({ gridSize }: ASMRMixerProps) {
     const [volumes, setVolumes] = useState<Record<string, number>>({
         rain: 50, fire: 0, wind: 0, cafe: 0,

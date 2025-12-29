@@ -3,7 +3,12 @@ import { Sun } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 
 // --- 2. Window View (창밖 풍경) ---
-export function WindowView() {
+export const WindowViewConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+};
+
+export const WindowView = ({ gridSize: _ }: { gridSize?: { w: number; h: number } }) => {
     const [weather, setWeather] = useState<'sunny' | 'rainy' | 'snowy' | 'night'>('sunny');
     const [time, setTime] = useState(new Date());
 

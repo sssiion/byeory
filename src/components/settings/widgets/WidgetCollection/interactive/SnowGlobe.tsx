@@ -2,7 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 3. Snow Globe (스노우볼) ---
-export function SnowGlobe() {
+export const SnowGlobeConfig = {
+    defaultSize: '2x2',
+    validSizes: [[2, 2], [2, 3], [3, 3]] as [number, number][],
+};
+
+// --- 3. Snow Globe (스노우볼) ---
+export function SnowGlobe({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isShaking, setIsShaking] = useState(false);
     const particles = useRef<{ x: number, y: number, r: number, d: number, speed: number }[]>([]);
