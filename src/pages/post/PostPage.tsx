@@ -23,7 +23,7 @@ const Post: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="min-h-screen pb-32">
             <Navigation />
 
             <div className="max-w-7xl mx-auto px-4 py-8">
@@ -59,7 +59,7 @@ const Post: React.FC = () => {
                             onDelete={editor.handleDelete}
                             onBlockImageUpload={editor.handleBlockImageUpload}
                             onBackgroundClick={() => {
-                                if(editor.viewMode === 'editor') {
+                                if (editor.viewMode === 'editor') {
                                     editor.setSelectedId(null);
                                     editor.setSelectedType(null);
                                 }
@@ -77,7 +77,7 @@ const Post: React.FC = () => {
                                 rawInput={editor.rawInput} setRawInput={editor.setRawInput}
                                 selectedLayoutId={editor.selectedLayoutId} setSelectedLayoutId={editor.setSelectedLayoutId}
                                 tempImages={editor.tempImages} setTempImages={editor.setTempImages}
-                                fileInputRef={editor.fileInputRef} handleImagesUpload={handleImagesUpload}
+                                fileInputRef={editor.fileInputRef as React.RefObject<HTMLInputElement>} handleImagesUpload={handleImagesUpload}
                                 onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
                             />
                         )}

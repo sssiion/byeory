@@ -5,6 +5,15 @@ export const STICKERS = [
     'https://cdn-icons-png.flaticon.com/512/346/346167.png', // 꽃
 ];
 
+// ✨ 사용 가능한 폰트 목록 (Google Fonts)
+export const FONT_FAMILIES = [
+    { name: 'Noto Sans KR', value: "'Noto Sans KR', sans-serif" },
+    { name: '나눔명조', value: "'Nanum Myeongjo', serif" },
+    { name: '개구체', value: "'Gaegu', cursive" },
+    { name: '하이멜로디', value: "'Hi Melody', cursive" },
+    { name: '고운도돋', value: "'Gowun Dodum', sans-serif" },
+];
+
 // 레이아웃별로 '어떤 블록을 어떤 순서로 배치할지' 미리 정해둡니다.
 export const LAYOUT_PRESETS = [
     {

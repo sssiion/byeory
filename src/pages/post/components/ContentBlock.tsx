@@ -6,7 +6,6 @@ interface Props {
     onUpdate: (id: string, field: string, value: any) => void;
     onDelete: (id: string) => void;
     onImageUpload: (id: string, file: File, index?: number) => void;
-    onSwapLayout: (id: string) => void;
     isSelected: boolean;
     onSelect: () => void;
     readOnly: boolean;
@@ -14,7 +13,7 @@ interface Props {
 
 }
 
-const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUpload, onSwapLayout, isSelected, onSelect, readOnly, dragHandleProps }) => {
+const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUpload, isSelected, onSelect, readOnly, dragHandleProps }) => {
     const fileInputRef1 = useRef<HTMLInputElement>(null);
     const fileInputRef2 = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -88,8 +87,6 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
         );
     };
 
-    const hasImg1 = !!block.imageUrl;
-
     return (
         <div className={`group relative mb-6 flex gap-6 items-start ${readOnly ? '' : 'hover:bg-gray-50/50 rounded-xl p-2 -ml-2 transition'}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
 
@@ -97,7 +94,6 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                 <>
                     <div {...dragHandleProps} className="absolute -left-8 top-2 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing px-2 opacity-0 group-hover:opacity-100 transition">⋮⋮</div>
                     <button onClick={() => onDelete(block.id)} className="absolute -right-10 top-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition px-2">🗑️</button>
-
                 </>
             )}
 
@@ -105,7 +101,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {block.type === 'image-full' && (
                 <div className="w-full flex flex-col gap-4">
                     {renderImageArea(block.imageUrl, 1, true)}
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed text-gray-800 font-serif text-lg p-2 min-h-[3rem]" />
+                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
                 </div>
             )}
 
@@ -116,7 +112,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                         <div className="w-1/2">{renderImageArea(block.imageUrl, 1, true)}</div>
                         <div className="w-1/2">{renderImageArea(block.imageUrl2, 2, true)}</div>
                     </div>
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed text-gray-800 font-serif text-lg p-2 min-h-[3rem]" />
+                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
                 </div>
             )}
 
@@ -125,7 +121,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                 <div className="w-full flex flex-row gap-6 items-start">
                     <div className="w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
                     <div className="flex-1 min-w-0 pt-2 relative">
-                        <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed text-gray-800 font-serif text-lg p-2 min-h-[3rem]" />
+                        <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
 
                     </div>
                 </div>
@@ -135,7 +131,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {block.type === 'image-right' && (
                 <div className="w-full flex flex-row gap-6 items-start">
                     <div className="flex-1 min-w-0 pt-2 relative">
-                        <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed text-gray-800 font-serif text-lg p-2 min-h-[3rem]" />
+                        <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
 
                     </div>
                     <div className="w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
@@ -145,7 +141,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {/* 5. 글만 */}
             {block.type === 'paragraph' && (
                 <div className="w-full">
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed text-gray-800 font-serif text-lg p-2 min-h-[3rem]" />
+                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
                 </div>
             )}
         </div>

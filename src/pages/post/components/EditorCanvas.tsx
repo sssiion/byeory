@@ -3,7 +3,7 @@ import ContentBlock from '../components/ContentBlock';
 import ResizableItem from '../components/ResizableItem';
 import EditorToolbar from '../components/EditorToolbar';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import type {  DropResult } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../types';
 import { Image as ImageIcon, Type, Trash2, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft } from 'lucide-react';
 
@@ -28,9 +28,19 @@ interface Props {
 }
 
 const EditorCanvas: React.FC<Props> = ({
-                                           title, setTitle, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
-                                           setViewMode, setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
-                                       }) => {
+    title, setTitle, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
+    setViewMode, setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
+}) => {
+
+    // ✨ 폰트 로드: Google Fonts를 동적으로 삽입합니다.
+    React.useEffect(() => {
+        const link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=Gaegu&family=Gowun+Dodum&family=Hi+Melody&family=Nanum+Myeongjo&family=Noto+Sans+KR:wght@300;400;700&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+        return () => { document.head.removeChild(link); };
+    }, []);
+
     // 👇 2. 드래그가 끝났을 때 순서를 바꾸는 함수
     const onDragEnd = (result: DropResult) => {
         // 드래그가 취소되거나 엉뚱한 곳에 떨어졌을 때
@@ -103,7 +113,7 @@ const EditorCanvas: React.FC<Props> = ({
     return (
         // 최상위 컨테이너 (배경 스크롤 담당)
         <div
-            className="w-full h-full flex justify-center overflow-x-auto overflow-y-visible bg-gray-100/50 py-8"
+            className="w-full h-full flex justify-center overflow-x-auto overflow-y-visible py-8"
             onClick={onBackgroundClick}
         >
             {/* ✨ 1️⃣ [수정] 실제 편집 캔버스 (흰색 종이)
@@ -234,13 +244,20 @@ const EditorCanvas: React.FC<Props> = ({
                             onSelect={() => onSelect(txt.id, 'floating')}
                             onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                         >
-        <textarea
-            value={txt.text}
-            onChange={(e) => onUpdate(txt.id, 'floating', { text: e.target.value })}
-            className="w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden font-serif"
-
-            readOnly={viewMode === 'read'}
-        />
+                            <textarea
+                                value={txt.text}
+                                onChange={(e) => onUpdate(txt.id, 'floating', { text: e.target.value })}
+                                className="w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden"
+                                style={{
+                                    fontFamily: txt.styles?.fontFamily,
+                                    fontSize: txt.styles?.fontSize,
+                                    fontWeight: txt.styles?.fontWeight,
+                                    textAlign: txt.styles?.textAlign as any,
+                                    color: txt.styles?.color,
+                                    backgroundColor: txt.styles?.backgroundColor,
+                                }}
+                                readOnly={viewMode === 'read'}
+                            />
                         </ResizableItem>
                     ))}
 
