@@ -12,6 +12,7 @@ function FindPasswordPage() {
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [resetToken, setResetToken] = useState(''); // Token received after verification
 
     // UI States
     const [showPassword, setShowPassword] = useState(false);
@@ -33,19 +34,37 @@ function FindPasswordPage() {
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
-    // Step 1: Send Email Code (Mock SMTP)
+    // Step 1: Send Email Code
     const handleSendCode = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await fetch('http://localhost:8080/auth/password-reset/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                setStep('verify');
+                setTimer(180);
+            } else if (response.status === 404) {
+                alert('가입되지 않은 이메일입니다.');
+            } else if (response.status === 400 && data.code === 'SOCIAL_ACCOUNT') {
+                // Backend should return a specific code or message for social accounts
+                alert('Google 소셜 로그인으로 가입된 계정입니다.\nGoogle 로그인을 이용해주세요.');
+            } else {
+                alert(data.message || '인증번호 전송에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Email send error:', error);
+            alert('서버 연결 중 오류가 발생했습니다.');
+        } finally {
             setIsLoading(false);
-            setStep('verify');
-            setTimer(180);
-            // In a real app, this would trigger the SMTP email send
-            console.log(`Verification code sent to ${email}`);
-        }, 1500);
+        }
     };
 
     // Step 2: Verify Code
@@ -53,15 +72,30 @@ function FindPasswordPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            if (code.length === 6) { // Mock validation
+        try {
+            const response = await fetch('http://localhost:8080/auth/password-reset/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                // Assuming backend returns a temporary reset token to permit password change
+                if (data.resetToken) {
+                    setResetToken(data.resetToken);
+                }
                 setStep('reset');
             } else {
-                alert('올바른 인증번호를 입력해주세요.');
+                alert(data.message || '인증번호가 올바르지 않습니다.');
             }
-        }, 1000);
+        } catch (error) {
+            console.error('Verification error:', error);
+            alert('인증 확인 중 오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // Step 3: Reset Password
@@ -73,11 +107,30 @@ function FindPasswordPage() {
         }
 
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+
+        try {
+            const response = await fetch('http://localhost:8080/auth/password-reset/confirm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    resetToken // Include token if backend requires it for security
+                }),
+            });
+
+            if (response.ok) {
+                setStep('complete');
+            } else {
+                const data = await response.json().catch(() => ({}));
+                alert(data.message || '비밀번호 변경에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Password reset error:', error);
+            alert('비밀번호 변경 중 오류가 발생했습니다.');
+        } finally {
             setIsLoading(false);
-            setStep('complete');
-        }, 1500);
+        }
     };
 
     return (
@@ -156,7 +209,11 @@ function FindPasswordPage() {
                                 </div>
                                 <p className="text-xs theme-text-secondary mt-1">
                                     이메일을 받지 못하셨나요?{' '}
-                                    <button type="button" onClick={() => setTimer(180)} className="theme-text-primary underline hover:opacity-80">
+                                    <button type="button" onClick={() => {
+                                        setTimer(180);
+                                        // Optional: Trigger resend API explicitly here
+                                        handleSendCode({ preventDefault: () => { } } as React.FormEvent);
+                                    }} className="theme-text-primary underline hover:opacity-80">
                                         재전송
                                     </button>
                                 </p>
