@@ -1,15 +1,20 @@
 @import "tailwindcss";
 
 /* Global Scrollbar Hide */
-* {
+/* Hide scrollbar for all elements EXCEPT those with .show-scrollbar class */
+:not(.show-scrollbar) {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
 }
 
-*::-webkit-scrollbar {
+:not(.show-scrollbar)::-webkit-scrollbar {
     display: none;
+}
+
+/* Scrollbar override utility - Restores native scrollbar */
+.show-scrollbar {
+    -ms-overflow-style: auto;
+    scrollbar-width: auto;
 }
 
 /* 기본 폰트 */

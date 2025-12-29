@@ -6,11 +6,14 @@ import PostPage from './pages/post/PostPage'
 import TodoPage from './pages/todo/TodoPage'
 import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
-import { ThemeProvider } from './components/settings/theme/ThemeContext';
-import MarketPage from './pages/Market/MarketPage'
+
+import { ThemeProvider } from './context/ThemeContext';
+import MarketPage from './pages/market/MarketPage'
+
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditScreen from './pages/profile/ProfileEditScreen';
 import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
+import InitialProfileSetup from './pages/auth/InitialProfileSetup';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -116,39 +119,47 @@ if (savedManualBtnTextColor) {
   document.documentElement.style.setProperty('--manual-btn-text', savedManualBtnTextColor);
 }
 
-const RootRedirector = () => {
+import WelcomePage from './pages/WelcomePage';
+
+const RootRouting = () => {
+  const token = localStorage.getItem('accessToken');
   const defaultPage = localStorage.getItem('defaultPage') || '/home';
-  return <Navigate to={defaultPage} replace />;
+
+  if (token) {
+    return <Navigate to={defaultPage} replace />;
+  }
+  return <WelcomePage />;
 };
 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <DndProvider backend={Backend} options={backendOptions}>
-      <MenuProvider>
-        <AuthProvider>
-          <ThemeProvider>
-            <TodoProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<RootRedirector />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/join" element={<JoinPage />} />
-                  <Route path="/find-password" element={<FindPasswordPage />} />
-                  <Route path="/home" element={<MainPage />} />
-                  <Route path="/post" element={<PostPage />} />
-                  <Route path="/todo" element={<TodoPage />} />
-                  <Route path="/community" element={<CommunityPage />} />
-                  <Route path="/market" element={<MarketPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/profile/edit" element={<ProfileEditScreen />} />
-                  <Route path="/profile/password" element={<PasswordChangeScreen />} />
-                </Routes>
-              </BrowserRouter>
-            </TodoProvider>
+      <AuthProvider>
+        <MenuProvider>
+        <ThemeProvider>
+          <TodoProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<RootRouting />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/join" element={<JoinPage />} />
+                <Route path="/find-password" element={<FindPasswordPage />} />
+                <Route path="/home" element={<MainPage />} />
+                <Route path="/post" element={<PostPage />} />
+                <Route path="/todo" element={<TodoPage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                <Route path="/market" element={<MarketPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/profile/edit" element={<ProfileEditScreen />} />
+                <Route path="/profile/password" element={<PasswordChangeScreen />} />
+                <Route path="/setup-profile" element={<InitialProfileSetup />} />
+              </Routes>
+            </BrowserRouter>
+           </TodoProvider>
           </ThemeProvider>
-        </AuthProvider>
-      </MenuProvider>
+        </MenuProvider>
+      </AuthProvider>
     </DndProvider>
   </StrictMode >,
 );

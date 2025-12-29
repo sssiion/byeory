@@ -22,7 +22,7 @@ const PasswordChangeScreen: React.FC = () => {
     const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
     const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!currentPassword) {
             alert("현재 비밀번호를 입력해주세요");
             return;
@@ -36,12 +36,35 @@ const PasswordChangeScreen: React.FC = () => {
             return;
         }
 
-        // Simulating password validation and save
-        if (isPasswordValid) {
-            console.log('Password change requested');
-            // Implement actual password change logic here
-            alert("비밀번호가 변경되었습니다.");
-            navigate('/profile');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인 정보가 없습니다.");
+            navigate('/login');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:8080/auth/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                })
+            });
+
+            if (response.ok) {
+                alert("비밀번호가 변경되었습니다.");
+                navigate('/profile');
+            } else {
+                alert("현재 비밀번호가 일치하지 않습니다");
+            }
+        } catch (error) {
+            console.error("Error changing password:", error);
+            alert("서버와 통신 중 오류가 발생했습니다.");
         }
     };
 

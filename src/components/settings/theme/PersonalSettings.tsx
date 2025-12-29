@@ -25,7 +25,6 @@ const fontFamilies = [
 const DEFAULT_FONT_FAMILY = "'Noto Sans KR', sans-serif";
 const DEFAULT_FONT_SIZE = 16;
 
-// Simplified directions for UI (User picks where it points TO)
 const DIRECTIONS = [
     { value: 'to top left', icon: ArrowUpLeft },
     { value: 'to top', icon: ArrowUp },
@@ -140,11 +139,62 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         { id: 'custom-forest', name: 'Forest', previewClass: 'bg-gradient-to-br from-[#f093fb] to-[#f5576c]' },
     ];
 
+    const saveThemeToBackend = async (mode: string, fontData: { family: string, size: string }, manualData?: any) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const payload = {
+            mode: mode,
+            font: fontData,
+            manualConfig: mode === 'manual' ? manualData : null
+        };
+
+        try {
+            await fetch('http://localhost:8080/api/setting/theme', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.error("Failed to save theme to backend", e);
+        }
+    };
+
+    const getManualConfig = () => {
+        return {
+            text: {
+                color: manualTextColor,
+                intensity: manualTextIntensity
+            },
+            background: {
+                isGradient: isGradient,
+                color: manualBgColor,
+                intensity: manualBgIntensity,
+                gradientDirection: gradientDirection,
+                gradientStart: gradientStartColor,
+                gradientEnd: gradientEndColor,
+                image: manualBgImage,
+                size: manualBgSize
+            },
+            component: {
+                cardColor: manualCardColor,
+                btnColor: manualBtnColor,
+                btnTextColor: manualBtnTextColor
+            }
+        };
+    };
+
     const handleSaveFont = () => {
         document.documentElement.style.setProperty('--font-family', fontFamily);
         document.documentElement.style.setProperty('--font-size', `${fontSize}px`);
         localStorage.setItem('fontFamily', fontFamily);
         localStorage.setItem('fontSize', `${fontSize}px`);
+
+        const manualConfig = getManualConfig();
+        saveThemeToBackend(currentTheme, { family: fontFamily, size: `${fontSize}px` }, manualConfig);
     };
 
     const handleResetFont = () => {
@@ -171,15 +221,14 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         // Apply Background Settings
         if (manualBgImage) {
             document.documentElement.style.setProperty('--manual-gradient', `url(${manualBgImage})`);
-            document.documentElement.style.setProperty('--manual-bg-intensity', '0'); // Hide solid bg
+            document.documentElement.style.setProperty('--manual-bg-intensity', '0');
             localStorage.setItem('manualBgImage', manualBgImage);
-            // Clear other bg settings from localstorage if you want exclusive behavior, 
-            // but for now we just overwrite the variable.
+
             document.documentElement.style.setProperty('--manual-bg-size', manualBgSize === 'repeat' ? 'auto' : manualBgSize);
             document.documentElement.style.setProperty('--manual-bg-repeat', manualBgSize === 'repeat' ? 'repeat' : 'no-repeat');
         } else if (isGradient) {
             document.documentElement.style.setProperty('--manual-gradient', `linear-gradient(${gradientDirection}, ${gradientStartColor}, ${gradientEndColor})`);
-            document.documentElement.style.setProperty('--manual-bg-intensity', '1'); // Show gradient
+            document.documentElement.style.setProperty('--manual-bg-intensity', '1');
             document.documentElement.style.setProperty('--manual-bg-size', 'cover');
             document.documentElement.style.setProperty('--manual-bg-repeat', 'no-repeat');
         } else {
@@ -217,6 +266,11 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         localStorage.setItem('manualBtnTextColor', manualBtnTextColor);
         localStorage.setItem('manualBgImage', manualBgImage);
         localStorage.setItem('manualBgSize', manualBgSize);
+
+        // Save to Backend
+        const manualConfig = getManualConfig();
+
+        saveThemeToBackend('manual', { family: fontFamily, size: `${fontSize}px` }, manualConfig);
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -683,9 +737,6 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                                                     className="w-full h-full transition-all duration-300"
                                                     style={{
                                                         backgroundImage: `url(${manualBgImage})`,
-                                                        // For preview purposes, force 'repeat' to show as a 3x3 grid (approx 33%) 
-                                                        // so the user can see the pattern effect regardless of actual image size.
-                                                        // The actual site will still use 'auto' (original size).
                                                         backgroundSize: manualBgSize === 'repeat' ? '25%' : 'cover',
                                                         backgroundRepeat: manualBgSize === 'repeat' ? 'repeat' : 'no-repeat',
                                                         backgroundPosition: 'center'

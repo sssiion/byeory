@@ -78,6 +78,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
+                // Clear potential stale data first
+                localStorage.removeItem('isProfileSetupCompleted');
+
+                // Verify profile status
+                try {
+                    const profileRes = await fetch('http://localhost:8080/api/user/profile', {
+                        headers: { 'Authorization': `Bearer ${data.accessToken}` }
+                    });
+                    if (profileRes.ok) {
+                        localStorage.setItem('isProfileSetupCompleted', 'true');
+                    }
+                } catch (e) {
+                    console.error("Profile check failed", e);
+                }
+
                 // Use the existing login logic to update state
                 setLoginState(email);
                 return true;
@@ -101,14 +116,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 body: JSON.stringify({ email, password }),
             });
 
-            const data = await response.json();
+            if (response.ok) {
+                const data = await response.json();
 
-            if (response.ok && data.accessToken) {
-                localStorage.setItem('accessToken', data.accessToken);
-                setLoginState(email);
-                return true;
+                if (data.accessToken) {
+                    localStorage.setItem('accessToken', data.accessToken);
+                    // Clear potential stale data first
+                    localStorage.removeItem('isProfileSetupCompleted');
+
+                    // Verify profile status
+                    try {
+                        const profileRes = await fetch('http://localhost:8080/api/user/profile', {
+                            headers: { 'Authorization': `Bearer ${data.accessToken}` }
+                        });
+                        if (profileRes.ok) {
+                            localStorage.setItem('isProfileSetupCompleted', 'true');
+                        }
+                    } catch (e) {
+                        console.error("Profile check failed", e);
+                    }
+
+                    setLoginState(email);
+                    return true;
+                } else {
+                    console.error("Login failed: No access token received");
+                    alert("로그인 실패: 인증 토큰을 받지 못했습니다.");
+                    return false;
+                }
+            } else if (response.status === 404) {
+                alert("가입되지 않은 이메일입니다.");
+                return false;
+            } else if (response.status === 401) {
+                alert("비밀번호가 틀렸습니다.");
+                return false;
             } else {
-                alert("로그인 실패: " + (data.message || "이메일 또는 비밀번호를 확인하세요."));
+                // Try to parse error message if possible, otherwise use default
+                try {
+                    const data = await response.json();
+                    alert("로그인 실패: " + (data.message || "이메일 또는 비밀번호를 확인하세요."));
+                } catch {
+                    alert("로그인 실패: 이메일 또는 비밀번호를 확인하세요.");
+                }
                 return false;
             }
         } catch (error) {
@@ -157,6 +205,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoggedIn(false);
         setUser(null);
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('isProfileSetupCompleted');
+        localStorage.removeItem('userEmail'); // Ensure this is cleared too if used
     };
 
     return (
