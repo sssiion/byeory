@@ -86,6 +86,12 @@ const EditorCanvas: React.FC<Props> = ({
         }));
     };
 
+    // ✨ 특정 블록 삭제 함수 (ContentBlock의 쓰레기통 버튼용)
+    const handleDeleteBlock = (id: string) => {
+        setBlocks(prev => prev.filter(b => b.id !== id));
+        if (selectedId === id) onSelect('', 'block'); // 만약 선택된 상태였다면 선택 해제
+    };
+
     // 🌟 [자동 감지 로직] 부모가 selectedType을 안 줘도 여기서 직접 찾습니다.
     const getDetectedType = () => {
         if (selectedType) return selectedType; // 부모가 줬으면 그거 씀
@@ -194,7 +200,7 @@ const EditorCanvas: React.FC<Props> = ({
                                                         <ContentBlock
                                                             block={block}
                                                             onUpdate={(id, k, v) => setBlocks(p => p.map(b => b.id === id ? { ...b, [k]: v } : b))}
-                                                            onDelete={onDelete}
+                                                            onDelete={handleDeleteBlock}
                                                             onImageUpload={onBlockImageUpload}
                                                             isSelected={isFocused}
                                                             onSelect={() => onSelect(block.id, 'block')}

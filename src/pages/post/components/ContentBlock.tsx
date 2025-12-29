@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import type { Block } from '../types';
+import { Trash2 } from 'lucide-react';
 
 interface Props {
     block: Block;
@@ -10,7 +11,6 @@ interface Props {
     onSelect: () => void;
     readOnly: boolean;
     dragHandleProps?: any;
-
 }
 
 const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUpload, isSelected, onSelect, readOnly, dragHandleProps }) => {
@@ -90,10 +90,15 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     return (
         <div className={`group relative mb-6 flex gap-6 items-start ${readOnly ? '' : 'hover:bg-gray-50/50 rounded-xl p-2 -ml-2 transition'}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
 
-            {!readOnly && (
+            {!readOnly && !isSelected && ( // ✨ isSelected일 때는 숨김 (오른쪽 사이드바 메뉴가 나오거나 방해되지 않도록)
                 <>
                     <div {...dragHandleProps} className="absolute -left-8 top-2 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing px-2 opacity-0 group-hover:opacity-100 transition">⋮⋮</div>
-                    <button onClick={() => onDelete(block.id)} className="absolute -right-10 top-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition px-2">🗑️</button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}
+                        className="absolute -right-12 top-0 bg-white border border-gray-200 shadow-sm p-1.5 rounded text-red-500 hover:bg-red-50 hover:border-red-200 opacity-0 group-hover:opacity-100 transition-all z-10"
+                    >
+                        <Trash2 size={16} />
+                    </button>
                 </>
             )}
 
