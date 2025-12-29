@@ -8,7 +8,7 @@ interface MovieTicketProps {
 
 export const MovieTicketConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
 export function MovieTicket({ gridSize }: MovieTicketProps) {

@@ -4,11 +4,11 @@ import { useWidgetStorage } from '../SDK';
 
 export const WorryShredderConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 // --- 1. Worry Shredder (근심 파쇄기) ---
-export function WorryShredder() {
+export function WorryShredder({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [text, setText] = useWidgetStorage('widget-shredder-text', '');
     const [isShredding, setIsShredding] = useState(false);
 
@@ -20,6 +20,23 @@ export function WorryShredder() {
             setIsShredding(false);
         }, 2000);
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-gray-800 border-gray-700 flex flex-col items-center justify-center p-1">
+                <button
+                    onClick={handleShred}
+                    disabled={!text || isShredding}
+                    className={`w-full h-full flex flex-col items-center justify-center rounded transition-colors ${!text ? 'opacity-50' : 'hover:bg-gray-700'}`}
+                >
+                    <div className="text-2xl mb-1">{isShredding ? '💥' : '🗑️'}</div>
+                    <span className="text-[8px] font-bold text-gray-400">{isShredding ? '...' : (text ? 'SHRED' : 'EMPTY')}</span>
+                </button>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-gray-800 border-gray-700">

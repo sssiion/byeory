@@ -3,7 +3,7 @@ import { WidgetWrapper } from '../Common';
 
 export const FortuneCookieConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
 // --- 3. Fortune Cookie (포춘 쿠키)

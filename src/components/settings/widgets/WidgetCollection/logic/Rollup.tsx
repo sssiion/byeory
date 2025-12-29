@@ -4,10 +4,23 @@ import { Sigma, BarChart3 } from 'lucide-react';
 
 export const RollupConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const Rollup = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+export const Rollup = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-white" style={style}>
+                <div className="w-full h-full flex flex-col items-center justify-center">
+                    <Sigma size={16} className="text-gray-500 mb-1" />
+                    <span className="text-sm font-bold text-gray-800">85%</span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
     return (
         <WidgetWrapper className="bg-white" style={style}>
             <div className="w-full h-full flex flex-col p-4">

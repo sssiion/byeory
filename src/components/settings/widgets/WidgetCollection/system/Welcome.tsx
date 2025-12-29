@@ -5,10 +5,10 @@ import { User, Palette } from 'lucide-react';
 
 export const WelcomeWidgetConfig = {
     defaultSize: '4x2',
-    validSizes: [[2, 1], [2, 2], [3, 2], [4, 2], [4, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export function WelcomeWidget({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
+export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -28,6 +28,18 @@ export function WelcomeWidget({ gridSize: _ }: { gridSize?: { w: number; h: numb
         // Maybe dispatch a custom event?
         window.dispatchEvent(new CustomEvent('open-theme-settings'));
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <div className="h-full w-full flex flex-col items-center justify-center p-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm overflow-hidden text-center cursor-pointer hover:bg-white transition-colors"
+                onClick={() => navigate('/profile')}>
+                <span className="text-[8px] text-gray-400 font-bold uppercase mb-1">HELLO</span>
+                <span className="text-xs font-bold text-blue-500 truncate max-w-full">{displayName}</span>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col justify-between p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm overflow-hidden relative group">

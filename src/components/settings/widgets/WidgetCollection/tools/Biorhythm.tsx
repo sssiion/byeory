@@ -16,7 +16,7 @@ interface BiorhythmProps {
 
 export const BiorhythmConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [3, 1], [1, 1]] as [number, number][],
+    validSizes: [[2, 1], [1, 1]] as [number, number][],
 };
 
 export function Biorhythm({ gridSize }: BiorhythmProps) {

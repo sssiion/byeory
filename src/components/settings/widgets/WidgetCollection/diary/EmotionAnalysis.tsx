@@ -4,10 +4,24 @@ import { WidgetWrapper } from '../../Shared';
 // 12. Emotion Analysis (감정 분석)
 export const EmotionAnalysisConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [3, 1]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
-export const EmotionAnalysis = memo(function EmotionAnalysis() {
+export const EmotionAnalysis = memo(function EmotionAnalysis({ gridSize }: { gridSize?: { w: number; h: number } }) {
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper title="" className="bg-white flex items-center justify-center p-1">
+                <div className="relative w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'conic-gradient(#fbbf24 0% 100%)' }}>
+                    <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+                        <span className="text-lg">😊</span>
+                    </div>
+                </div>
+                <div className="absolute bottom-1 right-1 bg-amber-100 text-amber-600 text-[8px] px-1 rounded-full font-bold">40%</div>
+            </WidgetWrapper>
+        );
+    }
     return (
         <WidgetWrapper title="이번 달 감정" className="bg-white">
             <div className="w-full h-full flex items-center justify-center p-2">

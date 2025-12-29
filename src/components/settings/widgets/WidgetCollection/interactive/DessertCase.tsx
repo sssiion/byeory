@@ -3,11 +3,11 @@ import { WidgetWrapper } from '../Common';
 // --- 4. Dessert Case (간식 진열대) ---
 export const DessertCaseConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 // --- 4. Dessert Case (간식 진열대) ---
-export function DessertCase({ onUpdate, items = [], gridSize: _ }: { onUpdate?: (data: any) => void, items?: string[], gridSize?: { w: number; h: number } }) {
+export function DessertCase({ onUpdate, items = [], gridSize }: { onUpdate?: (data: any) => void, items?: string[], gridSize?: { w: number; h: number } }) {
     const desserts = ['🍩', '🍪', '🍰', '🧁', '🍮', '🍭', '🍫', '🍦'];
 
     const addItem = (icon: string) => {
@@ -19,6 +19,22 @@ export function DessertCase({ onUpdate, items = [], gridSize: _ }: { onUpdate?: 
         const newItems = items.filter((_, i) => i !== index);
         if (onUpdate) onUpdate({ items: newItems });
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-pink-50 border-pink-100 p-1 flex items-center justify-center">
+                <button
+                    onClick={() => addItem(desserts[Math.floor(Math.random() * desserts.length)])}
+                    className="w-full h-full rounded-2xl bg-white border-2 border-dashed border-pink-200 flex flex-col items-center justify-center hover:bg-pink-50 transition-colors"
+                >
+                    <span className="text-3xl mb-1">{items.length > 0 ? items[items.length - 1] : '🍰'}</span>
+                    <span className="text-[10px] text-pink-400 font-bold">{items.length} / 9</span>
+                </button>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-pink-50 border-pink-100">

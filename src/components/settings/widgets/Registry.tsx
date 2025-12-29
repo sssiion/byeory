@@ -666,8 +666,21 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
         validSizes: Diary.ChatDiaryConfig.validSizes,
         category: 'Diary & Emotion'
     },
-    'tag-cloud': { component: Tools.TagCloud, label: '태그 구름', defaultSize: '2x2', category: 'Utility' },
-    'timeline': { component: Tools.Timeline, label: '세로 타임라인', defaultSize: '1x2', category: 'Utility' },
+    'tag-cloud': {
+        component: Tools.TagCloud,
+        label: '태그 구름',
+        defaultSize: Tools.TagCloudConfig.defaultSize,
+        validSizes: Tools.TagCloudConfig.validSizes,
+        category: 'Utility'
+    },
+    'timeline': {
+        component: Tools.Timeline,
+        label: '세로 타임라인',
+        defaultSize: Tools.TimelineConfig.defaultSize,
+        validSizes: Tools.TimelineConfig.validSizes,
+        category: 'Utility'
+    },
+    'responsive-dashboard': { component: Tools.ResponsiveDashboard, label: '반응형 대시보드', defaultSize: '2x1', category: 'Utility', validSizes: [[1, 1], [2, 1], [4, 2]] },
     'scratch-card': {
         component: Interactive.ScratchCard,
         label: '복권 긁기',

@@ -6,7 +6,7 @@ interface ReceiptPrinterProps {
 
 export const ReceiptPrinterConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {

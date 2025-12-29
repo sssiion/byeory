@@ -2,7 +2,7 @@ import React from 'react';
 
 export const MovieSceneConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 export const MovieScene = React.memo(function MovieScene({ src, quote }: { src: string; quote: string }) {

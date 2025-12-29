@@ -1,19 +1,39 @@
 import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 
-export const PhotoGalleryConfig = {
-    defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 3], [4, 4]] as [number, number][],
-};
+
 
 // 5. Photo Gallery (내 사진들)
-export const PhotoGallery = React.memo(function PhotoGallery() {
+// 5. Photo Gallery (내 사진들)
+export const PhotoGalleryConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
+};
+
+interface PhotoGalleryProps {
+    gridSize?: { w: number; h: number };
+}
+
+export const PhotoGallery = React.memo(function PhotoGallery({ gridSize }: PhotoGalleryProps) {
     const images = [
         'https://images.unsplash.com/photo-1492633423870-43d1cd2775eb?w=300&h=300&fit=crop',
         'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop',
         'https://images.unsplash.com/photo-1504198458649-3128b932f49e?w=300&h=300&fit=crop',
         'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=300&h=300&fit=crop'
     ];
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper title="Gallery">
+                <div className="w-full h-full relative cursor-pointer group">
+                    <img src={images[0]} alt="" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper title="My Gallery">
@@ -31,7 +51,7 @@ export const PhotoGallery = React.memo(function PhotoGallery() {
 
 export const PolaroidConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 2], [2, 3]] as [number, number][],
+    validSizes: [[1, 2], [2, 2]] as [number, number][],
 };
 
 export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0 }: { src: string; date: string; rotation?: number; gridSize?: { w: number; h: number } }) {
@@ -54,7 +74,7 @@ export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0 }
 
 export const InstantBoothConfig = {
     defaultSize: '1x2',
-    validSizes: [[1, 2], [1, 3], [2, 3]] as [number, number][],
+    validSizes: [[1, 2]] as [number, number][],
 };
 
 export const InstantBooth = React.memo(function InstantBooth({ images, date }: { images: string[]; date: string; gridSize?: { w: number; h: number } }) {
@@ -74,7 +94,7 @@ export const InstantBooth = React.memo(function InstantBooth({ images, date }: {
 
 export const FilmStripConfig = {
     defaultSize: '4x2',
-    validSizes: [[4, 1], [4, 2]] as [number, number][],
+    validSizes: [[4, 1]] as [number, number][],
 };
 
 export const FilmStrip = React.memo(function FilmStrip({ images }: { images: string[]; gridSize?: { w: number; h: number } }) {

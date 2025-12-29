@@ -7,10 +7,10 @@ interface OceanWaveProps {
 
 export const OceanWaveConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [4, 1], [4, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export function OceanWave({ gridSize }: OceanWaveProps) {
+export function OceanWave({ gridSize: _gridSize }: OceanWaveProps) {
     const [isNight, setIsNight] = useState(false);
 
     useEffect(() => {

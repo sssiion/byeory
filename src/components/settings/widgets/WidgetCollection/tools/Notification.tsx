@@ -4,7 +4,7 @@ import { useWidgetStorage } from '../SDK';
 
 export const NotificationConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
 // 11. Notification (알림 설정)

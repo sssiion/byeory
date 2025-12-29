@@ -5,10 +5,11 @@ import { WidgetWrapper } from '../Common';
 // --- 2. Window View (창밖 풍경) ---
 export const WindowViewConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const WindowView = ({ gridSize: _ }: { gridSize?: { w: number; h: number } }) => {
+export const WindowView = ({ gridSize }: { gridSize?: { w: number; h: number } }) => {
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
     const [weather, setWeather] = useState<'sunny' | 'rainy' | 'snowy' | 'night'>('sunny');
     const [time, setTime] = useState(new Date());
 
@@ -26,6 +27,36 @@ export const WindowView = ({ gridSize: _ }: { gridSize?: { w: number; h: number 
         const next = states[(states.indexOf(weather) + 1) % states.length];
         setWeather(next);
     };
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-transparent border-none p-0 flex items-center justify-center">
+                <div
+                    className="w-full h-full rounded-full border-4 border-[#5d4037] relative overflow-hidden cursor-pointer shadow-lg"
+                    onClick={toggleWeather}
+                >
+                    {/* Simplified Sky for Small View */}
+                    <div className={`absolute inset-0 transition-colors duration-1000 ${weather === 'night' ? 'bg-[#0f172a]' :
+                        weather === 'rainy' ? 'bg-slate-500' :
+                            weather === 'snowy' ? 'bg-slate-200' : 'bg-sky-300'
+                        }`}></div>
+
+                    {/* Weather Icon */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        {weather === 'sunny' && <Sun className="text-yellow-100 w-8 h-8 animate-spin-slow" />}
+                        {weather === 'night' && <div className="w-6 h-6 rounded-full bg-yellow-100 shadow-[0_0_10px_white]"></div>}
+                        {weather === 'rainy' && <div className="text-white opacity-80 animate-bounce">💧</div>}
+                        {weather === 'snowy' && <div className="text-white animate-spin">❄️</div>}
+                    </div>
+
+                    {/* Tiny Clock */}
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] text-white/90 font-mono font-bold bg-black/20 px-1 rounded">
+                        {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="p-0 border-4 border-[#5d4037] bg-[#5d4037] rounded-t-full relative overflow-hidden group">

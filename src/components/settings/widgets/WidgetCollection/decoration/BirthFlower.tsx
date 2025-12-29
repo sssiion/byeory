@@ -21,10 +21,14 @@ const FLOWERS: Record<number, { name: string; lang: string; color: string }> = {
 
 export const BirthFlowerConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export function BirthFlower() {
+interface BirthFlowerProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function BirthFlower({ gridSize }: BirthFlowerProps) {
     const [dateStr, setDateStr] = useState(() => localStorage.getItem('userBirthDate') || '');
     const [isEditing, setIsEditing] = useState(!dateStr);
 
@@ -42,6 +46,25 @@ export function BirthFlower() {
         setDateStr(val);
         setIsEditing(false);
     };
+
+    const w = gridSize?.w || 2;
+    const isSmall = w < 2;
+
+    if (isSmall && flower) {
+        return (
+            <WidgetWrapper className="bg-white dark:bg-slate-800 p-0">
+                <div
+                    className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/50 p-1"
+                    onClick={() => setIsEditing(true)}
+                >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${flower.color} bg-opacity-20 mb-1`}>
+                        <Flower size={16} />
+                    </div>
+                    <div className="text-[9px] font-serif font-bold text-center leading-tight">{flower.name}</div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     if (isEditing || !flower) {
         return (

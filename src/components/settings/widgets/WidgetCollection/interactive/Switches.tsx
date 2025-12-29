@@ -8,10 +8,10 @@ interface ComponentProps {
 
 export const SwitchesConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const Switches = ({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
+export const Switches = ({ className, style, gridSize }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [states, setStates] = useState([false, true, false, false]);
 
     const toggle = (index: number) => {
@@ -19,6 +19,24 @@ export const Switches = ({ className, style, gridSize: _ }: ComponentProps & { g
         newStates[index] = !newStates[index];
         setStates(newStates);
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className={`bg-[#e0e5ec] ${className || ''}`} style={style}>
+                <div className="w-full h-full flex items-center justify-center">
+                    <button
+                        onClick={() => toggle(2)}
+                        className={`w-14 h-14 rounded-full border-4 border-gray-300 shadow-lg active:shadow-inner active:translate-y-0.5 transition-all text-gray-500 font-bold ${states[2] ? 'bg-red-500 text-white border-red-300 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-gray-100'
+                            }`}
+                    >
+                        {states[2] ? 'ON' : 'OFF'}
+                    </button>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className={`bg-[#e0e5ec] ${className || ''}`} style={style}>

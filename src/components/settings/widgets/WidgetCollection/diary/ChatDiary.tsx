@@ -11,10 +11,10 @@ interface ComponentProps {
 
 export const ChatDiaryConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const ChatDiary = ({ className, style, initialMessages = [] }: ComponentProps) => {
+export const ChatDiary = ({ className, style, initialMessages = [], gridSize }: ComponentProps) => {
     const [messages, setMessages] = useState(initialMessages.length > 0 ? initialMessages : [
         { id: 1, text: '오늘 하루는 어땠어?', sender: 'other', time: '09:00' },
     ]);
@@ -52,6 +52,21 @@ export const ChatDiary = ({ className, style, initialMessages = [] }: ComponentP
             handleSend();
         }
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className={`bg-[#bacee0] flex items-center justify-center ${className || ''}`} style={style}>
+                <div className="flex flex-col items-center text-gray-600">
+                    <div className="w-8 h-8 rounded-[12px] bg-[#d6e4f0] flex items-center justify-center mb-1">
+                        <User size={16} />
+                    </div>
+                    <span className="text-[9px] font-bold">Chat</span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className={`bg-[#bacee0] flex flex-col ${className || ''}`} style={style}>

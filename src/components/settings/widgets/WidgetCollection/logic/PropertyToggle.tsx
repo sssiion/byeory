@@ -4,10 +4,11 @@ import { SlidersHorizontal, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-r
 
 export const PropertyToggleConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export const PropertyToggle = ({ style, gridSize: _ }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+export const PropertyToggle = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
+    const isSmall = (gridSize?.w || 2) < 2;
     const [isOpen, setIsOpen] = useState(false);
     const [props, setProps] = useState([
         { id: 1, name: 'Status', visible: true },
@@ -19,6 +20,19 @@ export const PropertyToggle = ({ style, gridSize: _ }: { style?: React.CSSProper
     const toggleProp = (id: number) => {
         setProps(props.map(p => p.id === id ? { ...p, visible: !p.visible } : p));
     };
+
+
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-white" style={style}>
+                <div className="w-full h-full flex flex-col items-center justify-center" onClick={() => setIsOpen(!isOpen)}>
+                    <SlidersHorizontal size={16} className="text-gray-700 mb-1" />
+                    <span className="text-xs font-bold text-gray-500">{props.filter(p => p.visible).length}</span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-white" style={style}>

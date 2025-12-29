@@ -16,10 +16,15 @@ const COLORS = ['bg-red-700', 'bg-blue-800', 'bg-green-800', 'bg-amber-900', 'bg
 
 export const BookshelfConfig = {
     defaultSize: '4x2',
-    validSizes: [[4, 1], [4, 2], [4, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export function Bookshelf() {
+interface BookshelfProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function Bookshelf({ gridSize }: BookshelfProps) {
+    const isSmall = (gridSize?.w || 2) < 2;
     const [books, setBooks] = useState<Book[]>(() => {
         const saved = localStorage.getItem('bookshelf_data');
         if (saved) return JSON.parse(saved);
@@ -50,6 +55,21 @@ export function Bookshelf() {
         setBooks(updated);
         localStorage.setItem('bookshelf_data', JSON.stringify(updated));
     };
+
+    if (isSmall) {
+        const book = books[0] || { id: 0, title: 'No Book', color: 'bg-gray-400', height: 90 };
+        return (
+            <WidgetWrapper className="bg-[#f0e6d2] dark:bg-[#2a2318] border-none p-2 flex items-center justify-center relative shadow-inner">
+                <div className={`w-16 h-24 ${book.color} rounded-sm shadow-md flex items-center justify-center relative cursor-pointer hover:scale-105 transition-transform`} title={book.title}>
+                    <div className="absolute left-1 top-0 bottom-0 w-[1px] bg-white/20"></div>
+                    <div className="absolute top-2 left-0 right-0 h-[2px] bg-white/10"></div>
+                    <span className="text-[10px] text-white/90 font-serif font-bold whitespace-nowrap rotate-90 truncate w-20 text-center block">
+                        {book.title}
+                    </span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-[#f0e6d2] dark:bg-[#2a2318] border-none p-0 relative shadow-inner">

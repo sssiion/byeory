@@ -69,10 +69,14 @@ const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
 
 export const UnitConverterConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [3, 3], [4, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export function UnitConverter() {
+interface UnitConverterProps {
+    gridSize?: { w: number; h: number };
+}
+
+export function UnitConverter({ gridSize }: UnitConverterProps) {
     // Persist user selection
     const [settings, setSettings] = useWidgetStorage('widget-unit-converter', {
         category: 'length' as keyof typeof UNIT_CATEGORIES,
@@ -93,6 +97,8 @@ export function UnitConverter() {
     const [toValue, setToValue] = useState<string>('');
     const [rates, setRates] = useState<any>(UNIT_CATEGORIES.length.rates);
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+    const isSmall = (gridSize?.w || 2) < 2;
 
     const fetchCurrencyRates = async () => {
         const CACHE_KEY = 'exchange_rates_cache';
@@ -186,6 +192,19 @@ export function UnitConverter() {
         // We set input to the calculated output to "continue" conversion
         setFromValue(toValue);
     };
+
+    if (isSmall) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center p-2 theme-bg-card rounded-xl shadow-sm border theme-border cursor-pointer relative" onClick={handleSwap}>
+                <div className="absolute top-2 right-2 text-[8px] theme-text-secondary opacity-50">{UNIT_CATEGORIES[category].label}</div>
+                <div className="flex flex-col items-center gap-1">
+                    <span className="text-xl font-bold theme-text-primary">{parseFloat(fromValue).toLocaleString()} <span className="text-xs font-normal opacity-70">{fromUnit}</span></span>
+                    <ArrowLeftRight size={12} className="theme-text-secondary rotate-90" />
+                    <span className="text-xl font-bold theme-text-primary text-[var(--btn-bg)]">{parseFloat(toValue).toLocaleString()} <span className="text-xs font-normal opacity-70 text-gray-500">{toUnit}</span></span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border">

@@ -7,16 +7,32 @@ interface TypewriterProps {
 
 export const TypewriterConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [3, 2], [4, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
-export function Typewriter(_: TypewriterProps) {
+export function Typewriter({ gridSize }: TypewriterProps) {
     const [text, setText] = useWidgetStorage('widget-typewriter-text', '');
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setText(e.target.value);
         // Play sound effect hook here if requested later
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-[#f0e6d2] dark:bg-stone-800 border-none p-2 relative shadow-sm">
+                <textarea
+                    value={text}
+                    onChange={handleChange}
+                    className="w-full h-full bg-transparent border-none outline-none font-serif text-[10px] leading-tight text-zinc-800 dark:text-zinc-200 resize-none custom-scrollbar"
+                    placeholder="Type..."
+                    style={{ fontFamily: 'var(--font-mono, monospace)' }}
+                />
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper className="bg-[#f0e6d2] dark:bg-stone-800 border-none p-0 relative shadow-md">

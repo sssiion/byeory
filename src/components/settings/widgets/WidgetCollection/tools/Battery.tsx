@@ -5,12 +5,45 @@ import { WidgetWrapper } from '../Common';
 // --- 5. Battery Widget (내 에너지)
 export const BatteryWidgetConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const BatteryWidget = React.memo(function BatteryWidget() {
-    const [level, setLevel] = useState(50);
+interface BatteryWidgetProps {
+    gridSize?: { w: number; h: number };
+}
 
+export const BatteryWidget = React.memo(function BatteryWidget({ gridSize }: BatteryWidgetProps) {
+    const [level, setLevel] = useState(50);
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    // Small View (1x1)
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-gray-50 dark:bg-gray-800/50">
+                <div className="flex flex-col items-center justify-center h-full relative cursor-pointer" onClick={() => setLevel(prev => prev >= 100 ? 0 : prev + 10)}>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                        <Zap size={48} className={level < 20 ? 'text-red-500' : 'text-yellow-500'} fill="currentColor" />
+                    </div>
+
+                    <div className="relative z-10 flex flex-col items-center">
+                        <Zap size={24} className={`mb-1 ${level < 20 ? 'text-red-500' : level > 80 ? 'text-green-500' : 'text-yellow-500'}`} fill="currentColor" />
+                        <span className="text-2xl font-black text-gray-700 dark:text-gray-200">{level}%</span>
+                    </div>
+
+                    <div className="absolute bottom-1 w-full px-2">
+                        <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-300 ${level < 20 ? 'bg-red-400' : level < 60 ? 'bg-yellow-400' : 'bg-green-400'}`}
+                                style={{ width: `${level}%` }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
+    // Medium/Large View
     return (
         <WidgetWrapper className="bg-gray-50 dark:bg-gray-800/50">
             <div className="flex flex-col items-center gap-2 w-full px-2">

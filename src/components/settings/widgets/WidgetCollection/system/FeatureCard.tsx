@@ -2,7 +2,7 @@ import React from 'react';
 
 export const FeatureCardConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
 };
 
 export function FeatureCard({ title = "Feature", description, icon, gridSize: _ }: { title?: string, description?: string, icon?: React.ReactNode, gridSize?: { w: number; h: number } }) {

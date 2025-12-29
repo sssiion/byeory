@@ -4,11 +4,19 @@ import { WidgetWrapper } from '../Common';
 // --- 3. Snow Globe (스노우볼) ---
 export const SnowGlobeConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 // --- 3. Snow Globe (스노우볼) ---
-export function SnowGlobe({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
+export function SnowGlobe({ gridSize }: { gridSize?: { w: number; h: number } }) {
+    const w = gridSize?.w || 2;
+    const h = gridSize?.h || 2;
+    const minDim = Math.min(w, h);
+
+    // Scale logic
+    let scale = 1;
+    if (minDim === 1) scale = 0.5;
+    else if (minDim >= 3) scale = 1.3;
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isShaking, setIsShaking] = useState(false);
     const particles = useRef<{ x: number, y: number, r: number, d: number, speed: number }[]>([]);
@@ -91,6 +99,7 @@ export function SnowGlobe({ gridSize: _ }: { gridSize?: { w: number; h: number }
             <div
                 onClick={handleShake}
                 className={`relative w-full h-full cursor-pointer transition-transform ${isShaking ? 'animate-shake' : ''}`}
+                style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
             >
                 {/* Globe Glass */}
                 <div className="w-full h-[85%] rounded-full bg-gradient-to-br from-blue-200/30 to-blue-400/10 border-4 border-white/50 backdrop-blur-[2px] relative overflow-hidden shadow-inner">

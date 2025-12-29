@@ -5,10 +5,10 @@ import { WidgetWrapper } from '../../Shared';
 // 1. AI Diary (AI 다이어리)
 export const AIDiaryConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export function AIDiary() {
+export function AIDiary({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [result, setResult] = useState('');
 
@@ -19,6 +19,23 @@ export function AIDiary() {
             setResult("오늘의 일기에서 '설렘'과 '기대'가 느껴지네요! 🌸 긍정적인 에너지가 가득해요.");
         }, 2000);
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper title="" className="bg-gradient-to-br from-indigo-50 to-white flex items-center justify-center p-1">
+                <button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing}
+                    className="flex flex-col items-center justify-center w-full h-full text-indigo-500 hover:text-indigo-700 disabled:opacity-50"
+                >
+                    <PenTool size={20} className={isAnalyzing ? 'animate-bounce' : ''} />
+                    <span className="text-[8px] font-bold mt-1">AI ANALYZE</span>
+                </button>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper title="AI 감정 분석관" className="bg-gradient-to-br from-indigo-50 to-white">

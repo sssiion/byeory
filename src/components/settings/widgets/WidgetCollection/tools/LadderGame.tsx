@@ -4,10 +4,10 @@ import { useWidgetStorage } from '../SDK';
 
 export const LadderGameConfig = {
     defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
 };
 
-export function LadderGame() {
+export function LadderGame({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [players, setPlayers] = useWidgetStorage<string[]>('widget-ladder-players', ['A', 'B', 'C', 'D']);
     const [results] = useWidgetStorage<string[]>('widget-ladder-results', ['꽝', '당첨', '꽝', '통과']);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -212,6 +212,17 @@ export function LadderGame() {
         }
         ctx.stroke();
     };
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center theme-bg-card rounded-xl shadow-sm border theme-border p-2">
+                <RotateCcw size={24} className="text-gray-400 mb-1" />
+                <span className="text-[9px] font-bold theme-text-secondary">Ladder</span>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">

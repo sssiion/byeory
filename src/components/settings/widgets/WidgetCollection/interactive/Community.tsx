@@ -1,19 +1,31 @@
-
 import { WidgetWrapper } from '../../Shared';
 
 // 13. Community Widget (커뮤니티)
+// 13. Community Widget (커뮤니티)
 export const CommunityWidgetConfig = {
     defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3]] as [number, number][],
+    validSizes: [[1, 1], [2, 2]] as [number, number][],
 };
 
 // 13. Community Widget (커뮤니티)
-export function CommunityWidget({ gridSize: _ }: { gridSize?: { w: number; h: number } }) {
+export function CommunityWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const posts = [
         { title: "오늘 다꾸 팁 공유해요! 🎀", likes: 12 },
         { title: "위젯 배치 좀 봐주세요 ㅎㅎ", likes: 8 },
         { title: "저녁 메뉴 추천 받아요", likes: 5 }
     ];
+
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-white" title="">
+                <div className="flex items-center justify-center h-full">
+                    <div className="text-xl">💬</div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
 
     return (
         <WidgetWrapper title="커뮤니티 인기글" className="bg-white">
