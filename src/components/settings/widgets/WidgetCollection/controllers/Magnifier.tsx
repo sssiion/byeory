@@ -7,24 +7,58 @@ interface ComponentProps {
     style?: React.CSSProperties;
 }
 
-const PortalEffect = () => {
+const LocalizedLens = () => {
     useEffect(() => {
-        // Add a global style when active
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .magnifier-active *:hover {
-                transform: scale(1.1);
-                z-index: 1000;
-                transition: transform 0.2s ease-out;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        const lens = document.createElement('div');
+        lens.style.position = 'fixed';
+        lens.style.pointerEvents = 'none';
+        lens.style.width = '100px';
+        lens.style.height = '100px';
+        lens.style.border = '2px solid rgba(0, 0, 0, 0.2)';
+        lens.style.borderRadius = '50%';
+        lens.style.boxShadow = '0 0 0 2000px rgba(0, 0, 0, 0.3)'; // Dim everything else
+        lens.style.zIndex = '9999';
+        lens.style.transform = 'translate(-50%, -50%)';
+        lens.style.backdropFilter = 'brightness(1.1) contrast(1.1)';
+        document.body.appendChild(lens);
+
+        let activeElement: HTMLElement | null = null;
+
+        const onMove = (e: MouseEvent) => {
+            lens.style.left = `${e.clientX}px`;
+            lens.style.top = `${e.clientY}px`;
+
+            // Reset previous
+            if (activeElement) {
+                activeElement.style.transform = '';
+                activeElement.style.zIndex = '';
+                activeElement.style.transition = '';
             }
-        `;
-        document.head.appendChild(style);
-        document.body.classList.add('magnifier-active');
+
+            // Find new
+            const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
+            if (el && el !== document.body && el !== document.documentElement && !el.classList.contains('magnifier-ignore')) {
+                // Find a meaningful container or self
+                const target = el.closest('button, a, .widget-wrapper, img') as HTMLElement || el;
+
+                if (target) {
+                    target.style.transition = 'transform 0.1s';
+                    target.style.transform = 'scale(1.2)';
+                    target.style.zIndex = '1000';
+                    activeElement = target;
+                }
+            }
+        };
+
+        window.addEventListener('mousemove', onMove);
 
         return () => {
-            document.head.removeChild(style);
-            document.body.classList.remove('magnifier-active');
+            if (activeElement) {
+                activeElement.style.transform = '';
+                activeElement.style.zIndex = '';
+            }
+            window.removeEventListener('mousemove', onMove);
+            if (document.body.contains(lens)) document.body.removeChild(lens);
         };
     }, []);
 
@@ -33,10 +67,10 @@ const PortalEffect = () => {
 
 export const MagnifierConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const Magnifier = ({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
+export const Magnifier = React.memo(({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     return (
         <EffectController
             className={className}
@@ -45,7 +79,7 @@ export const Magnifier = ({ className, style, gridSize: _ }: ComponentProps & { 
             icon={<Search size={20} />}
             storageKey="effect-magnifier"
         >
-            <PortalEffect />
+            <LocalizedLens />
         </EffectController>
     );
-};
+});

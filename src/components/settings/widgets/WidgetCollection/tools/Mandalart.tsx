@@ -15,7 +15,7 @@ interface MandalartProps {
 
 export const MandalartConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 2]] as [number, number][],
 };
 
 export function Mandalart({ gridSize }: MandalartProps) {
@@ -23,9 +23,6 @@ export function Mandalart({ gridSize }: MandalartProps) {
     const [goals, setGoals] = useWidgetStorage<string[]>('widget-mandalart-core', Array(9).fill(''));
 
     const [editIdx, setEditIdx] = useState<number | null>(null);
-
-    const w = gridSize?.w || 2;
-    const isSmall = w === 1;
 
     const handleSave = (idx: number, val: string) => {
         const newGoals = [...goals];
@@ -36,20 +33,6 @@ export function Mandalart({ gridSize }: MandalartProps) {
 
     // Center cell index is 4
     const centerGoal = goals[4] || 'Main Goal';
-
-    // --- Small View ---
-    if (isSmall) {
-        return (
-            <WidgetWrapper className="bg-white dark:bg-slate-800 flex items-center justify-center text-center p-2 border-2 border-indigo-100 dark:border-indigo-900">
-                <div>
-                    <p className="text-[8px] text-indigo-400 font-bold mb-1 uppercase tracking-wider">FOCUS</p>
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 line-clamp-2 leading-tight">
-                        {centerGoal}
-                    </p>
-                </div>
-            </WidgetWrapper>
-        );
-    }
 
     // --- Medium/Large View (3x3 Grid) ---
     return (

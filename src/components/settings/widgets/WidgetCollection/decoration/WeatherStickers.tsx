@@ -17,14 +17,15 @@ interface WeatherStickersProps {
 
 export const WeatherStickersConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function WeatherStickers({ gridSize }: WeatherStickersProps) {
     const [selectedId, setSelectedId] = useState('sun');
 
     const w = gridSize?.w || 2;
-    const isSmall = w === 1;
+    const h = gridSize?.h || 2;
+    const isSmall = w === 1 && h === 1;
 
     const currentSticker = STICKERS.find((s) => s.id === selectedId) || STICKERS[0];
 

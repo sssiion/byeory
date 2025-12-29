@@ -18,7 +18,7 @@ export function MovieTicket({ gridSize }: MovieTicketProps) {
     const [isEditing, setIsEditing] = useState(false);
 
     const w = gridSize?.w || 2;
-    // const h = gridSize?.h || 1;
+    // Treat 1 column widths as "small" (stub view)
     const isSmall = w === 1;
 
     const handleSave = () => {

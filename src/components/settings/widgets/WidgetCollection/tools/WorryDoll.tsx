@@ -9,13 +9,11 @@ interface WorryDollProps {
 
 export const WorryDollConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function WorryDoll({ gridSize }: WorryDollProps) {
     const [worry, setWorry] = useState('');
-    // Persis 'hasWorry' state (and the worry text itself if needed, but logic implies we just keep "that we have a worry")
-    // Actually the original code stored the worry text in 'worry_doll_val' and checked availability.
     const [storedWorry, setStoredWorry] = useWidgetStorage<string | null>('widget-worry-doll-val', null);
 
     const hasWorry = !!storedWorry;
@@ -32,38 +30,17 @@ export function WorryDoll({ gridSize }: WorryDollProps) {
     };
 
     const w = gridSize?.w || 2;
-    const isSmall = w === 1;
-
-    if (isSmall) {
-        return (
-            <WidgetWrapper className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 p-0 flex flex-col items-center justify-center">
-                <div className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-2" onClick={handleClearWorry}>
-                    <div className="relative">
-                        {hasWorry ? (
-                            <Smile className="text-orange-500" size={32} />
-                        ) : (
-                            <div className="text-orange-300 opacity-50">
-                                <Smile size={32} />
-                            </div>
-                        )}
-                        {hasWorry && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></div>
-                        )}
-                    </div>
-                    <span className="text-[9px] mt-1 text-orange-700 font-bold">{hasWorry ? 'Keeping' : 'Sleepy'}</span>
-                </div>
-            </WidgetWrapper>
-        );
-    }
+    const h = gridSize?.h || 2;
+    const isWide = w >= 2 && h === 1;
 
     return (
-        <WidgetWrapper className="bg-[#fdfbf7] dark:bg-stone-900 border-none p-4 relative overflow-hidden flex flex-col items-center justify-center">
+        <WidgetWrapper className="bg-[#fdfbf7] dark:bg-stone-900 border-none p-4 relative overflow-hidden flex items-center justify-center">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/fabric-of-squares.png')] pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col items-center w-full">
+            <div className={`relative z-10 flex ${isWide ? 'flex-row gap-4 items-center w-full' : 'flex-col items-center w-full'}`}>
                 {/* The Doll Visual */}
-                <div className={`transition-all duration-500 ${hasWorry ? 'scale-110 mb-2' : 'scale-100 mb-4'}`}>
+                <div className={`transition-all duration-500 flex-shrink-0 ${isWide ? 'scale-75' : hasWorry ? 'scale-110 mb-2' : 'scale-100 mb-4'}`}>
                     {/* Use a simple SVG composition for the doll */}
                     <svg width="60" height="80" viewBox="0 0 60 80" className="drop-shadow-md">
                         {/* Body */}
@@ -92,23 +69,23 @@ export function WorryDoll({ gridSize }: WorryDollProps) {
                 </div>
 
                 {hasWorry ? (
-                    <div className="text-center animate-fade-in">
-                        <p className="text-sm text-stone-600 font-medium mb-3">"I'll keep this worry for you."</p>
+                    <div className={`text-center animate-fade-in ${isWide ? 'text-left flex-1' : ''}`}>
+                        <p className="text-sm text-stone-600 font-medium mb-2 leading-tight">"I'll keep this worry for you."</p>
                         <button
                             onClick={handleClearWorry}
-                            className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1 rounded-full transition-colors"
+                            className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-700 px-3 py-1 rounded-full transition-colors whitespace-nowrap"
                         >
-                            Thanks, I'm okay now
+                            Thanks, I'm okay
                         </button>
                     </div>
                 ) : (
-                    <div className="w-full max-w-[200px] relative">
+                    <div className={`relative ${isWide ? 'flex-1 h-full' : 'w-full max-w-[200px]'}`}>
                         <textarea
                             ref={inputRef}
                             value={worry}
                             onChange={(e) => setWorry(e.target.value)}
                             placeholder="Tell me your worry..."
-                            className="w-full h-20 p-2 text-xs bg-white border border-stone-200 rounded resize-none focus:outline-none focus:border-orange-300 shadow-sm"
+                            className={`w-full p-2 text-xs bg-white border border-stone-200 rounded resize-none focus:outline-none focus:border-orange-300 shadow-sm ${isWide ? 'h-20' : 'h-20'}`}
                         />
                         <button
                             onClick={handleGiveWorry}

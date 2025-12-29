@@ -4,7 +4,7 @@ import { WidgetWrapper } from '../Common';
 // --- 5. Cat Chaser (따라오는 고양이) ---
 export const CatChaserConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function CatChaser({ gridSize }: { gridSize?: { w: number; h: number } }) {

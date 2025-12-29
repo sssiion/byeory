@@ -3,7 +3,7 @@ import { WidgetWrapper } from '../Common';
 
 export const BubbleWrapConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2], [3, 3], [4, 4]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 3], [4, 4], [2, 4]] as [number, number][],
 };
 
 export function BubbleWrap() {

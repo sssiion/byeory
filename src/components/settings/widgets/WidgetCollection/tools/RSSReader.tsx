@@ -4,7 +4,7 @@ import { useWidgetStorage } from '../SDK';
 
 export const RSSReaderConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3], [4, 2], [4, 3]] as [number, number][],
 };
 
 export function RSSReader({ gridSize }: { gridSize?: { w: number; h: number } }) {

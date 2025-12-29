@@ -4,12 +4,12 @@ import { WidgetWrapper } from '../../Shared';
 // 6. Exchange Diary (교환 일기)
 export const ExchangeDiaryConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function ExchangeDiary({ gridSize }: { gridSize?: { w: number; h: number } }) {
 
-    const isSmall = (gridSize?.w || 2) < 2;
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
 
     if (isSmall) {
         return (

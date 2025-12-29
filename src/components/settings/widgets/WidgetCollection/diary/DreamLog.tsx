@@ -15,7 +15,7 @@ interface DreamLogData {
 // --- 3. Dream Log (꿈 기록장) ---
 export const DreamLogConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 interface DreamLogProps {
@@ -49,7 +49,7 @@ export function DreamLog({ onUpdate, logs: propLogs = [], gridSize }: DreamLogPr
 
 
 
-    const isSmall = (gridSize?.w || 2) < 2;
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
 
     if (isSmall) {
         return (

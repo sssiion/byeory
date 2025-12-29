@@ -5,7 +5,7 @@ import { WidgetWrapper } from '../../Shared';
 // 3. Random Diary (랜덤 일기)
 export const RandomDiaryConfig = {
     defaultSize: '1x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function RandomDiary() {

@@ -2,11 +2,11 @@
 
 export const ThemeGuideWidgetConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function ThemeGuideWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
-    const isSmall = (gridSize?.w || 2) < 2;
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
 
     if (isSmall) {
         return (

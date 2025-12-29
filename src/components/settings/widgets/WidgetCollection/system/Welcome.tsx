@@ -5,7 +5,7 @@ import { User, Palette } from 'lucide-react';
 
 export const WelcomeWidgetConfig = {
     defaultSize: '4x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [4, 2]] as [number, number][],
 };
 
 export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
@@ -29,7 +29,7 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
         window.dispatchEvent(new CustomEvent('open-theme-settings'));
     };
 
-    const isSmall = (gridSize?.w || 2) < 2;
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
 
     if (isSmall) {
         return (

@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
+import { X } from 'lucide-react'; // Removing Plus
 
 interface ReceiptPrinterProps {
     gridSize?: { w: number; h: number };
@@ -6,7 +9,7 @@ interface ReceiptPrinterProps {
 
 export const ReceiptPrinterConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {
@@ -14,31 +17,47 @@ export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
     const w = gridSize?.w || 2;
-    // const h = gridSize?.h || 1; // Assuming default height is 1 block unit (approx 200px) which is 'Medium' for us, Height 2 is 'Tall'
-
-    // Checking if height is 'tall' (>= 2 rows) is hard without exact props from registry which usually defines 'large' as 2x2.
-    // However, draggable widget passes grid W/H.
-    const isSmall = w === 1;
-    const isWide = w >= 3;
-    // We can assume if it's placed in a tall slot manually, but grid unit H is safer.
     const h = gridSize?.h || 1;
-    const isTall = h >= 2;
 
-    // Dummy Data simulating a "Day Receipt"
-    const TASKS = [
+    interface Task {
+        id: number;
+        text: string;
+        check: boolean;
+    }
+
+    // Default Tasks
+    const [tasks, setTasks] = useWidgetStorage<Task[]>('receipt-tasks', [
         { id: 1, text: "Wake Up & Hydrate", check: true },
         { id: 2, text: "Morning Yoga", check: true },
         { id: 3, text: "Read 30 mins", check: false },
-        { id: 4, text: "Write Implementation", check: true },
-        { id: 5, text: "Check Emails", check: false },
-        { id: 6, text: "Water Plants", check: false },
-        { id: 7, text: "Night Routine", check: false },
-    ];
+        { id: 4, text: "Write Implementation", check: true }
+    ]);
+    const [newTask, setNewTask] = useState('');
+    const [isAdding, setIsAdding] = useState(false);
+
+    const toggleCheck = (id: number) => {
+        setTasks((prev: Task[]) => prev.map(t => t.id === id ? { ...t, check: !t.check } : t));
+    };
+
+    const addTask = () => {
+        if (!newTask.trim()) return;
+        setTasks((prev: Task[]) => [...prev, { id: Date.now(), text: newTask, check: false }]);
+        setNewTask('');
+        setIsAdding(false);
+    };
+
+    const removeTask = (id: number) => {
+        setTasks((prev: Task[]) => prev.filter(t => t.id !== id));
+    };
+
+    const isSmall = w === 1;
+    const isWide = w >= 3;
+    const isTall = h >= 2;
 
     // Filter tasks based on size
     const displayTasks = isSmall
-        ? TASKS.slice(0, 2)
-        : (isTall ? TASKS : TASKS.slice(0, 4));
+        ? tasks.slice(0, 2)
+        : (isTall ? tasks : tasks.slice(0, 4));
 
     // Small View: Folded Receipt / Summary
     if (isSmall && !isTall) {
@@ -50,11 +69,11 @@ export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {
                     </div>
                     <div className="flex justify-between mb-1">
                         <span>DONE</span>
-                        <span>{TASKS.filter(t => t.check).length}</span>
+                        <span>{tasks.filter(t => t.check).length}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>LEFT</span>
-                        <span>{TASKS.filter(t => !t.check).length}</span>
+                        <span>{tasks.filter(t => !t.check).length}</span>
                     </div>
                     <div className="mt-2 text-center text-[7px] opacity-60">
                         KEEP FIGHTING
@@ -82,15 +101,42 @@ export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {
                     {/* Task List */}
                     <div className="space-y-1 w-full">
                         {displayTasks.map((task, idx) => (
-                            <div key={task.id} className="flex justify-between items-start">
-                                <span className="flex-1 truncate pr-2 uppercase">
+                            <div key={task.id} className="flex justify-between items-start group/item">
+                                <button
+                                    onClick={() => toggleCheck(task.id)}
+                                    className={`flex-1 text-left truncate pr-2 uppercase hover:underline ${task.check ? 'line-through opacity-50' : ''}`}
+                                >
                                     {idx + 1}. {task.text}
-                                </span>
-                                <span>{task.check ? '[OK]' : '[  ]'}</span>
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button onClick={() => toggleCheck(task.id)}>{task.check ? '[OK]' : '[  ]'}</button>
+                                    <button onClick={() => removeTask(task.id)} className="opacity-0 group-hover/item:opacity-100 text-red-500 hover:text-red-700 font-bold ml-1">x</button>
+                                </div>
                             </div>
                         ))}
-                        {!isTall && TASKS.length > 4 && (
-                            <div className="text-center text-[8px] opacity-50 mt-1">... and {TASKS.length - 4} more</div>
+                        {isAdding ? (
+                            <div className="flex items-center gap-1 mt-2">
+                                <input
+                                    autoFocus
+                                    className="w-full text-[10px] border-b border-black outline-none bg-transparent"
+                                    value={newTask}
+                                    onChange={(e) => setNewTask(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                                    placeholder="New Task..."
+                                />
+                                <button onClick={() => setIsAdding(false)}><X size={10} /></button>
+                            </div>
+                        ) : (
+                            (!isSmall && tasks.length < 10) && (
+                                <button onClick={() => setIsAdding(true)} className="w-full text-center hover:bg-black/5 py-1 mt-1 opacity-50 hover:opacity-100 transition-opacity">
+                                    + ADD ITEM
+                                </button>
+                            )
+                        )}
+
+
+                        {!isTall && tasks.length > 4 && (
+                            <div className="text-center text-[8px] opacity-50 mt-1">... and {tasks.length - 4} more</div>
                         )}
                     </div>
 
@@ -98,7 +144,7 @@ export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {
 
                     <div className="flex justify-between font-bold text-xs">
                         <span>PROGRESS</span>
-                        <span>{Math.round((TASKS.filter(t => t.check).length / TASKS.length) * 100)}%</span>
+                        <span>{Math.round((tasks.length > 0 ? tasks.filter(t => t.check).length / tasks.length : 0) * 100)}%</span>
                     </div>
 
                     {/* Footer (Bar code for Tall/Wide) */}

@@ -11,7 +11,7 @@ interface DigitalPlantData {
 // --- 4. Digital Plant (반려 식물) ---
 export const DigitalPlantConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 // --- 4. Digital Plant (반려 식물) ---

@@ -506,7 +506,7 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     },
     'rss-reader': {
         component: Tools.RSSReader,
-        label: 'RSS 리더',
+        label: '기사 모음',
         description: '구독한 RSS 피드의 최신 글을 모아봅니다.',
         defaultSize: Tools.RSSReaderConfig.defaultSize,
         validSizes: Tools.RSSReaderConfig.validSizes,
@@ -658,14 +658,7 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
         validSizes: Decoration.TextScrollerConfig.validSizes,
         category: 'Decoration'
     },
-    'window-view': {
-        component: Decoration.WindowView,
-        label: '창밖 풍경',
-        description: '창문을 통해 다양한 풍경을 감상할 수 있습니다.',
-        defaultSize: Decoration.WindowViewConfig.defaultSize,
-        validSizes: Decoration.WindowViewConfig.validSizes,
-        category: 'Decoration'
-    },
+
     'payphone': {
         component: Payphone,
         label: '공중전화',
@@ -766,7 +759,7 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
         validSizes: Tools.TimelineConfig.validSizes,
         category: 'Utility'
     },
-    'responsive-dashboard': { component: Tools.ResponsiveDashboard, label: '반응형 대시보드', description: '화면 크기에 따라 배치가 변하는 대시보드입니다.', defaultSize: '2x1', category: 'Utility', validSizes: [[1, 1], [2, 1], [4, 2]] },
+
     'scratch-card': {
         component: Interactive.ScratchCard,
         label: '복권 긁기',

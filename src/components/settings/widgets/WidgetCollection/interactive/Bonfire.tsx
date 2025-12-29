@@ -7,7 +7,7 @@ interface BonfireProps {
 
 export const BonfireConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function Bonfire({ gridSize }: BonfireProps) {

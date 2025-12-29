@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { WidgetWrapper } from '../../Shared';
+import { useWidgetStorage } from '../SDK';
+import { Sun, Moon } from 'lucide-react';
 
 interface OceanWaveProps {
     gridSize?: { w: number; h: number };
@@ -7,17 +9,25 @@ interface OceanWaveProps {
 
 export const OceanWaveConfig = {
     defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export function OceanWave({ gridSize: _gridSize }: OceanWaveProps) {
-    const [isNight, setIsNight] = useState(false);
+    // 0: Auto, 1: Day, 2: Night
+    const [mode, setMode] = useWidgetStorage('ocean-mode', 0);
+    const [autoIsNight, setAutoIsNight] = useState(false);
 
     useEffect(() => {
         const hour = new Date().getHours();
         // Night from 6 PM (18) to 6 AM (6)
-        setIsNight(hour >= 18 || hour < 6);
+        setAutoIsNight(hour >= 18 || hour < 6);
     }, []);
+
+    const isNight = mode === 0 ? autoIsNight : mode === 2;
+
+    const toggleMode = () => {
+        setMode((prev: number) => (prev + 1) % 3);
+    };
 
     // Theme Configuration
     const theme = isNight ? {
@@ -41,7 +51,14 @@ export function OceanWave({ gridSize: _gridSize }: OceanWaveProps) {
     };
 
     return (
-        <WidgetWrapper className={`border-none p-0 relative overflow-hidden transition-colors duration-1000 bg-gradient-to-b ${theme.sky}`}>
+        <WidgetWrapper className={`border-none p-0 relative overflow-hidden transition-colors duration-1000 bg-gradient-to-b ${theme.sky} group`}>
+
+            <button
+                onClick={toggleMode}
+                className="absolute top-2 right-2 z-20 text-white/50 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+                {mode === 0 ? (isNight ? <Moon size={12} className="opacity-50" /> : <Sun size={12} className="opacity-50" />) : (isNight ? <Moon size={12} /> : <Sun size={12} />)}
+            </button>
 
             {/* Celestial Body (Sun/Moon) */}
             <div className={`absolute top-1/4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full blur-md transition-all duration-1000 ${theme.body}`}></div>

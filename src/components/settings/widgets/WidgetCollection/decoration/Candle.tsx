@@ -1,18 +1,21 @@
 import React from 'react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../../SDK';
 
 export const CandleConfig = {
     defaultSize: '1x2',
-    validSizes: [[1, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export const Candle = React.memo(function Candle({ gridSize }: { gridSize?: { w: number; h: number } }) {
+    const [isOn, setIsOn] = useWidgetStorage('candle-ison', true);
+
     const w = gridSize?.w || 1;
     // Render as many candles as the width unit
     const candleCount = w;
 
     return (
-        <WidgetWrapper className="bg-gray-900 border-gray-800 p-2">
+        <WidgetWrapper className="bg-gray-900 border-gray-800 p-2 cursor-pointer" onClick={() => setIsOn(!isOn)}>
             <style>{`
           @keyframes flicker {
             0%, 100% { transform: scale(1); opacity: 0.9; }
@@ -25,9 +28,9 @@ export const Candle = React.memo(function Candle({ gridSize }: { gridSize?: { w:
                 {Array.from({ length: candleCount }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center justify-end h-full relative min-h-[60px] w-full max-w-[80px]">
                         <div
-                            className="w-4 h-8 bg-gradient-to-t from-orange-500 via-yellow-400 to-white rounded-[50%] absolute blur-[2px]"
+                            className={`w-4 h-8 bg-gradient-to-t from-orange-500 via-yellow-400 to-white rounded-[50%] absolute blur-[2px] transition-opacity duration-500 ${isOn ? 'opacity-100' : 'opacity-0'}`}
                             style={{
-                                animation: `flicker ${1.5 + i * 0.2}s infinite alternate`, // Stagger animation
+                                animation: isOn ? `flicker ${1.5 + i * 0.2}s infinite alternate` : 'none', // Stagger animation
                                 top: '20%'
                             }}
                         >

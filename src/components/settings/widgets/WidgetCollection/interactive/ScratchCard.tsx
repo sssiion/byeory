@@ -11,7 +11,7 @@ interface ComponentProps {
 
 export const ScratchCardConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
 export const ScratchCard = ({ className, style, text = "Lucky Day!", imageSrc, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
@@ -61,10 +61,7 @@ export const ScratchCard = ({ className, style, text = "Lucky Day!", imageSrc, g
         initCanvas();
     }, []);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (e.buttons !== 1) return; // Only if mouse is down
-        scratch(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    };
+
 
     const scratch = (x: number, y: number) => {
         const canvas = canvasRef.current;
@@ -100,8 +97,18 @@ export const ScratchCard = ({ className, style, text = "Lucky Day!", imageSrc, g
                     width={300}
                     height={300}
                     className="absolute inset-0 w-full h-full cursor-pointer z-10 touch-none"
-                    onMouseMove={handleMouseMove}
-                    onMouseDown={(e) => scratch(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+                    onMouseMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        if (e.buttons === 1) scratch(x, y);
+                    }}
+                    onMouseDown={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        scratch(x, y);
+                    }}
                     style={{ opacity: isScratched ? 1 : 1 }} // Keep it visible until fully cleared
                 />
 
