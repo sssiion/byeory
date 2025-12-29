@@ -19,4 +19,4 @@ export const TicketStub = ({ title = 'Movie Night', date = '24.12.24', seat = 'H
             </div>
         </div>
     );
-
+};
