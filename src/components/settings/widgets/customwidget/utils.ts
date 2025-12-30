@@ -119,6 +119,77 @@ export const getDefaultContent = (type: BlockType) => {
                 max: 5,         // 최대 점수
                 icon: 'star',   // 아이콘 타입 (star, heart, zap, thumb)
             };
+        case 'pdf-viewer':
+            return {
+                fileUrl: '',       // blob url or remote url
+                fileName: '',
+            };
+        // utils.ts
+        case 'mindmap':
+            return {
+                nodes: [
+                    {
+                        id: `mm-root-${Date.now()}`,
+                        type: 'mindmap',
+                        position: { x: 0, y: 0 },
+                        data: { label: 'Main Topic' },
+                    },
+                ],
+                edges: [],
+                selectedNodeId: null,
+            };
+
+        case 'flashcards':
+            return {
+                title: 'Flashcards',
+                cards: [
+                    { id: `fc-${Date.now()}-1`, front: 'Front', back: 'Back' },
+                ],
+                currentIndex: 0,
+                showBack: false,
+                shuffle: false,
+            };
+        // 🌟 [추가됨] 책 정보 위젯
+        case 'book-info':
+            return {
+                bookData: null // 초기값은 null이어야 검색 화면이 나옵니다.
+            };
+
+        // 🌟 [추가됨] 진행 게이지
+        case 'progress-bar':
+            return {
+                value: 50,
+                max: 100,
+                label: '진행률',
+                style: 'bar' // or 'circle'
+            };
+
+        // 🌟 [추가됨] 단위 변환기
+        case 'unit-converter':
+            return {
+                category: 'length',
+                value: 1,
+                fromUnitIdx: 0,
+                toUnitIdx: 1,
+                title: '단위 변환기'
+            };
+
+        // 🌟 [추가됨] 데이터베이스
+        case 'database':
+            return {
+                headers: ['이름', '태그', '상태'],
+                rows: [
+                    ['프로젝트 기획', '업무', '완료'],
+                    ['디자인 시안', '디자인', '진행중'],
+                ]
+            };
+        case 'movie-ticket':
+            return {
+                movieData: null,
+                watchedDate: new Date().toISOString().split('T')[0], // 오늘 날짜 기본
+                review: '',       // 감상평
+                isReviewOpen: false // 감상평 펼침 여부 저장
+            };
         default: return {};
     }
 };
@@ -131,6 +202,14 @@ export const getLabelByType = (type: BlockType) => {
         case 'toggle-list': return '토글 목록';
         case 'columns': return '다단 컬럼';
         case 'accordion': return '아코디언';
+        // 🌟 라벨 추가
+        case 'book-info': return '책 정보';
+        case 'progress-bar': return '진행 게이지';
+        case 'unit-converter': return '단위 변환기';
+        case 'database': return '데이터베이스';
+        case 'mindmap': return '마인드맵';
+        case 'flashcards': return '암기카드';
+        case 'movie-ticket': return '영화 티켓'; // 🌟 라벨 추가
         default: return '블록';
     }
 };

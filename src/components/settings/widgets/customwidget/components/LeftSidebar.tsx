@@ -190,32 +190,20 @@ const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity }) => {
                         {activeTab === 'util' && (
                             <>
                                 {renderBtn(<ArrowLeftRight size={18}/>, "단위 변환기", 'unit-converter')}
-                                {renderBtn(<Calculator size={18}/>, "계산기", 'calculator')}
-                                {renderBtn(<Dices size={18}/>, "랜덤 뽑기", 'random-picker')}
-                                {renderBtn(<MapPin size={18}/>, "지도 핀", 'map-pin')}
-                                {renderBtn(<FileArchive size={18}/>, "ZIP 미리보기", 'zip-viewer')}
-                                {renderBtn(<Rss size={18}/>, "RSS 리더", 'rss-reader')}
                                 {renderBtn(<Link size={18}/>, "링크 북마크", 'link-bookmark')}
                                 {renderBtn(<FileText size={18}/>, "PDF 뷰어", 'pdf-viewer')}
-                                {renderBtn(<Download size={18}/>, "내보내기", 'export-button')}
                             </>
                         )}
 
                         {activeTab === 'study' && (
                             <>
-                                {renderBtn(<StickyNote size={18}/>, "플래시 카드", 'flash-card')}
-                                {renderBtn(<Network size={18}/>, "마인드맵", 'mind-map')}
-                                {renderBtn(<Code2 size={18}/>, "코딩 샌드박스", 'code-sandbox')}
-                                {renderBtn(<BookOpen size={18}/>, "단어장", 'word-book')}
+                                {renderBtn(<StickyNote size={18}/>, "플래시 카드", 'flashcards')}
                                 {renderBtn(<Search size={18}/>, "책 정보 검색", 'book-info')}
+                                {renderBtn(<Search size={18}/>, "영화 정보 검색", 'movie-ticket')}
                             </>
                         )}
 
-                        {activeTab === 'interaction' && (
-                            <>
-                                {renderBtn(<MousePointerClick size={18}/>, "실행 버튼", 'button')}
-                            </>
-                        )}
+
                     </div>
                 </div>
             </div>

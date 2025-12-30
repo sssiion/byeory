@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { ArrowLeft, Settings2 } from 'lucide-react';
 import type { WidgetBlock, BlockType, ContainerLocation } from './types';
 import { WIDGET_SIZES, BLOCK_COSTS } from './constants';
-import { getDefaultContent } from './utils';
+import {getDefaultContent, getLabelByType} from './utils';
 
 // 분리된 컴포넌트 임포트
 import LeftSidebar from './components/LeftSidebar';
 import RightSidebar from './components/RightSidebar';
 import Canvas from './components/Canvas';
 import type { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
+import {saveWidget} from "./widgetApi.ts";
 
 interface Props {
     onExit: () => void;
@@ -202,6 +203,21 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
         // 드래그가 끝나면 activeContainer 선택 해제 (선택사항)
         // setActiveContainer(null);
     };
+    // 🌟 저장 로직 핸들러
+    const handleSaveToCloud = async () => {
+        if (!selectedBlock) return;
+
+        // 위젯 이름 입력 받기
+        const name = prompt("이 위젯을 저장할 이름을 입력하세요:", getLabelByType(selectedBlock.type));
+        if (!name) return;
+
+        try {
+            await saveWidget(selectedBlock, name);
+            alert(`'${name}' 위젯이 서버에 저장되었습니다! ☁️`);
+        } catch (e) {
+            alert('저장에 실패했습니다.');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#1F1F1F] flex flex-col text-slate-200 font-sans">
@@ -227,7 +243,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
                         </button>
                     ))}
                 </div>
-                <button onClick={handleSave} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition shadow-lg">
+                <button onClick={handleSaveToCloud} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition shadow-lg">
                     저장하기
                 </button>
             </header>

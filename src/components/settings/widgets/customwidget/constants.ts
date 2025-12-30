@@ -49,5 +49,5 @@ export const BLOCK_COSTS: Record<string, number> = {
     'zip-viewer': 2, 'rss-reader': 3, 'link-bookmark': 2, 'pdf-viewer': 4,
     'export-button': 1,
 
-    'flash-card': 2, 'mind-map': 5, 'code-sandbox': 4, 'word-book': 3, 'book-info': 2,
+    'flash-card': 2, 'mind-map': 5, 'code-sandbox': 4, 'word-book': 3, 'book-info': 2, 'movie-ticket':2,
 };
