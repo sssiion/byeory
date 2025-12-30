@@ -108,14 +108,13 @@ export const usePostEditor = () => {
         setViewMode('read');
     };
 
-    // 2️⃣ [수정] 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
+    // 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
     const handleSave = async () => {
         if (!title.trim()) return alert("제목을 입력해주세요!");
 
-        // 🔴 [삭제] convertToPercent 함수 삭제! (이제 필요 없음)
         // 캔버스가 고정 픽셀(800px)이므로 변환 없이 그대로 저장합니다.
 
-        // ✨ 메타데이터 블록 생성 (제목 스타일 저장용)
+        // 메타데이터 블록 생성 (제목 스타일 저장용)
         const metadata = { titleStyles };
         const metadataBlock: Block = {
             id: `meta-${Date.now()}`,
@@ -207,7 +206,7 @@ export const usePostEditor = () => {
         10
     );
 
-    // 🌟 [수정] 스폰 위치도 PX 단위로 계산
+    // 스폰 위치도 PX 단위로 계산
     const getSpawnPosition = () => {
         // 현재 스크롤된 위치 (px)에다가 200px 정도 더해서 화면 중앙쯤에 배치
         // (캔버스 내부 좌표 기준이므로 window.scrollY를 그대로 쓰면 안 될 수도 있지만,

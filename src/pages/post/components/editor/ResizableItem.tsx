@@ -16,7 +16,7 @@ interface Props {
 }
 
 const ResizableItem: React.FC<Props> = ({
-    id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
+    x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
