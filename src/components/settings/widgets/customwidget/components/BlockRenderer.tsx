@@ -1,24 +1,46 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import type { WidgetBlock, ContainerLocation } from '../types';
 import {
     Check,
     CalendarDays,
     ChevronDown,
     ChevronRight,
-    Trash2,
-    Plus,
-    GripVertical, EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp,
+    EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp, Database,
+    ArrowLeftRight,Search, BookOpen, RotateCcw,
+    Film, MessageSquare, Clapperboard,  ChevronUp // 👈 아이콘 확인
 } from 'lucide-react';
-
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import { dropPlugin } from '@react-pdf-viewer/drop';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import { useMemo, useCallback, useState } from 'react';
+import {
+    ReactFlow,
+    Controls,
+    Background,
+    addEdge,
+    applyEdgeChanges,
+    applyNodeChanges,
+    type Node,
+    type Edge,
+    type NodeChange,
+    type EdgeChange,
+    type Connection,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/drop/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import {
     SortableContext,
-    useSortable,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
 import {useDroppable} from '@dnd-kit/core';
 import ColumnSortableItem from "./ColumnSortableItem.tsx";
 import HeatmapWidget from "./HeatmapWidget.tsx";
+import BookInfoWidget from "./Rendercomponent/BookInfoWidget.tsx";
+import MovieTicketWidget from "./Rendercomponent/MovieTicketWidget.tsx";
+import UnitConverterWidget from "./Rendercomponent/UnitConverterWidget.tsx";
 // 🆕 Props 정의 확장 (재귀 및 인터랙션을 위해 필요)
 interface RendererProps {
     block: WidgetBlock;
@@ -27,15 +49,14 @@ interface RendererProps {
     onRemoveBlock: (id: string) => void;
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
+    onUpdateBlock: (id: string, updates: any) => void; // ✅ 추가
 }
+
 
 const BlockRenderer: React.FC<RendererProps> = (props) => {
     const {
         block,
-        selectedBlockId,
         onSelectBlock,
-        onRemoveBlock,
-        activeContainer,
         onSetActiveContainer,
     } = props;
     const { styles, content, type } = block;
@@ -51,6 +72,13 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
 
     // 🆕 컬럼 내부 아이템 1개를 dnd-kit useSortable로 감싼 컴포넌트
 
+    if (type === 'custom-block') {
+        // 만약 content 안에 진짜 type이 들어있다면 꺼내쓰기
+        // (현재 구조상으로는 필요 없을 가능성이 높지만, 안전장치로 둡니다)
+        if (block.content && block.content.realType) {
+            block = { ...block, type: block.content.realType };
+        }
+    }
 
     // --- 🔥 컬럼(Columns) 렌더링 로직 (dnd-kit로 변경) ---
     if (type === 'columns') {
@@ -87,6 +115,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                                 onRemoveBlock={props.onRemoveBlock}
                                                 activeContainer={props.activeContainer}
                                                 onSetActiveContainer={props.onSetActiveContainer}
+
                                             />
                                         ))}
                                     </div>
@@ -98,6 +127,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             </div>
         );
     }
+
     switch (type) {
         // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
         case 'heading1': return <h1 style={commonStyle} className="text-2xl font-bold mb-2 border-b pb-1 border-gray-100 break-words">{content.text}</h1>;
@@ -105,6 +135,148 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'heading3': return <h3 style={commonStyle} className="text-lg font-semibold mb-1 break-words">{content.text}</h3>;
         case 'text': return <p style={commonStyle} className="whitespace-pre-wrap leading-relaxed break-words">{content.text}</p>;
         case 'quote': return <div style={{...commonStyle, borderLeftColor: styles.color || '#333'}} className="border-l-4 pl-3 py-1 my-2 text-gray-600 italic bg-gray-50 rounded-r break-words">{content.text}</div>;
+        case 'book-info':
+            return <BookInfoWidget block={block}  />;
+        case 'mindmap': {
+            const content0 = (content || {}) as any;
+
+            const nodes = (content0.nodes || []) as Node[];
+            const edges = (content0.edges || []) as Edge[];
+            const selectedNodeId = (content0.selectedNodeId ?? null) as string | null;
+
+            const setContent = (patch: any) => {
+                props.onUpdateBlock(block.id, {
+                    content: {
+                        ...content0,
+                        ...patch,
+                    },
+                });
+            };
+
+            const onNodesChange = useCallback(
+                (changes: NodeChange[]) => {
+                    setContent({ nodes: applyNodeChanges(changes, nodes) });
+                },
+                [nodes]
+            );
+
+            const onEdgesChange = useCallback(
+                (changes: EdgeChange[]) => {
+                    setContent({ edges: applyEdgeChanges(changes, edges) });
+                },
+                [edges]
+            );
+
+            const onConnect = useCallback(
+                (connection: Connection) => {
+                    const nextEdges = addEdge(
+                        { ...connection, id: `mm-e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` },
+                        edges
+                    );
+                    setContent({ edges: nextEdges });
+                },
+                [edges]
+            );
+
+            const addNode = () => {
+                const newId = `mm-n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                const newNode: Node = {
+                    id: newId,
+                    type: 'mindmap',
+                    position: { x: 40 * nodes.length, y: 40 * nodes.length },
+                    data: { label: 'New Node' },
+                };
+
+                setContent({
+                    nodes: [...nodes, newNode],
+                    selectedNodeId: newId,
+                });
+            };
+
+            const deleteSelectedNode = () => {
+                if (!selectedNodeId) return;
+                const nextNodes = nodes.filter((n) => n.id !== selectedNodeId);
+                const nextEdges = edges.filter(
+                    (e) => e.source !== selectedNodeId && e.target !== selectedNodeId
+                );
+                setContent({ nodes: nextNodes, edges: nextEdges, selectedNodeId: null });
+            };
+
+            const updateSelectedLabel = (label: string) => {
+                if (!selectedNodeId) return;
+                setContent({
+                    nodes: nodes.map((n) =>
+                        n.id === selectedNodeId ? { ...n, data: { ...(n.data as any), label } } : n
+                    ),
+                });
+            };
+
+            return (
+                <div
+                    className="w-full rounded-lg border border-gray-200 bg-white overflow-hidden"
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onMouseDownCapture={(e) => e.stopPropagation()}
+                    onTouchStartCapture={(e) => e.stopPropagation()}
+                >
+                    <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
+                        <span className="font-bold truncate">Mind Map</span>
+                        <div className="flex gap-2">
+                            <button
+                                className="text-xs font-bold text-indigo-600"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    addNode();
+                                }}
+                            >
+                                + Node
+                            </button>
+                            <button
+                                className="text-xs font-bold text-red-500 disabled:opacity-40"
+                                disabled={!selectedNodeId}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteSelectedNode();
+                                }}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 뷰어 영역 */}
+                    <div style={{ height: 360 }}>
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            onNodeClick={(_, node) => setContent({ selectedNodeId: node.id })}
+                            fitView
+                        >
+                            <Controls showInteractive={false} />
+                            <Background />
+                        </ReactFlow>
+                    </div>
+
+                    {/* 빠른 편집(선택된 노드 라벨) */}
+                    <div className="p-3 border-t bg-white">
+                        <div className="text-[11px] text-gray-500 mb-1">Selected node</div>
+                        <input
+                            className="w-full border rounded px-2 py-1 text-sm"
+                            placeholder="노드를 선택하세요"
+                            value={
+                                selectedNodeId
+                                    ? ((nodes.find((n) => n.id === selectedNodeId)?.data as any)?.label ?? '')
+                                    : ''
+                            }
+                            disabled={!selectedNodeId}
+                            onChange={(e) => updateSelectedLabel(e.target.value)}
+                        />
+                    </div>
+                </div>
+            );
+        }
 
         // --- 2. 할 일 목록 ---
         case 'todo-list':
@@ -323,6 +495,347 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'rating':
             return <RatingItem block={block} {...props} />;
             default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
+        // --- [NEW] 진행 게이지 위젯 ---
+        // --- [NEW] 진행 게이지 위젯 (원형/직선형 분기 추가) ---
+        case 'progress-bar': {
+            // 1. 값 계산
+            const value = content.value || 0;
+            const max = content.max || 100;
+            const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+            // 2. 스타일 확인 (RightSidebar에서 설정한 값)
+            const isCircle = content.style === 'circle';
+
+            return (
+                <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm h-full flex flex-col justify-center min-h-[100px]">
+
+                    {/* A. 원형 (Circle) 스타일 렌더링 */}
+                    {isCircle ? (
+                        <div className="flex flex-col items-center justify-center py-2">
+                            <div className="relative w-32 h-32">
+                                {/* SVG로 도넛 차트 그리기 */}
+                                <svg className="w-full h-full transform -rotate-90">
+                                    {/* 1) 배경 원 (회색) */}
+                                    <circle
+                                        cx="64" cy="64" r="56"
+                                        stroke="currentColor" strokeWidth="12" fill="transparent"
+                                        className="text-gray-100"
+                                    />
+                                    {/* 2) 진행 원 (설정된 색상 or 파란색) */}
+                                    <circle
+                                        cx="64" cy="64" r="56"
+                                        stroke="currentColor" strokeWidth="12" fill="transparent"
+                                        strokeDasharray={351.86} // 원의 둘레 (2 * pi * r) -> 2 * 3.14159 * 56 ≈ 351.86
+                                        strokeDashoffset={351.86 - (351.86 * percentage) / 100} // 진행률만큼 오프셋 조정
+                                        className="text-indigo-600 transition-all duration-1000 ease-out"
+                                        style={{ color: styles.color }} // 사용자 지정 색상 적용 가능
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+
+                                {/* 중앙 텍스트 */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-indigo-900">
+                                    <span className="text-2xl font-bold" style={{ color: styles.color }}>
+                                        {Math.round(percentage)}%
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                        {content.label || 'Progress'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* 하단 값 표시 */}
+                            <div className="mt-2 text-xs text-gray-400 font-mono">
+                                {value} / {max}
+                            </div>
+                        </div>
+                    ) : (
+                        /* B. 직선형 (Bar) 스타일 (기존 코드 유지) */
+                        <>
+                            <div className="flex justify-between mb-1">
+                                <span className="text-sm font-bold text-gray-700">{content.label || '진행률'}</span>
+                                <span className="text-sm font-bold text-indigo-600" style={{ color: styles.color }}>
+                                    {Math.round(percentage)}%
+                                </span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden relative">
+                                <div
+                                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out relative"
+                                    style={{
+                                        width: `${percentage}%`,
+                                        backgroundColor: styles.color // 사용자 지정 색상 적용
+                                    }}
+                                >
+                                    {/* 반짝이는 효과 (선택사항) */}
+                                    <div className="absolute top-0 left-0 bottom-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]"></div>
+                                </div>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-400 text-right">
+                                {value} / {max}
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        case 'unit-converter':
+            return <UnitConverterWidget block={block} {...props} />;
+        case 'pdf-viewer': {
+            const fileUrl: string = content.fileUrl || '';
+            const fileName: string = content.fileName || '';
+
+            const drop = dropPlugin();
+            const layout = defaultLayoutPlugin();
+
+            const setFromFile = (file: File) => {
+                if (file.type !== 'application/pdf') return;
+                const nextUrl = URL.createObjectURL(file);
+
+                props.onUpdateBlock(block.id, {
+                    content: {
+                        ...content,
+                        fileUrl: nextUrl,
+                        fileName: file.name,
+                    },
+                });
+            };
+
+            const onDropCapture = (e: React.DragEvent) => {
+                const f = e.dataTransfer.files?.[0];
+                if (f) setFromFile(f);
+            };
+
+            return (
+                <div
+                    onDropCapture={onDropCapture}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="w-full rounded-lg border border-gray-200 bg-white overflow-hidden"
+                    style={{ minHeight: 180 }}
+                >
+                    <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex justify-between gap-2">
+        <span className="truncate">
+          {fileName ? fileName : 'PDF를 드래그 앤 드롭해서 열기'}
+        </span>
+                        {fileUrl ? (
+                            <button
+                                className="text-red-500 font-bold"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (fileUrl.startsWith('blob:')) URL.revokeObjectURL(fileUrl);
+                                    props.onUpdateBlock(block.id, {
+                                        content: { ...content, fileUrl: '', fileName: '' },
+                                    });
+                                }}
+                            >
+                                Clear
+                            </button>
+                        ) : null}
+                    </div>
+
+                    {/* Worker 사용 패턴은 공식 문서에 안내되어 있습니다. [web:74] */}
+                    <div style={{ height: 320 }}>
+                        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                            {fileUrl ? (
+                                <Viewer fileUrl={fileUrl} plugins={[drop, layout]} />
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                                    여기에 PDF 파일을 드롭하세요
+                                </div>
+                            )}
+                        </Worker>
+                    </div>
+                </div>
+            );
+        }
+        // BlockRenderer.tsx (switch 내부에 추가)
+        case 'flashcards': {
+            const title: string = content.title || 'Flashcards';
+            const cards = (content.cards || []) as { id: string; front: string; back: string }[];
+            const currentIndex = Math.min(content.currentIndex ?? 0, Math.max(cards.length - 1, 0));
+            const showBack = !!content.showBack;
+
+            const current = cards[currentIndex];
+
+            const setState = (patch: any) => {
+                props.onUpdateBlock(block.id, {
+                    content: {
+                        ...content,
+                        ...patch,
+                    },
+                });
+            };
+
+            const goPrev = () => {
+                if (cards.length === 0) return;
+                setState({
+                    currentIndex: Math.max(0, currentIndex - 1),
+                    showBack: false,
+                });
+            };
+
+            const goNext = () => {
+                if (cards.length === 0) return;
+                setState({
+                    currentIndex: Math.min(cards.length - 1, currentIndex + 1),
+                    showBack: false,
+                });
+            };
+
+            const flip = () => {
+                if (cards.length === 0) return;
+                setState({ showBack: !showBack });
+            };
+
+            return (
+                <div className="w-full rounded-lg border border-gray-200 bg-white overflow-hidden">
+                    <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
+                        <span className="font-bold truncate">{title}</span>
+                        <span className="text-[10px] text-gray-400">
+          {cards.length === 0 ? '0 cards' : `${currentIndex + 1}/${cards.length}`}
+        </span>
+                    </div>
+
+                    <div className="p-3">
+                        {cards.length === 0 ? (
+                            <div className="text-sm text-gray-400">카드를 추가하세요 (RightSidebar)</div>
+                        ) : (
+                            <div
+                                className="rounded-lg border border-gray-200 bg-white"
+                                style={{ perspective: 1000 }}
+                            >
+                                {/* flip-card: CSS로 뒤집기(3D) */}
+                                <div
+                                    className="relative w-full h-[160px] cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        flip();
+                                    }}
+                                    style={{
+                                        transformStyle: 'preserve-3d',
+                                        transition: 'transform 0.4s ease',
+                                        transform: showBack ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                                    }}
+                                >
+                                    {/* Front */}
+                                    <div
+                                        className="absolute inset-0 p-4 flex items-center justify-center text-sm text-gray-800"
+                                        style={{
+                                            backfaceVisibility: 'hidden',
+                                        }}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words text-center">
+                                            {current.front || '(Front empty)'}
+                                        </div>
+                                    </div>
+
+                                    {/* Back */}
+                                    <div
+                                        className="absolute inset-0 p-4 flex items-center justify-center text-sm text-gray-800 bg-indigo-50"
+                                        style={{
+                                            backfaceVisibility: 'hidden',
+                                            transform: 'rotateY(180deg)',
+                                        }}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words text-center">
+                                            {current.back || '(Back empty)'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-3 flex gap-2">
+                            <button
+                                className="flex-1 py-2 rounded bg-gray-900 text-white text-xs font-bold disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goPrev();
+                                }}
+                                disabled={cards.length === 0 || currentIndex === 0}
+                            >
+                                Prev
+                            </button>
+
+                            <button
+                                className="flex-1 py-2 rounded bg-indigo-600 text-white text-xs font-bold disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    flip();
+                                }}
+                                disabled={cards.length === 0}
+                            >
+                                Flip
+                            </button>
+
+                            <button
+                                className="flex-1 py-2 rounded bg-gray-900 text-white text-xs font-bold disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goNext();
+                                }}
+                                disabled={cards.length === 0 || currentIndex === cards.length - 1}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        // 🌟 [NEW] case 추가
+        case 'movie-ticket':
+            return <MovieTicketWidget block={block} />;
+        // --- [NEW] 데이터베이스 위젯 (심플 테이블 버전) ---
+        case 'database': {
+            // 기본값: 간단한 표 데이터
+            const headers = content.headers || ['이름', '태그', '상태'];
+            const rows = content.rows || [
+                ['프로젝트 기획', '업무', '완료'],
+                ['디자인 시안', '디자인', '진행중'],
+                ['개발 착수', '개발', '대기'],
+            ];
+
+            return (
+                <div className="overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm">
+                    {/* 상단 제목 바 */}
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+                        <Database size={14} className="text-gray-500" />
+                        <span className="text-xs font-bold text-gray-600">데이터베이스</span>
+                    </div>
+                    {/* 테이블 본문 */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
+                            <tr>
+                                {headers.map((h: string, i: number) => (
+                                    <th key={i} className="px-4 py-2 font-medium border-b border-gray-100">{h}</th>
+                                ))}
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {rows.map((row: string[], i: number) => (
+                                <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                    {row.map((cell: string, j: number) => (
+                                        <td key={j} className="px-4 py-2 text-gray-700">
+                                            {/* 태그 스타일링 예시 (2번째 컬럼) */}
+                                            {j === 1 ? (
+                                                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
+                                                    {cell}
+                                                </span>
+                                            ) : (
+                                                cell
+                                            )}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
     }
 };
 

@@ -86,7 +86,7 @@ const HeatmapWidget: React.FC<HeatmapProps> = ({ viewMode, themeColor }) => {
 
     // 4️⃣ 렌더링: GitHub 스타일 (가로로 긴 주 단위 배치)
     // 7개씩 끊어서 컬럼(주)을 만듦
-    const weeks = [];
+    const weeks: Contribution[][] = [];
     let currentWeek: Contribution[] = [];
 
     // year 모드일 때 요일 맞추기 로직이 복잡하므로,

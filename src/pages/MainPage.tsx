@@ -25,6 +25,7 @@ const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
     { id: 'w-4', type: 'feature-card', props: { title: "Feature 2", description: "기능", icon: "2" }, layout: { x: 4, y: 2, w: 1, h: 1 } },
 ];
 
+
 interface GridCellProps {
     x: number;
     y: number;
@@ -175,24 +176,78 @@ const MainPage: React.FC = () => {
         }
     }, [isWidgetEditMode, widgetSnapshot, widgets]);
 
-    const addWidget = (type: WidgetType) => {
-        const registryItem = WIDGET_REGISTRY[type];
-
+    // 🌟 [핵심 수정] 위젯 추가 함수
+    const addWidget = (item: WidgetType | any) => {
+        let type: string;
         let w = 1, h = 1;
-        if (registryItem.defaultSize) {
-            const [wStr, hStr] = registryItem.defaultSize.split('x');
-            w = parseInt(wStr, 10) || 1;
-            h = parseInt(hStr, 10) || 1;
+        let initialProps = {};
+
+        // -----------------------------------------------------------
+        // CASE 1: 갤러리에서 '저장된 위젯' (객체)을 선택했을 때
+        // -----------------------------------------------------------
+        if (typeof item === 'object' && item !== null) {
+            const savedWidget = item;
+
+            console.log("Adding Custom Widget:", savedWidget); // 디버깅용 로그
+
+            // 🚨 핵심: 화면에 그릴 때는 무조건 'custom-block'이라는 타입을 사용해야 합니다.
+            // 그래야 Registry에 등록된 'custom-block' 설정을 통해 BlockRenderer가 실행됩니다.
+            type = 'custom-block';
+
+            // 1. 사이즈 설정 (DB에 값이 없으면 기본값 2x2)
+            const sizeStr = savedWidget.defaultSize || '1x1';
+            const [wStr, hStr] = sizeStr.split('x');
+            w = parseInt(wStr, 10) || 2;
+            h = parseInt(hStr, 10) || 2;
+
+            // 2. Props 설정 (DraggableWidget -> Registry -> BlockRenderer 로 전달될 데이터)
+            initialProps = {
+                // 원래 타입('chart-pie' 등)은 props 안에 숨겨서 보냅니다.
+                // Registry의 custom-block 컴포넌트가 이걸 꺼내서 BlockRenderer에게 줍니다.
+                type: savedWidget.type,
+                content: JSON.parse(JSON.stringify(savedWidget.content || {})),
+                styles: JSON.parse(JSON.stringify(savedWidget.styles || {})),
+                title: savedWidget.name
+            };
+        }
+            // -----------------------------------------------------------
+            // CASE 2: 갤러리에서 '기본 템플릿' (문자열)을 선택했을 때
+        // -----------------------------------------------------------
+        else {
+            type = item as string;
+            // Registry에서 해당 타입의 정보 가져오기
+            // @ts-ignore
+            const registryItem = WIDGET_REGISTRY[type];
+
+            // 템플릿 정보가 없으면 에러 (방어 코드)
+            if (!registryItem) {
+                console.error(`Unknown widget type: ${type}`);
+                return;
+            }
+
+            // 기본 사이즈 설정
+            if (registryItem.defaultSize) {
+                const [wStr, hStr] = registryItem.defaultSize.split('x');
+                w = parseInt(wStr, 10) || 1;
+                h = parseInt(hStr, 10) || 1;
+            }
+            // 기본 Props 복사
+            initialProps = registryItem.defaultProps ? JSON.parse(JSON.stringify(registryItem.defaultProps)) : {};
         }
 
+        // -----------------------------------------------------------
+        // 공통: 빈 자리 찾기 및 위젯 배치 (기존 로직)
+        // -----------------------------------------------------------
         if (w > gridSize.cols) w = gridSize.cols;
 
         let targetX = 1;
         let targetY = 1;
         let found = false;
 
+        // 현재 배치된 위젯들 중 가장 아래쪽 위치 계산
         const currentMaxY = widgets.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), 1);
 
+        // 빈 공간 탐색
         for (let y = 1; y <= currentMaxY + h; y++) {
             for (let x = 1; x <= gridSize.cols - w + 1; x++) {
                 const hasCollision = widgets.some(existing => {
@@ -215,15 +270,18 @@ const MainPage: React.FC = () => {
             if (found) break;
         }
 
+        // 새 위젯 생성
         const newWidget: WidgetInstance = {
-            id: `w-${Date.now()}`,
-            type,
-            props: registryItem.defaultProps,
+            id: `w-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, // 유니크 ID
+            type: type as WidgetType, // 여기서 'custom-block' 또는 'clock' 등이 들어감
+            props: initialProps,
             layout: { x: targetX, y: targetY, w, h }
         };
 
+        console.log("New Widget Created:", newWidget); // 최종 생성된 위젯 확인
+
         setWidgets(prev => [...prev, newWidget]);
-        setIsCatalogOpen(false);
+        setIsCatalogOpen(false); // 갤러리 닫기
     };
 
     const removeWidget = (id: string) => {

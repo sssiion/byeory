@@ -10,7 +10,7 @@ import {
     useSensor,
     useSensors,
     pointerWithin,
-    useDroppable // 추가
+    useDroppable, // 추가
 } from '@dnd-kit/core';
 import {
     SortableContext,
@@ -46,6 +46,7 @@ const SortableBlockItem: React.FC<{
     onRemoveBlock: (id: string) => void;
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
+    onUpdateBlock: (id: string) => void;
 }> = (props) => {
     const { block, selectedBlockId, onSelectBlock, onRemoveBlock } = props;
 

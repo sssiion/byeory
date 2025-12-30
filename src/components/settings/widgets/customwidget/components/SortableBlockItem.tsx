@@ -14,10 +14,12 @@ interface SortableBlockItemProps {
     onRemoveBlock: (id: string) => void;
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
+    onUpdateBlock: (id: string, updates: any) => void; // ✅ 추가
+
 }
 
 const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
-    const {block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer} = props;
+    const {block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer,} = props;
 
     const {
         attributes,
@@ -74,6 +76,7 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                     onRemoveBlock={onRemoveBlock}
                     activeContainer={activeContainer}
                     onSetActiveContainer={onSetActiveContainer}
+                    onUpdateBlock={props.onUpdateBlock}
                 />
             </div>
 

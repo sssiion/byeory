@@ -16,16 +16,19 @@ interface ColumnSortableItemProps {
     // BlockRenderer가 추가로 필요로 하는 props가 있다면 여기에 추가 (예: activeContainer 등)
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
+    onUpdateBlock: (id: string, updates: any) => void;
 }
 
 const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
+
                                                                    child,
                                                                    columnContainerId,
                                                                    selectedBlockId,
                                                                    onSelectBlock,
                                                                    onRemoveBlock,
                                                                    activeContainer,
-                                                                   onSetActiveContainer
+                                                                   onSetActiveContainer,
+                                                                   onUpdateBlock
                                                                }) => {
     // 2️⃣ useSortable 훅 사용
     const {
@@ -85,6 +88,7 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
                     onRemoveBlock={onRemoveBlock}
                     activeContainer={activeContainer}
                     onSetActiveContainer={onSetActiveContainer}
+                    onUpdateBlock={onUpdateBlock}
                 />
             </div>
 
