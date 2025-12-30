@@ -75,8 +75,9 @@ export function SkyMap({ gridSize }: SkyMapProps) {
 
     // Determine Size Mode
     const widthUnit = gridSize?.w || 1;
+    const heightUnit = gridSize?.h || 1;
     const showLines = widthUnit >= 2;
-    const showArt = widthUnit >= 3;
+    const showArt = widthUnit >= 3 || (widthUnit === 2 && heightUnit >= 2);
 
     // Cycle constellations
     useEffect(() => {

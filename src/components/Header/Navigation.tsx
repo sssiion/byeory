@@ -219,7 +219,7 @@ const Navigation: React.FC = () => {
                 {/* Right Icons */}
                 <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary justify-self-end">
                     {showTimer && elapsedTime && (
-                        <div className="hidden md:block font-mono text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-3 py-1.5 rounded-full border theme-border">
+                        <div className="font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap">
                             {elapsedTime}
                         </div>
                     )}

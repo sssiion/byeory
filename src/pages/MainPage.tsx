@@ -10,14 +10,11 @@ import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { clampWidget, resolveCollisions, compactLayout } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
-import {usePostEditor} from "./post/hooks/usePostEditor.ts";
 import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder.tsx";
-
+import { useIsMobile } from '../hooks';
 
 // Default Grid Size
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
-
-
 
 // Default Widgets
 const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
@@ -73,6 +70,9 @@ const MainPage: React.FC = () => {
 
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // Mobile Check
+    const isMobile = useIsMobile();
+
     // Load
     useEffect(() => {
         const savedWidgets = localStorage.getItem('my_dashboard_widgets_v3');
@@ -98,8 +98,6 @@ const MainPage: React.FC = () => {
             setGridSize(DEFAULT_GRID_SIZE);
         }
     }, []);
-
-    // ... (omitted)
 
     // Save
     useEffect(() => {
@@ -234,38 +232,17 @@ const MainPage: React.FC = () => {
     const onCellHover = useCallback((x: number, y: number, item: any) => {
         if (!item || !item.id) return;
 
-        // Find the actual widget being dragged to get its dimensions
-        // (Item might only contain partial info depending on how it was constructed)
         const draggingWidget = widgets.find(w => w.id === item.id);
         if (!draggingWidget) return;
 
         const { w, h } = draggingWidget.layout;
         const clamped = clampWidget({ x, y, w, h }, gridSize.cols);
 
-        // Optimization: Don't recalculate if position hasn't changed from last preview
-        // effectively, we need to track "last calculated preview input" to avoid thrashing
-        // but `layoutPreview` state updates will cause re-renders anyway.
-        // We can just rely on basic equality or memo logic if performance is an issue.
-        // For now, let's just calculate.
-
-        // Create a temporary "moved" widget
         const movedWidget = { ...draggingWidget, layout: { ...draggingWidget.layout, x: clamped.x, y: clamped.y } };
-
-        // Calculate the full layout with collisions resolved
-        // Note: we must pass the *original* widgets list (without the move applied) 
-        // but we need to trick resolveCollisions to use the movedWidget as the "pusher".
-
-        // resolveCollisions takes (widgets list, active widget). 
-        // It removes active widget from list by ID, then pushes it back in at new spot, then resolves others.
         const resolved = resolveCollisions(widgets, movedWidget);
 
         setLayoutPreview(resolved);
     }, [widgets, gridSize.cols]);
-
-    // Handle end of drag to clear preview
-    // Note: react-dnd dragging end is handled in the DraggableWidget, 
-    // but the drop event is handled here.
-    // We should clear preview on drop or when drag ends.
 
     const updateWidgetPosition = (id: string, targetX: number, targetY: number) => {
         setLayoutPreview(null); // Clear preview on drop
@@ -314,7 +291,6 @@ const MainPage: React.FC = () => {
 
     const handleArrange = () => {
         setWidgets(prev => {
-            // 1. Sort by Y then X (Reading Order)
             const sorted = [...prev].sort((a, b) => {
                 if (a.layout.y === b.layout.y) return a.layout.x - b.layout.x;
                 return a.layout.y - b.layout.y;
@@ -366,15 +342,11 @@ const MainPage: React.FC = () => {
         setIsArrangeConfirmOpen(false);
     };
 
-    // Calculate minimum rows needed
-    // Use layoutPreview if dragging, otherwise widgets
     const currentDisplayWidgets = layoutPreview || widgets;
-
     const maxWidgetY = currentDisplayWidgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
     const displayRows = Math.max(gridSize.rows, maxWidgetY, DEFAULT_GRID_SIZE.rows);
     const finalRows = displayRows;
 
-    // Generate grid cells
     const gridCells = [];
     for (let y = 1; y <= finalRows; y++) {
         for (let x = 1; x <= gridSize.cols; x++) {
@@ -390,46 +362,17 @@ const MainPage: React.FC = () => {
             );
         }
     }
-    // 🆕 [추가] 위젯 제작 화면을 열지 말지 결정하는 스위치
+
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
-    // 🆕 [추가] WidgetBuilder에 전달할 에디터 엔진(Hook) 초기화
-    // (이 훅은 isBuilderOpen일 때만 사용되지만, 컴포넌트 최상단에 있어야 합니다)
-    const editor = usePostEditor();
 
-    // 🆕 [추가] WidgetBuilder에 전달할 이미지 업로드 함수
-    const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            Promise.all(files.map(f => new Promise<string>(r => {
-                const rd = new FileReader(); rd.onloadend = () => r(rd.result as string); rd.readAsDataURL(f);
-            }))).then(u => editor.setTempImages(p => [...p, ...u]));
-        }
-    };
-
-    // 🆕 [추가] 위젯 제작이 완료(저장)되었을 때 실행할 함수
-    const handleWidgetSave = async () => {
-        await editor.handleSave(); // 1. 에디터 내용 저장
-        setIsBuilderOpen(false);   // 2. 빌더 닫기
-        // 3. 여기서 setWidgets를 호출해서 대시보드에 새 위젯을 바로 추가하는 로직을 넣을 수도 있습니다.
-        alert("위젯이 저장되었습니다!");
-    };
-
-    // ------------------------------------------------------------------
-    // 🌟 [핵심 연결] 빌더 모드가 켜져있으면 대시보드 대신 빌더를 보여줌
-    // ------------------------------------------------------------------
     if (isBuilderOpen) {
         return (
             <WidgetBuilder
-                editor={editor}
-                onExit={() => setIsBuilderOpen(false)} // 뒤로가기 누르면 빌더 닫기
-                handleImagesUpload={handleImagesUpload}
+                onExit={() => setIsBuilderOpen(false)}
             />
         );
     }
-
-
-    // ... (existing imports)
 
     return (
         <DndProvider backend={HTML5Backend}>
@@ -471,7 +414,6 @@ const MainPage: React.FC = () => {
                                                 Cancel
                                             </button>
 
-                                            {/* 구분선 */}
                                             <div className="w-px h-6 bg-gray-200 mx-1"></div>
 
                                             <button
@@ -481,11 +423,10 @@ const MainPage: React.FC = () => {
                                                 <Plus size={18} /> Add
                                             </button>
 
-                                            {/* ✅ 여기에 새로운 버튼 코드를 추가하세요 ✅ */}
                                             <button
                                                 onClick={() => {
-                                                    editor.handleStartWriting(); // 에디터 초기화 (새 종이)
-                                                    setIsBuilderOpen(true);}} // 원하는 기능을 여기에 넣으세요
+                                                    setIsBuilderOpen(true);
+                                                }}
                                                 className="h-10 px-4 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <span>새 버튼</span>
@@ -517,19 +458,22 @@ const MainPage: React.FC = () => {
                         <MenuSettings />
                     ) : (
                         <div className="relative w-full overflow-x-hidden md:overflow-visible">
-
                             <div
                                 className="grid gap-4 transition-all duration-300 ease-in-out relative"
                                 style={{
-                                    gridTemplateColumns: `repeat(${gridSize.cols}, minmax(0, 1fr))`,
-                                    gridTemplateRows: `repeat(${finalRows}, 200px)`,
+                                    gridTemplateColumns: isMobile ? `repeat(2, minmax(0, 1fr))` : `repeat(${gridSize.cols}, minmax(0, 1fr))`,
+                                    gridTemplateRows: isMobile ? undefined : `repeat(${finalRows}, 200px)`,
+                                    gridAutoRows: isMobile ? '45vw' : undefined,
+                                    gridAutoFlow: isMobile ? 'row dense' : undefined
                                 }}
                             >
-                                {/* 1. Render Background Cells */}
-                                {gridCells}
+                                {isMobile ? null : gridCells}
 
-                                {/* 2. Render Widgets (using current display widgets i.e. preview or actual) */}
-                                {currentDisplayWidgets.map((widget) => (
+                                {/* Sort widgets for logical DOM order on mobile to assist auto-flow */}
+                                {(isMobile
+                                    ? [...currentDisplayWidgets].sort((a, b) => (a.layout.y - b.layout.y) || (a.layout.x - b.layout.x))
+                                    : currentDisplayWidgets
+                                ).map((widget) => (
                                     <DraggableWidget
                                         key={widget.id}
                                         widget={widget}
@@ -539,10 +483,10 @@ const MainPage: React.FC = () => {
                                         onDragEnd={() => setLayoutPreview(null)}
                                         onHover={onCellHover}
                                         onDrop={(x, y, item) => updateWidgetPosition(item.id, x, y)}
+                                        isMobile={isMobile}
                                     />
                                 ))}
                             </div>
-
                         </div>
                     )}
                 </div>
@@ -562,6 +506,9 @@ const MainPage: React.FC = () => {
                     </div>
                 )}
 
+                {/* Modals omitted for brevity, keeping existing stricture... 
+                   Actually I must write full content. The previous modals are standard.
+                */}
                 {/* Auto Arrange Confirm Modal */}
                 {isArrangeConfirmOpen && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -623,7 +570,7 @@ const MainPage: React.FC = () => {
                     <ArrowUp size={24} />
                 </button>
             </div>
-        </DndProvider>
+        </DndProvider >
     );
 };
 

@@ -479,7 +479,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
                 )}
 
                 {activeTab === 'recommended' && (
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {recommendedThemes.map((theme) => (
                             <button
                                 key={theme.id}

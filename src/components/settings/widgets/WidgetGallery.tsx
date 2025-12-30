@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, ChevronRight, Plus, HelpCircle, X } from 'lucide-react';
 import { WIDGET_REGISTRY, type WidgetType } from './Registry';
 import { matchKoreanSearch } from '../../../utils/searchUtils';
+import { useIsMobile } from '../../../hooks';
 
 const CATEGORY_TRANSLATIONS: Record<string, string> = {
   'System': '시스템',
@@ -15,7 +16,7 @@ const CATEGORY_TRANSLATIONS: Record<string, string> = {
   'Global': '글로벌 효과',
 };
 
-function WidgetContainer({ children, title, className = '', onInfoClick }: { children: React.ReactNode; title: string; className?: string; onInfoClick?: (e: React.MouseEvent) => void }) {
+function WidgetContainer({ children, title, className = '', onInfoClick, isMobile }: { children: React.ReactNode; title: string; className?: string; onInfoClick?: (e: React.MouseEvent) => void, isMobile?: boolean }) {
   return (
     <div className={`flex flex-col w-full h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:border-blue-400 hover:shadow-md transition-all duration-200 ${className}`}>
       {/* Thumbnail Area */}
@@ -28,7 +29,10 @@ function WidgetContainer({ children, title, className = '', onInfoClick }: { chi
         <h2 className="text-xs text-gray-700 font-bold truncate pr-2">
           {title}
         </h2>
-        <div className="flex items-center gap-1 opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all">
+        {/* Buttons: Hidden on mobile (use card click instead), hover on desktop */}
+        <div className={`flex items-center gap-1 transition-all
+            ${isMobile ? 'hidden' : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'}
+        `}>
           <button
             onClick={onInfoClick}
             className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
@@ -56,6 +60,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [selectedInfoWidget, setSelectedInfoWidget] = useState<WidgetEntry | null>(null);
+  const isMobile = useIsMobile(); // Initialize hook
 
   // Debounce Logic
   useEffect(() => {
@@ -171,10 +176,17 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                     <div
                       key={widget.type}
                       className="h-[120px] cursor-pointer"
-                      onClick={() => onSelect?.(widget.type)}
+                      onClick={() => {
+                        if (isMobile) {
+                          setSelectedInfoWidget(widget);
+                        } else {
+                          onSelect?.(widget.type);
+                        }
+                      }}
                     >
                       <WidgetContainer
                         title={widget.label}
+                        isMobile={isMobile}
                         onInfoClick={(e) => {
                           e.stopPropagation();
                           setSelectedInfoWidget(widget);

@@ -86,7 +86,7 @@ export default function ThemeSettings({ onBack, onClose }: ThemeSettingsProps) {
             </div>
 
             {/* Theme Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {themes.map((theme) => {
                     // Check if this is the "Personal Settings" button
                     const isPersonalBtn = theme.id === 'personal';
@@ -110,7 +110,7 @@ export default function ThemeSettings({ onBack, onClose }: ThemeSettingsProps) {
                                 borderColor: isActive ? 'var(--text-primary)' : 'var(--border-color)'
                             }}
                             className={`
-                                relative flex flex-col items-start p-6 rounded-xl border-2 transition-all duration-200
+                                relative flex flex-col items-start p-4 bg-white rounded-xl border-2 transition-all duration-200
                                 theme-bg-card
                                 ${isActive
                                     ? 'bg-black/5'
@@ -119,24 +119,24 @@ export default function ThemeSettings({ onBack, onClose }: ThemeSettingsProps) {
                             `}
                         >
                             <div className={`
-                                p-3 rounded-lg mb-4
+                                p-3 rounded-lg mb-3
                                 ${isActive ? 'bg-black/10 theme-text-primary' : 'bg-black/5 theme-text-secondary'}
                             `}>
                                 <theme.icon className="w-6 h-6" />
                             </div>
 
-                            <div className="flex items-center justify-between w-full">
-                                <span className={`font-bold text-lg ${isActive ? 'theme-text-primary' : 'theme-text-primary'}`}>
+                            <div className="flex items-center justify-between w-full mb-1">
+                                <span className={`font-bold text-base sm:text-lg whitespace-nowrap ${isActive ? 'theme-text-primary' : 'theme-text-primary'}`}>
                                     {theme.name}
                                 </span>
                                 {isActive && (
-                                    <div className="theme-btn rounded-full p-1">
+                                    <div className="theme-btn rounded-full p-1 ml-1 flex-shrink-0">
                                         {isPersonalBtn ? <SettingsIcon className="w-3 h-3 text-white" /> : <Check className="w-3 h-3 text-white" />}
                                     </div>
                                 )}
                             </div>
 
-                            <p className="text-sm theme-text-secondary mt-2 text-left">
+                            <p className="text-sm theme-text-secondary text-left break-keep leading-tight">
                                 {theme.description}
                             </p>
                         </button>

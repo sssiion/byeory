@@ -9,7 +9,7 @@ interface PolaroidProps {
 
 export const PolaroidConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 2]] as [number, number][],
 };
 
 export function Polaroid({ gridSize }: PolaroidProps) {

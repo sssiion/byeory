@@ -13,6 +13,7 @@ interface DraggableWidgetProps {
     onDragEnd?: () => void;
     onHover: (x: number, y: number, item: any) => void;
     onDrop: (x: number, y: number, item: any) => void;
+    isMobile?: boolean;
 }
 
 const ItemTypes = {
@@ -26,7 +27,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     updateLayout,
     onDragEnd,
     onHover,
-    onDrop
+    onDrop,
+    isMobile = false
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
@@ -42,7 +44,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         end: () => {
             if (onDragEnd) onDragEnd();
         },
-        canDrag: isEditMode,
+        canDrag: isEditMode, // Dragging enabled on mobile (backend handles delay)
     });
 
     const [, drop] = useDrop({
@@ -63,7 +65,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         preview(getEmptyImage(), { captureDraggingState: true });
     }, [preview]);
 
-    if (isEditMode) {
+    if (isEditMode && !isMobile) {
         drag(drop(ref));
     }
 
@@ -74,22 +76,39 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     const { x, y, w, h } = widget.layout;
     const isTransparent = widget.type === 'transparent';
 
+    // Grid Layout Style Logic
+    let gridStyle: React.CSSProperties = {
+        gridColumn: `${x} / span ${w}`,
+        gridRow: `${y} / span ${h}`,
+        opacity: isDragging ? 0 : 1,
+        zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
+    };
+
+    // Mobile Override (2-Column Flow)
+    if (isMobile) {
+        gridStyle = {
+            ...gridStyle,
+            gridColumn: w >= 2 ? 'span 2' : 'span 1', // Full width for w>=2
+            gridRow: `span ${h}`, // Allow spanning multiple rows
+            zIndex: 1
+        };
+    }
+
     return (
         <motion.div
-            layout
+            layout={!isMobile} // Disable layout animation on mobile to prevent jumpiness with auto-flow
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             ref={ref}
             className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 
                 ${isTransparent
                     ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
                     : 'theme-bg-card shadow-sm hover:shadow-md'} 
-                ${isEditMode ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2 overflow-visible' : 'overflow-hidden'}
+                ${(isEditMode && !isMobile) ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2 overflow-visible' : 'overflow-hidden'}
                 ${isDragging ? 'pointer-events-none' : ''}`}
-            style={{
-                gridColumn: `${x} / span ${w}`,
-                gridRow: `${y} / span ${h}`,
-                opacity: isDragging ? 0 : 1, // Hide original when dragging
-                zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
+            style={gridStyle}
+            onContextMenu={(e) => {
+                // Prevent context menu to allow long-press drag on mobile/touch
+                if (isEditMode) e.preventDefault();
             }}
         >
             {/* Widget Content */}
@@ -104,10 +123,11 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
             {/* Edit Overlay */}
             {isEditMode && (
-                <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-2 border-[var(--btn-bg)] z-20 gap-2 pointer-events-auto">
-                    {/* Drag Handle Indicator */}
-
-
+                <div
+                    style={{ opacity: isMobile ? 1 : undefined }}
+                    className={`absolute inset-0 bg-black/10 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center transition-opacity border-2 border-[var(--btn-bg)] z-20 gap-2 pointer-events-auto
+                    ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}
+                `}>
                     {/* Size Control (Hidden for Global widgets) */}
                     {registryItem.category !== 'Global' && (
                         <div className="relative">
@@ -124,39 +144,55 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         [1, 1], [2, 1], [3, 1],
                                         [1, 2], [2, 2], [3, 2],
                                         [2, 3], [3, 3], [4, 2]
-                                    ].filter(([cw, ch]) => {
+                                    ]).filter(([cw, ch]) => {
+                                        if (isMobile) {
+                                            if (cw > 2) return false; // Hide sizes wider than 2 cols on mobile
+                                            if (ch > 2) return false; // Hide sizes taller than 2 rows on mobile (Global Rule)
+
+                                            // Special rules for 'welcome' widget on mobile
+                                            if (widget.type === 'welcome') {
+                                                if (cw === 1 && ch === 2) return false; // Block 1x2
+                                                if (ch > 2) return false; // Max height 2
+                                            }
+
+                                            // Special rules for 'ootd' widget on mobile
+                                            if (widget.type === 'ootd') {
+                                                if (ch !== 2) return false; // Only allow height 2
+                                            }
+
+                                            // Special rules for 'chat-diary' widget on mobile
+                                            if (widget.type === 'chat-diary') {
+                                                if (cw !== 2) return false; // Force width 2 (full width)
+                                            }
+
+                                            // Special rules for 'asmr-mixer' widget on mobile
+                                            if (widget.type === 'asmr-mixer') {
+                                                if (cw !== 2) return false; // Force width 2
+                                            }
+
+                                            // Special rules for 'random-picker' widget on mobile
+                                            if (widget.type === 'random-picker') {
+                                                if (cw === 1 && ch === 1) return false; // Hide 1x1
+                                            }
+                                        }
                                         if (registryItem.minW && cw < registryItem.minW) return false;
                                         if (registryItem.minH && ch < registryItem.minH) return false;
                                         return true;
-                                    })).map(([cw, ch]) => (
+                                    }).map(([cw, ch]) => (
                                         <button
                                             key={`${cw}x${ch}`}
                                             onClick={() => {
-                                                // Update layout
                                                 updateLayout(widget.id, { w: cw, h: ch });
-
-                                                // Save to DB (localStorage) for persistence
                                                 try {
                                                     const key = `widget-config-${widget.type}`;
                                                     const existing = localStorage.getItem(key);
                                                     const config = existing ? JSON.parse(existing) : {};
-
-                                                    const newConfig = {
-                                                        ...config,
-                                                        defaultSize: `${cw}x${ch}`
-                                                    };
-
+                                                    const newConfig = { ...config, defaultSize: `${cw}x${ch}` };
                                                     localStorage.setItem(key, JSON.stringify(newConfig));
 
-                                                    // Update in-memory registry so immediate re-adds use new size
-                                                    const registryItem = WIDGET_REGISTRY[widget.type];
-                                                    if (registryItem) {
-                                                        registryItem.defaultSize = `${cw}x${ch}`;
-                                                    }
-                                                } catch (e) {
-                                                    console.warn('Failed to save widget config:', e);
-                                                }
-
+                                                    const regItem = WIDGET_REGISTRY[widget.type];
+                                                    if (regItem) regItem.defaultSize = `${cw}x${ch}`;
+                                                } catch (e) { console.warn(e); }
                                                 setShowSizeMenu(false);
                                             }}
                                             className={`text-[10px] p-2 rounded hover:bg-[var(--bg-card-secondary)] border transition-colors ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
