@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, CheckCircle, Loader2, Send, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
+import NaverLoginButton from '../../components/auth/NaverLoginButton';
 
 function JoinPage() {
     const navigate = useNavigate();
@@ -270,10 +271,21 @@ function JoinPage() {
                                 if (success) {
                                     navigate('/');
                                 } else {
-                                    alert("Social Login Failed");
+                                    alert("이미 이메일로 가입된 계정입니다.");
                                 }
                             }}
-                            onError={() => console.error("Google Login Failed")}
+                            onError={() => console.error("이미 이메일로 가입된 계정입니다.")}
+                        />
+                        <NaverLoginButton
+                            onSuccess={async (credential) => {
+                                const success = await socialLogin(credential);
+                                if (success) {
+                                    navigate('/');
+                                } else {
+                                    alert("이미 이메일로 가입된 계정입니다.");
+                                }
+                            }}
+                            onError={() => console.error("이미 이메일로 가입된 계정입니다.")}
                         />
                     </div>
 

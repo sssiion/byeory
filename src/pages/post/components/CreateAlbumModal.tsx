@@ -1,33 +1,66 @@
 import React, { useState } from 'react';
-import { X, Image as ImageIcon } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
+import AlbumBook from './AlbumCover/AlbumBook';
+import CoverCustomizer from './AlbumCover/CoverCustomizer';
+import type { AlbumCoverConfig } from './AlbumCover/constants';
+import { COVER_COLORS } from './AlbumCover/constants';
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (name: string, tags: string[]) => void;
+    onSave: (name: string, tags: string[], coverConfig?: AlbumCoverConfig) => void;
 }
 
 const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
     const [name, setName] = useState('');
-    const [tags, setTags] = useState('');
+    const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+    // Cover Config State
+    const [coverConfig, setCoverConfig] = useState<AlbumCoverConfig>({
+        type: 'solid',
+        value: COVER_COLORS[0].value,
+        spineColor: COVER_COLORS[0].spine,
+        labelColor: COVER_COLORS[0].text
+    });
+    const [isEditingCover, setIsEditingCover] = useState(false);
 
     if (!isOpen) return null;
 
     const handleSave = () => {
         if (!name.trim()) return alert("앨범 이름을 입력해주세요.");
-        // 태그 처리 (콤마로 구분)
-        const tagList = tags.split(',').map(t => t.trim()).filter(t => t !== '');
-        onSave(name, tagList);
+        onSave(name, selectedTag ? [selectedTag] : [], coverConfig);
         setName('');
-        setTags('');
+        setSelectedTag(null);
+        // Reset cover to default
+        setCoverConfig({
+            type: 'solid',
+            value: COVER_COLORS[0].value,
+            spineColor: COVER_COLORS[0].spine,
+            labelColor: COVER_COLORS[0].text
+        });
+    };
+
+    const handleClose = () => {
+        // Reset state
+        setName('');
+        setSelectedTag(null);
+        setCoverConfig({
+            type: 'solid',
+            value: COVER_COLORS[0].value,
+            spineColor: COVER_COLORS[0].spine,
+            labelColor: COVER_COLORS[0].text
+        });
+        setIsEditingCover(false);
+        onClose();
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up max-h-[90vh] overflow-y-auto custom-scrollbar">
+                {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900">새 앨범 만들기</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
+                    <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 transition">
                         <X size={24} />
                     </button>
                 </div>
@@ -47,37 +80,53 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                         />
                     </div>
 
-                    {/* 2. 표지 설정 (공사중) */}
+                    {/* 2. 표지 설정 */}
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                            표지 설정
-                        </label>
-                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-gray-400 bg-gray-50 cursor-not-allowed group">
-                            <ImageIcon size={32} className="mb-2 opacity-50 group-hover:scale-110 transition" />
-                            <span className="text-xs font-bold">공사중 🚧</span>
-                            <span className="text-[10px] mt-1">추후 업데이트 예정입니다.</span>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-gray-700">
+                                표지 설정
+                            </label>
+                            <button
+                                onClick={() => setIsEditingCover(true)}
+                                className="text-indigo-600 text-xs font-bold flex items-center gap-1 hover:underline"
+                            >
+                                <Sparkles size={12} />
+                                꾸미기
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center bg-gray-50 rounded-xl p-6 border border-gray-100">
+                            <AlbumBook
+                                title={name || "새 앨범"}
+                                tag={selectedTag || undefined} // Pass the selected tag
+                                config={coverConfig}
+                                className="w-32 shadow-md"
+                            />
                         </div>
                     </div>
 
-                    {/* 3. 해시태그 (선택) */}
+                    {/* 3. 대표 해시태그 (단일) */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">
-                            해시태그 (선택)
+                            대표 해시태그
                         </label>
-                        <input
-                            type="text"
-                            value={tags}
-                            onChange={(e) => setTags(e.target.value)}
-                            placeholder="콤마(,)로 구분해 입력 (예: 서울, 강남)"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                        />
-                        <p className="text-xs text-gray-400 mt-1 ml-1">이 태그들이 포함된 글이 자동으로 분류됩니다.</p>
+                        <div className="w-full px-4 py-3 rounded-xl border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition bg-white flex items-center gap-2">
+                            <span className="text-indigo-500 font-bold ml-1">#</span>
+                            <input
+                                type="text"
+                                value={selectedTag || ''}
+                                onChange={(e) => setSelectedTag(e.target.value)}
+                                placeholder="태그 입력"
+                                className="flex-1 outline-none bg-transparent font-medium"
+                                maxLength={10} // General limit, visual truncation handled in AlbumBook
+                            />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 ml-1">이 앨범을 대표할 태그 하나를 설정해주세요.</p>
                     </div>
 
-                    {/* 버튼 그룹 */}
                     <div className="flex gap-3 mt-4 pt-2">
                         <button
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="flex-1 py-3 px-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition"
                         >
                             취소
@@ -86,11 +135,25 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                             onClick={handleSave}
                             className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition"
                         >
-                            저장
+                            만들기
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Editing Logic - Opens the light-themed customizer */}
+            {isEditingCover && (
+                <CoverCustomizer
+                    albumTitle={name || "새 앨범"}
+                    albumTag={selectedTag || undefined} // ✨ Pass tag
+                    initialConfig={coverConfig}
+                    onSave={(newConfig) => {
+                        setCoverConfig(newConfig);
+                        setIsEditingCover(false);
+                    }}
+                    onClose={() => setIsEditingCover(false)}
+                />
+            )}
         </div>
     );
 };

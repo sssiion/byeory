@@ -14,6 +14,35 @@ const InitialProfileSetup: React.FC = () => {
     const [profilePhoto, setProfilePhoto] = useState("");
     const [isUploading, setIsUploading] = useState(false);
 
+    // Load pre-filled data from social login if available
+    React.useEffect(() => {
+        const storedData = localStorage.getItem('temp_social_profile');
+        if (storedData) {
+            try {
+                const data = JSON.parse(storedData);
+                if (data.name) setName(data.name);
+                if (data.nickname) setNickname(data.nickname);
+                if (data.profileImage) setProfilePhoto(data.profileImage);
+
+                // Map Gender (Naver: M/F/U -> Local: male/female/unspecified)
+                if (data.gender === 'M') setGender('male');
+                else if (data.gender === 'F') setGender('female');
+                else setGender('unspecified');
+
+                // Map Birthday (Naver: birthyear="1990", birthday="01-01" -> 1990-01-01)
+                if (data.birthyear && data.birthday) {
+                    setBirthDate(`${data.birthyear}-${data.birthday}`);
+                }
+
+                // Map Phone (Naver: 010-0000-0000 -> keep as is but remove non-digits for formatting if needed, but current state stores formatted)
+                if (data.mobile) setPhone(data.mobile);
+
+            } catch (e) {
+                console.error("Failed to parse temp profile data", e);
+            }
+        }
+    }, []);
+
     const handlePhotoUpload = () => {
         const input = document.createElement('input');
         input.type = 'file';
