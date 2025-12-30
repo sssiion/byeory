@@ -1,4 +1,4 @@
-export type ViewMode = 'list' | 'editor' | 'read';
+export type ViewMode = 'list' | 'editor' | 'read' | 'album' | 'folder';
 
 export interface Block {
     id: string;
@@ -49,6 +49,7 @@ export interface PostData {
     id: number;
     title: string;
     date: string;
+    tags?: string[]; // ✨ 태그 (앨범 분류용)
     blocks: Block[];
     stickers: Sticker[];
     floatingTexts: FloatingText[];

@@ -6,9 +6,10 @@ import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } 
 
 export const usePostEditor = () => {
     // ... (상태 변수들 기존과 동일) ...
-    const [viewMode, setViewMode] = useState<ViewMode>('list');
+    const [viewMode, setViewMode] = useState<ViewMode>('album');
     const [posts, setPosts] = useState<PostData[]>([]);
     const [currentPostId, setCurrentPostId] = useState<number | null>(null);
+    const [selectedAlbumTag, setSelectedAlbumTag] = useState<string | null>(null); // ✨ 선택된 앨범 태그
     const [title, setTitle] = useState("");
     const [titleStyles, setTitleStyles] = useState({
         fontSize: '30px',
@@ -28,9 +29,31 @@ export const usePostEditor = () => {
     const [selectedLayoutId, setSelectedLayoutId] = useState('type-a');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    // ✨ 커스텀 앨범 목록 (로컬 스토리지 사용 - 추후 백엔드 저장 권장)
+    const [customAlbums, setCustomAlbums] = useState<string[]>([]);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => { if (supabase) fetchPosts(); }, []);
+    useEffect(() => {
+        if (supabase) fetchPosts();
+
+        // 로컬 스토리지에서 커스텀 앨범 목록 불러오기
+        const savedAlbums = localStorage.getItem('my_custom_albums');
+        if (savedAlbums) {
+            try { setCustomAlbums(JSON.parse(savedAlbums)); } catch (e) { }
+        }
+    }, []);
+
+    // 앨범 생성 핸들러
+    const handleCreateAlbum = (name: string) => {
+        if (!name) return;
+        if (customAlbums.includes(name)) return alert("이미 존재하는 앨범입니다.");
+        if (name.trim() === "") return;
+
+        const newAlbums = [...customAlbums, name];
+        setCustomAlbums(newAlbums);
+        localStorage.setItem('my_custom_albums', JSON.stringify(newAlbums));
+    };
 
     // 데이터 불러오기: PX 단위 그대로 사용 + 메타데이터 블록 파싱
     const fetchPosts = async () => {
@@ -278,6 +301,11 @@ export const usePostEditor = () => {
         else if (selectedType === 'floatingImage') setFloatingImages(p => p.map(updateZ));
     };
 
+    const handleAlbumClick = (tag: string | null) => {
+        setSelectedAlbumTag(tag);
+        setViewMode('folder');
+    };
+
     return {
         viewMode, setViewMode, posts, title, setTitle, titleStyles, setTitleStyles,
         blocks, setBlocks, stickers, floatingTexts, floatingImages,
@@ -288,6 +316,8 @@ export const usePostEditor = () => {
         handleStartWriting, handlePostClick, handleSave, handleAiGenerate,
         handleUpdate, handleDelete, addSticker, addFloatingText, addFloatingImage,
         handleBlockImageUpload, changeZIndex,
-        currentPostId // Expose currentPostId to distinguish Create vs Edit
+        currentPostId, // Expose currentPostId to distinguish Create vs Edit
+        selectedAlbumTag, handleAlbumClick, // ✨ 앨범 관련 추가
+        customAlbums, handleCreateAlbum // ✨ 커스텀 앨범 추가
     };
 };
