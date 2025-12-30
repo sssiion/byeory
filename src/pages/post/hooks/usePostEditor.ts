@@ -6,6 +6,12 @@ import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } 
 
 export const usePostEditor = () => {
     // ... (상태 변수들 기존과 동일) ...
+    // ✨ 커스텀 앨범 타입 정의
+    interface CustomAlbum {
+        name: string;
+        tag: string | null;
+    }
+
     const [viewMode, setViewMode] = useState<ViewMode>('album');
     const [posts, setPosts] = useState<PostData[]>([]);
     const [currentPostId, setCurrentPostId] = useState<number | null>(null);
@@ -29,8 +35,8 @@ export const usePostEditor = () => {
     const [selectedLayoutId, setSelectedLayoutId] = useState('type-a');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    // ✨ 커스텀 앨범 목록 (로컬 스토리지 사용 - 추후 백엔드 저장 권장)
-    const [customAlbums, setCustomAlbums] = useState<string[]>([]);
+    // ✨ 커스텀 앨범 목록 (로컬 스토리지 사용)
+    const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,21 +44,56 @@ export const usePostEditor = () => {
         if (supabase) fetchPosts();
 
         // 로컬 스토리지에서 커스텀 앨범 목록 불러오기
-        const savedAlbums = localStorage.getItem('my_custom_albums');
+        const savedAlbums = localStorage.getItem('my_custom_albums_v2'); // v2로 키 변경 (데이터 구조 변경됨)
         if (savedAlbums) {
-            try { setCustomAlbums(JSON.parse(savedAlbums)); } catch (e) { }
+            try {
+                const parsed = JSON.parse(savedAlbums);
+                const validAlbums = parsed.filter((a: any) => a.name && a.name !== 'undefined' && a.name !== 'null');
+                setCustomAlbums(validAlbums);
+            } catch (e) { }
+        } else {
+            // 마이그레이션: 구 버전 데이터가 있으면 변환 시도
+            const oldAlbums = localStorage.getItem('my_custom_albums');
+            if (oldAlbums) {
+                try {
+                    const parsed: string[] = JSON.parse(oldAlbums);
+                    // Filter out invalid names
+                    const validNames = parsed.filter(name => name && name !== 'undefined' && name !== 'null');
+                    const migrated = validNames.map(name => ({ name, tag: null }));
+                    setCustomAlbums(migrated);
+                    localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
+                } catch (e) { }
+            }
         }
     }, []);
 
     // 앨범 생성 핸들러
-    const handleCreateAlbum = (name: string) => {
+    const handleCreateAlbum = (name: string, tags: string[]) => {
         if (!name) return;
-        if (customAlbums.includes(name)) return alert("이미 존재하는 앨범입니다.");
+        if (customAlbums.some(a => a.name === name)) return alert("이미 존재하는 앨범입니다.");
         if (name.trim() === "") return;
 
-        const newAlbums = [...customAlbums, name];
+        const newAlbum: CustomAlbum = { name, tag: tags[0] || null };
+        const newAlbums = [...customAlbums, newAlbum];
         setCustomAlbums(newAlbums);
-        localStorage.setItem('my_custom_albums', JSON.stringify(newAlbums));
+        localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
+    };
+
+    // 앨범 이름 변경 핸들러
+    const handleRenameAlbum = (oldName: string, newName: string) => {
+        if (customAlbums.some(a => a.name === newName)) return alert("이미 존재하는 이름입니다.");
+
+        const newAlbums = customAlbums.map(a => a.name === oldName ? { ...a, name: newName } : a);
+        setCustomAlbums(newAlbums);
+        localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
+    };
+
+    // 앨범 삭제 핸들러
+    const handleDeleteAlbum = (albumName: string) => {
+        const newAlbums = customAlbums.filter(a => a.name !== albumName);
+        setCustomAlbums(newAlbums);
+        localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
+        // TODO: 실제 포스트 삭제 로직은 별도 API 호출 필요
     };
 
     // 데이터 불러오기: PX 단위 그대로 사용 + 메타데이터 블록 파싱
@@ -95,7 +136,8 @@ export const usePostEditor = () => {
                         fontFamily: "'Noto Sans KR', sans-serif",
                         color: '#000000',
                         textAlign: 'left'
-                    }
+                    },
+                    tags: (p.tags || []).filter((t: string) => t && t !== 'undefined' && t !== 'null') // Filter invalid tags
                 };
             }));
         }
@@ -318,6 +360,7 @@ export const usePostEditor = () => {
         handleBlockImageUpload, changeZIndex,
         currentPostId, // Expose currentPostId to distinguish Create vs Edit
         selectedAlbumTag, handleAlbumClick, // ✨ 앨범 관련 추가
-        customAlbums, handleCreateAlbum // ✨ 커스텀 앨범 추가
+        customAlbums, handleCreateAlbum, // ✨ 커스텀 앨범 추가
+        handleRenameAlbum, handleDeleteAlbum // ✨ 앨범 수정/삭제 추가
     };
 };

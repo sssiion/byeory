@@ -9,22 +9,34 @@ interface Props {
 
 const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
     const [name, setName] = useState('');
-    const [tags, setTags] = useState('');
+    const [selectedTag, setSelectedTag] = useState<string | null>(null);
+    const [tagInput, setTagInput] = useState('');
 
     if (!isOpen) return null;
 
     const handleSave = () => {
         if (!name.trim()) return alert("앨범 이름을 입력해주세요.");
-        // 태그 처리 (콤마로 구분)
-        const tagList = tags.split(',').map(t => t.trim()).filter(t => t !== '');
-        onSave(name, tagList);
+        onSave(name, selectedTag ? [selectedTag] : []); // 호환성을 위해 배열로 전달하지만 실제론 1개
         setName('');
-        setTags('');
+        setSelectedTag(null);
+        setTagInput('');
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const newTag = tagInput.trim().replace(/,/g, '');
+            if (newTag) {
+                setSelectedTag(newTag);
+                setTagInput('');
+            }
+        }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up">
+                {/* ... (Header) ... */}
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900">새 앨범 만들기</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
@@ -33,7 +45,7 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                 </div>
 
                 <div className="flex flex-col gap-5">
-                    {/* 1. 앨범 이름 */}
+                    {/* 1. 앨범 이름 UI 유지 ... */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">
                             앨범 이름 <span className="text-red-500">*</span>
@@ -47,7 +59,7 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                         />
                     </div>
 
-                    {/* 2. 표지 설정 (공사중) */}
+                    {/* 2. 표지 설정 UI 유지 ... */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">
                             표지 설정
@@ -59,22 +71,33 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                         </div>
                     </div>
 
-                    {/* 3. 해시태그 (선택) */}
+                    {/* 3. 대표 해시태그 (단일) */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">
-                            해시태그 (선택)
+                            대표 해시태그
                         </label>
-                        <input
-                            type="text"
-                            value={tags}
-                            onChange={(e) => setTags(e.target.value)}
-                            placeholder="콤마(,)로 구분해 입력 (예: 서울, 강남)"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                        />
-                        <p className="text-xs text-gray-400 mt-1 ml-1">이 태그들이 포함된 글이 자동으로 분류됩니다.</p>
+                        <div className="w-full px-4 py-3 rounded-xl border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition bg-white flex flex-wrap gap-2 items-center">
+                            {selectedTag ? (
+                                <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium flex items-center gap-1">
+                                    #{selectedTag}
+                                    <button onClick={() => setSelectedTag(null)} className="hover:text-indigo-900 rounded-full p-0.5">
+                                        <X size={12} />
+                                    </button>
+                                </span>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={tagInput}
+                                    onChange={(e) => setTagInput(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="태그 입력 후 엔터"
+                                    className="flex-1 outline-none min-w-[120px] bg-transparent"
+                                />
+                            )}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1 ml-1">이 앨범을 대표할 태그 하나를 설정해주세요.</p>
                     </div>
 
-                    {/* 버튼 그룹 */}
                     <div className="flex gap-3 mt-4 pt-2">
                         <button
                             onClick={onClose}

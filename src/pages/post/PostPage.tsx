@@ -44,6 +44,8 @@ const Post: React.FC = () => {
                         onAlbumClick={editor.handleAlbumClick}
                         onCreateAlbum={() => setIsAlbumModalOpen(true)}
                         onStartWriting={editor.handleStartWriting}
+                        onRenameAlbum={editor.handleRenameAlbum}
+                        onDeleteAlbum={editor.handleDeleteAlbum}
                     />
                 )}
 
@@ -88,7 +90,7 @@ const Post: React.FC = () => {
                 isOpen={isAlbumModalOpen}
                 onClose={() => setIsAlbumModalOpen(false)}
                 onSave={(name, tags) => {
-                    editor.handleCreateAlbum(name);
+                    editor.handleCreateAlbum(name, tags);
                     setIsAlbumModalOpen(false);
                 }}
             />
