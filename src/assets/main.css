@@ -99,3 +99,9 @@ body {
 .font-single-day {
     font-family: 'Single Day', cursive;
 }
+
+/* Utilities */
+.mask-linear-fade {
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+}

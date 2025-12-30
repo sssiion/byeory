@@ -231,7 +231,7 @@ const MainPage: React.FC = () => {
     };
 
     const lastHoverTime = React.useRef(0);
-    const HOVER_THROTTLE_MS = isMobile ? 150 : 30; // More damping on mobile
+    const HOVER_THROTTLE_MS = isMobile ? 60 : 30; // 60ms on mobile for smooth animation balance
 
     const onCellHover = useCallback((x: number, y: number, item: any) => {
         if (!item || !item.id) return;
@@ -366,6 +366,25 @@ const MainPage: React.FC = () => {
     const displayRows = Math.max(gridSize.rows, maxWidgetY, DEFAULT_GRID_SIZE.rows);
     const finalRows = displayRows;
 
+    const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+
+    // Deselect when clicking outside (background)
+    useEffect(() => {
+        const handleGlobalClick = (e: MouseEvent) => {
+            // If click target is not inside a widget, deselect
+            // This is a simple heuristic; event bubbling from widget should stop propagation if handled
+            if (!(e.target as HTMLElement).closest('.global-physics-widget')) {
+                setSelectedWidgetId(null);
+            }
+        };
+        if (isWidgetEditMode) {
+            window.addEventListener('click', handleGlobalClick);
+        }
+        return () => window.removeEventListener('click', handleGlobalClick);
+    }, [isWidgetEditMode]);
+
+    // ...
+
     const gridCells = [];
     for (let y = 1; y <= finalRows; y++) {
         for (let x = 1; x <= gridSize.cols; x++) {
@@ -382,6 +401,16 @@ const MainPage: React.FC = () => {
         }
     }
 
+    // Pass selection props to DraggableWidget via render logic?
+    // Wait, GridCell renders empty cells. DraggableWidget is rendered where?
+    // Ah, I missed where DraggableWidget is rendered. It must be rendered absolutely or inside the grid?
+    // Checking previous file view... I don't see DraggableWidget loop in MainPage.
+    // It must be rendered *on top* of the gridCells loop or I missed it.
+    // Let me check lines 350+ of MainPage again.
+    // Ah, GridCell is just the droppable background.
+    // The actual widgets must be rendered separately.
+
+
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
 
@@ -396,7 +425,7 @@ const MainPage: React.FC = () => {
     return (
         <DndProvider
             backend={isMobile ? TouchBackend : HTML5Backend}
-            options={isMobile ? { delayTouchStart: 500, enableMouseEvents: true } : undefined}
+            options={isMobile ? { delayTouchStart: 800, enableMouseEvents: true } : undefined}
             key={isMobile ? "mobile" : "desktop"}
         >
             <CustomDragLayer />
@@ -411,7 +440,7 @@ const MainPage: React.FC = () => {
                             <LayoutGrid size={20} /> My Dashboard
                         </h2>
 
-                        <div className="flex gap-2 items-center flex-wrap">
+                        <div className={`flex gap-2 items-center ${isMobile ? 'flex-nowrap overflow-x-auto w-full pb-2 no-scrollbar mask-linear-fade' : 'flex-wrap'}`}>
                             {!isMenuEditMode && (
                                 <>
                                     {isWidgetEditMode && (
@@ -420,7 +449,7 @@ const MainPage: React.FC = () => {
                                                 onClick={() => {
                                                     setIsWidgetEditMode(false);
                                                 }}
-                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] shadow-md transition-colors"
+                                                className="h-10 px-4 w-20 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] shadow-md transition-colors"
                                             >
                                                 Save
                                             </button>
@@ -432,16 +461,16 @@ const MainPage: React.FC = () => {
                                                     }
                                                     setIsWidgetEditMode(false);
                                                 }}
-                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                                className="h-10 px-4 w-20 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] transition-colors"
                                             >
                                                 Cancel
                                             </button>
 
-                                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                                            <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0"></div>
 
                                             <button
                                                 onClick={() => setIsCatalogOpen(true)}
-                                                className="h-10 px-4 w-20 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                className="h-10 px-4 w-20 flex-shrink-0 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <Plus size={18} /> Add
                                             </button>
@@ -450,14 +479,14 @@ const MainPage: React.FC = () => {
                                                 onClick={() => {
                                                     setIsBuilderOpen(true);
                                                 }}
-                                                className="h-10 px-4 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                className="h-10 px-4 flex-shrink-0 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <span>새 버튼</span>
                                             </button>
 
                                             <button
                                                 onClick={() => setIsArrangeConfirmOpen(true)}
-                                                className="h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                                 title="Auto Arrange"
                                             >
                                                 <AlignStartVertical size={18} />
@@ -465,7 +494,7 @@ const MainPage: React.FC = () => {
 
                                             <button
                                                 onClick={resetWidgets}
-                                                className="h-10 w-10 flex items-center justify-center rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                                className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                                                 title="Reset Layout"
                                             >
                                                 <RefreshCw size={20} />
@@ -507,6 +536,8 @@ const MainPage: React.FC = () => {
                                         onHover={onCellHover}
                                         onDrop={(x, y, item) => updateWidgetPosition(item.id, x, y)}
                                         isMobile={isMobile}
+                                        isSelected={selectedWidgetId === widget.id}
+                                        onSelect={() => setSelectedWidgetId(prev => prev === widget.id ? null : widget.id)}
                                     />
                                 ))}
                             </div>

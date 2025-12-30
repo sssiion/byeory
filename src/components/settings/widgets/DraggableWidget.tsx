@@ -14,6 +14,8 @@ interface DraggableWidgetProps {
     onHover: (x: number, y: number, item: any) => void;
     onDrop: (x: number, y: number, item: any) => void;
     isMobile?: boolean;
+    isSelected?: boolean;
+    onSelect?: () => void;
 }
 
 const ItemTypes = {
@@ -28,7 +30,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     onDragEnd,
     onHover,
     onDrop,
-    isMobile = false
+    isMobile = false,
+    isSelected = false,
+    onSelect
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
@@ -44,7 +48,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         end: () => {
             if (onDragEnd) onDragEnd();
         },
-        canDrag: isEditMode, // Dragging enabled on mobile (backend handles delay)
+        canDrag: isEditMode,
     });
 
     const [, drop] = useDrop({
@@ -64,6 +68,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     useEffect(() => {
         preview(getEmptyImage(), { captureDraggingState: true });
     }, [preview]);
+
+    // Close size menu if deselected
+    useEffect(() => {
+        if (!isSelected) {
+            setShowSizeMenu(false);
+        }
+    }, [isSelected]);
 
     if (isEditMode) {
         drag(drop(ref));
@@ -96,7 +107,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
     return (
         <motion.div
-            layout={!isMobile} // Disable layout animation on mobile to prevent jumpiness with auto-flow
+            layout // Enable layout animation on all devices for smooth transitions
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             ref={ref}
             className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 
@@ -104,8 +115,18 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
                     : 'theme-bg-card shadow-sm hover:shadow-md'} 
                 ${(isEditMode && !isMobile) ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2 overflow-visible' : 'overflow-hidden'}
-                ${isDragging ? 'pointer-events-none' : ''}`}
+                ${isDragging ? 'pointer-events-none' : ''}
+                ${(isMobile && isSelected && isEditMode) ? 'ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
+                ${isEditMode ? 'select-none' : ''}
+            `}
             style={gridStyle}
+            onClick={(e) => {
+                // On mobile edit mode, tap to select
+                if (isMobile && isEditMode) {
+                    onSelect?.();
+                    e.stopPropagation(); // Prevent deselecting from background click
+                }
+            }}
             onContextMenu={(e) => {
                 // Prevent context menu to allow long-press drag on mobile/touch
                 if (isEditMode) e.preventDefault();
@@ -124,7 +145,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             {/* Edit Overlay */}
             {isEditMode && (
                 <div
-                    style={{ opacity: isMobile ? 1 : undefined }}
+                    style={{
+                        opacity: (isMobile && !isSelected) ? 0 : 1,
+                        pointerEvents: (isMobile && !isSelected) ? 'none' : 'auto'
+                    }}
                     className={`absolute inset-0 bg-black/10 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center transition-opacity border-2 border-[var(--btn-bg)] z-20 gap-2 pointer-events-auto
                     ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}
                 `}>
@@ -132,7 +156,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     {registryItem.category !== 'Global' && (
                         <div className="relative">
                             <button
-                                onClick={() => setShowSizeMenu(!showSizeMenu)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowSizeMenu(!showSizeMenu);
+                                }}
                                 className="bg-[var(--bg-card)] text-[var(--text-primary)] px-3 py-1.5 rounded-full shadow-lg text-xs font-bold flex items-center gap-1 hover:bg-[var(--bg-card-secondary)]"
                             >
                                 <Maximize2 size={12} /> Size
@@ -181,7 +208,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                     }).map(([cw, ch]) => (
                                         <button
                                             key={`${cw}x${ch}`}
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 updateLayout(widget.id, { w: cw, h: ch });
                                                 try {
                                                     const key = `widget-config-${widget.type}`;
@@ -207,7 +235,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
                     {/* Remove Button */}
                     <button
-                        onClick={() => removeWidget(widget.id)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            removeWidget(widget.id);
+                        }}
                         className="bg-red-500 text-white px-3 py-1.5 rounded-full shadow-lg text-xs font-bold hover:bg-red-600 hover:scale-105 transition-transform"
                     >
                         Remove
