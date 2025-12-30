@@ -8,6 +8,7 @@ import { DraggableWidget } from '../components/settings/widgets/DraggableWidget'
 import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical, ArrowUp } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { TouchBackend } from 'react-dnd-touch-backend';
 import { clampWidget, resolveCollisions, compactLayout } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
 import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder.tsx";
@@ -229,20 +230,38 @@ const MainPage: React.FC = () => {
         setWidgets(prev => prev.filter(w => w.id !== id));
     };
 
+    const lastHoverTime = React.useRef(0);
+    const HOVER_THROTTLE_MS = isMobile ? 150 : 30; // More damping on mobile
+
     const onCellHover = useCallback((x: number, y: number, item: any) => {
         if (!item || !item.id) return;
+
+        const now = Date.now();
+        if (now - lastHoverTime.current < HOVER_THROTTLE_MS) return;
+        lastHoverTime.current = now;
 
         const draggingWidget = widgets.find(w => w.id === item.id);
         if (!draggingWidget) return;
 
+        // Optimization: Don't recalculate if position hasn't changed significantly enough to warrant a new cell
+        // (However, grid logic relies on x/y inputs which are discrete cells, so this check is implicit)
+
         const { w, h } = draggingWidget.layout;
         const clamped = clampWidget({ x, y, w, h }, gridSize.cols);
+
+        // Prevent calculating if the visual result would be identical to current preview
+        if (layoutPreview) {
+            const currentPreviewWidget = layoutPreview.find(w => w.id === item.id);
+            if (currentPreviewWidget && currentPreviewWidget.layout.x === clamped.x && currentPreviewWidget.layout.y === clamped.y) {
+                return;
+            }
+        }
 
         const movedWidget = { ...draggingWidget, layout: { ...draggingWidget.layout, x: clamped.x, y: clamped.y } };
         const resolved = resolveCollisions(widgets, movedWidget);
 
         setLayoutPreview(resolved);
-    }, [widgets, gridSize.cols]);
+    }, [widgets, gridSize.cols, layoutPreview, isMobile]);
 
     const updateWidgetPosition = (id: string, targetX: number, targetY: number) => {
         setLayoutPreview(null); // Clear preview on drop
@@ -375,7 +394,11 @@ const MainPage: React.FC = () => {
     }
 
     return (
-        <DndProvider backend={HTML5Backend}>
+        <DndProvider
+            backend={isMobile ? TouchBackend : HTML5Backend}
+            options={isMobile ? { delayTouchStart: 500, enableMouseEvents: true } : undefined}
+            key={isMobile ? "mobile" : "desktop"}
+        >
             <CustomDragLayer />
             <div className="min-h-screen pb-20">
                 <Navigation />

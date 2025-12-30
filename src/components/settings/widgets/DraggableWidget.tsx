@@ -65,7 +65,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         preview(getEmptyImage(), { captureDraggingState: true });
     }, [preview]);
 
-    if (isEditMode && !isMobile) {
+    if (isEditMode) {
         drag(drop(ref));
     }
 
