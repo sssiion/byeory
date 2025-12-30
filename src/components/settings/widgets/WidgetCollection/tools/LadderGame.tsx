@@ -47,12 +47,64 @@ export function LadderGame({ gridSize: _ }: { gridSize?: { w: number; h: number 
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+
+        // Dynamic Sizing: Match canvas resolution to display size
+        const updateSize = () => {
+            const rect = canvas.getBoundingClientRect();
+            // Only update if dimensions differ to avoid clear loop (though we redraw anyway)
+            if (canvas.width !== rect.width || canvas.height !== rect.height) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+        };
+
+        // Initial set
+        updateSize();
+
+        // Observer for responsiveness
+        const resizeObserver = new ResizeObserver(() => {
+            updateSize();
+            // Force re-render/redraw by triggering a state if needed, 
+            // but here simply calling the draw logic might be needed if it wasn't in a separate effect.
+            // Since our draw logic is in a useEffect depending on players/paths, we might need to trigger it.
+            // Actually, manipulating canvas.width autoclears it, so we MUST redraw.
+            // We can do this by moving draw logic into a function called here, or adding a 'resize' dependency.
+            // For simplicity, let's keep it simple: Changing width/height clears context.
+            // So we need to ensure the draw effect runs AFTER size update.
+            // Let's combine sizing and drawing in the same Effect, or use a size state.
+        });
+        resizeObserver.observe(canvas);
+
+        return () => resizeObserver.disconnect();
+    }, []); // Run once to set up observer logic? No, this is tricky with the separate draw effect.
+
+    // Better approach: Use a size state that triggers redraw
+    const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const observer = new ResizeObserver(() => {
+            const rect = canvas.getBoundingClientRect();
+            setCanvasSize({ w: rect.width, h: rect.height });
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        });
+        observer.observe(canvas);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || canvasSize.w === 0) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
         const width = canvas.width;
         const height = canvas.height;
         const playerCount = players.length;
+        // ... drawing logic continues ...
         const colWidth = width / playerCount;
         const paddingX = colWidth / 2;
         const rowHeight = (height - 40) / 8; // 8 steps
@@ -93,7 +145,7 @@ export function LadderGame({ gridSize: _ }: { gridSize?: { w: number; h: number 
             drawPath(ctx, colWidth, paddingX, rowHeight);
         }
 
-    }, [players, paths, selectedPlayer, currentPathIndex]);
+    }, [players, paths, selectedPlayer, currentPathIndex, canvasSize]);
 
     const animatePath = (startIndex: number) => {
         if (isPlaying) return;
@@ -228,9 +280,7 @@ export function LadderGame({ gridSize: _ }: { gridSize?: { w: number; h: number 
             <div className="flex-1 relative min-h-0 bg-white/50 rounded-lg border border-dashed border-gray-200">
                 <canvas
                     ref={canvasRef}
-                    width={400}
-                    height={300}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full block"
                 />
             </div>
 

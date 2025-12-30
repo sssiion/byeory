@@ -1,4 +1,4 @@
-
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../../context/AuthContext';
 import { User, Palette } from 'lucide-react';
@@ -15,13 +15,35 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
     const hour = new Date().getHours();
     const greeting = hour < 12 ? '좋은 아침입니다' : hour < 18 ? '오늘 하루 어떠신가요' : '편안한 밤 되세요';
 
-    // Fallback name from email
-    const displayName = user?.email ? user.email.split('@')[0] : '여행자';
+    const [nickname, setNickname] = useState<string>('');
 
-    // Placeholder for opening theme settings - for now just logs or alerts since we can't find the hook
-    // Or if ThemeProvider exposes it, we will swap this out.
-    // Assuming we can't find a direct hook, we'll make it navigate to home or toggle a global event.
-    // For now, removing the invalid hook call.
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const token = localStorage.getItem('accessToken');
+                if (!token) return;
+
+                const response = await fetch('http://localhost:8080/api/user/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.nickname) {
+                        setNickname(data.nickname);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch nickname", error);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    // Display logic: Nickname -> Email -> ''
+    const displayName = nickname || (user?.email ? user.email.split('@')[0] : '');
+
     const openThemeSettings = () => {
         window.dispatchEvent(new CustomEvent('open-settings-modal', { detail: { view: 'theme' } }));
     };

@@ -1,144 +1,171 @@
 import { useState, useRef, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
+import { TreePine } from 'lucide-react';
 
-// --- 3. Snow Globe (스노우볼) ---
 export const SnowGlobeConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
+    validSizes: [[1, 1], [1, 2], [2, 2]] as [number, number][],
 };
 
-// --- 3. Snow Globe (스노우볼) ---
 export function SnowGlobe({ gridSize }: { gridSize?: { w: number; h: number } }) {
-    const w = gridSize?.w || 2;
-    const h = gridSize?.h || 2;
-    const minDim = Math.min(w, h);
+    // Responsive logic: removed manual scale. CSS handles it.
 
-    // Scale logic
-    let scale = 1;
-    if (minDim === 1) scale = 0.5;
-    else if (minDim >= 3) scale = 1.3;
+    // Note: We don't really need gridSize if we just fill container
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isShaking, setIsShaking] = useState(false);
-    const particles = useRef<{ x: number, y: number, r: number, d: number, speed: number }[]>([]);
+
+    // Physics state
+    const particles = useRef<{ x: number, y: number, r: number, vx: number, vy: number, alpha: number }[]>([]);
     const requestRef = useRef<number>(0);
 
-    // Initialize particles
-    useEffect(() => {
-        for (let i = 0; i < 60; i++) {
+    // Initialize particles with 3D-like depth properties
+    const initParticles = (width: number, height: number) => {
+        particles.current = [];
+        const count = 100; // Dense snow
+        for (let i = 0; i < count; i++) {
             particles.current.push({
-                x: Math.random() * 200,
-                y: Math.random() * 200,
-                r: Math.random() * 2 + 1,
-                d: Math.random() * 10,
-                speed: Math.random() * 0.5 + 0.5
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: Math.random() * 2 + 1, // Size variation
+                vx: (Math.random() - 0.5) * 0.5, // Horizontal drift
+                vy: Math.random() * 1 + 0.5, // Fall speed
+                alpha: Math.random() * 0.5 + 0.3 // Opacity for depth
             });
         }
-    }, []);
-
-    const animate = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw particles
-        ctx.fillStyle = "white";
-        ctx.beginPath();
-
-        for (let i = 0; i < particles.current.length; i++) {
-            const p = particles.current[i];
-            ctx.moveTo(p.x, p.y);
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
-
-            // Update position
-            if (isShaking) {
-                // Shake effect: move up randomly
-                p.y -= Math.random() * 5;
-                p.x += (Math.random() - 0.5) * 5;
-            } else {
-                // Gravity
-                p.y += p.speed;
-                p.x += Math.sin(p.d) * 0.5; // Sway
-                p.d += 0.05;
-            }
-
-            // Boundary check
-            if (p.y > canvas.height) {
-                p.y = -5;
-                p.x = Math.random() * canvas.width;
-            }
-            if (p.y < -10) {
-                p.y = canvas.height;
-            }
-            if (p.x > canvas.width) {
-                p.x = 0;
-            }
-            if (p.x < 0) {
-                p.x = canvas.width;
-            }
-        }
-
-        ctx.fill();
-        requestRef.current = requestAnimationFrame(animate);
     };
 
+    // Animation Loop
     useEffect(() => {
-        let animationFrameId: number;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        // Initial setup
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        initParticles(canvas.width, canvas.height);
 
         const loop = () => {
-            animate();
-            animationFrameId = requestAnimationFrame(loop);
-        };
-        loop();
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
 
-        return () => cancelAnimationFrame(animationFrameId);
-    }, [isShaking]); // Re-bind when shake state changes
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Handle resize dynamically
+            const newRect = canvas.getBoundingClientRect();
+            // Use round to avoid subpixel flickering issues
+            if (Math.round(newRect.width) !== width || Math.round(newRect.height) !== height) {
+                canvas.width = Math.round(newRect.width);
+                canvas.height = Math.round(newRect.height);
+                // On drastic resize, re-init? No, let them fall.
+                if (particles.current.length === 0) initParticles(canvas.width, canvas.height);
+            }
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw particles
+            ctx.fillStyle = "white";
+
+            for (let i = 0; i < particles.current.length; i++) {
+                const p = particles.current[i];
+
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Physics
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Shake Impulse (Upward wind)
+                if (isShaking) {
+                    p.vy -= 0.5; // Strong upward force
+                    p.vx += (Math.random() - 0.5) * 0.5; // Chaos
+                } else {
+                    // Gravity wrapper
+                    if (p.vy < (p.r * 0.5)) p.vy += 0.05; // Terminal velocity based on size
+                }
+
+                // Boundaries
+                if (p.y > height) {
+                    p.y = -5;
+                    p.x = Math.random() * width;
+                    p.vy = Math.random() * 1 + 0.5; // Reset speed
+                }
+                if (p.y < -height * 0.5) { // If blown too high up
+                    p.y = -10;
+                    p.vy = Math.random() * 1 + 0.5;
+                }
+                if (p.x > width) p.x = 0;
+                if (p.x < 0) p.x = width;
+            }
+
+            requestRef.current = requestAnimationFrame(loop);
+        };
+
+        loop();
+        return () => cancelAnimationFrame(requestRef.current);
+    }, [isShaking]);
 
     const handleShake = () => {
         setIsShaking(true);
-        setTimeout(() => setIsShaking(false), 500); // Shake for 0.5s
+        setTimeout(() => setIsShaking(false), 800); // Longer shake duration
     };
 
     return (
-        <WidgetWrapper className="bg-transparent border-0 shadow-none overflow-visible">
+        <WidgetWrapper className="bg-transparent border-0 shadow-none overflow-visible flex items-center justify-center p-0">
             <div
                 onClick={handleShake}
-                className={`relative w-full h-full cursor-pointer transition-transform ${isShaking ? 'animate-shake' : ''}`}
-                style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+                className={`relative cursor-pointer transition-all duration-300 ease-out origin-center ${isShaking ? 'animate-shake' : 'hover:scale-[1.02]'}`}
+                style={{
+                    height: '90%', // Fill 90% of the container height
+                    aspectRatio: '1/1', // Keep it specific square
+                    maxWidth: '100%', // Don't overflow width
+                    maxHeight: '100%'
+                }}
             >
-                {/* Globe Glass */}
-                <div className="w-full h-[85%] rounded-full bg-gradient-to-br from-blue-200/30 to-blue-400/10 border-4 border-white/50 backdrop-blur-[2px] relative overflow-hidden shadow-inner">
-                    {/* Inner Scene (Snowman) */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                        <div className="w-6 h-6 bg-white rounded-full shadow-sm relative">
-                            <div className="absolute top-2 left-1.5 w-0.5 h-0.5 bg-black rounded-full"></div>
-                            <div className="absolute top-2 right-1.5 w-0.5 h-0.5 bg-black rounded-full"></div>
-                            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1 h-0.5 bg-orange-500 rounded-full"></div>
+                {/* Glass Sphere Container */}
+                <div className="absolute inset-0 rounded-full overflow-hidden shadow-2xl bg-gradient-to-b from-blue-100/20 to-blue-300/10 backdrop-blur-[1px] border border-white/40 ring-1 ring-white/20 z-10 box-border">
+
+                    {/* Inner Sky Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#a1c4fd]/30 to-[#c2e9fb]/20 pointer-events-none" />
+
+                    {/* Scene Content - Relative sizing using percents */}
+                    <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 flex flex-col items-center z-0 w-[60%] h-[50%] justify-end">
+                        {/* A tiny winter scene */}
+                        <div className="flex items-end justify-center w-full">
+                            <TreePine className="text-[#2d5a4c] fill-[#2d5a4c] drop-shadow-md pb-1 stroke-1 w-[50%] h-auto" />
+                            <div className="w-[20%] aspect-square rounded-full bg-white shadow-sm flex items-center justify-center -ml-[10%] mb-[5%] text-[10px] sm:text-xs lg:text-sm">
+                                ☃️
+                            </div>
                         </div>
-                        <div className="w-10 h-10 bg-white rounded-full -mt-2 shadow-sm flex items-center justify-center">
-                            <div className="w-1 h-1 bg-gray-300 rounded-full mb-2"></div>
-                            <div className="w-1 h-1 bg-gray-300 rounded-full mt-2"></div>
-                        </div>
+                        {/* Ground Snow */}
+                        <div className="w-[80%] h-[15%] bg-white rounded-[50%] blur-sm -mt-[5%] opacity-90" />
                     </div>
 
-                    {/* Canvas for Snow */}
+                    {/* Snow Canvas Layer */}
                     <canvas
                         ref={canvasRef}
-                        width={200}
-                        height={200}
-                        className="absolute inset-0 w-full h-full pointer-events-none"
+                        className="absolute inset-0 w-full h-full pointer-events-none z-20"
                     />
 
-                    {/* Reflection Highlight */}
-                    <div className="absolute top-4 left-4 w-6 h-4 bg-white/40 rounded-full transform -rotate-45 blur-sm"></div>
+                    {/* Glass Reflection Highlight (Gloss) */}
+                    <div className="absolute top-[10%] left-[15%] w-[30%] h-[15%] bg-gradient-to-br from-white/60 to-transparent rounded-full transform -rotate-45 opacity-70 pointer-events-none blur-[1px]" />
+                    <div className="absolute bottom-[10%] right-[15%] w-[15%] h-[8%] bg-white/30 rounded-full transform -rotate-45 opacity-40 pointer-events-none blur-[2px]" />
                 </div>
 
-                {/* Base */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-[20%] bg-[#8d6e63] rounded-t-lg rounded-b-xl shadow-lg border-t-4 border-[#6d4c41]">
-                    <div className="w-full h-full bg-[repeating-linear-gradient(90deg,transparent,transparent_10px,rgba(0,0,0,0.1)_10px,rgba(0,0,0,0.1)_12px)]"></div>
+                {/* Base Stand - Responsive positioning */}
+                <div className="absolute -bottom-[6%] left-1/2 -translate-x-1/2 w-[60%] h-[12%] z-0">
+                    {/* Top of base (darker) */}
+                    <div className="w-full h-full bg-[#5d4037] rounded-lg shadow-lg relative overflow-hidden border-t border-[#8d6e63]">
+                        {/* Wood Texture Lines */}
+                        <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_4px,rgba(0,0,0,0.2)_4px,rgba(0,0,0,0.2)_5px)] opacity-50" />
+                    </div>
                 </div>
+
             </div>
         </WidgetWrapper>
     );
