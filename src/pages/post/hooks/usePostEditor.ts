@@ -7,9 +7,11 @@ import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } 
 export const usePostEditor = () => {
     // ... (상태 변수들 기존과 동일) ...
     // ✨ 커스텀 앨범 타입 정의
+    // ✨ 커스텀 앨범 타입 정의
     interface CustomAlbum {
         name: string;
         tag: string | null;
+        createdAt?: number; // 생성 시간 추가
     }
 
     const [viewMode, setViewMode] = useState<ViewMode>('album');
@@ -59,7 +61,7 @@ export const usePostEditor = () => {
                     const parsed: string[] = JSON.parse(oldAlbums);
                     // Filter out invalid names
                     const validNames = parsed.filter(name => name && name !== 'undefined' && name !== 'null');
-                    const migrated = validNames.map(name => ({ name, tag: null }));
+                    const migrated = validNames.map(name => ({ name, tag: null, createdAt: Date.now() })); // 마이그레이션 시 현재 시간 부여
                     setCustomAlbums(migrated);
                     localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
                 } catch (e) { }
@@ -73,7 +75,7 @@ export const usePostEditor = () => {
         if (customAlbums.some(a => a.name === name)) return alert("이미 존재하는 앨범입니다.");
         if (name.trim() === "") return;
 
-        const newAlbum: CustomAlbum = { name, tag: tags[0] || null };
+        const newAlbum: CustomAlbum = { name, tag: tags[0] || null, createdAt: Date.now() }; // 생성 시간 저장
         const newAlbums = [...customAlbums, newAlbum];
         setCustomAlbums(newAlbums);
         localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
