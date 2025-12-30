@@ -6,7 +6,7 @@ export type BlockType =
     | 'text' | 'vertical-text' | 'typing-text' | 'scroll-text' // 텍스트 효과
     | 'bullet-list' | 'number-list' | 'todo-list' | 'toggle-list' // 리스트
     | 'callout' | 'quote' | 'divider' // 꾸미기
-    | 'accordion' | 'columns' // 레이아웃
+    | 'accordion' | 'columns' | 'custom-block'// 레이아웃
     | 'math' | 'spoiler' | 'highlight' | 'footnote' // 인라인/특수
     | 'button'
     // NEW (데이터)
@@ -71,3 +71,4 @@ export type ContainerLocation = {
     blockId: string;
     colIndex: number;
 } | null;
+

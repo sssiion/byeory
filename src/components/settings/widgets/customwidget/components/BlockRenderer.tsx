@@ -72,6 +72,13 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
 
     // 🆕 컬럼 내부 아이템 1개를 dnd-kit useSortable로 감싼 컴포넌트
 
+    if (type === 'custom-block') {
+        // 만약 content 안에 진짜 type이 들어있다면 꺼내쓰기
+        // (현재 구조상으로는 필요 없을 가능성이 높지만, 안전장치로 둡니다)
+        if (block.content && block.content.realType) {
+            block = { ...block, type: block.content.realType };
+        }
+    }
 
     // --- 🔥 컬럼(Columns) 렌더링 로직 (dnd-kit로 변경) ---
     if (type === 'columns') {
@@ -120,6 +127,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             </div>
         );
     }
+
     switch (type) {
         // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
         case 'heading1': return <h1 style={commonStyle} className="text-2xl font-bold mb-2 border-b pb-1 border-gray-100 break-words">{content.text}</h1>;

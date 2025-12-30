@@ -4,6 +4,7 @@ import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Maximize2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { type WidgetInstance, WIDGET_REGISTRY } from './Registry';
+import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
 
 interface DraggableWidgetProps {
     widget: WidgetInstance;
@@ -80,12 +81,38 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         drag(drop(ref));
     }
 
-    const registryItem = WIDGET_REGISTRY[widget.type];
-    if (!registryItem) return null;
 
-    const WidgetComponent = registryItem.component;
+
+
     const { x, y, w, h } = widget.layout;
     const isTransparent = widget.type === 'transparent';
+
+
+// 🌟 [핵심 수정] 위젯 렌더링 로직 분기
+    let WidgetComponent: any = null;
+    let registryItem: any = WIDGET_REGISTRY[widget.type];
+    if (!registryItem) return null;
+
+    // 1. 커스텀 블록 (저장된 위젯)인 경우
+    if (widget.type === 'custom-block' || !registryItem) {
+        // registryItem이 없으면 커스텀으로 간주 (또는 에러 방지)
+        WidgetComponent = (props: any) => {
+            // props.block이 있으면 그걸 쓰고, 없으면 widget.props를 block 형태로 변환
+            const blockData = props.block || {
+                id: widget.id,
+                type: (widget.props as any).type || widget.type, // 원래 타입 보존
+                content: (widget.props as any).content || {},
+                styles: (widget.props as any).styles || {}
+            };
+            return <BlockRenderer block={blockData} />;
+        };
+        // 가짜 registryItem 생성 (에러 방지용)
+        registryItem = { category: 'My Saved', validSizes: [[1,1], [1, 2], [2, 1], [2, 2]] };
+    }
+    // 2. 일반 레지스트리 위젯인 경우
+    else {
+        WidgetComponent = registryItem.component;
+    }
 
     // Grid Layout Style Logic
     let gridStyle: React.CSSProperties = {
@@ -94,7 +121,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         opacity: isDragging ? 0 : 1,
         zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
     };
-
     // Mobile Override (2-Column Flow)
     if (isMobile) {
         gridStyle = {
