@@ -33,16 +33,7 @@ const EditorCanvas: React.FC<Props> = ({
     setViewMode, setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
 }) => {
 
-    // ✨ 폰트 로드: Google Fonts를 동적으로 삽입합니다.
-    React.useEffect(() => {
-        const link = document.createElement('link');
-        link.href = 'https://fonts.googleapis.com/css2?family=Gaegu&family=Gowun+Dodum&family=Hi+Melody&family=Nanum+Myeongjo&family=Noto+Sans+KR:wght@300;400;700&display=swap';
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-        return () => { document.head.removeChild(link); };
-    }, []);
-
-    // 👇 2. 드래그가 끝났을 때 순서를 바꾸는 함수
+    // 드래그가 끝났을 때 순서를 바꾸는 함수
     const onDragEnd = (result: DropResult) => {
         // 드래그가 취소되거나 엉뚱한 곳에 떨어졌을 때
         if (!result.destination) return;
@@ -86,13 +77,13 @@ const EditorCanvas: React.FC<Props> = ({
         }));
     };
 
-    // ✨ 특정 블록 삭제 함수 (ContentBlock의 쓰레기통 버튼용)
+    // 특정 블록 삭제 함수 (ContentBlock의 쓰레기통 버튼용)
     const handleDeleteBlock = (id: string) => {
         setBlocks(prev => prev.filter(b => b.id !== id));
         if (selectedId === id) onSelect('', 'block'); // 만약 선택된 상태였다면 선택 해제
     };
 
-    // 🌟 [자동 감지 로직] 부모가 selectedType을 안 줘도 여기서 직접 찾습니다.
+    // [자동 감지 로직] 부모가 selectedType을 안 줘도 여기서 직접 찾습니다.
     const getDetectedType = () => {
         if (selectedType) return selectedType; // 부모가 줬으면 그거 씀
         if (!selectedId) return null;
@@ -125,15 +116,16 @@ const EditorCanvas: React.FC<Props> = ({
             className="w-full h-full flex justify-center overflow-x-auto overflow-y-visible py-8"
             onClick={onBackgroundClick}
         >
-            {/* ✨ 1️⃣ [수정] 실제 편집 캔버스 (흰색 종이)
-                - overflow-hidden 추가: 이 박스를 벗어나는 모든 요소를 잘라버립니다 (마스킹).
-                - relative: 내부 절대 좌표 아이템들의 기준점이 됩니다.
-            */}
             <div className="w-[800px] min-w-[800px] bg-white rounded-xl shadow-xl min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden">
 
                 {/* 헤더 */}
                 <div
-                    className={`sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-center rounded-t-xl z-20 transition-all ${selectedId === 'title' ? 'ring-2 ring-indigo-200' : ''}`}
+                    className={`sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-center rounded-t-xl z-20 transition-all ${viewMode === 'editor' && selectedId === 'title' ? 'ring-2 ring-indigo-200' : ''}`}
+                    style={{
+                        backgroundColor: titleStyles.backgroundColor || 'rgba(255, 255, 255, 0.95)',
+                        borderTopLeftRadius: '0.75rem',
+                        borderTopRightRadius: '0.75rem'
+                    }}
                     onClick={(e) => {
                         e.stopPropagation();
                         if (viewMode === 'editor') onSelect('title', 'title');
@@ -147,6 +139,7 @@ const EditorCanvas: React.FC<Props> = ({
                         className="w-full outline-none bg-transparent placeholder-gray-300"
                         style={{
                             ...titleStyles,
+                            backgroundColor: 'transparent', // 부모가 색을 가지므로 투명
                             // 기본 스타일이 덮어씌워지지 않도록 명시
                             fontSize: titleStyles.fontSize || '30px',
                             fontWeight: titleStyles.fontWeight || 'bold',
@@ -155,10 +148,6 @@ const EditorCanvas: React.FC<Props> = ({
                     {viewMode === 'read' && <button onClick={() => setViewMode('editor')} className="ml-4 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition ">🛠️ 수정하기</button>}
                 </div>
 
-                {/* ✨ 2️⃣ [수정] 내부 콘텐츠 영역 패딩 조절
-                    - 기존 p-12 (전체 48px)에서 오른쪽 패딩만 pr-16 (64px)으로 늘렸습니다.
-                    - 이유: overflow-hidden 때문에 오른쪽 메뉴바가 잘리는 것을 방지하기 위함입니다.
-                */}
                 <div className="flex-1 pl-12 py-12 pr-16 relative pb-40">
 
                     {/* 1. DragDropContext는 가장 바깥에 위치 */}
@@ -174,7 +163,7 @@ const EditorCanvas: React.FC<Props> = ({
                                 >
                                     {/* 3. 반복문 시작 */}
                                     {blocks.map((block, index) => {
-                                        const isFocused = selectedId === block.id;
+                                        const isFocused = viewMode === 'editor' && selectedId === block.id;
                                         const canSwap = block.type === 'image-left' || block.type === 'image-right';
 
                                         return (
@@ -194,7 +183,7 @@ const EditorCanvas: React.FC<Props> = ({
                                                             opacity: snapshot.isDragging ? 0.8 : 1,
                                                             zIndex: snapshot.isDragging ? 100 : 'auto' // 드래그 시 가려짐 방지
                                                         }}
-                                                        className={`relative group transition-all duration-200 ${isFocused ? 'ring-2 ring-indigo-100 rounded-lg pl-2' : ''}`}
+                                                        className={`relative group transition-shadow duration-200 ${isFocused ? 'ring-2 ring-indigo-200 rounded-lg pl-2' : ''}`}
                                                         onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') onSelect(block.id, 'block'); }}
                                                     >
                                                         <ContentBlock
@@ -210,7 +199,7 @@ const EditorCanvas: React.FC<Props> = ({
 
                                                         {/* 우측 메뉴 버튼들 */}
                                                         {viewMode === 'editor' && isFocused && (
-                                                            <div className="absolute -right-14 top-0 h-full flex flex-col justify-start pt-2 gap-2 z-30">
+                                                            <div className="absolute -right-14 top-[-10px] h-full flex flex-col justify-start pt-2 gap-2 z-30">
                                                                 <div className="flex flex-col gap-1 bg-white/80 backdrop-blur rounded-lg shadow-sm p-1 border">
                                                                     <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'up'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowUp size={16} /></button>
                                                                     <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'down'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowDown size={16} /></button>
@@ -272,10 +261,12 @@ const EditorCanvas: React.FC<Props> = ({
                                 style={{
                                     fontFamily: txt.styles?.fontFamily,
                                     fontSize: txt.styles?.fontSize,
-                                    fontWeight: txt.styles?.fontWeight,
+                                    fontWeight: txt.styles?.fontWeight || 'normal',
                                     textAlign: txt.styles?.textAlign as any,
                                     color: txt.styles?.color,
                                     backgroundColor: txt.styles?.backgroundColor,
+                                    fontStyle: txt.styles?.fontStyle || 'normal',
+                                    textDecoration: txt.styles?.textDecoration || 'none',
                                 }}
                                 readOnly={viewMode === 'read'}
                             />

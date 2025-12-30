@@ -35,7 +35,9 @@ export interface FloatingText extends BaseFloatingItem {
         textAlign: string;
         color: string;
         backgroundColor: string;
-        fontFamily: string; // ✨ 추가
+        fontFamily: string;
+        fontStyle?: string;
+        textDecoration?: string; // ✨ 추가
     };
 }
 

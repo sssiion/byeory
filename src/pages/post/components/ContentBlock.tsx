@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import type { Block } from '../types';
-import { Trash2 } from 'lucide-react';
+import { Trash2, GripVertical } from 'lucide-react';
 
 interface Props {
     block: Block;
@@ -24,7 +24,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             textareaRef.current.style.height = 'auto';
             textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    }, [block.text]);
+    }, [block.text, block.styles]);
 
     const triggerFile = (idx: number) => idx === 1 ? fileInputRef1.current?.click() : fileInputRef2.current?.click();
 
@@ -88,11 +88,13 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     };
 
     return (
-        <div className={`group relative mb-6 flex gap-6 items-start ${readOnly ? '' : 'hover:bg-gray-50/50 rounded-xl p-2 -ml-2 transition'}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
+        <div className={`group relative mb-6 flex gap-6 items-start ${readOnly ? '' : `hover:bg-gray-50 rounded-xl p-2 -ml-2 transition ${isSelected ? 'bg-gray-50' : ''}`}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
 
-            {!readOnly && !isSelected && ( // ✨ isSelected일 때는 숨김 (오른쪽 사이드바 메뉴가 나오거나 방해되지 않도록)
+            {!readOnly && !isSelected && ( // isSelected일 때는 숨김 (오른쪽 사이드바 메뉴가 나오거나 방해되지 않도록)
                 <>
-                    <div {...dragHandleProps} className="absolute -left-8 top-2 text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing px-2 opacity-0 group-hover:opacity-100 transition">⋮⋮</div>
+                    <div {...dragHandleProps} className="absolute -left-10 top-1 p-1.5 text-gray-400 hover:text-indigo-600 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition">
+                        <GripVertical size={20} />
+                    </div>
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}
                         className="absolute -right-12 top-0 bg-white border border-gray-200 shadow-sm p-1.5 rounded text-red-500 hover:bg-red-50 hover:border-red-200 opacity-0 group-hover:opacity-100 transition-all z-10"
@@ -146,7 +148,17 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {/* 5. 글만 */}
             {block.type === 'paragraph' && (
                 <div className="w-full">
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
+                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{
+                        fontFamily: block.styles?.fontFamily,
+                        fontSize: block.styles?.fontSize || '18px',
+                        textAlign: block.styles?.textAlign as any || 'left',
+                        color: block.styles?.color || 'inherit',
+                        fontWeight: block.styles?.fontWeight || 'normal',
+                        fontStyle: block.styles?.fontStyle || 'normal',
+                        textDecoration: block.styles?.textDecoration || 'none',
+                        backgroundColor: block.styles?.backgroundColor || 'transparent',
+                        borderRadius: '4px' // 배경색이 있을 때 보기 좋게
+                    }} />
                 </div>
             )}
         </div>

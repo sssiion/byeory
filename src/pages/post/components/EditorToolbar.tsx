@@ -7,7 +7,12 @@ import {
     AlignRight,
     BringToFront,
     SendToBack,
-    Sliders
+    Sliders,
+    Bold,
+    Italic,
+    Underline,
+    Strikethrough,
+    ChevronDown
 } from 'lucide-react';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../types';
 import { FONT_FAMILIES } from '../constants';
@@ -21,6 +26,8 @@ interface Props {
 }
 
 const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete }) => {
+    const [showTextMenu, setShowTextMenu] = React.useState(false);
+    const [showBgMenu, setShowBgMenu] = React.useState(false);
     const itemType = (currentItem as any)?.type;
     const currentZIndex = (currentItem as any).zIndex || 1;
 
@@ -50,12 +57,12 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
 
     return (
         <div
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center gap-6 z-[100] animate-in slide-in-from-bottom-5"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center z-[100] animate-in slide-in-from-bottom-5"
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
         >
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-500 border-r pr-4">
+            <div className="flex items-center gap-2 text-sm font-bold text-gray-500 border-r pr-4 mr-4">
                 <Sliders size={16} className="text-indigo-600" />
                 <span>설정</span>
             </div>
@@ -95,7 +102,7 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
                         <input
                             type="number"
                             min="10"
-                            max="100"
+                            max="170"
                             value={getFontSizeNumber()}
                             onChange={(e) => handleTextUpdate('fontSize', `${e.target.value}px`)}
                             className="w-12 bg-transparent text-sm outline-none text-center font-mono"
@@ -114,12 +121,126 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
                         ))}
                     </div>
 
-                    <input
-                        type="color"
-                        value={(currentItem as any).styles?.color || '#000000'}
-                        onChange={(e) => handleTextUpdate('color', e.target.value)}
-                        className="w-8 h-8 rounded-full cursor-pointer border-2 border-gray-100 p-0 overflow-hidden shadow-sm"
-                    />
+                    {/* 텍스트 스타일 드롭다운 (색상 + 꾸미기) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowTextMenu(!showTextMenu)}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded hover:bg-gray-100 transition ${showTextMenu ? 'bg-gray-100' : ''}`}
+                            title="텍스트 스타일"
+                        >
+                            <span
+                                className="font-serif font-bold text-lg"
+                                style={{
+                                    color: (currentItem as any).styles?.color || '#000000',
+                                    textDecoration: (currentItem as any).styles?.textDecoration,
+                                    fontStyle: (currentItem as any).styles?.fontStyle
+                                }}
+                            >
+                                T
+                            </span>
+                            <ChevronDown size={12} className="text-gray-400" />
+                        </button>
+
+                        {/* 드롭다운 메뉴 */}
+                        {showTextMenu && (
+                            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex flex-col gap-2 min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
+                                {/* 1. 스타일 버튼들 */}
+                                <div className="flex justify-between bg-gray-50 rounded p-1">
+                                    <button
+                                        onClick={() => handleTextUpdate('fontWeight', (currentItem as any).styles?.fontWeight === 'bold' ? 'normal' : 'bold')}
+                                        className={`p-1.5 rounded hover:bg-white hover:shadow-sm transition ${(currentItem as any).styles?.fontWeight === 'bold' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                                        title="굵게"
+                                    >
+                                        <Bold size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleTextUpdate('fontStyle', (currentItem as any).styles?.fontStyle === 'italic' ? 'normal' : 'italic')}
+                                        className={`p-1.5 rounded hover:bg-white hover:shadow-sm transition ${(currentItem as any).styles?.fontStyle === 'italic' ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                                        title="기울임"
+                                    >
+                                        <Italic size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleTextUpdate('textDecoration', (currentItem as any).styles?.textDecoration?.includes('underline') ? 'none' : 'underline')}
+                                        className={`p-1.5 rounded hover:bg-white hover:shadow-sm transition ${(currentItem as any).styles?.textDecoration?.includes('underline') ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                                        title="밑줄"
+                                    >
+                                        <Underline size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleTextUpdate('textDecoration', (currentItem as any).styles?.textDecoration?.includes('line-through') ? 'none' : 'line-through')}
+                                        className={`p-1.5 rounded hover:bg-white hover:shadow-sm transition ${(currentItem as any).styles?.textDecoration?.includes('line-through') ? 'bg-white shadow text-indigo-600' : 'text-gray-500'}`}
+                                        title="취소선"
+                                    >
+                                        <Strikethrough size={16} />
+                                    </button>
+                                </div>
+
+                                {/* 2. 색상 선택 */}
+                                <div className="relative h-8 rounded-lg overflow-hidden border border-gray-200 cursor-pointer group">
+                                    <div
+                                        className="w-full h-full flex items-center justify-center gap-2 bg-gray-50 group-hover:bg-gray-100 transition"
+                                        style={{ backgroundColor: (currentItem as any).styles?.color || '#000000' + '10' }} // 배경색으로 살짝 틴트
+                                    >
+                                        <span className="text-xs font-bold text-gray-600 mix-blend-difference">Color</span>
+                                        <div className="w-4 h-4 rounded-full border border-gray-200 shadow-sm" style={{ backgroundColor: (currentItem as any).styles?.color || '#000000' }}></div>
+                                    </div>
+                                    <input
+                                        type="color"
+                                        value={(currentItem as any).styles?.color || '#000000'}
+                                        onChange={(e) => handleTextUpdate('color', e.target.value)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 배경색 스타일 드롭다운 (O 아이콘) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowBgMenu(!showBgMenu)}
+                            className={`flex items-center gap-1 px-2 py-2 rounded hover:bg-gray-100 transition ${showBgMenu ? 'bg-gray-100' : ''}`}
+                            title="배경 색상"
+                        >
+                            <span
+                                className="w-5 h-5 rounded-full border border-gray-300 shadow-sm flex items-center justify-center font-bold text-xs"
+                                style={{ backgroundColor: (currentItem as any).styles?.backgroundColor || 'transparent' }}
+                            >
+                                {/* 배경색이 투명이면 빗금 표시 등으로 표현 가능하지만 지금은 심플하게 */}
+                                {!(currentItem as any).styles?.backgroundColor || (currentItem as any).styles?.backgroundColor === 'transparent' ? '/' : ''}
+                            </span>
+                            <ChevronDown size={12} className="text-gray-400" />
+                        </button>
+
+                        {/* 배경색 메뉴 */}
+                        {showBgMenu && (
+                            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex flex-col gap-2 min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
+                                {/* 색상 선택 */}
+                                <div className="relative h-8 rounded-lg overflow-hidden border border-gray-200 cursor-pointer group">
+                                    <div
+                                        className="w-full h-full flex items-center justify-center gap-2 bg-gray-50 group-hover:bg-gray-100 transition"
+                                    >
+                                        <span className="text-xs font-bold text-gray-600">BG Color</span>
+                                        <div className="w-4 h-4 rounded-full border border-gray-200 shadow-sm" style={{ backgroundColor: (currentItem as any).styles?.backgroundColor || 'transparent' }}></div>
+                                    </div>
+                                    <input
+                                        type="color"
+                                        value={(currentItem as any).styles?.backgroundColor || '#ffffff'}
+                                        onChange={(e) => handleTextUpdate('backgroundColor', e.target.value)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    />
+                                </div>
+                                {/* 초기화 버튼 */}
+                                <button
+                                    onClick={() => handleTextUpdate('backgroundColor', 'transparent')}
+                                    className="w-full py-1.5 text-xs font-bold text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition"
+                                >
+                                    배경색 없음
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -151,10 +272,9 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
             )}
 
             {onDelete && (
-                <div className="border-l pl-4 ml-auto">
-                    <button onClick={onDelete} className="flex items-center gap-1 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-sm font-bold whitespace-nowrap">
-                        <Trash2 size={16} />
-                        <span>삭제</span>
+                <div className="border-l pl-3 ml-2 text-gray-500">
+                    <button onClick={onDelete} className="flex items-center justify-center text-red-500 hover:bg-red-50 w-8 h-5 rounded-lg transition" title="삭제">
+                        <Trash2 size={18} />
                     </button>
                 </div>
             )}
