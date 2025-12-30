@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PostData } from '../types';
-import { ArrowLeft, FolderOpen, Hash } from 'lucide-react';
+import { ArrowLeft, Folder } from 'lucide-react';
 
 interface Props {
     tagName: string | null;
@@ -22,20 +22,16 @@ const PostFolderPage: React.FC<Props> = ({ tagName, posts, onBack, onPostClick }
                     <ArrowLeft size={24} />
                 </button>
 
-                <div className="flex items-center gap-2">
-                    {tagName ? (
-                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                            <Hash size={24} />
-                        </div>
-                    ) : (
-                        <div className="p-2 bg-gray-200 text-gray-500 rounded-lg">
-                            <FolderOpen size={24} />
-                        </div>
-                    )}
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        {tagName ? `#${tagName}` : '기타 보관함'}
-                    </h1>
-                    <span className="text-gray-500 text-lg ml-2">({posts.length})</span>
+                <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <Folder size={20} className="fill-indigo-100" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                            {tagName || '기타 보관함'}
+                            <span className="text-gray-400 text-lg font-medium">({posts.length})</span>
+                        </h1>
+                    </div>
                 </div>
             </div>
 

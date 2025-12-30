@@ -89,8 +89,23 @@ const Post: React.FC = () => {
             <CreateAlbumModal
                 isOpen={isAlbumModalOpen}
                 onClose={() => setIsAlbumModalOpen(false)}
-                onSave={(name, tags) => {
+                onSave={(name, tags, coverConfig) => {
                     editor.handleCreateAlbum(name, tags);
+
+                    if (coverConfig) {
+                        try {
+                            const stored = localStorage.getItem('album_covers_v1');
+                            const covers = stored ? JSON.parse(stored) : {};
+                            covers[name] = coverConfig;
+                            localStorage.setItem('album_covers_v1', JSON.stringify(covers));
+
+                            // Notify PostAlbumPage
+                            window.dispatchEvent(new Event('album_cover_update'));
+                        } catch (e) {
+                            console.error("Failed to save album cover", e);
+                        }
+                    }
+
                     setIsAlbumModalOpen(false);
                 }}
             />
