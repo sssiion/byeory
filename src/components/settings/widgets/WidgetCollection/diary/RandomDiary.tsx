@@ -3,6 +3,11 @@ import { Shuffle, MoreHorizontal } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
 // 3. Random Diary (랜덤 일기)
+export const RandomDiaryConfig = {
+    defaultSize: '1x1',
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
+};
+
 export function RandomDiary() {
     const [isOpen, setIsOpen] = useState(false);
     const diary = { date: '2023. 10. 15', content: "가을 바람이 참 좋았던 날. 공원에서 자전거를 탔다." };

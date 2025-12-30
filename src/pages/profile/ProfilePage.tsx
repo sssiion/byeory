@@ -1,21 +1,83 @@
+import { useState, useEffect } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Fingerprint, Key, Image as ImageIcon } from "lucide-react";
+import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Key, Image as ImageIcon, Clock } from "lucide-react";
 
 function ProfilePage() {
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
-    // Use user data from context or fallbacks
-    const userName = user?.email ? user.email.split('@')[0] : '사용자';
-    const userEmail = user?.email || 'email@example.com';
+    const [profile, setProfile] = useState<{
+        name?: string;
+        nickname?: string;
+        email?: string;
+        profilePhoto?: string;
+        birthDate?: string;
+        phone?: string;
+        gender?: string;
+        bio?: string;
+    } | null>(null);
 
-    // Stats (mocking for now as they were before)
+    const [provider, setProvider] = useState<string>('LOCAL');
+    const [showSessionTimer, setShowSessionTimer] = useState(false);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('showSessionTimer');
+        if (saved === 'true') setShowSessionTimer(true);
+    }, []);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+
+            // Decode token to check provider
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.provider) {
+                    setProvider(payload.provider);
+                }
+            } catch (e) {
+                console.error("Token decode error", e);
+            }
+
+            try {
+                const response = await fetch('http://localhost:8080/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setProfile(data);
+                } else if (response.status === 404) {
+                    // Profile not found -> Redirect to setup
+                    console.log("Profile not found, redirecting to setup...");
+                    navigate('/setup-profile');
+                } else if (response.status === 401 || response.status === 403) {
+                    // Invalid token -> Logout
+                    logout();
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+            }
+        };
+
+        fetchProfile();
+    }, []);
+
+    // Use user data from fetch
+    const userName = profile?.nickname || profile?.name || '';
+    const userEmail = profile?.email || '';
+
+    // Stats (Initialize to 0 as there is no API for this yet)
     const stats = {
-        totalEntries: 42,
-        streakDays: 7,
-        exchangeRooms: 3
+        totalEntries: 0,
+        streakDays: 0,
+        exchangeRooms: 0
     };
 
     const handleLogout = () => {
@@ -35,8 +97,8 @@ function ProfilePage() {
                     <div className="rounded-2xl p-6 shadow-lg text-[var(--btn-text)]" style={{ backgroundColor: 'var(--btn-bg)' }}>
                         <div className="flex items-center gap-4">
                             <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center overflow-hidden">
-                                {false ? ( // TODO: Add profile photo to user context
-                                    <img src="" alt="Profile" className="w-full h-full object-cover" />
+                                {profile?.profilePhoto ? (
+                                    <img src={profile.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                     <User className="w-10 h-10 text-white" />
                                 )}
@@ -103,22 +165,24 @@ function ProfilePage() {
                         <h3 className="px-6 py-4 border-b font-medium theme-text-primary theme-border">계정</h3>
                         <button
                             onClick={() => navigate('/profile/edit')}
-                            className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"
+                            className={`w-full px-6 py-4 text-left transition-colors flex items-center justify-between ${provider === 'GOOGLE' ? '' : 'border-b'} hover:opacity-80 theme-border`}
                         >
                             <div className="flex items-center gap-3">
                                 <User className="w-5 h-5 theme-text-secondary" />
                                 <span className="theme-text-primary">프로필 수정</span>
                             </div>
                         </button>
-                        <button
-                            onClick={() => navigate('/profile/password')}
-                            className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80"
-                        >
-                            <div className="flex items-center gap-3">
-                                <Lock className="w-5 h-5 theme-text-secondary" />
-                                <span className="theme-text-primary">비밀번호 변경</span>
-                            </div>
-                        </button>
+                        {provider !== 'GOOGLE' && (
+                            <button
+                                onClick={() => navigate('/profile/password')}
+                                className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Lock className="w-5 h-5 theme-text-secondary" />
+                                    <span className="theme-text-primary">비밀번호 변경</span>
+                                </div>
+                            </button>
+                        )}
                     </div>
 
                     {/* General Settings */}
@@ -162,16 +226,24 @@ function ProfilePage() {
                                 <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
                             </div>
                         </button>
-                        <button className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border">
+                        <button
+                            onClick={() => {
+                                const newValue = !showSessionTimer;
+                                setShowSessionTimer(newValue);
+                                localStorage.setItem('showSessionTimer', newValue.toString());
+                                window.dispatchEvent(new CustomEvent('session-timer-change', { detail: { show: newValue } }));
+                            }}
+                            className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"
+                        >
                             <div className="flex items-center gap-3">
-                                <Fingerprint className="w-5 h-5 theme-text-secondary" />
+                                <Clock className="w-5 h-5 theme-text-secondary" />
                                 <div>
-                                    <span className="block theme-text-primary">생체 인증</span>
-                                    <span className="text-sm theme-text-secondary">지문 또는 Face ID</span>
+                                    <span className="block theme-text-primary">접속 시간 표시</span>
+                                    <span className="text-sm theme-text-secondary">상단바에 현재 접속 시간 표시</span>
                                 </div>
                             </div>
-                            <div className="w-12 h-6 rounded-full relative cursor-pointer" style={{ backgroundColor: 'var(--btn-bg)' }}>
-                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
+                            <div className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${showSessionTimer ? 'bg-[var(--btn-bg)]' : 'bg-gray-300'}`}>
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${showSessionTimer ? 'right-1' : 'left-1'}`}></div>
                             </div>
                         </button>
                         <button className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80">

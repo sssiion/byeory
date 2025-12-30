@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
 
+export const MoonPhaseConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
+};
+
 // --- 1. Moon Phase (달의 위상) ---
 export function MoonPhase() {
     const [phase, setPhase] = useState(0);

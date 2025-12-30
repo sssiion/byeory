@@ -23,6 +23,8 @@
     "axios": "^1.13.2",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.560.0",
+    "mathjs": "^15.1.0",
+    "puppeteer": "^24.34.0",
     "pdfjs-dist": "^3.4.120",
     "react": "^19.0.3",
     "react-dnd": "^16.0.1",
@@ -30,6 +32,7 @@
     "react-dnd-touch-backend": "^16.0.1",
     "react-dom": "^19.0.3",
     "react-draggable": "^4.5.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.10.1",
     "tailwindcss": "^4.1.17"
   },

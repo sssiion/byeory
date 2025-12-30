@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Palette, Menu, Home, Layout } from 'lucide-react';
 import ThemeSettings from './theme/ThemeSettings';
@@ -10,11 +10,19 @@ interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     onMenuEditMode?: () => void;
+    initialView?: SettingsView;
 }
 
-export default function SettingsModal({ isOpen, onClose, onMenuEditMode }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onClose, onMenuEditMode, initialView = 'main' }: SettingsModalProps) {
     const navigate = useNavigate();
     const [currentView, setCurrentView] = useState<SettingsView>('main');
+
+    // Reset or set initial view when opening
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentView(initialView);
+        }
+    }, [isOpen, initialView]);
 
     if (!isOpen) return null;
 

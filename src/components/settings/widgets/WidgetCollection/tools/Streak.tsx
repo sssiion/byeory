@@ -2,8 +2,31 @@ import React from 'react';
 import { Flame } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
+export const StreakWidgetConfig = {
+    defaultSize: '2x1',
+    validSizes: [[1, 1], [2, 1]] as [number, number][],
+};
+
+interface StreakWidgetProps {
+    gridSize?: { w: number; h: number };
+}
+
 // 17. Streak Widget (연속 기록)
-export const StreakWidget = React.memo(function StreakWidget() {
+export const StreakWidget = React.memo(function StreakWidget({ gridSize }: StreakWidgetProps) {
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-gradient-to-br from-orange-400 to-orange-600">
+                <div className="w-full h-full flex flex-col items-center justify-center text-white">
+                    <Flame className="w-8 h-8 mb-1 animate-pulse" fill="currentColor" />
+                    <span className="text-2xl font-black leading-none">12</span>
+                    <span className="text-[9px] opacity-80 font-bold uppercase mt-0.5">Days</span>
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
     return (
         <WidgetWrapper className="bg-gradient-to-b from-orange-50 to-white">
             <div className="w-full h-full flex flex-col items-center justify-center p-2">

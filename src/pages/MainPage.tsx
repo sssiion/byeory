@@ -3,20 +3,19 @@ import { useSearchParams } from 'react-router-dom';
 import Navigation from '../components/Header/Navigation';
 import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings';
 import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
+import { WidgetGallery } from '../components/settings/widgets/WidgetGallery';
 import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
-import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical } from 'lucide-react';
+import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical, ArrowUp } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { clampWidget, resolveCollisions } from '../components/settings/widgets/layoutUtils';
+import { TouchBackend } from 'react-dnd-touch-backend';
+import { clampWidget, resolveCollisions, compactLayout } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
-import {usePostEditor} from "./post/hooks/usePostEditor.ts";
 import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder.tsx";
-
+import { useIsMobile } from '../hooks';
 
 // Default Grid Size
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
-
-
 
 // Default Widgets
 const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
@@ -59,6 +58,7 @@ const GridCell: React.FC<GridCellProps> = ({ x, y, onDrop, onHover, isEditMode }
 const MainPage: React.FC = () => {
     const { isEditMode: isMenuEditMode } = useMenu();
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false); // State for scroll button visibility
     const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
     const [widgetSnapshot, setWidgetSnapshot] = useState<WidgetInstance[] | null>(null);
     const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
@@ -70,6 +70,9 @@ const MainPage: React.FC = () => {
     const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
+
+    // Mobile Check
+    const isMobile = useIsMobile();
 
     // Load
     useEffect(() => {
@@ -96,8 +99,6 @@ const MainPage: React.FC = () => {
             setGridSize(DEFAULT_GRID_SIZE);
         }
     }, []);
-
-    // ... (omitted)
 
     // Save
     useEffect(() => {
@@ -131,6 +132,40 @@ const MainPage: React.FC = () => {
         }
     }, [searchParams]);
 
+    // Lock body scroll when catalog is open
+    useEffect(() => {
+        if (isCatalogOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isCatalogOpen]);
+
+    // Handle Scroll Listener for "Scroll to Top" button
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                setShowScrollTop(true);
+            } else {
+                setShowScrollTop(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to Top Function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    };
+
     // Snapshot widgets when entering edit mode
     useEffect(() => {
         if (isWidgetEditMode && widgetSnapshot === null) {
@@ -144,9 +179,11 @@ const MainPage: React.FC = () => {
         const registryItem = WIDGET_REGISTRY[type];
 
         let w = 1, h = 1;
-        if (registryItem.defaultSize === 'wide') { w = 4; h = 1; }
-        else if (registryItem.defaultSize === 'large') { w = 2; h = 2; }
-        else if (registryItem.defaultSize === 'medium') { w = 2; h = 1; }
+        if (registryItem.defaultSize) {
+            const [wStr, hStr] = registryItem.defaultSize.split('x');
+            w = parseInt(wStr, 10) || 1;
+            h = parseInt(hStr, 10) || 1;
+        }
 
         if (w > gridSize.cols) w = gridSize.cols;
 
@@ -193,41 +230,38 @@ const MainPage: React.FC = () => {
         setWidgets(prev => prev.filter(w => w.id !== id));
     };
 
+    const lastHoverTime = React.useRef(0);
+    const HOVER_THROTTLE_MS = isMobile ? 60 : 30; // 60ms on mobile for smooth animation balance
+
     const onCellHover = useCallback((x: number, y: number, item: any) => {
         if (!item || !item.id) return;
 
-        // Find the actual widget being dragged to get its dimensions
-        // (Item might only contain partial info depending on how it was constructed)
+        const now = Date.now();
+        if (now - lastHoverTime.current < HOVER_THROTTLE_MS) return;
+        lastHoverTime.current = now;
+
         const draggingWidget = widgets.find(w => w.id === item.id);
         if (!draggingWidget) return;
+
+        // Optimization: Don't recalculate if position hasn't changed significantly enough to warrant a new cell
+        // (However, grid logic relies on x/y inputs which are discrete cells, so this check is implicit)
 
         const { w, h } = draggingWidget.layout;
         const clamped = clampWidget({ x, y, w, h }, gridSize.cols);
 
-        // Optimization: Don't recalculate if position hasn't changed from last preview
-        // effectively, we need to track "last calculated preview input" to avoid thrashing
-        // but `layoutPreview` state updates will cause re-renders anyway.
-        // We can just rely on basic equality or memo logic if performance is an issue.
-        // For now, let's just calculate.
+        // Prevent calculating if the visual result would be identical to current preview
+        if (layoutPreview) {
+            const currentPreviewWidget = layoutPreview.find(w => w.id === item.id);
+            if (currentPreviewWidget && currentPreviewWidget.layout.x === clamped.x && currentPreviewWidget.layout.y === clamped.y) {
+                return;
+            }
+        }
 
-        // Create a temporary "moved" widget
         const movedWidget = { ...draggingWidget, layout: { ...draggingWidget.layout, x: clamped.x, y: clamped.y } };
-
-        // Calculate the full layout with collisions resolved
-        // Note: we must pass the *original* widgets list (without the move applied) 
-        // but we need to trick resolveCollisions to use the movedWidget as the "pusher".
-
-        // resolveCollisions takes (widgets list, active widget). 
-        // It removes active widget from list by ID, then pushes it back in at new spot, then resolves others.
         const resolved = resolveCollisions(widgets, movedWidget);
 
         setLayoutPreview(resolved);
-    }, [widgets, gridSize.cols]);
-
-    // Handle end of drag to clear preview
-    // Note: react-dnd dragging end is handled in the DraggableWidget, 
-    // but the drop event is handled here.
-    // We should clear preview on drop or when drag ends.
+    }, [widgets, gridSize.cols, layoutPreview, isMobile]);
 
     const updateWidgetPosition = (id: string, targetX: number, targetY: number) => {
         setLayoutPreview(null); // Clear preview on drop
@@ -260,7 +294,7 @@ const MainPage: React.FC = () => {
             const movedWidget = { ...activeWidget, layout: clamped };
             const resolved = resolveCollisions(prev, movedWidget);
 
-            return resolved;
+            return compactLayout(resolved);
         });
     };
 
@@ -276,7 +310,6 @@ const MainPage: React.FC = () => {
 
     const handleArrange = () => {
         setWidgets(prev => {
-            // 1. Sort by Y then X (Reading Order)
             const sorted = [...prev].sort((a, b) => {
                 if (a.layout.y === b.layout.y) return a.layout.x - b.layout.x;
                 return a.layout.y - b.layout.y;
@@ -328,15 +361,30 @@ const MainPage: React.FC = () => {
         setIsArrangeConfirmOpen(false);
     };
 
-    // Calculate minimum rows needed
-    // Use layoutPreview if dragging, otherwise widgets
     const currentDisplayWidgets = layoutPreview || widgets;
-
     const maxWidgetY = currentDisplayWidgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
     const displayRows = Math.max(gridSize.rows, maxWidgetY, DEFAULT_GRID_SIZE.rows);
     const finalRows = displayRows;
 
-    // Generate grid cells
+    const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+
+    // Deselect when clicking outside (background)
+    useEffect(() => {
+        const handleGlobalClick = (e: MouseEvent) => {
+            // If click target is not inside a widget, deselect
+            // This is a simple heuristic; event bubbling from widget should stop propagation if handled
+            if (!(e.target as HTMLElement).closest('.global-physics-widget')) {
+                setSelectedWidgetId(null);
+            }
+        };
+        if (isWidgetEditMode) {
+            window.addEventListener('click', handleGlobalClick);
+        }
+        return () => window.removeEventListener('click', handleGlobalClick);
+    }, [isWidgetEditMode]);
+
+    // ...
+
     const gridCells = [];
     for (let y = 1; y <= finalRows; y++) {
         for (let x = 1; x <= gridSize.cols; x++) {
@@ -352,49 +400,34 @@ const MainPage: React.FC = () => {
             );
         }
     }
-    // 🆕 [추가] 위젯 제작 화면을 열지 말지 결정하는 스위치
+
+    // Pass selection props to DraggableWidget via render logic?
+    // Wait, GridCell renders empty cells. DraggableWidget is rendered where?
+    // Ah, I missed where DraggableWidget is rendered. It must be rendered absolutely or inside the grid?
+    // Checking previous file view... I don't see DraggableWidget loop in MainPage.
+    // It must be rendered *on top* of the gridCells loop or I missed it.
+    // Let me check lines 350+ of MainPage again.
+    // Ah, GridCell is just the droppable background.
+    // The actual widgets must be rendered separately.
+
+
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
-    // 🆕 [추가] WidgetBuilder에 전달할 에디터 엔진(Hook) 초기화
-    // (이 훅은 isBuilderOpen일 때만 사용되지만, 컴포넌트 최상단에 있어야 합니다)
-    const editor = usePostEditor();
 
-    // 🆕 [추가] WidgetBuilder에 전달할 이미지 업로드 함수
-    const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            const files = Array.from(e.target.files);
-            Promise.all(files.map(f => new Promise<string>(r => {
-                const rd = new FileReader(); rd.onloadend = () => r(rd.result as string); rd.readAsDataURL(f);
-            }))).then(u => editor.setTempImages(p => [...p, ...u]));
-        }
-    };
-
-    // 🆕 [추가] 위젯 제작이 완료(저장)되었을 때 실행할 함수
-    const handleWidgetSave = async () => {
-        await editor.handleSave(); // 1. 에디터 내용 저장
-        setIsBuilderOpen(false);   // 2. 빌더 닫기
-        // 3. 여기서 setWidgets를 호출해서 대시보드에 새 위젯을 바로 추가하는 로직을 넣을 수도 있습니다.
-        alert("위젯이 저장되었습니다!");
-    };
-
-    // ------------------------------------------------------------------
-    // 🌟 [핵심 연결] 빌더 모드가 켜져있으면 대시보드 대신 빌더를 보여줌
-    // ------------------------------------------------------------------
     if (isBuilderOpen) {
         return (
             <WidgetBuilder
-                editor={editor}
-                onExit={() => setIsBuilderOpen(false)} // 뒤로가기 누르면 빌더 닫기
-                handleImagesUpload={handleImagesUpload}
+                onExit={() => setIsBuilderOpen(false)}
             />
         );
     }
 
-
-    // ... (existing imports)
-
     return (
-        <DndProvider backend={HTML5Backend}>
+        <DndProvider
+            backend={isMobile ? TouchBackend : HTML5Backend}
+            options={isMobile ? { delayTouchStart: 800, enableMouseEvents: true } : undefined}
+            key={isMobile ? "mobile" : "desktop"}
+        >
             <CustomDragLayer />
             <div className="min-h-screen pb-20">
                 <Navigation />
@@ -407,7 +440,7 @@ const MainPage: React.FC = () => {
                             <LayoutGrid size={20} /> My Dashboard
                         </h2>
 
-                        <div className="flex gap-2 items-center flex-wrap">
+                        <div className={`flex gap-2 items-center ${isMobile ? 'flex-nowrap overflow-x-auto w-full pb-2 no-scrollbar mask-linear-fade' : 'flex-wrap'}`}>
                             {!isMenuEditMode && (
                                 <>
                                     {isWidgetEditMode && (
@@ -416,7 +449,7 @@ const MainPage: React.FC = () => {
                                                 onClick={() => {
                                                     setIsWidgetEditMode(false);
                                                 }}
-                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] shadow-md transition-colors"
+                                                className="h-10 px-4 w-20 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] shadow-md transition-colors"
                                             >
                                                 Save
                                             </button>
@@ -428,34 +461,32 @@ const MainPage: React.FC = () => {
                                                     }
                                                     setIsWidgetEditMode(false);
                                                 }}
-                                                className="h-10 px-4 w-20 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                                                className="h-10 px-4 w-20 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] transition-colors"
                                             >
                                                 Cancel
                                             </button>
 
-                                            {/* 구분선 */}
-                                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                                            <div className="w-px h-6 bg-gray-200 mx-1 flex-shrink-0"></div>
 
                                             <button
                                                 onClick={() => setIsCatalogOpen(true)}
-                                                className="h-10 px-4 w-20 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                className="h-10 px-4 w-20 flex-shrink-0 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <Plus size={18} /> Add
                                             </button>
 
-                                            {/* ✅ 여기에 새로운 버튼 코드를 추가하세요 ✅ */}
                                             <button
                                                 onClick={() => {
-                                                    editor.handleStartWriting(); // 에디터 초기화 (새 종이)
-                                                    setIsBuilderOpen(true);}} // 원하는 기능을 여기에 넣으세요
-                                                className="h-10 px-4 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                    setIsBuilderOpen(true);
+                                                }}
+                                                className="h-10 px-4 flex-shrink-0 flex items-center justify-center gap-1 rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                             >
                                                 <span>새 버튼</span>
                                             </button>
 
                                             <button
                                                 onClick={() => setIsArrangeConfirmOpen(true)}
-                                                className="h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
                                                 title="Auto Arrange"
                                             >
                                                 <AlignStartVertical size={18} />
@@ -463,7 +494,7 @@ const MainPage: React.FC = () => {
 
                                             <button
                                                 onClick={resetWidgets}
-                                                className="h-10 w-10 flex items-center justify-center rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                                className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                                                 title="Reset Layout"
                                             >
                                                 <RefreshCw size={20} />
@@ -479,19 +510,22 @@ const MainPage: React.FC = () => {
                         <MenuSettings />
                     ) : (
                         <div className="relative w-full overflow-x-hidden md:overflow-visible">
-
                             <div
                                 className="grid gap-4 transition-all duration-300 ease-in-out relative"
                                 style={{
-                                    gridTemplateColumns: `repeat(${gridSize.cols}, minmax(0, 1fr))`,
-                                    gridTemplateRows: `repeat(${finalRows}, 200px)`,
+                                    gridTemplateColumns: isMobile ? `repeat(2, minmax(0, 1fr))` : `repeat(${gridSize.cols}, minmax(0, 1fr))`,
+                                    gridTemplateRows: isMobile ? undefined : `repeat(${finalRows}, 200px)`,
+                                    gridAutoRows: isMobile ? '45vw' : undefined,
+                                    gridAutoFlow: isMobile ? 'row dense' : undefined
                                 }}
                             >
-                                {/* 1. Render Background Cells */}
-                                {gridCells}
+                                {isMobile ? null : gridCells}
 
-                                {/* 2. Render Widgets (using current display widgets i.e. preview or actual) */}
-                                {currentDisplayWidgets.map((widget) => (
+                                {/* Sort widgets for logical DOM order on mobile to assist auto-flow */}
+                                {(isMobile
+                                    ? [...currentDisplayWidgets].sort((a, b) => (a.layout.y - b.layout.y) || (a.layout.x - b.layout.x))
+                                    : currentDisplayWidgets
+                                ).map((widget) => (
                                     <DraggableWidget
                                         key={widget.id}
                                         widget={widget}
@@ -501,10 +535,12 @@ const MainPage: React.FC = () => {
                                         onDragEnd={() => setLayoutPreview(null)}
                                         onHover={onCellHover}
                                         onDrop={(x, y, item) => updateWidgetPosition(item.id, x, y)}
+                                        isMobile={isMobile}
+                                        isSelected={selectedWidgetId === widget.id}
+                                        onSelect={() => setSelectedWidgetId(prev => prev === widget.id ? null : widget.id)}
                                     />
                                 ))}
                             </div>
-
                         </div>
                     )}
                 </div>
@@ -512,48 +548,21 @@ const MainPage: React.FC = () => {
                 {/* Widget Catalog Modal */}
                 {isCatalogOpen && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-[var(--bg-card)] w-full max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-200">
+                        <div className="bg-[var(--bg-card)] w-full max-w-4xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-200">
                             <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)]">
                                 <h3 className="text-lg font-bold text-[var(--text-primary)]">위젯 보관함</h3>
                                 <button onClick={() => setIsCatalogOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X /></button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                                {Object.entries(
-                                    Object.entries(WIDGET_REGISTRY).reduce((acc, [type, item]) => {
-                                        const cat = (item as any).category || 'Other';
-                                        if (!acc[cat]) acc[cat] = [];
-                                        acc[cat].push({ type, item });
-                                        return acc;
-                                    }, {} as Record<string, { type: string, item: any }[]>)
-                                ).map(([category, items]) => (
-                                    <div key={category}>
-                                        <h4 className="text-sm font-bold text-[var(--text-secondary)] mb-3 px-1">{category}</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            {items.map(({ type, item }) => (
-                                                <div
-                                                    key={type}
-                                                    onClick={() => addWidget(type as WidgetType)}
-                                                    className="cursor-pointer group flex flex-col gap-2 p-2 rounded-xl hover:bg-[var(--bg-card-secondary)] border border-transparent hover:border-[var(--btn-bg)] transition-all"
-                                                >
-                                                    <div className="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden relative pointer-events-none">
-                                                        <div className="w-full h-full flex items-center justify-center bg-[var(--bg-card)] text-[var(--text-secondary)] text-xs font-bold p-2 text-center border border-[var(--border-color)]">
-                                                            {item.label}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs font-bold text-[var(--text-primary)]">{item.label}</span>
-                                                        <Plus size={14} className="text-[var(--btn-bg)] opacity-0 group-hover:opacity-100" />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className="flex-1 min-h-0 flex flex-col relative">
+                                <WidgetGallery onSelect={addWidget} />
                             </div>
                         </div>
                     </div>
                 )}
 
+                {/* Modals omitted for brevity, keeping existing stricture... 
+                   Actually I must write full content. The previous modals are standard.
+                */}
                 {/* Auto Arrange Confirm Modal */}
                 {isArrangeConfirmOpen && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -605,8 +614,17 @@ const MainPage: React.FC = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Scroll To Top Button */}
+                <button
+                    onClick={scrollToTop}
+                    className={`fixed bottom-24 md:bottom-8 right-8 p-3 rounded-full bg-[var(--btn-bg)] text-white shadow-lg transition-all duration-300 z-40 hover:scale-110 active:scale-95 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+                    aria-label="Scroll to top"
+                >
+                    <ArrowUp size={24} />
+                </button>
             </div>
-        </DndProvider>
+        </DndProvider >
     );
 };
 

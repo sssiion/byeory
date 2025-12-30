@@ -8,3 +8,4 @@ export * from './EmotionAnalysis';
 export * from './ComplimentJar';
 export * from './EmotionalWeather';
 export * from './DailyStamp';
+export * from './ChatDiary';

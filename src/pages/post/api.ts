@@ -5,7 +5,7 @@ import { LAYOUT_PRESETS } from './constants';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
-// 🏡 백엔드 API 주소 (로컬 개발 환경 예시)
+// 백엔드 API 주소 (로컬 개발 환경 예시)
 const API_BASE_URL = "http://localhost:8080/api/posts";
 export const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
@@ -96,7 +96,7 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
         throw new Error("AI 생성 실패");
     }
 };
-// 1️⃣ 게시글 목록 조회 (GET)
+// 게시글 목록 조회 (GET)
 export const fetchPostsFromApi = async () => {
     try {
         // 백엔드의 GET /api/posts 엔드포인트 호출
@@ -109,7 +109,7 @@ export const fetchPostsFromApi = async () => {
     }
 };
 
-// 2️⃣ 게시글 저장 (생성 POST / 수정 PUT)
+// 게시글 저장 (생성 POST / 수정 PUT)
 export const savePostToApi = async (postData: any, isUpdate: boolean = false) => {
     try {
         const url = isUpdate ? `${API_BASE_URL}/${postData.id}` : API_BASE_URL;

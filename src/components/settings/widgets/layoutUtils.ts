@@ -127,3 +127,28 @@ export const getMinGridRows = (widgets: WidgetInstance[]): number => {
     if (widgets.length === 0) return 0;
     return widgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
 };
+
+export const compactLayout = (widgets: WidgetInstance[]): WidgetInstance[] => {
+    // 1. Sort widgets by Y then X
+    const sorted = [...widgets].sort((a, b) => {
+        if (a.layout.y === b.layout.y) return a.layout.x - b.layout.x;
+        return a.layout.y - b.layout.y;
+    });
+
+    const placedWidgets: WidgetInstance[] = [];
+
+    for (const widget of sorted) {
+        let newY = 1;
+        // Try starting from y=1 and go down until we fit without collision with ALREADY PLACED widgets
+        while (true) {
+            const proposed = { ...widget.layout, y: newY };
+            const collision = placedWidgets.some(w => collides(proposed, w.layout));
+            if (!collision) {
+                break;
+            }
+            newY++;
+        }
+        placedWidgets.push({ ...widget, layout: { ...widget.layout, y: newY } });
+    }
+    return placedWidgets;
+};

@@ -1,8 +1,36 @@
 import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 
+export const StatsWidgetConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
+};
+
+interface StatsWidgetProps {
+    gridSize?: { w: number; h: number };
+}
+
 // 18. Stats Widget (기록 통계)
-export const StatsWidget = React.memo(function StatsWidget() {
+export const StatsWidget = React.memo(function StatsWidget({ gridSize }: StatsWidgetProps) {
+    const isSmall = (gridSize?.w || 2) < 2;
+
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-white">
+                <div className="flex flex-col items-center justify-center h-full">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Log</span>
+                    <span className="text-3xl font-black text-gray-800">24</span>
+                    <div className="flex gap-0.5 mt-1 items-end h-4">
+                        <div className="w-1 bg-blue-200 h-[40%] rounded-t-[1px]" />
+                        <div className="w-1 bg-blue-300 h-[70%] rounded-t-[1px]" />
+                        <div className="w-1 bg-blue-400 h-[50%] rounded-t-[1px]" />
+                        <div className="w-1 bg-blue-500 h-[90%] rounded-t-[1px]" />
+                    </div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
     return (
         <WidgetWrapper title="Monthly Log" className="bg-white">
             <div className="w-full h-full flex flex-col items-end justify-end p-3 pb-0 relative">

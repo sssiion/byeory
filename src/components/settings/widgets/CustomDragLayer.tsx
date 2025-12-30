@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDragLayer } from 'react-dnd';
 import { WIDGET_REGISTRY, type WidgetType } from './Registry';
+import { useAutoScroll } from '../../../hooks';
 
 const ItemTypes = {
     WIDGET: 'widget',
@@ -23,6 +24,8 @@ function getItemStyles(initialOffset: { x: number; y: number } | null, currentOf
 }
 
 export const CustomDragLayer: React.FC = () => {
+    useAutoScroll(); // Enable auto-scrolling
+
     const {
         itemType,
         isDragging,

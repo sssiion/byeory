@@ -5,6 +5,29 @@ export const STICKERS = [
     'https://cdn-icons-png.flaticon.com/512/346/346167.png', // 꽃
 ];
 
+// 사용 가능한 폰트 목록 (Google Fonts)
+export const FONT_FAMILIES = [
+    { name: 'Noto Sans KR', value: "'Noto Sans KR', sans-serif" },
+    { name: '나눔고딕', value: "'Nanum Gothic', sans-serif" },
+    { name: '나눔명조', value: "'Nanum Myeongjo', serif" },
+    { name: '고운돋움', value: "'Gowun Dodum', sans-serif" },
+    { name: '고운바탕', value: "'Gowun Batang', serif" },
+    { name: '송명', value: "'Song Myung', serif" },
+    { name: '검은고딕', value: "'Black Han Sans', sans-serif" },
+    { name: '도현', value: "'Do Hyeon', sans-serif" },
+    { name: '주아', value: "'Jua', sans-serif" },
+    { name: '연성', value: "'Yeon Sung', cursive" },
+    { name: '해바라기', value: "'Sunflower', sans-serif" },
+    { name: '고딕 A1', value: "'Gothic A1', sans-serif" },
+    { name: '하이멜로디', value: "'Hi Melody', cursive" },
+    { name: '감자꽃', value: "'Gamja Flower', cursive" },
+    { name: '서툰이야기', value: "'Poor Story', cursive" },
+    { name: 'IBM Plex Sans KR', value: "'IBM Plex Sans KR', sans-serif" },
+    { name: '베이글', value: "'Bagel Fat One', cursive" },
+    { name: '동글', value: "'Dongle', sans-serif" },
+    { name: '싱글데이', value: "'Single Day', cursive" },
+];
+
 // 레이아웃별로 '어떤 블록을 어떤 순서로 배치할지' 미리 정해둡니다.
 export const LAYOUT_PRESETS = [
     {

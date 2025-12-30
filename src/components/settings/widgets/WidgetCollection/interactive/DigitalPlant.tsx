@@ -1,14 +1,36 @@
 import { useState } from 'react';
 import { Droplets } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
+import { useWidgetStorage } from '../SDK';
+
+interface DigitalPlantData {
+    level: number;
+    exp: number;
+}
 
 // --- 4. Digital Plant (반려 식물) ---
-export function DigitalPlant({ onUpdate, level = 1, exp = 0, name = '새싹이' }: { onUpdate?: (data: any) => void, level?: number, exp?: number, name?: string }) {
+export const DigitalPlantConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
+};
+
+// --- 4. Digital Plant (반려 식물) ---
+export function DigitalPlant({ onUpdate, level: propLevel, exp: propExp, name: propName, gridSize }: { onUpdate?: (data: DigitalPlantData) => void, level?: number, exp?: number, name?: string, gridSize?: { w: number; h: number } }) {
+    // Persist plant state
+    const [plantState, setPlantState] = useWidgetStorage('widget-digital-plant', {
+        level: propLevel || 1,
+        exp: propExp || 0,
+        name: propName || '새싹이'
+    });
+
+    const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
+
+    const { level, exp, name } = plantState;
     const [isWatering, setIsWatering] = useState(false);
     const maxExp = level * 100;
 
     const water = () => {
-        if (isWatering) return;
+        if (isWatering || level >= 4) return;
         setIsWatering(true);
 
         // Calculate new exp
@@ -20,8 +42,8 @@ export function DigitalPlant({ onUpdate, level = 1, exp = 0, name = '새싹이' 
             newLevel = Math.min(level + 1, 4); // Max level 4
         }
 
-        // Delay update for animation
         setTimeout(() => {
+            setPlantState({ ...plantState, level: newLevel, exp: newExp });
             if (onUpdate) onUpdate({ level: newLevel, exp: newExp });
             setIsWatering(false);
         }, 1000);
@@ -29,31 +51,46 @@ export function DigitalPlant({ onUpdate, level = 1, exp = 0, name = '새싹이' 
 
     const getPlantImage = () => {
         if (level === 1) return (
-            <div className="text-2xl animate-bounce">🌱</div>
+            <div className={`text-2xl animate-bounce ${isSmall ? 'text-4xl' : ''}`}>🌱</div>
         );
         if (level === 2) return (
-            <div className="text-4xl animate-pulse">🌿</div>
+            <div className={`text-4xl animate-pulse ${isSmall ? 'text-5xl' : ''}`}>🌿</div>
         );
         if (level === 3) return (
             <div className="relative">
-                <div className="text-5xl">🪴</div>
+                <div className={`text-5xl ${isSmall ? 'text-6xl' : ''}`}>🪴</div>
                 <div className="absolute -top-2 -right-2 text-xl animate-bounce delay-100">✨</div>
             </div>
         );
         return (
             <div className="relative">
-                <div className="text-6xl">🌺</div>
+                <div className={`text-6xl ${isSmall ? 'text-7xl' : ''}`}>🌺</div>
                 <div className="absolute -top-2 -right-2 text-xl animate-spin-slow">🐝</div>
             </div>
         );
     };
 
+    if (isSmall) {
+        return (
+            <WidgetWrapper className="bg-green-50/50 dark:bg-green-900/20 border-green-100 dark:border-green-800">
+                <div className="w-full h-full flex flex-col items-center justify-center relative cursor-pointer" onClick={water}>
+                    <div className="absolute top-1 right-1 text-[8px] bg-green-200 dark:bg-green-800 px-1 rounded-full">{level}</div>
+                    {getPlantImage()}
+                    {isWatering && <div className="absolute text-xl animate-pour">🚿</div>}
+                    <div className="absolute bottom-1 w-3/4 h-1 bg-green-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${(exp / maxExp) * 100}%` }} />
+                    </div>
+                </div>
+            </WidgetWrapper>
+        );
+    }
+
     return (
-        <WidgetWrapper className="bg-green-50/50 border-green-100">
+        <WidgetWrapper className="bg-green-50/50 dark:bg-green-900/20 border-green-100 dark:border-green-800">
             <div className="w-full h-full flex flex-col items-center justify-between py-2">
                 <div className="flex justify-between w-full px-2 items-center">
-                    <span className="text-xs font-bold text-green-800">{name}</span>
-                    <span className="text-[10px] bg-green-200 px-1.5 py-0.5 rounded-full text-green-800">Lv.{level}</span>
+                    <span className="text-xs font-bold text-green-800 dark:text-green-300">{name}</span>
+                    <span className="text-[10px] bg-green-200 dark:bg-green-800 px-1.5 py-0.5 rounded-full text-green-800 dark:text-green-200">Lv.{level}</span>
                 </div>
 
                 <div className="relative flex-1 flex items-center justify-center w-full">
@@ -74,11 +111,11 @@ export function DigitalPlant({ onUpdate, level = 1, exp = 0, name = '새싹이' 
                 </div>
 
                 <div className="w-full px-2 flex flex-col gap-1">
-                    <div className="flex justify-between text-[8px] text-green-600">
+                    <div className="flex justify-between text-[8px] text-green-600 dark:text-green-400">
                         <span>EXP</span>
                         <span>{Math.floor((exp / maxExp) * 100)}%</span>
                     </div>
-                    <div className="w-full h-2 bg-green-200 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-green-500 transition-all duration-500"
                             style={{ width: `${(exp / maxExp) * 100}%` }}
@@ -87,7 +124,7 @@ export function DigitalPlant({ onUpdate, level = 1, exp = 0, name = '새싹이' 
                     <button
                         onClick={water}
                         disabled={isWatering || level >= 4}
-                        className="mt-1 w-full py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 disabled:bg-gray-300 transition-colors flex items-center justify-center gap-1"
+                        className="mt-1 w-full py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 disabled:bg-gray-300 dark:disabled:bg-gray-700 transition-colors flex items-center justify-center gap-1"
                     >
                         <Droplets size={10} />
                         {level >= 4 ? 'Max Level' : 'Water'}

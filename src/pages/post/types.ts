@@ -1,4 +1,4 @@
-export type ViewMode = 'list' | 'editor' | 'read';
+export type ViewMode = 'list' | 'editor' | 'read' | 'album' | 'folder';
 
 export interface Block {
     id: string;
@@ -11,7 +11,7 @@ export interface Block {
     styles?: Record<string, any>;
 }
 
-// 🔴 수정됨: 좌표와 크기를 number(픽셀 단위)로 변경
+// 좌표와 크기를 number(픽셀 단위)로 변경
 export interface BaseFloatingItem {
     id: string;
     x: number; // px 단위
@@ -35,6 +35,9 @@ export interface FloatingText extends BaseFloatingItem {
         textAlign: string;
         color: string;
         backgroundColor: string;
+        fontFamily: string;
+        fontStyle?: string;
+        textDecoration?: string;
     };
 }
 
@@ -46,8 +49,10 @@ export interface PostData {
     id: number;
     title: string;
     date: string;
+    tags?: string[]; // ✨ 태그 (앨범 분류용)
     blocks: Block[];
     stickers: Sticker[];
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
+    titleStyles?: Record<string, any>;
 }

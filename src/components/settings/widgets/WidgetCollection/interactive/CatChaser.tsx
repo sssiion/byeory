@@ -2,7 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
 
 // --- 5. Cat Chaser (따라오는 고양이) ---
-export function CatChaser() {
+export const CatChaserConfig = {
+    defaultSize: '2x2',
+    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
+};
+
+export function CatChaser({ gridSize }: { gridSize?: { w: number; h: number } }) {
+    const isSmall = (gridSize?.w || 2) < 2;
     const [eyes, setEyes] = useState({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -29,9 +35,9 @@ export function CatChaser() {
 
     return (
         <WidgetWrapper className="bg-[#333]">
-            <div ref={containerRef} className="relative w-32 h-32 flex items-center justify-center">
-                {/* Cat Face */}
-                <div className="w-24 h-20 bg-black rounded-3xl relative">
+            <div ref={containerRef} className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                {/* Cat Face scaled */}
+                <div className={`w-24 h-20 bg-black rounded-3xl relative transition-transform ${isSmall ? 'scale-75' : 'scale-100'}`}>
                     {/* Ears */}
                     <div className="absolute -top-3 left-0 w-8 h-8 bg-black rounded-sm transform rotate-12"></div>
                     <div className="absolute -top-3 right-0 w-8 h-8 bg-black rounded-sm transform -rotate-12"></div>

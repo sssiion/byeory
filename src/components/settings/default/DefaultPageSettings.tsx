@@ -68,7 +68,7 @@ export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSett
                 )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {pages.map((page) => {
                     const isSelected = selectedPath === page.path;
                     return (
@@ -76,7 +76,7 @@ export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSett
                             key={page.id}
                             onClick={() => handleSelect(page.path)}
                             className={`
-                                relative flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all duration-200 gap-3
+                                relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 gap-2
                                 ${isSelected
                                     ? 'border-[color:var(--text-primary)] theme-bg-card shadow-md scale-[1.02]'
                                     : 'theme-border theme-bg-card hover:border-[color:var(--text-secondary)] hover:bg-black/5'

@@ -1,15 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Black+Han+Sans&family=Do+Hyeon&family=Dongle:wght@300;400;700&family=Gamja+Flower&family=Gothic+A1:wght@100;400;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Hi+Melody&family=IBM+Plex+Sans+KR:wght@100;200;300;400;500;600;700&family=Jua&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@100..900&family=Poor+Story&family=Single+Day&family=Song+Myung&family=Sunflower:wght@300;500;700&family=Yeon+Sung&display=swap');
 @import "tailwindcss";
 
 /* Global Scrollbar Hide */
-* {
+/* Hide scrollbar for all elements EXCEPT those with .show-scrollbar class */
+:not(.show-scrollbar) {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
 }
 
-*::-webkit-scrollbar {
+:not(.show-scrollbar)::-webkit-scrollbar {
     display: none;
+}
+
+/* Scrollbar override utility - Restores native scrollbar */
+.show-scrollbar {
+    -ms-overflow-style: auto;
+    scrollbar-width: auto;
 }
 
 /* 기본 폰트 */
@@ -18,15 +24,84 @@ body {
 }
 
 /* 추가 폰트 확장 */
-.noto-sans-kr {
+.font-noto-sans-kr {
     font-family: 'Noto Sans KR', sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
 }
 
-.jua-regular {
+.font-nanum-gothic {
+    font-family: 'Nanum Gothic', sans-serif;
+}
+
+.font-nanum-myeongjo {
+    font-family: 'Nanum Myeongjo', serif;
+}
+
+.font-gowun-dodum {
+    font-family: 'Gowun Dodum', sans-serif;
+}
+
+.font-gowun-batang {
+    font-family: 'Gowun Batang', serif;
+}
+
+.font-song-myung {
+    font-family: 'Song Myung', serif;
+}
+
+.font-black-han-sans {
+    font-family: 'Black Han Sans', sans-serif;
+}
+
+.font-do-hyeon {
+    font-family: 'Do Hyeon', sans-serif;
+}
+
+.font-jua {
     font-family: 'Jua', sans-serif;
-    font-weight: 400;
-    font-style: normal;
+}
+
+.font-yeon-sung {
+    font-family: 'Yeon Sung', cursive;
+}
+
+.font-sunflower {
+    font-family: 'Sunflower', sans-serif;
+}
+
+.font-gothic-a1 {
+    font-family: 'Gothic A1', sans-serif;
+}
+
+.font-hi-melody {
+    font-family: 'Hi Melody', cursive;
+}
+
+.font-gamja-flower {
+    font-family: 'Gamja Flower', cursive;
+}
+
+.font-poor-story {
+    font-family: 'Poor Story', cursive;
+}
+
+.font-ibm-plex-sans-kr {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+}
+
+.font-bagel-fat-one {
+    font-family: 'Bagel Fat One', cursive;
+}
+
+.font-dongle {
+    font-family: 'Dongle', sans-serif;
+}
+
+.font-single-day {
+    font-family: 'Single Day', cursive;
+}
+
+/* Utilities */
+.mask-linear-fade {
+    mask-image: linear-gradient(to right, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
 }
