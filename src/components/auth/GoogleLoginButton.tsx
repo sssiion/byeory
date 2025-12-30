@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface GoogleLoginButtonProps {
-    onSuccess: (data: string | { email: string, providerId: string }) => void;
+    onSuccess: (data: string | { email: string, providerId: string, provider?: string }) => void;
     onError?: () => void;
 }
 
@@ -30,7 +30,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ onSuccess, onErro
                             headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
                         });
                         const userInfo = await userInfoResponse.json();
-                        onSuccess({ email: userInfo.email, providerId: userInfo.sub });
+                        onSuccess({ email: userInfo.email, providerId: userInfo.sub, provider: 'GOOGLE' });
                     } catch (error) {
                         console.error("Failed to fetch user info", error);
                         if (onError) onError();

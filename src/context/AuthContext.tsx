@@ -2,7 +2,18 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
     isLoggedIn: boolean;
-    socialLogin: (tokenOrData: string | { email: string, providerId: string }) => Promise<boolean>;
+    socialLogin: (tokenOrData: string | {
+        email: string;
+        providerId: string;
+        provider?: string;
+        name?: string;
+        nickname?: string;
+        profileImage?: string;
+        gender?: string;
+        birthday?: string;
+        birthyear?: string;
+        mobile?: string;
+    }) => Promise<boolean>;
     localLogin: (email: string, password: string) => Promise<boolean>;
     signup: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
@@ -65,11 +76,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('sessionStartTime', now.toString());
     };
 
-    const socialLogin = async (tokenOrData: string | { email: string, providerId: string }) => {
-        // ... (existing logic) ...
+    const socialLogin = async (tokenOrData: string | {
+        email: string,
+        providerId: string,
+        provider?: string,
+        name?: string,
+        nickname?: string,
+        profileImage?: string,
+        gender?: string,
+        birthday?: string,
+        birthyear?: string;
+        mobile?: string;
+    }) => {
         // Note: setLoginState is called inside socialLogin which handles the time setting
         try {
-            let email, providerId;
+            let email: string;
+            let providerId: string;
+            let provider = "GOOGLE";
+            let profileData: any = {};
 
             if (typeof tokenOrData === 'string') {
                 const payload = parseJwt(tokenOrData);
@@ -79,11 +103,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 email = tokenOrData.email;
                 providerId = tokenOrData.providerId;
+                if (tokenOrData.provider) provider = tokenOrData.provider;
+
+                // Extract other profile data
+                const { name, nickname, profileImage, gender, birthday, birthyear, mobile } = tokenOrData;
+                profileData = { name, nickname, profileImage, gender, birthday, birthyear, mobile };
             }
 
             const loginData = {
                 email,
-                provider: "GOOGLE",
+                provider,
                 providerId
             };
 
@@ -94,6 +123,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 },
                 body: JSON.stringify(loginData),
             });
+
+            if (!response.ok) {
+                console.error(`Social login failed with status: ${response.status}`);
+                try {
+                    const errorText = await response.text();
+                    console.error("Error response:", errorText);
+                } catch (e) {
+                    console.error("Could not read error response");
+                }
+                return false;
+            }
 
             const data = await response.json();
 
@@ -109,6 +149,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     });
                     if (profileRes.ok) {
                         localStorage.setItem('isProfileSetupCompleted', 'true');
+                        // Clear temp profile data if setup is complete
+                        localStorage.removeItem('temp_social_profile');
+                    } else {
+                        // Profile not setup, store the temp profile data
+                        if (Object.keys(profileData).length > 0) {
+                            localStorage.setItem('temp_social_profile', JSON.stringify(profileData));
+                        }
                     }
                 } catch (e) {
                     console.error("Profile check failed", e);
@@ -228,10 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoggedIn(false);
         setUser(null);
         setSessionStartTime(null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('isProfileSetupCompleted');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('sessionStartTime');
+        localStorage.clear();
     };
 
     return (

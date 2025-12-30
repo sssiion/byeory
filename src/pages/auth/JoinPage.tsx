@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, CheckCircle, Loader2, Send, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
+import NaverLoginButton from '../../components/auth/NaverLoginButton';
 
 function JoinPage() {
     const navigate = useNavigate();
@@ -274,6 +275,17 @@ function JoinPage() {
                                 }
                             }}
                             onError={() => console.error("Google Login Failed")}
+                        />
+                        <NaverLoginButton
+                            onSuccess={async (credential) => {
+                                const success = await socialLogin(credential);
+                                if (success) {
+                                    navigate('/');
+                                } else {
+                                    alert("Naver Login Failed");
+                                }
+                            }}
+                            onError={() => console.error("Naver Login Failed")}
                         />
                     </div>
 
