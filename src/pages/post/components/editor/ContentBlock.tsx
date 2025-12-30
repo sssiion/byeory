@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import type { Block } from '../types';
+import type { Block } from '../../types';
 import { Trash2, GripVertical } from 'lucide-react';
 
 interface Props {

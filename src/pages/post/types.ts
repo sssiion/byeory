@@ -11,7 +11,7 @@ export interface Block {
     styles?: Record<string, any>;
 }
 
-// 🔴 수정됨: 좌표와 크기를 number(픽셀 단위)로 변경
+// 좌표와 크기를 number(픽셀 단위)로 변경
 export interface BaseFloatingItem {
     id: string;
     x: number; // px 단위
@@ -37,7 +37,7 @@ export interface FloatingText extends BaseFloatingItem {
         backgroundColor: string;
         fontFamily: string;
         fontStyle?: string;
-        textDecoration?: string; // ✨ 추가
+        textDecoration?: string;
     };
 }
 

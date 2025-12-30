@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { STICKERS, LAYOUT_PRESETS } from '../constants';
+import { STICKERS, LAYOUT_PRESETS } from '../../constants';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot } from 'lucide-react';
 
 interface Props {

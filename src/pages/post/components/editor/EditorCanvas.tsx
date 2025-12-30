@@ -1,10 +1,10 @@
 import React from 'react';
-import ContentBlock from '../components/ContentBlock';
-import ResizableItem from '../components/ResizableItem';
-import EditorToolbar from '../components/EditorToolbar';
+import ContentBlock from './ContentBlock';
+import ResizableItem from './ResizableItem';
+import EditorToolbar from './EditorToolbar';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import type { Block, Sticker, FloatingText, FloatingImage } from '../types';
+import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
 import { Image as ImageIcon, Type, Trash2, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft } from 'lucide-react';
 
 interface Props {

@@ -16,8 +16,8 @@ interface Props {
 }
 
 const ResizableItem: React.FC<Props> = ({
-                                            id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
-                                        }) => {
+    id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
+}) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [isRotating, setIsRotating] = useState(false);
@@ -89,7 +89,7 @@ const ResizableItem: React.FC<Props> = ({
                 const deltaX = e.clientX - startPos.current.startX;
                 const deltaY = e.clientY - startPos.current.startY;
 
-                // 🔴 [수정] 가로(w) 뿐만 아니라 세로(h)도 같이 변경되도록 수정
+                // 가로(w) 뿐만 아니라 세로(h)도 같이 변경되도록 수정
                 onUpdate({
                     w: Math.max(30, startPos.current.initialW + deltaX),
                     h: Math.max(30, startPos.current.initialH + deltaY)
@@ -135,7 +135,7 @@ const ResizableItem: React.FC<Props> = ({
                 touchAction: 'none' // 모바일 터치 대응
             }}
             onMouseDown={handleMouseDown}
-            // 🔴 [중요] 클릭 이벤트가 배경(EditorCanvas)으로 전파되어 '선택 해제' 되는 것을 막음
+            // 클릭 이벤트가 배경(EditorCanvas)으로 전파되어 '선택 해제' 되는 것을 막음
             onClick={(e) => e.stopPropagation()}
         >
             <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500' : ''}`}>

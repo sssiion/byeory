@@ -32,7 +32,7 @@ export const usePostEditor = () => {
 
     useEffect(() => { if (supabase) fetchPosts(); }, []);
 
-    // 1️⃣ [수정] 데이터 불러오기: PX 단위 그대로 사용 + 메타데이터 블록 파싱
+    // 데이터 불러오기: PX 단위 그대로 사용 + 메타데이터 블록 파싱
     const fetchPosts = async () => {
         const data = await fetchPostsFromApi();
         if (data) {
@@ -62,7 +62,7 @@ export const usePostEditor = () => {
                     title: p.title,
                     date: new Date(p.createdAt || p.created_at).toLocaleDateString(),
                     blocks: contentBlocks,
-                    // 🔴 [수정] DB에 저장된 PX 값을 그대로 가져옵니다 (더 이상 * CANVAS_WIDTH 안 함)
+                    // DB에 저장된 PX 값을 그대로 사용
                     stickers: p.stickers || [],
                     floatingTexts: p.floatingTexts || [],
                     floatingImages: p.floatingImages || [],
@@ -288,6 +288,7 @@ export const usePostEditor = () => {
         fileInputRef,
         handleStartWriting, handlePostClick, handleSave, handleAiGenerate,
         handleUpdate, handleDelete, addSticker, addFloatingText, addFloatingImage,
-        handleBlockImageUpload, changeZIndex
+        handleBlockImageUpload, changeZIndex,
+        currentPostId // Expose currentPostId to distinguish Create vs Edit
     };
 };

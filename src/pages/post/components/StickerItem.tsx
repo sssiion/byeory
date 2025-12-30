@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-// @ts-ignore
 import Draggable from 'react-draggable';
 import type { Sticker } from '../types';
 

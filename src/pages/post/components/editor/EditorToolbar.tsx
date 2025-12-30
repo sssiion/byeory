@@ -14,8 +14,8 @@ import {
     Strikethrough,
     ChevronDown
 } from 'lucide-react';
-import type { Block, Sticker, FloatingText, FloatingImage } from '../types';
-import { FONT_FAMILIES } from '../constants';
+import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
+import { FONT_FAMILIES } from '../../constants';
 
 interface Props {
     selectedId: string;

@@ -5,7 +5,7 @@ export const STICKERS = [
     'https://cdn-icons-png.flaticon.com/512/346/346167.png', // 꽃
 ];
 
-// ✨ 사용 가능한 폰트 목록 (Google Fonts)
+// 사용 가능한 폰트 목록 (Google Fonts)
 export const FONT_FAMILIES = [
     { name: 'Noto Sans KR', value: "'Noto Sans KR', sans-serif" },
     { name: '나눔고딕', value: "'Nanum Gothic', sans-serif" },

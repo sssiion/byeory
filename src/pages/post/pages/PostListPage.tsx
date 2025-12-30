@@ -1,4 +1,5 @@
 import React from 'react';
+
 import type { PostData } from '../types';
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
     onPostClick: (post: PostData) => void;
 }
 
-const PostList: React.FC<Props> = ({ posts, onStartWriting, onPostClick }) => {
+const PostListPage: React.FC<Props> = ({ posts, onStartWriting, onPostClick }) => {
     return (
         <div>
             <div className="flex justify-between items-center mb-8">
@@ -35,4 +36,4 @@ const PostList: React.FC<Props> = ({ posts, onStartWriting, onPostClick }) => {
     );
 };
 
-export default PostList;
+export default PostListPage;
