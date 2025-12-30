@@ -271,10 +271,10 @@ function JoinPage() {
                                 if (success) {
                                     navigate('/');
                                 } else {
-                                    alert("Social Login Failed");
+                                    alert("이미 이메일로 가입된 계정입니다.");
                                 }
                             }}
-                            onError={() => console.error("Google Login Failed")}
+                            onError={() => console.error("이미 이메일로 가입된 계정입니다.")}
                         />
                         <NaverLoginButton
                             onSuccess={async (credential) => {
@@ -282,10 +282,10 @@ function JoinPage() {
                                 if (success) {
                                     navigate('/');
                                 } else {
-                                    alert("Naver Login Failed");
+                                    alert("이미 이메일로 가입된 계정입니다.");
                                 }
                             }}
-                            onError={() => console.error("Naver Login Failed")}
+                            onError={() => console.error("이미 이메일로 가입된 계정입니다.")}
                         />
                     </div>
 
