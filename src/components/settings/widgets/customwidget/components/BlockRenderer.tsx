@@ -1,18 +1,16 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import type { WidgetBlock, ContainerLocation } from '../types';
 import {
     Check,
     CalendarDays,
     ChevronDown,
     ChevronRight,
-    EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp, Database,
-    ArrowLeftRight,Search, BookOpen, RotateCcw,
-    Film, MessageSquare, Clapperboard,  ChevronUp // 👈 아이콘 확인
+    EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp, Database
 } from 'lucide-react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import { dropPlugin } from '@react-pdf-viewer/drop';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import { useMemo, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
     ReactFlow,
     Controls,
@@ -35,7 +33,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-import {useDroppable} from '@dnd-kit/core';
+import { useDroppable } from '@dnd-kit/core';
 import ColumnSortableItem from "./ColumnSortableItem.tsx";
 import HeatmapWidget from "./HeatmapWidget.tsx";
 import BookInfoWidget from "./Rendercomponent/BookInfoWidget.tsx";
@@ -55,11 +53,18 @@ interface RendererProps {
 
 const BlockRenderer: React.FC<RendererProps> = (props) => {
     const {
-        block,
+        block: propBlock,
         onSelectBlock,
         onSetActiveContainer,
     } = props;
+
+    let block = propBlock;
+    if (block.type === 'custom-block' && block.content && block.content.realType) {
+        block = { ...block, type: block.content.realType };
+    }
+
     const { styles, content, type } = block;
+    const { block: _unusedBlock, ...otherProps } = props;
 
     const commonStyle = {
         color: styles.color,
@@ -71,14 +76,6 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     };
 
     // 🆕 컬럼 내부 아이템 1개를 dnd-kit useSortable로 감싼 컴포넌트
-
-    if (type === 'custom-block') {
-        // 만약 content 안에 진짜 type이 들어있다면 꺼내쓰기
-        // (현재 구조상으로는 필요 없을 가능성이 높지만, 안전장치로 둡니다)
-        if (block.content && block.content.realType) {
-            block = { ...block, type: block.content.realType };
-        }
-    }
 
     // --- 🔥 컬럼(Columns) 렌더링 로직 (dnd-kit로 변경) ---
     if (type === 'columns') {
@@ -95,7 +92,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                 id={columnContainerId}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onSetActiveContainer({blockId: block.id, colIndex: index});
+                                    onSetActiveContainer({ blockId: block.id, colIndex: index });
                                     onSelectBlock(null);
                                 }}
                             >
@@ -115,7 +112,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                                 onRemoveBlock={props.onRemoveBlock}
                                                 activeContainer={props.activeContainer}
                                                 onSetActiveContainer={props.onSetActiveContainer}
-
+                                                onUpdateBlock={props.onUpdateBlock}
                                             />
                                         ))}
                                     </div>
@@ -134,9 +131,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'heading2': return <h2 style={commonStyle} className="text-xl font-bold mb-1 mt-2 break-words">{content.text}</h2>;
         case 'heading3': return <h3 style={commonStyle} className="text-lg font-semibold mb-1 break-words">{content.text}</h3>;
         case 'text': return <p style={commonStyle} className="whitespace-pre-wrap leading-relaxed break-words">{content.text}</p>;
-        case 'quote': return <div style={{...commonStyle, borderLeftColor: styles.color || '#333'}} className="border-l-4 pl-3 py-1 my-2 text-gray-600 italic bg-gray-50 rounded-r break-words">{content.text}</div>;
+        case 'quote': return <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="border-l-4 pl-3 py-1 my-2 text-gray-600 italic bg-gray-50 rounded-r break-words">{content.text}</div>;
         case 'book-info':
-            return <BookInfoWidget block={block}  />;
+            return <BookInfoWidget block={block} />;
         case 'mindmap': {
             const content0 = (content || {}) as any;
 
@@ -317,7 +314,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                         {data.map((item: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-[10px]">
                                 <span className="flex items-center gap-1 truncate"><span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colors[i % colors.length] }}></span><span className="truncate">{item.label}</span></span>
-                                <span className="font-bold ml-1">{Math.round((item.value/total)*100)}%</span>
+                                <span className="font-bold ml-1">{Math.round((item.value / total) * 100)}%</span>
                             </div>
                         ))}
                     </div>
@@ -351,7 +348,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             return (
                 <div style={{ backgroundColor: styles.bgColor || '#eff6ff' }} className="p-3 rounded-lg flex items-center justify-between gap-2 overflow-hidden">
                     <div className="min-w-0">
-                        <div className="text-[10px] text-gray-500 font-bold uppercase truncate flex items-center gap-1"><CalendarDays size={10}/> {content.title}</div>
+                        <div className="text-[10px] text-gray-500 font-bold uppercase truncate flex items-center gap-1"><CalendarDays size={10} /> {content.title}</div>
                         <div className="text-[10px] text-gray-400 truncate">{content.date}</div>
                     </div>
                     <div className="text-xl font-black text-indigo-600 whitespace-nowrap">{dDay}</div>
@@ -363,8 +360,8 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'divider': return <div className="py-2"><hr className="border-t border-gray-200" style={{ borderColor: styles.color }} /></div>;
 
         // --- 7. 리스트류 ---
-        case 'bullet-list': return <ul style={commonStyle} className="list-disc list-inside space-y-1 text-gray-800">{content.items.map((it:string, i:number) => <li key={i} className="break-words">{it}</li>)}</ul>;
-        case 'number-list': return <ol style={commonStyle} className="list-decimal list-inside space-y-1 text-gray-800">{content.items.map((it:string, i:number) => <li key={i} className="break-words">{it}</li>)}</ol>;
+        case 'bullet-list': return <ul style={commonStyle} className="list-disc list-inside space-y-1 text-gray-800">{content.items.map((it: string, i: number) => <li key={i} className="break-words">{it}</li>)}</ul>;
+        case 'number-list': return <ol style={commonStyle} className="list-decimal list-inside space-y-1 text-gray-800">{content.items.map((it: string, i: number) => <li key={i} className="break-words">{it}</li>)}</ol>;
 
         // --- 8. 토글 목록 ---
         case 'toggle-list': return <ToggleItem title={content.title} items={content.items} style={commonStyle} />;
@@ -375,13 +372,14 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'callout': {
             const calloutType = content.type || 'info';
             // 타입별 스타일 및 아이콘 설정
-            // @ts-ignore
-            const config = {
+
+            const configs = {
                 info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: <Info size={20} className="text-blue-500" /> },
                 warning: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', icon: <AlertTriangle size={20} className="text-orange-500" /> },
                 error: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: <XCircle size={20} className="text-red-500" /> },
                 success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: <CheckCircle size={20} className="text-green-500" /> }
-            }[calloutType as 'info' | 'warning' | 'error' | 'success'] || config.info;
+            };
+            const config = configs[calloutType as 'info' | 'warning' | 'error' | 'success'] || configs.info;
 
             return (
                 <div className={`p-4 rounded-lg border flex gap-3 ${config.bg} ${config.border} break-words`}>
@@ -426,7 +424,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 </div>
             );
 
-// 🌟 5. 수식 (Math) - LaTeX
+        // 🌟 5. 수식 (Math) - LaTeX
         case 'math':
             // 수식이 비어있으면 안내 문구 표시
             if (!content.text) return <div className="text-gray-400 text-xs italic">(수식을 입력하세요)</div>;
@@ -450,7 +448,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'typing-text':
             return <TypingTextItem content={content} style={commonStyle} />;
 
-// 🌟 7. 스크롤 텍스트 (Scroll Text, Marquee)
+        // 🌟 7. 스크롤 텍스트 (Scroll Text, Marquee)
         case 'scroll-text':
             return (
                 <div className="w-full overflow-hidden bg-gray-100 rounded border border-gray-200 py-2 relative flex items-center">
@@ -493,8 +491,8 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             );
         // 🌟 [NEW] 별점/평점 (Rating)
         case 'rating':
-            return <RatingItem block={block} {...props} />;
-            default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
+            return <RatingItem block={block} {...otherProps} />;
+        default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
         // --- [NEW] 진행 게이지 위젯 ---
         // --- [NEW] 진행 게이지 위젯 (원형/직선형 분기 추가) ---
         case 'progress-bar': {
@@ -579,7 +577,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         }
 
         case 'unit-converter':
-            return <UnitConverterWidget block={block} {...props} />;
+            return <UnitConverterWidget block={block} {...otherProps} />;
         case 'pdf-viewer': {
             const fileUrl: string = content.fileUrl || '';
             const fileName: string = content.fileName || '';
@@ -613,9 +611,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                     style={{ minHeight: 180 }}
                 >
                     <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex justify-between gap-2">
-        <span className="truncate">
-          {fileName ? fileName : 'PDF를 드래그 앤 드롭해서 열기'}
-        </span>
+                        <span className="truncate">
+                            {fileName ? fileName : 'PDF를 드래그 앤 드롭해서 열기'}
+                        </span>
                         {fileUrl ? (
                             <button
                                 className="text-red-500 font-bold"
@@ -691,8 +689,8 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                     <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
                         <span className="font-bold truncate">{title}</span>
                         <span className="text-[10px] text-gray-400">
-          {cards.length === 0 ? '0 cards' : `${currentIndex + 1}/${cards.length}`}
-        </span>
+                            {cards.length === 0 ? '0 cards' : `${currentIndex + 1}/${cards.length}`}
+                        </span>
                     </div>
 
                     <div className="p-3">
@@ -806,29 +804,29 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
-                            <tr>
-                                {headers.map((h: string, i: number) => (
-                                    <th key={i} className="px-4 py-2 font-medium border-b border-gray-100">{h}</th>
-                                ))}
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {rows.map((row: string[], i: number) => (
-                                <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                                    {row.map((cell: string, j: number) => (
-                                        <td key={j} className="px-4 py-2 text-gray-700">
-                                            {/* 태그 스타일링 예시 (2번째 컬럼) */}
-                                            {j === 1 ? (
-                                                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
-                                                    {cell}
-                                                </span>
-                                            ) : (
-                                                cell
-                                            )}
-                                        </td>
+                                <tr>
+                                    {headers.map((h: string, i: number) => (
+                                        <th key={i} className="px-4 py-2 font-medium border-b border-gray-100">{h}</th>
                                     ))}
                                 </tr>
-                            ))}
+                            </thead>
+                            <tbody>
+                                {rows.map((row: string[], i: number) => (
+                                    <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                        {row.map((cell: string, j: number) => (
+                                            <td key={j} className="px-4 py-2 text-gray-700">
+                                                {/* 태그 스타일링 예시 (2번째 컬럼) */}
+                                                {j === 1 ? (
+                                                    <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
+                                                        {cell}
+                                                    </span>
+                                                ) : (
+                                                    cell
+                                                )}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -876,7 +874,7 @@ const SpoilerItem = ({ content, style }: any) => {
 
     return (
         <div
-            onClick={(e) => {
+            onClick={() => {
                 // 편집 모드에서의 선택과 충돌 방지를 위해 stopPropagation 사용 고려
                 // 하지만 미리보기 기능을 위해 클릭 허용
                 // e.stopPropagation();
@@ -885,9 +883,9 @@ const SpoilerItem = ({ content, style }: any) => {
             className={`
                 relative p-3 rounded-lg border transition-all cursor-pointer group select-none
                 ${isRevealed
-                ? 'bg-gray-50 border-gray-200 text-gray-800'
-                : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
-            }
+                    ? 'bg-gray-50 border-gray-200 text-gray-800'
+                    : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
+                }
             `}
             style={style}
         >
@@ -982,17 +980,17 @@ const TypingTextItem = ({ content, style }: any) => {
 };
 
 function DroppableColumn({
-                             id,
-                             onClick,
-                             children,
-                         }: {
+    id,
+    onClick,
+    children,
+}: {
     id: string; // columnContainerId
     onClick: (e: React.MouseEvent) => void;
     children: React.ReactNode;
 }) {
-    const {setNodeRef, isOver} = useDroppable({
+    const { setNodeRef, isOver } = useDroppable({
         id,
-        data: {containerId: id, isContainer: true},
+        data: { containerId: id, isContainer: true },
     });
 
     return (

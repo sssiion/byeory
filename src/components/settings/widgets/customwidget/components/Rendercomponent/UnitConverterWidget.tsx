@@ -1,12 +1,12 @@
-import {ArrowLeftRight} from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 import React from "react";
-import type {WidgetBlock} from "../../types.ts";
+import type { WidgetBlock } from "../../types.ts";
 
 interface Props {
     block: WidgetBlock; // 혹은 any
-    onUpdateBlock : WidgetBlock;
+    onUpdateBlock: (id: string, updates: any) => void;
 }
-const UnitConverterWidget: React.FC<Props> = ({ block, onUpdateBlock })  => {
+const UnitConverterWidget: React.FC<Props> = ({ block, onUpdateBlock }) => {
     const { content, styles, id } = block;
 
     // 기본값 설정

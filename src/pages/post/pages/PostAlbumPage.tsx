@@ -131,6 +131,19 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
     const handleRenameSave = (newName: string) => {
         if (renamingAlbum) {
+            // 커버 설정도 새 이름으로 이동
+            setCoverConfigs(prev => {
+                const oldConfig = prev[renamingAlbum];
+                if (!oldConfig) return prev;
+
+                const next = { ...prev };
+                next[newName] = oldConfig;
+                delete next[renamingAlbum];
+
+                localStorage.setItem('album_covers_v1', JSON.stringify(next));
+                return next;
+            });
+
             onRenameAlbum(renamingAlbum, newName);
             setRenamingAlbum(null);
         }
@@ -208,7 +221,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                                 tag={displayTag} // ✨ Use resolved tag
                                 count={count}
                                 config={coverConfigs[tagName]}
-                                className="shadow-sm border border-transparent group-hover:shadow-md transition-all"
+                                className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                             />
 
                             {/* 상단 메뉴 버튼: 우측 상단 절대 위치 */}
@@ -259,10 +272,11 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     >
                         <AlbumBook
                             title="미분류 보관함"
-                            tag="미분류" // Explicit tag for Others
+                            // tag="미분류" // Removed tag as requested
                             count={sortedAlbums.othersCount}
                             config={coverConfigs['__others__'] || undefined} // Special key for others
-                            className="shadow-sm border border-transparent group-hover:shadow-md transition-all opacity-90"
+                            className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
+                            showFullTitle={true}
                         />
 
                         {/* Menu for Others Album */}
