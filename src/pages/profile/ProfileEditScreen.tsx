@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Calendar, Smile, Phone, FileText, Camera, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../../components/Header/Navigation';
+import {uploadImageToSupabase,deleteOldImage} from "../post/api.ts";
 
 const ProfileEditScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -74,22 +75,38 @@ const ProfileEditScreen: React.FC = () => {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.onchange = (e) => {
+
+        // 비동기 처리를 위해 async 키워드 추가
+        input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
+
             if (file) {
-                if (file.size > 3 * 1024 * 1024) {
-                    alert("사진 최대 용량은 3MB입니다");
-                    return;
+
+                try {
+                    setIsUploading(true); // 업로드 시작 상태 표시
+                    // [STEP 1] 기존 이미지가 있다면 삭제! (이 부분이 추가되었습니다)
+                    if (profilePhoto) {
+                        await deleteOldImage(profilePhoto);
+                    }
+                    // 1. Supabase 업로드 함수 호출
+                    const uploadedUrl = await uploadImageToSupabase(file);
+
+                    // 2. 업로드 성공 시 상태 업데이트
+                    if (uploadedUrl) {
+                        setProfilePhoto(uploadedUrl); // Supabase에서 받은 공개 URL 저장
+                    } else {
+                        console.error("이미지 업로드 실패");
+                        // 필요하다면 여기에 에러 알림 추가 (예: alert("업로드 실패"))
+                    }
+                } catch (error) {
+                    console.error("업로드 중 에러 발생:", error);
+                } finally {
+                    setIsUploading(false); // 성공/실패 여부와 관계없이 로딩 종료
                 }
-                setIsUploading(true);
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setProfilePhoto(reader.result as string);
-                    setIsUploading(false);
-                };
-                reader.readAsDataURL(file);
+
             }
         };
+
         input.click();
     };
 

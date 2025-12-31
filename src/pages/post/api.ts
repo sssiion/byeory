@@ -9,6 +9,29 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const API_BASE_URL = "http://localhost:8080/api/posts";
 export const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
+export const deleteOldImage = async (oldUrl: string | null) => {
+    if (!oldUrl) return; // 삭제할 URL이 없으면 종료
+
+    try {
+        // URL에서 파일 경로만 추출하는 로직
+        // 예: .../public/blog-assets/2024...png -> 2024...png
+        const filePath = oldUrl.split('/blog-assets/').pop();
+
+        if (filePath) {
+            const { error } = await supabase.storage
+                .from('blog-assets')
+                .remove([filePath]); // 파일 삭제 요청
+
+            if (error) {
+                console.warn("기존 이미지 삭제 실패 (무시하고 진행):", error);
+            } else {
+                console.log("기존 이미지 삭제 완료");
+            }
+        }
+    } catch (e) {
+        console.warn("삭제 로직 처리 중 오류:", e);
+    }
+};
 export const uploadImageToSupabase = async (file: File): Promise<string | null> => {
     if (!supabase) return null;
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}`;

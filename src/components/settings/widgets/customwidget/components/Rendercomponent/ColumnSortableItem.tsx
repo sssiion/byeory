@@ -1,9 +1,9 @@
 import React from "react";
-import type { WidgetBlock, ContainerLocation } from "../types"; // types 경로 확인 필요
+import type { WidgetBlock, ContainerLocation } from "../../types.ts"; // types 경로 확인 필요
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
-import BlockRenderer from "./BlockRenderer";
+import BlockRenderer from "../BlockRenderer.tsx";
 
 
 // 1️⃣ 여기서 받을 Props의 타입을 정의합니다.

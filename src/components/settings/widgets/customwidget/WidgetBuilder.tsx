@@ -260,6 +260,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
                     maxCapacity={currentSize.capacity}
                     activeContainer={activeContainer}
                     onSetActiveContainer={setActiveContainer}
+                    onUpdateBlock={updateBlock}
                     onDragEnd={handleDndKitDragEnd}
                     onDragOver={handleDndKitDragOver} // 🆕 추가: DragOver 핸들러 전달
                 />
