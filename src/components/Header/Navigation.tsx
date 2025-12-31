@@ -5,6 +5,7 @@ import { User, Settings, Coins } from 'lucide-react';
 import { useCredits } from '../../context/CreditContext';
 import { useMenu } from '../settings/menu/MenuSettings';
 import { useAuth } from '../../context/AuthContext';
+import { usePlayTime } from '../../hooks';
 import DailyQuestModal from '../Credit/DailyQuestModal'; // Import Modal
 import { useDrag, useDrop } from 'react-dnd';
 
@@ -136,9 +137,9 @@ const Navigation: React.FC = () => {
         return location.pathname.startsWith(path);
     };
 
-    // Session Timer Logic
-    const { sessionStartTime } = useAuth();
-    const [elapsedTime, setElapsedTime] = useState<string>('');
+    // Playtime Timer Logic
+    const playTime = usePlayTime();
+    const [formattedPlayTime, setFormattedPlayTime] = useState<string>('');
     const [showTimer, setShowTimer] = useState(false);
 
     useEffect(() => {
@@ -158,29 +159,19 @@ const Navigation: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!showTimer || !sessionStartTime) {
-            setElapsedTime('');
+        if (!showTimer) {
+            setFormattedPlayTime('');
             return;
         }
 
-        const updateTimer = () => {
-            const now = Date.now();
-            const diff = now - sessionStartTime;
+        const hours = Math.floor(playTime / 3600);
+        const minutes = Math.floor((playTime % 3600) / 60);
+        const seconds = playTime % 60;
 
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-            setElapsedTime(
-                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-            );
-        };
-
-        const interval = setInterval(updateTimer, 1000);
-        updateTimer(); // Initial call
-
-        return () => clearInterval(interval);
-    }, [showTimer, sessionStartTime]);
+        setFormattedPlayTime(
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        );
+    }, [showTimer, playTime]);
 
     return (
         <>
@@ -222,9 +213,9 @@ const Navigation: React.FC = () => {
 
                 {/* Right Icons */}
                 <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary justify-self-end">
-                    {showTimer && elapsedTime && (
+                    {showTimer && formattedPlayTime && (
                         <div className={`font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap ${isEditMode ? 'opacity-50 cursor-not-allowed select-none' : ''}`}>
-                            {elapsedTime}
+                            {formattedPlayTime}
                         </div>
                     )}
 

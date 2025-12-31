@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from './AuthContext';
 
 export interface DailyQuest {
     id: string;
@@ -30,7 +29,6 @@ interface CreditContextType {
 const CreditContext = createContext<CreditContextType | undefined>(undefined);
 
 export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { sessionStartTime } = useAuth();
     const [credits, setCredits] = useState<number>(() => {
         const saved = localStorage.getItem('user_credits');
         return saved ? parseInt(saved, 10) : 0;
@@ -96,25 +94,45 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
             setResetTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-
-            // Check Time-based Quests
-            if (sessionStartTime) {
-                const sessionDiff = Date.now() - sessionStartTime;
-                const sessionMinutes = Math.floor(sessionDiff / (1000 * 60));
-
-                setDailyQuests(prev => prev.map(q => {
-                    if (q.type === 'time' && !q.isCompleted && !q.isClaimable && q.targetValue) {
-                        if (sessionMinutes >= q.targetValue) {
-                            return { ...q, isClaimable: true };
-                        }
-                    }
-                    return q;
-                }));
-            }
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [sessionStartTime]);
+    }, []);
+
+    // Periodic Server Playtime Check for Quests (Every 60s)
+    useEffect(() => {
+        const checkServerPlayTime = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+
+            try {
+                const response = await fetch('http://localhost:8080/api/user/playtime', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const totalSeconds = await response.json(); // Long (seconds)
+                    const totalMinutes = Math.floor(totalSeconds / 60);
+
+                    setDailyQuests(prev => prev.map(q => {
+                        if (q.type === 'time' && !q.isCompleted && !q.isClaimable && q.targetValue) {
+                            if (totalMinutes >= q.targetValue) {
+                                return { ...q, isClaimable: true };
+                            }
+                        }
+                        return q;
+                    }));
+                }
+            } catch (e) {
+                console.error("Failed to check server playtime for quests", e);
+            }
+        };
+
+        const interval = setInterval(checkServerPlayTime, 60000); // Check every minute
+        checkServerPlayTime(); // Initial check
+
+        return () => clearInterval(interval);
+    }, []);
 
     const addCredits = (amount: number, reason?: string) => {
         setCredits(prev => prev + amount);
