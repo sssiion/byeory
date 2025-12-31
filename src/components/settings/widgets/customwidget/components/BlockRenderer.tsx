@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, {useEffect, useRef} from 'react';
 import type { WidgetBlock, ContainerLocation } from '../types';
 import {
     Check,
@@ -7,23 +7,8 @@ import {
     ChevronRight,
     EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp, Database
 } from 'lucide-react';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import { dropPlugin } from '@react-pdf-viewer/drop';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { useCallback, useState } from 'react';
-import {
-    ReactFlow,
-    Controls,
-    Background,
-    addEdge,
-    applyEdgeChanges,
-    applyNodeChanges,
-    type Node,
-    type Edge,
-    type NodeChange,
-    type EdgeChange,
-    type Connection,
-} from '@xyflow/react';
+
 import '@xyflow/react/dist/style.css';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/drop/lib/styles/index.css';
@@ -34,14 +19,12 @@ import {
 } from '@dnd-kit/sortable';
 
 import { useDroppable } from '@dnd-kit/core';
-import ColumnSortableItem from "./ColumnSortableItem.tsx";
-import HeatmapWidget from "./HeatmapWidget.tsx";
+import ColumnSortableItem from "./Rendercomponent/ColumnSortableItem.tsx";
+import HeatmapWidget from "./Rendercomponent/HeatmapWidget.tsx";
 import BookInfoWidget from "./Rendercomponent/BookInfoWidget.tsx";
 import MovieTicketWidget from "./Rendercomponent/MovieTicketWidget.tsx";
 import UnitConverterWidget from "./Rendercomponent/UnitConverterWidget.tsx";
-import { dropPlugin } from "@react-pdf-viewer/drop";
-import {defaultLayoutPlugin} from "@react-pdf-viewer/default-layout";
-import {Viewer} from "@react-pdf-viewer/core";
+
 import {
     addEdge, applyEdgeChanges,
     applyNodeChanges,
@@ -53,6 +36,7 @@ import {
     ReactFlow
 } from "@xyflow/react";
 import type {Connection} from "puppeteer";
+import PdfDropViewer from "./Rendercomponent/PdfDropViewer.tsx";
 
 // 🆕 [Helper] 자동 높이 조절 Textarea (Notion 느낌)
 const AutoResizeTextarea = ({
@@ -158,7 +142,6 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                                 key={child.id}
                                                 child={child}
                                                 columnContainerId={columnContainerId}
-                                                // 아래 props들도 빠짐없이 전달해야 합니다.
                                                 selectedBlockId={props.selectedBlockId}
                                                 onSelectBlock={props.onSelectBlock}
                                                 onRemoveBlock={props.onRemoveBlock}
@@ -176,7 +159,6 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             </div>
         );
     }
-
     switch (type) {
         // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
         case 'heading1': return <h1 style={commonStyle} className="text-2xl font-bold mb-2 border-b pb-1 border-gray-100 break-words">{content.text}</h1>;
@@ -629,74 +611,10 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
 
         case 'unit-converter':
             return <UnitConverterWidget block={block} {...otherProps} />;
-        case 'pdf-viewer': {
-            const fileUrl: string = content.fileUrl || '';
-            const fileName: string = content.fileName || '';
+        case 'pdf-viewer':
+            return <PdfDropViewer block={block} {...otherProps} />
 
-            const drop = dropPlugin();
-            const layout = defaultLayoutPlugin();
-
-            const setFromFile = (file: File) => {
-                if (file.type !== 'application/pdf') return;
-                const nextUrl = URL.createObjectURL(file);
-
-                props.onUpdateBlock(block.id, {
-                    content: {
-                        ...content,
-                        fileUrl: nextUrl,
-                        fileName: file.name,
-                    },
-                });
-            };
-
-            const onDropCapture = (e: React.DragEvent) => {
-                const f = e.dataTransfer.files?.[0];
-                if (f) setFromFile(f);
-            };
-
-            return (
-                <div
-                    onDropCapture={onDropCapture}
-                    onDragOver={(e) => e.preventDefault()}
-                    className="w-full rounded-lg border border-gray-200 bg-white overflow-hidden"
-                    style={{ minHeight: 180 }}
-                >
-                    <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex justify-between gap-2">
-                        <span className="truncate">
-                            {fileName ? fileName : 'PDF를 드래그 앤 드롭해서 열기'}
-                        </span>
-                        {fileUrl ? (
-                            <button
-                                className="text-red-500 font-bold"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (fileUrl.startsWith('blob:')) URL.revokeObjectURL(fileUrl);
-                                    props.onUpdateBlock(block.id, {
-                                        content: { ...content, fileUrl: '', fileName: '' },
-                                    });
-                                }}
-                            >
-                                Clear
-                            </button>
-                        ) : null}
-                    </div>
-
-                    {/* Worker 사용 패턴은 공식 문서에 안내되어 있습니다. [web:74] */}
-                    <div style={{ height: 320 }}>
-                        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-                            {fileUrl ? (
-                                <Viewer fileUrl={fileUrl} plugins={[drop, layout]} />
-                            ) : (
-                                <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-                                    여기에 PDF 파일을 드롭하세요
-                                </div>
-                            )}
-                        </Worker>
-                    </div>
-                </div>
-            );
-        }
-        // BlockRenderer.tsx (switch 내부에 추가)
+                // BlockRenderer.tsx (switch 내부에 추가)
         case 'flashcards': {
             const title: string = content.title || 'Flashcards';
             const cards = (content.cards || []) as { id: string; front: string; back: string }[];
