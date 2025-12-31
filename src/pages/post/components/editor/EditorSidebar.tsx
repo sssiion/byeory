@@ -2,6 +2,12 @@ import React, { useRef } from 'react';
 import { STICKERS, LAYOUT_PRESETS } from '../../constants';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot } from 'lucide-react';
 
+
+interface CustomAlbum {
+    name: string;
+    tag: string | null;
+}
+
 interface Props {
     isSaving: boolean;
     onSave: () => void;
@@ -20,13 +26,18 @@ interface Props {
     handleImagesUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onAiGenerate: () => void;
     isAiProcessing: boolean;
+    // New Props for Save Location
+    currentTags: string[];
+    onTagsChange: (tags: string[]) => void;
+    customAlbums: CustomAlbum[];
 }
 
 const EditorSidebar: React.FC<Props> = ({
     isSaving, onSave, onCancel,
     onAddBlock, onAddFloatingText, onAddSticker, onAddFloatingImage,
     rawInput, setRawInput, selectedLayoutId, setSelectedLayoutId,
-    tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing
+    tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
+    currentTags, onTagsChange, customAlbums
 }) => {
     const triggerFileClick = () => fileInputRef.current?.click();
 
@@ -59,6 +70,8 @@ const EditorSidebar: React.FC<Props> = ({
                     {isSaving ? "저장 중..." : "저장"}
                 </button>
             </div>
+
+            {/* SaveLocationWidget Removed - Moved to Modal */}
 
             {/* 꾸미기 도구 섹션 */}
             <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">

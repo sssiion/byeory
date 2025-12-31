@@ -145,7 +145,6 @@ const EditorCanvas: React.FC<Props> = ({
                             fontWeight: titleStyles.fontWeight || 'bold',
                         }}
                     />
-                    {viewMode === 'read' && <button onClick={() => setViewMode('editor')} className="ml-4 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition ">🛠️ 수정하기</button>}
                 </div>
 
                 <div className="flex-1 pl-12 py-12 pr-16 relative pb-40">

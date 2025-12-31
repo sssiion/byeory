@@ -1,66 +1,114 @@
-import React from 'react';
+// ✨ Import customAlbum for props
+import React, { useState } from 'react';
+import CreateFolderModal from '../components/CreateFolderModal';
 import type { PostData } from '../types';
-import { ArrowLeft, Folder } from 'lucide-react';
+import { ArrowLeft, Home, Folder, PenLine } from 'lucide-react';
+import PostBreadcrumb from '../components/PostBreadcrumb';
 
 interface Props {
-    tagName: string | null;
+    albumName: string | null;
+    albumId: string | null;
     posts: PostData[];
     onBack: () => void;
     onPostClick: (post: PostData) => void;
-    onStartWriting: () => void;
+    onStartWriting: (initialAlbumId?: string) => void;
+    onCreateAlbum: (name: string, tags: string[], parentId?: string | null) => void; // Update signature
+    // ✨ New Prop for looking up sub-albums
+    customAlbums: any[];
+    onAlbumClick: (id: string | null) => void;
 }
 
-const PostFolderPage: React.FC<Props> = ({ tagName, posts, onBack, onPostClick }) => {
+const PostFolderPage: React.FC<Props> = ({ albumName, albumId, posts, onBack, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick }) => {
+    const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+
+    // ✨ Filter sub-folders
+    const subAlbums = customAlbums.filter(a => a.parentId === albumId);
+
+    const handleCreateFolder = (name: string) => {
+        onCreateAlbum(name, [], albumId); // Create with parentId
+    };
+
     return (
         <div>
-            {/* 상단 네비게이션 */}
-            <div className="flex items-center gap-4 mb-8">
-                <button
-                    onClick={onBack}
-                    className="p-2 hover:bg-gray-100 rounded-full transition text-gray-600"
-                >
-                    <ArrowLeft size={24} />
-                </button>
-
+            {/* 상단 네비게이션 (Breadcrumb) */}
+            <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <Folder size={20} className="fill-indigo-100" />
+                    <button
+                        onClick={onBack}
+                        className="p-2 hover:bg-gray-100 rounded-full transition text-gray-500 hover:text-gray-900"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+
+                    <div className="flex items-center text-sm">
+                        <PostBreadcrumb items={[
+                            { label: '내 앨범', icon: Home, onClick: onBack },
+                            // TODO: If we have deep nesting, we might need a recursive breadcrumb lookup.
+                            // For now, parent -> current.
+                            // Ideally, `usePostEditor` should provide the "path" to the current album.
+                            { label: `${albumName || '기타 보관함'}`, icon: Folder }
+                        ]} />
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                            {tagName || '기타 보관함'}
-                            <span className="text-gray-400 text-lg font-medium">({posts.length})</span>
-                        </h1>
-                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsCreateFolderOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                    >
+                        <Folder size={16} />
+                        폴더 추가
+                    </button>
+                    <button
+                        onClick={() => onStartWriting(albumId || undefined)}
+                        className="flex items-center gap-2 px-5 h-9 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"
+                    >
+                        <PenLine size={18} />
+                        기록 남기기
+                    </button>
                 </div>
             </div>
 
-            {/* 글 목록 (재사용) */}
-            {/* PostListPage 컴포넌트가 제목(나의 기록들)을 포함하고 있어서 조금 어색할 수 있지만, 
-                PostListPage를 수정하여 제목을 prop으로 받게 하거나, 
-                여기서는 내용 부분만 렌더링하도록 하는 게 좋음.
-                
-                일단은 PostListPage를 그냥 사용하되, PostListPage 내부의 제목 '나의 기록들'이 중복되어 보일 수 있음.
-                -> PostListPage를 'PostListView' 컴포넌트로 분리하는 게 정석이지만, 
-                   지금은 코드를 복사해서 커스텀하게 렌더링하겠습니다.
-            */}
+            {/* ✨ Sub-Albums (Folders) Display */}
+            {subAlbums.length > 0 && (
+                <div className="mb-8">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                        <Folder size={20} className="text-yellow-500" />
+                        폴더
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {subAlbums.map(album => (
+                            <div
+                                key={album.id}
+                                onClick={() => onAlbumClick(album.id)}
+                                className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] hover:shadow-md transition cursor-pointer flex flex-col items-center justify-center gap-2 group"
+                            >
+                                <Folder size={40} className="text-indigo-200 group-hover:text-indigo-400 transition-colors" />
+                                <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
+            {/* 글 목록 */}
+            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({posts.length})</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {posts.length === 0 ? (
                     <div className="col-span-full py-20 text-center text-gray-400">
-                        이 앨범에는 아직 글이 없습니다.
+                        이 폴더에는 아직 글이 없습니다.
                     </div>
                 ) : (
                     posts.map(p => (
-                        <div key={p.id} onClick={() => onPostClick(p)} className="bg-white p-6 rounded-xl shadow-sm border hover:shadow-md cursor-pointer transition transform hover:-translate-y-1">
+                        <div key={p.id} onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] p-6 rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1">
                             <div className="text-4xl mb-4">📜</div>
-                            <h3 className="font-bold text-lg truncate">{p.title}</h3>
-                            <p className="text-gray-500 text-sm">{p.date}</p>
+                            <h3 className="font-bold text-lg truncate text-[var(--text-primary)]">{p.title}</h3>
+                            <p className="text-[var(--text-secondary)] text-sm">{p.date}</p>
                             {/* 태그 표시 */}
                             {p.tags && p.tags.length > 0 && (
                                 <div className="mt-3 flex flex-wrap gap-1">
                                     {p.tags.map(t => (
-                                        <span key={t} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">#{t}</span>
+                                        <span key={t} className="text-xs px-2 py-1 bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] rounded-full">#{t}</span>
                                     ))}
                                 </div>
                             )}
@@ -68,6 +116,13 @@ const PostFolderPage: React.FC<Props> = ({ tagName, posts, onBack, onPostClick }
                     ))
                 )}
             </div>
+
+            {/* Modals */}
+            <CreateFolderModal
+                isOpen={isCreateFolderOpen}
+                onClose={() => setIsCreateFolderOpen(false)}
+                onCreate={handleCreateFolder}
+            />
         </div>
     );
 };

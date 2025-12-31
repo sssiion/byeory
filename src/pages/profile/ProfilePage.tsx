@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Key, Image as ImageIcon, Clock } from "lucide-react";
 import { usePin } from '../../context/PinContext';
-import PinSetupModal from '../../components/Security/PinSetupModal';
 
 function ProfilePage() {
     const { logout } = useAuth();
@@ -25,18 +24,16 @@ function ProfilePage() {
     const [showSessionTimer, setShowSessionTimer] = useState(false);
 
     // PIN Lock Integration
-    const { isPinEnabled, disablePin } = usePin();
-    const [isPinSetupOpen, setIsPinSetupOpen] = useState(false);
+    const { isPinEnabled, hasPin, togglePin } = usePin();
 
-    const handlePinToggle = () => {
-        if (isPinEnabled) {
-            // If already enabled, ask to disable (maybe confirm?)
-            if (window.confirm('PIN 잠금을 해제하시겠습니까?')) {
-                disablePin();
-            }
+    const handlePinToggle = async () => {
+        if (!hasPin) {
+            navigate('/settings/pin/setup');
         } else {
-            // If disabled, open setup modal
-            setIsPinSetupOpen(true);
+            const success = await togglePin(!isPinEnabled);
+            if (success) {
+                // Success feedback if needed
+            }
         }
     };
 
@@ -245,6 +242,17 @@ function ProfilePage() {
                             <Shield className="w-5 h-5 theme-icon" />
                             보안
                         </h3>
+                        {hasPin && isPinEnabled && (
+                            <button
+                                onClick={() => navigate('/settings/pin/change')}
+                                className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <Key className="w-5 h-5 theme-text-secondary" />
+                                    <span className="theme-text-primary">PIN 변경</span>
+                                </div>
+                            </button>
+                        )}
                         <button
                             onClick={handlePinToggle}
                             className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"
@@ -307,10 +315,7 @@ function ProfilePage() {
                 </div>
             </main>
 
-            <PinSetupModal
-                isOpen={isPinSetupOpen}
-                onClose={() => setIsPinSetupOpen(false)}
-            />
+
         </div>
     );
 }
