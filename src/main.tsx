@@ -34,7 +34,9 @@ import { AuthProvider } from './context/AuthContext'
 import { TodoProvider } from './context/TodoContext'
 import { CreditProvider } from './context/CreditContext'
 import { PinProvider } from './context/PinContext';
-import PinScreen from './components/Security/PinScreen';
+import PinLockOverlay from './components/Security/PinLockOverlay';
+import PinSetup from './pages/settings/PinSetup';
+import PinChange from './pages/settings/PinChange';
 
 // Initialize theme from localStorage
 const savedTheme = localStorage.getItem('theme') || 'default';
@@ -145,9 +147,9 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider>
             <CreditProvider>
               <TodoProvider>
-                <PinProvider>
-                  <PinScreen />
-                  <BrowserRouter>
+                <BrowserRouter>
+                  <PinProvider>
+                    <PinLockOverlay />
                     <Routes>
                       <Route path="/" element={<RootRouting />} />
                       <Route path="/login" element={<LoginPage />} />
@@ -166,10 +168,14 @@ createRoot(document.getElementById('root')!).render(
                         <Route path="/profile/password" element={<PasswordChangeScreen />} />
                         <Route path="/profile/delete" element={<GetOutPage />} />
                         <Route path="/setup-profile" element={<InitialProfileSetup />} />
+
+                        {/* PIN Routes */}
+                        <Route path="/settings/pin/setup" element={<PinSetup />} />
+                        <Route path="/settings/pin/change" element={<PinChange />} />
                       </Route>
                     </Routes>
-                  </BrowserRouter>
-                </PinProvider>
+                  </PinProvider>
+                </BrowserRouter>
               </TodoProvider>
             </CreditProvider>
           </ThemeProvider>
