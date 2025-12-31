@@ -13,7 +13,7 @@ export const usePlayTime = () => {
     });
 
     const { isLoggedIn } = useAuth();
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Save to sessionStorage whenever playTime changes
     useEffect(() => {
@@ -22,13 +22,8 @@ export const usePlayTime = () => {
         }
     }, [playTime]);
 
-    // Cleanup on logout
-    useEffect(() => {
-        if (!isLoggedIn) {
-            setPlayTime(0);
-            sessionStorage.removeItem(SESSION_STORAGE_KEY);
-        }
-    }, [isLoggedIn]);
+    // Note: We removed the auto-cleanup on !isLoggedIn here to prevent race conditions on page refresh.
+    // Instead, we will explicitly clear sessionStorage in the logout function in AuthContext.
 
     // 1. Heartbeat Request (POST /api/user/heartbeat) - Background Process
     const sendHeartbeat = useCallback(async () => {
