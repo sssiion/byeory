@@ -230,8 +230,8 @@ const Navigation: React.FC = () => {
 
                     <div
                         className={`flex items-center space-x-1 font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap transition-transform ${isEditMode
-                                ? 'opacity-50 cursor-not-allowed select-none'
-                                : 'cursor-pointer hover:scale-105 active:scale-95'
+                            ? 'opacity-50 cursor-not-allowed select-none'
+                            : 'cursor-pointer hover:scale-105 active:scale-95'
                             }`}
                         title="Daily Quests & Rewards"
                         onClick={() => !isEditMode && setIsQuestModalOpen(true)}
@@ -255,6 +255,7 @@ const Navigation: React.FC = () => {
                         className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => {
                             if (isEditMode) return;
+                            setSettingsInitialView('main');
                             setIsSettingsOpen(true);
                         }}
                         disabled={isEditMode}
