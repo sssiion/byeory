@@ -9,8 +9,6 @@ const PinLockOverlay: React.FC = () => {
     const [message, setMessage] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
 
-    if (!isLocked) return null;
-
     // Detect switch to CODE mode if attempts > 5
     // Note: This relies on PinContext keeping track and rendering PinLockOverlay.
     // Ideally useEffect to watch failedAttempts.
@@ -24,6 +22,8 @@ const PinLockOverlay: React.FC = () => {
             // resendLockCode(); 
         }
     }, [failedAttempts, mode]);
+
+    if (!isLocked) return null;
 
     const handlePinComplete = async (pin: string) => {
         setIsLoading(true);

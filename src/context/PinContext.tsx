@@ -24,36 +24,18 @@ export const usePin = () => {
 
 export const PinProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isLocked, setIsLocked] = useState(false);
-    const [hasPin, setHasPin] = useState(false);
-    const [isPinEnabled, setIsPinEnabled] = useState(false);
+    // Initialize from localStorage
+    const [hasPin, setHasPin] = useState(() => localStorage.getItem('hasPin') === 'true');
+    const [isPinEnabled, setIsPinEnabled] = useState(() => localStorage.getItem('pinEnabled') === 'true');
     const [failedAttempts, setFailedAttempts] = useState(0);
     const [lastActivityTime, setLastActivityTime] = useState(Date.now());
-
-    // Check PIN status on mount
-    useEffect(() => {
-        const checkPinStatus = async () => {
-            const token = localStorage.getItem('accessToken');
-            if (!token) return;
-
-            try {
-                const res = await fetchWithAuth('/api/pin/status');
-                if (res.ok) {
-                    const data = await res.json();
-                    setHasPin(data.hasPin);
-                    setIsPinEnabled(data.isEnabled);
-                }
-            } catch (error) {
-                console.error("Error checking PIN status", error);
-            }
-        };
-        checkPinStatus();
-    }, []);
 
     const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return new Response(null, { status: 401 });
 
         try {
+            // Updated to use user-specified URI structure
             const res = await fetch(`http://localhost:8080${url}`, {
                 ...options,
                 headers: {
@@ -77,6 +59,8 @@ export const PinProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (res.ok) {
                 setHasPin(true);
                 setIsPinEnabled(true);
+                localStorage.setItem('hasPin', 'true');
+                localStorage.setItem('pinEnabled', 'true');
                 return true;
             }
             return false;
@@ -98,13 +82,6 @@ export const PinProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 setFailedAttempts(0);
                 return true;
             } else {
-                try {
-                    const data = await res.json();
-                    if (data && data.remainingAttempts !== undefined) {
-                        console.log("Remaining attempts:", data.remainingAttempts);
-                    }
-                } catch (e) { /* ignore */ }
-
                 setFailedAttempts(prev => prev + 1);
                 return false;
             }
@@ -148,6 +125,7 @@ export const PinProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
             if (res.ok) {
                 setIsPinEnabled(enable);
+                localStorage.setItem('pinEnabled', String(enable));
                 return true;
             }
             return false;
@@ -196,18 +174,7 @@ export const PinProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
     }, [isPinEnabled, isLocked, lastActivityTime]);
 
-    // Background detection
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.hidden) {
-                if (isPinEnabled) {
-                    setIsLocked(true);
-                }
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, [isPinEnabled]);
+
 
     return (
         <PinContext.Provider value={{
