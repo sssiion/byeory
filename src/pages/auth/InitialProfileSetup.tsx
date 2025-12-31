@@ -50,15 +50,17 @@ const InitialProfileSetup: React.FC = () => {
         input.onchange = (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
+                if (file.size > 3 * 1024 * 1024) {
+                    alert("사진 최대 용량은 3MB입니다");
+                    return;
+                }
                 setIsUploading(true);
-                setTimeout(() => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        setProfilePhoto(reader.result as string);
-                        setIsUploading(false);
-                    };
-                    reader.readAsDataURL(file);
-                }, 800);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setProfilePhoto(reader.result as string);
+                    setIsUploading(false);
+                };
+                reader.readAsDataURL(file);
             }
         };
         input.click();
