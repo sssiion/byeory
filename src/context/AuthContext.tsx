@@ -275,7 +275,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoggedIn(false);
         setUser(null);
         setSessionStartTime(null);
-        localStorage.clear();
+
+        // Remove only Auth-related items
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('sessionStartTime');
+        localStorage.removeItem('isProfileSetupCompleted');
+        localStorage.removeItem('temp_social_profile');
+
+        // Clear session specific items
+        sessionStorage.removeItem('session_playtime_seconds');
+
+        // Note: We intentionally DO NOT clear 'theme', 'fontFamily', 'showSessionTimer', etc.
+        // so that settings persist across logins.
     };
 
     return (

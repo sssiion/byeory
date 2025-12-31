@@ -10,9 +10,10 @@ interface Props {
     count?: number;
     onClick?: () => void;
     className?: string;
+    showFullTitle?: boolean;
 }
 
-const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, className }) => {
+const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, className, showFullTitle = false }) => {
     // Default to a simple cream cover if no config
     const activeConfig = config || {
         type: 'solid',
@@ -54,9 +55,11 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
             whileHover={{ scale: 1.02, y: -4 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
-            className={`relative aspect-[4/5] rounded-r-2xl rounded-l-md shadow-lg cursor-pointer transition-all hover:shadow-xl ${className}`}
+            className={`relative aspect-[4/5] rounded-r-2xl rounded-l-md shadow-lg cursor-pointer transition-shadow duration-300 hover:shadow-xl ${className}`}
             style={{
-                perspective: '1000px',
+                backfaceVisibility: 'hidden',
+                WebkitFontSmoothing: 'subpixel-antialiased',
+                transform: 'translateZ(0)', // Force GPU layer
             }}
         >
             {/* Spine (Left Edge Binding) */}
@@ -69,7 +72,7 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
             />
 
             {/* Fold/Crease Effect */}
-            <div className="absolute left-6 top-0 bottom-0 w-1 bg-black/5 z-20 backdrop-blur-[1px]" />
+            <div className="absolute left-6 top-0 bottom-0 w-1 bg-black/5 z-20" />
 
             {/* Main Cover */}
             <div
@@ -78,7 +81,7 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
             >
                 {/* Sticker / Icon Area */}
                 {activeConfig.sticker && (
-                    <div className="absolute top-4 left-8 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm text-2xl border border-white/40">
+                    <div className="absolute top-4 left-8 w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-sm text-2xl border border-white/40">
                         {activeConfig.sticker}
                     </div>
                 )}
@@ -96,8 +99,8 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
                                 textShadow: '0 1px 2px rgba(255,255,255,0.5)'
                             }}
                         >
-                            {/* Truncate Title to 6 chars */}
-                            {title.length > 6 ? `${title.slice(0, 6)}...` : title}
+                            {/* Truncate Title checking */}
+                            {(!showFullTitle && title.length > 6) ? `${title.slice(0, 6)}...` : title}
                         </h3>
                         {/* Tag Pill (Only show if tag is present) */}
                         {tag && (
