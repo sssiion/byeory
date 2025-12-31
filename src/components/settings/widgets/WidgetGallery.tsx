@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, ChevronRight, Plus, HelpCircle, X, Loader2, Database } from 'lucide-react';
+import { Search, ChevronRight, HelpCircle, Loader2, Database, Plus } from 'lucide-react';
 import { WIDGET_REGISTRY, type WidgetType } from './Registry';
 import { matchKoreanSearch } from '../../../utils/searchUtils';
 import { useIsMobile } from '../../../hooks';
-import type {WidgetBlock} from "./customwidget/types.ts";
+import type { WidgetBlock } from "./customwidget/types.ts";
+import { WidgetInfoModal } from './WidgetInfoModal';
 
-import {getMyWidgets} from "./customwidget/widgetApi.ts";
+import { getMyWidgets } from "./customwidget/widgetApi.ts";
 import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
 
 const CATEGORY_TRANSLATIONS: Record<string, string> = {
@@ -40,11 +41,11 @@ const renderWidgetPreview = (widgetData: any) => {
                 block={block}
                 // 미리보기용이므로 인터랙션 함수들은 빈 함수로 전달
                 selectedBlockId={null}
-                onSelectBlock={() => {}}
-                onRemoveBlock={() => {}}
+                onSelectBlock={() => { }}
+                onRemoveBlock={() => { }}
                 activeContainer={{ blockId: 'root', colIndex: 0 }}
-                onSetActiveContainer={() => {}}
-                onUpdateBlock={() => {}}
+                onSetActiveContainer={() => { }}
+                onUpdateBlock={() => { }}
             />
         </div>
     );
@@ -107,7 +108,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                 // data가 배열인지 확인
                 if (Array.isArray(data)) {
                     setSavedWidgets(data);
-                    if(data.length > 0) {
+                    if (data.length > 0) {
                         setExpandedCategories(prev => new Set(prev).add('My Saved'));
                     }
                 } else {
@@ -164,7 +165,8 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
             const isMatch =
                 matchKoreanSearch(widget.label, debouncedSearch, { useChosung: true }) ||
                 matchKoreanSearch(widget.category, debouncedSearch, { useChosung: false }) ||
-                (widget.description && matchKoreanSearch(widget.description, debouncedSearch, { useChosung: false }));
+                (widget.description && matchKoreanSearch(widget.description, debouncedSearch, { useChosung: false })) ||
+                (widget.keywords && widget.keywords.some(k => matchKoreanSearch(k, debouncedSearch, { useChosung: false })));
 
             if (debouncedSearch && !isMatch) continue;
 
@@ -212,7 +214,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
             <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 overscroll-contain">
                 {isLoading && (
                     <div className="flex justify-center p-2 text-xs text-gray-400 gap-2">
-                        <Loader2 className="animate-spin" size={14}/> 불러오는 중...
+                        <Loader2 className="animate-spin" size={14} /> 불러오는 중...
                     </div>
                 )}
 
@@ -271,7 +273,7 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
                                                 ) : (
                                                     // 기존 템플릿 로직 (Global 예외처리 등)
                                                     widget.category === 'Global' ? (
-                                                        <div className="text-gray-400 p-2 border rounded-full"><Database size={20}/></div>
+                                                        <div className="text-gray-400 p-2 border rounded-full"><Database size={20} /></div>
                                                     ) : (
                                                         <img
                                                             src={`/thumbnails/${widget.type}.png`}
@@ -293,49 +295,13 @@ export function WidgetGallery({ onSelect }: WidgetGalleryProps) {
 
             {/* Info Modal */}
             {selectedInfoWidget && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedInfoWidget(null)}>
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-lg font-bold text-gray-800">{selectedInfoWidget.label}</h3>
-                            <button onClick={() => setSelectedInfoWidget(null)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400"><X size={18}/></button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="aspect-video bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-100 p-2">
-                                {selectedInfoWidget.isSaved ? (
-                                    <div className="w-full h-full pointer-events-none transform scale-95 flex items-center justify-center">
-                                        {renderWidgetPreview(selectedInfoWidget.data)}
-                                    </div>
-                                ) : (
-                                    <img src={`/thumbnails/${selectedInfoWidget.type}.png`} className="w-full h-full object-contain" alt="" onError={(e)=>e.currentTarget.style.display='none'}/>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 pt-2">
-                                <div className="bg-gray-50 rounded-lg p-2.5">
-                                    <span className="text-[10px] text-gray-400 block mb-0.5">Category</span>
-                                    <span className="text-xs font-medium text-gray-700">{CATEGORY_TRANSLATIONS[selectedInfoWidget.category] || selectedInfoWidget.category}</span>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-2.5">
-                                    <span className="text-[10px] text-gray-400 block mb-0.5">{selectedInfoWidget.isSaved ? "Saved Date" : "Size"}</span>
-                                    <span className="text-xs font-medium text-gray-700 font-mono">
-                                        {selectedInfoWidget.isSaved ? selectedInfoWidget.description?.replace('저장된 날짜: ', '') : selectedInfoWidget.defaultSize || 'Free'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => {
-                                    onSelect?.(selectedInfoWidget.isSaved ? selectedInfoWidget.data : selectedInfoWidget.type);
-                                    setSelectedInfoWidget(null);
-                                }}
-                                className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Plus size={16} /> 위젯 추가하기
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <WidgetInfoModal
+                    widget={selectedInfoWidget}
+                    onClose={() => setSelectedInfoWidget(null)}
+                    onAction={() => {
+                        onSelect?.(selectedInfoWidget.isSaved ? selectedInfoWidget.data : selectedInfoWidget.type);
+                    }}
+                />
             )}
         </div>
     );

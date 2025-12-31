@@ -12,6 +12,7 @@ import { TouchBackend } from 'react-dnd-touch-backend';
 import { clampWidget, resolveCollisions, compactLayout } from '../components/settings/widgets/layoutUtils';
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
 import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder.tsx";
+import { WidgetInfoModal } from '../components/settings/widgets/WidgetInfoModal';
 import { useIsMobile } from '../hooks';
 
 // Default Grid Size
@@ -56,6 +57,7 @@ const GridCell: React.FC<GridCellProps> = ({ x, y, onDrop, onHover, isEditMode }
     );
 };
 
+
 const MainPage: React.FC = () => {
     const { isEditMode: isMenuEditMode } = useMenu();
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
@@ -66,9 +68,14 @@ const MainPage: React.FC = () => {
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
     const [isArrangeConfirmOpen, setIsArrangeConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+
+    // Track dragging state for dynamic buffer
+    const [isDragging, setIsDragging] = useState(false);
 
     // Preview properties
     const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
+    const [infoWidget, setInfoWidget] = useState<any>(null); // For Help Modal
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -210,8 +217,8 @@ const MainPage: React.FC = () => {
                 title: savedWidget.name
             };
         }
-            // -----------------------------------------------------------
-            // CASE 2: 갤러리에서 '기본 템플릿' (문자열)을 선택했을 때
+        // -----------------------------------------------------------
+        // CASE 2: 갤러리에서 '기본 템플릿' (문자열)을 선택했을 때
         // -----------------------------------------------------------
         else {
             type = item as string;
@@ -419,10 +426,82 @@ const MainPage: React.FC = () => {
         setIsArrangeConfirmOpen(false);
     };
 
+    // 🌟 Compact/Repack widgets for Mobile 2-column view (Visual Only)
+    const ensureMobileConstraints = (widgets: WidgetInstance[]): WidgetInstance[] => {
+        // Sort by Y then X to keep relative order
+        const sorted = [...widgets].sort((a, b) => {
+            if (a.layout.y === b.layout.y) return a.layout.x - b.layout.x;
+            return a.layout.y - b.layout.y;
+        });
+
+        const mobileWidgets: WidgetInstance[] = [];
+        const occupied = new Set<string>();
+
+        sorted.forEach(w => {
+            // Clamp width to max 2
+            const width = Math.min(w.layout.w, 2);
+            const height = w.layout.h;
+
+
+            // Try to keep original position if possible, but clamp X to 2 cols
+            // If width is 2, x must be 1. If width is 1, x can be 1 or 2.
+            let startX = Math.min(w.layout.x, 2 - width + 1);
+            if (startX < 1) startX = 1;
+
+            let startY = w.layout.y;
+
+            let x = startX;
+            let y = startY;
+            let found = false;
+
+            while (!found) {
+                let fits = true;
+                if (x + width - 1 > 2) { // Max col 2
+                    fits = false;
+                } else {
+                    for (let dy = 0; dy < height; dy++) {
+                        for (let dx = 0; dx < width; dx++) {
+                            if (occupied.has(`${x + dx},${y + dy}`)) {
+                                fits = false;
+                                break;
+                            }
+                        }
+                        if (!fits) break;
+                    }
+                }
+
+                if (fits) {
+                    mobileWidgets.push({ ...w, layout: { ...w.layout, x, y, w: width } });
+                    for (let dy = 0; dy < height; dy++) {
+                        for (let dx = 0; dx < width; dx++) {
+                            occupied.add(`${x + dx},${y + dy}`);
+                        }
+                    }
+                    found = true;
+                } else {
+                    // Search next available slot carefully
+                    x++;
+                    // If we moved past column 2, we must wrap to next row.
+                    // IMPORTANT: If we are searching freely (i.e. not forced to compact),
+                    // we should likely reset x to 1 if we bump into end of row.
+
+                    if (x > 2 - width + 1) {
+                        x = 1;
+                        y++;
+                    }
+                }
+            }
+        });
+        return mobileWidgets;
+    };
+
     const currentDisplayWidgets = layoutPreview || widgets;
-    const maxWidgetY = currentDisplayWidgets.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
+    const widgetsToRender = isMobile ? ensureMobileConstraints(currentDisplayWidgets) : currentDisplayWidgets;
+
+    const maxWidgetY = widgetsToRender.reduce((max, w) => Math.max(max, w.layout.y + w.layout.h), 0);
     const displayRows = Math.max(gridSize.rows, maxWidgetY, DEFAULT_GRID_SIZE.rows);
-    const finalRows = displayRows;
+    // Add buffer rows ONLY when dragging to allow expansion, minimizing visual clutter otherwise
+    const finalRows = displayRows + (isDragging ? 4 : 0);
 
     const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
 
@@ -444,8 +523,9 @@ const MainPage: React.FC = () => {
     // ...
 
     const gridCells = [];
+    const currentCols = isMobile ? 2 : gridSize.cols;
     for (let y = 1; y <= finalRows; y++) {
-        for (let x = 1; x <= gridSize.cols; x++) {
+        for (let x = 1; x <= currentCols; x++) {
             gridCells.push(
                 <GridCell
                     key={`${x}-${y}`}
@@ -469,7 +549,60 @@ const MainPage: React.FC = () => {
     // The actual widgets must be rendered separately.
 
 
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    // Controls Scroll Logic
+    const controlsRef = React.useRef<HTMLDivElement>(null);
+    const [showRightBlur, setShowRightBlur] = useState(false);
+
+    useEffect(() => {
+        const el = controlsRef.current;
+        if (!el) return;
+
+        const checkScroll = () => {
+            setShowRightBlur(el.scrollWidth > el.clientWidth + el.scrollLeft + 1);
+        };
+
+        el.addEventListener('scroll', checkScroll);
+        window.addEventListener('resize', checkScroll);
+        // Initial check
+        checkScroll();
+
+        return () => {
+            el.removeEventListener('scroll', checkScroll);
+            window.removeEventListener('resize', checkScroll);
+        };
+    }, [isWidgetEditMode, isMenuEditMode, isMobile]); // Re-check on mode change
+
+
+    // Handle Help Button
+    const handleShowHelp = (widget: WidgetInstance) => {
+        let info: any = null;
+
+        if (widget.type === 'custom-block' || widget.type === 'custom') {
+            // Reconstruct saved widget format best effort or just show title
+            info = {
+                type: widget.type,
+                label: (widget.props as any).title || 'Custom Widget',
+                category: 'My Saved',
+                isSaved: true,
+                data: { ...widget, name: (widget.props as any).title }
+            };
+        } else {
+            // Find in registry
+            // @ts-ignore
+            const regItem = WIDGET_REGISTRY[widget.type];
+            if (regItem) {
+                info = {
+                    ...regItem,
+                    type: widget.type,
+                    isSaved: false
+                };
+            }
+        }
+
+        if (info) {
+            setInfoWidget(info);
+        }
+    };
 
 
     if (isBuilderOpen) {
@@ -498,7 +631,10 @@ const MainPage: React.FC = () => {
                             <LayoutGrid size={20} /> My Dashboard
                         </h2>
 
-                        <div className={`flex gap-2 items-center ${isMobile ? 'flex-nowrap overflow-x-auto w-full pb-2 no-scrollbar mask-linear-fade' : 'flex-wrap'}`}>
+                        <div
+                            ref={controlsRef}
+                            className={`flex gap-2 items-center ${isMobile ? 'flex-nowrap overflow-x-auto w-full pb-2 no-scrollbar' : 'flex-wrap'} ${isMobile && showRightBlur ? 'mask-linear-fade' : ''}`}
+                        >
                             {!isMenuEditMode && (
                                 <>
                                     {isWidgetEditMode && (
@@ -567,35 +703,38 @@ const MainPage: React.FC = () => {
                     {isMenuEditMode ? (
                         <MenuSettings />
                     ) : (
-                        <div className="relative w-full overflow-x-hidden md:overflow-visible">
+                        <div className="relative w-full overflow-visible p-4">
                             <div
                                 className="grid gap-4 transition-all duration-300 ease-in-out relative"
                                 style={{
                                     gridTemplateColumns: isMobile ? `repeat(2, minmax(0, 1fr))` : `repeat(${gridSize.cols}, minmax(0, 1fr))`,
-                                    gridTemplateRows: isMobile ? undefined : `repeat(${finalRows}, 200px)`,
-                                    gridAutoRows: isMobile ? '45vw' : undefined,
-                                    gridAutoFlow: isMobile ? 'row dense' : undefined
+                                    gridTemplateRows: `repeat(${finalRows}, ${isMobile ? '45vw' : '200px'})`,
                                 }}
                             >
-                                {isMobile ? null : gridCells}
+                                {gridCells}
 
                                 {/* Sort widgets for logical DOM order on mobile to assist auto-flow */}
-                                {(isMobile
-                                    ? [...currentDisplayWidgets].sort((a, b) => (a.layout.y - b.layout.y) || (a.layout.x - b.layout.x))
-                                    : currentDisplayWidgets
-                                ).map((widget) => (
+                                {widgetsToRender.map((widget) => (
                                     <DraggableWidget
                                         key={widget.id}
                                         widget={widget}
                                         isEditMode={isWidgetEditMode}
                                         removeWidget={removeWidget}
                                         updateLayout={updateLayout}
-                                        onDragEnd={() => setLayoutPreview(null)}
+                                        onDragStart={() => setIsDragging(true)}
+                                        onDragEnd={() => {
+                                            setLayoutPreview(null);
+                                            setIsDragging(false);
+                                        }}
                                         onHover={onCellHover}
-                                        onDrop={(x, y, item) => updateWidgetPosition(item.id, x, y)}
+                                        onDrop={(x, y, item) => {
+                                            updateWidgetPosition(item.id, x, y);
+                                            setIsDragging(false);
+                                        }}
                                         isMobile={isMobile}
                                         isSelected={selectedWidgetId === widget.id}
                                         onSelect={() => setSelectedWidgetId(prev => prev === widget.id ? null : widget.id)}
+                                        onShowInfo={() => handleShowHelp(widget)}
                                     />
                                 ))}
                             </div>
@@ -671,6 +810,24 @@ const MainPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Custom Widget Builder Modal */}
+                {isBuilderOpen && (
+                    <div className="fixed inset-0 z-50 bg-[#1F1F1F] animate-in slide-in-from-bottom-5 duration-300">
+                        <WidgetBuilder
+                            onExit={() => setIsBuilderOpen(false)}
+                        />
+                    </div>
+                )}
+
+                {/* Widget Info/Help Modal */}
+                {infoWidget && (
+                    <WidgetInfoModal
+                        widget={infoWidget}
+                        onClose={() => setInfoWidget(null)}
+                        showAction={false}
+                    />
                 )}
 
                 {/* Scroll To Top Button */}

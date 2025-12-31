@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { getEmptyImage } from 'react-dnd-html5-backend';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { type WidgetInstance, WIDGET_REGISTRY } from './Registry';
 import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
@@ -12,12 +12,14 @@ interface DraggableWidgetProps {
     isEditMode: boolean;
     removeWidget: (id: string) => void;
     updateLayout: (id: string, layout: Partial<WidgetInstance['layout']>) => void;
+    onDragStart?: () => void;
     onDragEnd?: () => void;
     onHover: (x: number, y: number, item: any) => void;
     onDrop: (x: number, y: number, item: any) => void;
     isMobile?: boolean;
     isSelected?: boolean;
     onSelect?: () => void;
+    onShowInfo?: () => void;
 }
 
 const ItemTypes = {
@@ -29,12 +31,14 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     isEditMode,
     removeWidget,
     updateLayout,
+    onDragStart,
     onDragEnd,
     onHover,
     onDrop,
     isMobile = false,
     isSelected = false,
-    onSelect
+    onSelect,
+    onShowInfo
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
@@ -45,6 +49,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     const [{ isDragging }, drag, preview] = useDrag({
         type: ItemTypes.WIDGET,
         item: () => {
+            if (onDragStart) onDragStart();
             return { id: widget.id, type: widget.type, layout: widget.layout, props: widget.props };
         },
         collect: (monitor) => ({
@@ -80,6 +85,18 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             setShowSizeMenu(false);
         }
     }, [isSelected]);
+
+    // Close size menu on click outside
+    useEffect(() => {
+        if (!showSizeMenu) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (!(e.target as Element).closest('.size-menu-container')) {
+                setShowSizeMenu(false);
+            }
+        };
+        window.addEventListener('click', handleClickOutside);
+        return () => window.removeEventListener('click', handleClickOutside);
+    }, [showSizeMenu]);
 
     if (isEditMode) {
         drag(drop(ref));
@@ -135,15 +152,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
     };
 
-    // Mobile Override (2-Column Flow)
-    if (isMobile) {
-        gridStyle = {
-            ...gridStyle,
-            gridColumn: w >= 2 ? 'span 2' : 'span 1', // Full width for w>=2
-            gridRow: `span ${h}`, // Allow spanning multiple rows
-            zIndex: 1
-        };
-    }
+    // Mobile Override: We now rely on explicit 2-column layout passed from MainPage,
+    // so we don't need to force 'span' styles here anymore. 
+    // We only keep the zIndex and specific interaction styles.
 
     return (
         <motion.div
@@ -158,6 +169,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                 ${isDragging ? 'pointer-events-none' : ''}
                 ${(isMobile && isSelected && isEditMode) ? 'ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
                 ${isEditMode ? 'select-none' : ''}
+                ${(isMobile && isEditMode) ? 'overflow-visible' : ''}
             `}
             style={gridStyle}
             onClick={(e) => {
@@ -197,9 +209,23 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     className={`absolute inset-0 bg-black/10 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center transition-opacity border-2 border-[var(--btn-bg)] z-20 gap-2 pointer-events-auto
                     ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}
                 `}>
+                    {/* Help Button (Top Right) */}
+                    {isEditMode && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onShowInfo?.();
+                            }}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-black/70 backdrop-blur-sm transition-colors shadow-sm"
+                            title="Information"
+                        >
+                            <HelpCircle size={14} />
+                        </button>
+                    )}
+
                     {/* Size Control (Hidden for Global widgets) */}
                     {registryItem.category !== 'Global' && (
-                        <div className="relative">
+                        <div className="relative size-menu-container">
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -218,6 +244,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         [2, 3], [3, 3], [4, 2]
                                     ]).filter(([cw, ch]: [number, number]) => {
                                         if (isMobile) {
+                                            // Ensure small widgets are selectable on mobile
                                             if (cw > 2) return false; // Hide sizes wider than 2 cols on mobile
                                             if (ch > 2) return false; // Hide sizes taller than 2 rows on mobile (Global Rule)
 
