@@ -90,17 +90,27 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     return (
         <div className={`group relative mb-6 flex gap-6 items-start ${readOnly ? '' : `hover:bg-gray-50 rounded-xl p-2 -ml-2 transition ${isSelected ? 'bg-gray-50' : ''}`}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
 
-            {!readOnly && !isSelected && ( // isSelected일 때는 숨김 (오른쪽 사이드바 메뉴가 나오거나 방해되지 않도록)
+            {!readOnly && (
                 <>
-                    <div {...dragHandleProps} className="absolute -left-10 top-1 p-1.5 text-gray-400 hover:text-indigo-600 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition">
+                    {/* 드래그 핸들 (isSelected일 때도 DOM에는 존재해야 에러 안 남 -> 투명 처리) */}
+                    <div
+                        {...dragHandleProps}
+                        className={`absolute -left-10 top-1 p-1.5 text-gray-400 hover:text-indigo-600 rounded cursor-grab active:cursor-grabbing transition z-50
+                            ${isSelected ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}
+                        `}
+                    >
                         <GripVertical size={20} />
                     </div>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}
-                        className="absolute -right-12 top-0 bg-white border border-gray-200 shadow-sm p-1.5 rounded text-red-500 hover:bg-red-50 hover:border-red-200 opacity-0 group-hover:opacity-100 transition-all z-10"
-                    >
-                        <Trash2 size={16} />
-                    </button>
+
+                    {/* 삭제 버튼 (선택 안 될 때만 표시) */}
+                    {!isSelected && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(block.id); }}
+                            className="absolute -right-12 top-0 bg-white border border-gray-200 shadow-sm p-1.5 rounded text-red-500 hover:bg-red-50 hover:border-red-200 opacity-0 group-hover:opacity-100 transition-all z-10"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    )}
                 </>
             )}
 

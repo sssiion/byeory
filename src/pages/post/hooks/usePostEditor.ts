@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -10,17 +10,18 @@ export const usePostEditor = () => {
     const { triggerPostCreation } = useCredits();
 
     // ✨ 커스텀 앨범 타입 정의
-    // ✨ 커스텀 앨범 타입 정의
     interface CustomAlbum {
+        id: string; // ✨ Unique ID added
         name: string;
         tag: string | null;
-        createdAt?: number; // 생성 시간 추가
+        createdAt?: number;
+        parentId?: string | null; // ✨ Nested Folder Support
     }
 
     const [viewMode, setViewMode] = useState<ViewMode>('album');
     const [posts, setPosts] = useState<PostData[]>([]);
     const [currentPostId, setCurrentPostId] = useState<number | null>(null);
-    const [selectedAlbumTag, setSelectedAlbumTag] = useState<string | null>(null); // ✨ 선택된 앨범 태그
+    const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null); // ✨ 선택된 앨범 ID
     const [title, setTitle] = useState("");
     const [titleStyles, setTitleStyles] = useState({
         fontSize: '30px',
@@ -43,18 +44,39 @@ export const usePostEditor = () => {
     // ✨ 커스텀 앨범 목록 (로컬 스토리지 사용)
     const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
 
+    const [currentTags, setCurrentTags] = useState<string[]>([]); // ✨ 현재 작성 중인 포스트의 태그들
+    const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
+    // ✨ Sort Option Persistence
+    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest'>(() => {
+        return (localStorage.getItem('post_sort_option') as any) || 'name';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('post_sort_option', sortOption);
+    }, [sortOption]);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (supabase) fetchPosts();
 
         // 로컬 스토리지에서 커스텀 앨범 목록 불러오기
-        const savedAlbums = localStorage.getItem('my_custom_albums_v2'); // v2로 키 변경 (데이터 구조 변경됨)
+        const savedAlbums = localStorage.getItem('my_custom_albums_v2');
         if (savedAlbums) {
             try {
                 const parsed = JSON.parse(savedAlbums);
                 const validAlbums = parsed.filter((a: any) => a.name && a.name !== 'undefined' && a.name !== 'null');
-                setCustomAlbums(validAlbums);
+
+                // ✨ Migration: Assign IDs if missing
+                const migrated = validAlbums.map((a: any) => ({
+                    ...a,
+                    id: a.id || `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                }));
+
+                if (JSON.stringify(migrated) !== JSON.stringify(validAlbums)) {
+                    localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
+                }
+                setCustomAlbums(migrated);
             } catch (e) { }
         } else {
             // 마이그레이션: 구 버전 데이터가 있으면 변환 시도
@@ -64,8 +86,13 @@ export const usePostEditor = () => {
                     const parsed: string[] = JSON.parse(oldAlbums);
                     // Filter out invalid names
                     const validNames = parsed.filter(name => name && name !== 'undefined' && name !== 'null');
-                    const migrated = validNames.map(name => ({ name, tag: null, createdAt: Date.now() })); // 마이그레이션 시 현재 시간 부여
-                    setCustomAlbums(migrated);
+                    const migrated = validNames.map(name => ({
+                        id: `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        name,
+                        tag: null,
+                        createdAt: Date.now()
+                    })); // 마이그레이션 시 현재 시간 부여
+                    setCustomAlbums(migrated as CustomAlbum[]);
                     localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
                 } catch (e) { }
             }
@@ -73,32 +100,41 @@ export const usePostEditor = () => {
     }, []);
 
     // 앨범 생성 핸들러
-    const handleCreateAlbum = (name: string, tags: string[]) => {
-        if (!name) return;
-        if (customAlbums.some(a => a.name === name)) return alert("이미 존재하는 앨범입니다.");
-        if (name.trim() === "") return;
+    const handleCreateAlbum = (name: string, tags: string[], parentId?: string | null) => {
+        if (!name) return null;
+        const tag = tags[0] || null;
 
-        const newAlbum: CustomAlbum = { name, tag: tags[0] || null, createdAt: Date.now() }; // 생성 시간 저장
+        // ✨ Removed duplicate check to allow same tag/name but different ID
+        if (name.trim() === "") return null;
+
+        const newId = `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newAlbum: CustomAlbum = {
+            id: newId,
+            name,
+            tag,
+            createdAt: Date.now(),
+            parentId: parentId || null // ✨ Set parentId
+        };
         const newAlbums = [...customAlbums, newAlbum];
         setCustomAlbums(newAlbums);
         localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
+        return newId; // ✨ Return ID for auto-selection
     };
 
     // 앨범 이름 변경 핸들러
-    const handleRenameAlbum = (oldName: string, newName: string) => {
-        if (customAlbums.some(a => a.name === newName)) return alert("이미 존재하는 이름입니다.");
-
-        const newAlbums = customAlbums.map(a => a.name === oldName ? { ...a, name: newName } : a);
-        setCustomAlbums(newAlbums);
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
+    const handleRenameAlbum = (id: string, newName: string) => {
+        const next = customAlbums.map(a =>
+            a.id === id ? { ...a, name: newName } : a
+        );
+        setCustomAlbums(next);
+        localStorage.setItem('my_custom_albums_v2', JSON.stringify(next));
     };
 
     // 앨범 삭제 핸들러
-    const handleDeleteAlbum = (albumName: string) => {
-        const newAlbums = customAlbums.filter(a => a.name !== albumName);
-        setCustomAlbums(newAlbums);
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
-        // TODO: 실제 포스트 삭제 로직은 별도 API 호출 필요
+    const handleDeleteAlbum = (id: string) => {
+        const next = customAlbums.filter(a => a.id !== id);
+        setCustomAlbums(next);
+        localStorage.setItem('my_custom_albums_v2', JSON.stringify(next)); // v2 storage
     };
 
     // 데이터 불러오기: PX 단위 그대로 사용 + 메타데이터 블록 파싱
@@ -110,6 +146,8 @@ export const usePostEditor = () => {
                 const contentBlocks: Block[] = [];
                 // 기본값 설정
                 let parsedTitleStyles = p.titleStyles || null;
+                let parsedTags = p.tags || [];
+                let parsedAlbumIds = p.albumIds || [];
 
                 // 메타데이터 블록 추출
                 rawBlocks.forEach((b: Block) => {
@@ -118,6 +156,10 @@ export const usePostEditor = () => {
                             const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
                             const metadata = JSON.parse(json);
                             if (metadata.titleStyles) parsedTitleStyles = metadata.titleStyles;
+                            // ✨ Metadata fallback for tags if backend doesn't support it
+                            if (metadata.tags && Array.isArray(metadata.tags)) parsedTags = metadata.tags;
+                            // ✨ Metadata fallback for albumIds
+                            if (metadata.albumIds && Array.isArray(metadata.albumIds)) parsedAlbumIds = metadata.albumIds;
                         } catch (e) {
                             console.error('Failed to parse metadata block', e);
                         }
@@ -135,6 +177,7 @@ export const usePostEditor = () => {
                     stickers: p.stickers || [],
                     floatingTexts: p.floatingTexts || [],
                     floatingImages: p.floatingImages || [],
+                    albumIds: parsedAlbumIds, // ✨ Load albumIds from metadata fallback if needed
                     titleStyles: parsedTitleStyles || {
                         fontSize: '30px',
                         fontWeight: 'bold',
@@ -142,14 +185,17 @@ export const usePostEditor = () => {
                         color: '#000000',
                         textAlign: 'left'
                     },
-                    tags: (p.tags || []).filter((t: string) => t && t !== 'undefined' && t !== 'null') // Filter invalid tags
+                    tags: parsedTags.filter((t: string) => t && t !== 'undefined' && t !== 'null') // Filter invalid tags
                 };
             }));
         }
     };
 
-    const handleStartWriting = () => {
-        setCurrentPostId(null); setTitle(""); setRawInput("");
+    // ✨ 글쓰기 시작 (Context-aware)
+    const handleStartWriting = (initialAlbumId?: string) => {
+        setCurrentPostId(null); // 새 글
+        setTitle('');
+        setRawInput('');
         setTitleStyles({
             fontSize: '30px',
             fontWeight: 'bold',
@@ -157,9 +203,21 @@ export const usePostEditor = () => {
             color: '#000000',
             textAlign: 'left'
         });
-        setBlocks([{ id: `b-${Date.now()}`, type: 'paragraph', text: '' }]);
-        setStickers([]); setFloatingTexts([]); setFloatingImages([]); setTempImages([]);
-        setSelectedId(null); setSelectedType(null);
+        setBlocks([{ id: `b-${Date.now()}`, type: 'paragraph', text: '' }]); // 초기 블록
+        setStickers([]);
+        setFloatingTexts([]);
+        setFloatingImages([]);
+        setTempImages([]); // 임시 이미지 초기화
+        setSelectedId(null);
+        setSelectedType(null);
+        setCurrentTags([]); // ✨ 태그 초기화
+
+        // ✨ 앨범 문맥이 있으면 해당 앨범 자동 선택
+        if (initialAlbumId) {
+            setTargetAlbumIds([initialAlbumId]);
+        } else {
+            setTargetAlbumIds([]);
+        }
         setViewMode('editor');
     };
 
@@ -175,6 +233,8 @@ export const usePostEditor = () => {
         setBlocks(post.blocks); setStickers(post.stickers);
         setFloatingTexts(post.floatingTexts || []);
         setFloatingImages(post.floatingImages || []);
+        setCurrentTags(post.tags || []); // ✨ 태그 로드
+        setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
         setViewMode('read');
     };
 
@@ -184,12 +244,39 @@ export const usePostEditor = () => {
 
         // 캔버스가 고정 픽셀(800px)이므로 변환 없이 그대로 저장합니다.
 
-        // 메타데이터 블록 생성 (제목 스타일 저장용)
-        const metadata = { titleStyles };
+        // ✨ 1. 태그 기반 앨범 자동 생성 로직 (Refactored for IDs)
+        // targetAlbumIds에 있는 것은 이미 존재하는 앨범.
+        // currentTags에 있지만 targetAlbumIds와 매핑되지 않는 것은 "새 앨범"으로 간주하거나, 단순 태그.
+
+        const finalAlbumIds = [...targetAlbumIds];
+
+        // 메타데이터 블록 생성 (제목 스타일, 태그, 앨범 ID 저장용)
+        // 메타데이터 블록 생성 (제목 스타일, 태그, 앨범 ID 저장용)
+        // ✨ Clean titleStyles to remove accidental circular references (Events, Window, etc.)
+        const cleanTitleStyles = JSON.parse(JSON.stringify(titleStyles, (key, value) => {
+            if (key === 'window' || key === 'self' || value instanceof Event || (value && value.nativeEvent)) return undefined;
+            return value;
+        }));
+
+        const metadata = { titleStyles: cleanTitleStyles, tags: currentTags, albumIds: finalAlbumIds };
+
+        let metadataString = "{}";
+        try {
+            metadataString = JSON.stringify(metadata);
+        } catch (e) {
+            console.error("Failed to stringify metadata:", e);
+            // Fallback: reset titleStyles if corrupted
+            metadataString = JSON.stringify({
+                titleStyles: { fontSize: '30px', fontWeight: 'bold' },
+                tags: currentTags,
+                albumIds: finalAlbumIds
+            });
+        }
+
         const metadataBlock: Block = {
             id: `meta-${Date.now()}`,
             type: 'paragraph',
-            text: `<!--METADATA:${JSON.stringify(metadata)}-->`,
+            text: `<!--METADATA:${metadataString}-->`,
             styles: { display: 'none' }
         };
 
@@ -200,7 +287,9 @@ export const usePostEditor = () => {
             stickers,        // 있는 그대로 저장
             floatingTexts,   // 있는 그대로 저장
             floatingImages,   // 있는 그대로 저장
-            titleStyles     // 백엔드 지원 시 사용 (현재는 무시됨)
+            titleStyles,     // 백엔드 지원 시 사용
+            tags: currentTags, // ✨ 태그 저장
+            albumIds: finalAlbumIds // ✨ 앨범 ID 저장
         };
 
         setIsSaving(true);
@@ -212,7 +301,8 @@ export const usePostEditor = () => {
 
             alert("저장 완료!");
             fetchPosts();
-            setViewMode('list');
+            fetchPosts();
+            setViewMode('album');
         } catch (e) {
             alert("저장 실패: 서버 오류가 발생했습니다.");
             console.error(e);
@@ -232,9 +322,20 @@ export const usePostEditor = () => {
     };
 
     const handleUpdate = (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', keyOrObj: any, value?: any) => {
+        // ✨ Defensive: Prevent Event objects from polluting state
+        if (keyOrObj && (keyOrObj.nativeEvent || keyOrObj.preventDefault || keyOrObj.stopPropagation)) {
+            console.warn("handleUpdate received an Event object! Ignoring.", keyOrObj);
+            return;
+        }
+
         let updates: any = {};
         if (typeof keyOrObj === 'string') updates[keyOrObj] = value;
         else updates = keyOrObj;
+
+        if (updates && (updates.nativeEvent || updates.preventDefault)) {
+            console.warn("handleUpdate received an Event object as updates! Ignoring.", updates);
+            return;
+        }
 
         if (type === 'block') setBlocks(p => p.map(b => b.id === id ? { ...b, styles: { ...b.styles, ...updates } } : b));
         else if (type === 'sticker') setStickers(p => p.map(s => s.id === id ? { ...s, ...updates } : s));
@@ -352,8 +453,22 @@ export const usePostEditor = () => {
         else if (selectedType === 'floatingImage') setFloatingImages(p => p.map(updateZ));
     };
 
-    const handleAlbumClick = (tag: string | null) => {
-        setSelectedAlbumTag(tag);
+    const deletePost = async (id: number) => {
+        try {
+            await deletePostApi(id);
+            setPosts(prev => prev.filter(p => p.id !== id));
+            if (currentPostId === id) {
+                setViewMode(selectedAlbumId ? 'folder' : 'album');
+                setCurrentPostId(null);
+            }
+        } catch (e) {
+            console.error("Delete failed", e);
+            throw e;
+        }
+    };
+
+    const handleAlbumClick = (id: string | null) => {
+        setSelectedAlbumId(id);
         setViewMode('folder');
     };
 
@@ -368,8 +483,11 @@ export const usePostEditor = () => {
         handleUpdate, handleDelete, addSticker, addFloatingText, addFloatingImage,
         handleBlockImageUpload, changeZIndex,
         currentPostId, // Expose currentPostId to distinguish Create vs Edit
-        selectedAlbumTag, handleAlbumClick, // ✨ 앨범 관련 추가
+        selectedAlbumId, handleAlbumClick, // ✨ 앨범 관련 추가
         customAlbums, handleCreateAlbum, // ✨ 커스텀 앨범 추가
-        handleRenameAlbum, handleDeleteAlbum // ✨ 앨범 수정/삭제 추가
+        handleRenameAlbum, handleDeleteAlbum, // ✨ 앨범 수정/삭제 추가
+        currentTags, setTags: setCurrentTags, // ✨ 태그 상태 노출
+        targetAlbumIds, setTargetAlbumIds, // ✨ 앨범 ID 선택 상태 노출
+        sortOption, setSortOption, deletePost // ✨ 정렬 및 삭제 노출
     };
 };

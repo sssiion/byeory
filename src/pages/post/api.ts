@@ -153,3 +153,10 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
         throw error;
     }
 };
+
+// 게시글 삭제 (Mock)
+export const deletePostApi = async (id: number) => {
+    // 백엔드 구현 전까지는 성공한 것으로 간주
+    console.log(`[DELETE Mock] Post ${id} deleted.`);
+    return Promise.resolve(true);
+};
