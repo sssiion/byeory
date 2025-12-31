@@ -14,11 +14,13 @@ interface Props {
     onStartWriting: () => void;
     onRenameAlbum: (id: string, newName: string) => void;
     onDeleteAlbum: (id: string) => void;
-    sortOption: 'name' | 'count' | 'newest';
-    setSortOption: (option: 'name' | 'count' | 'newest') => void;
+    sortOption: 'name' | 'count' | 'newest' | 'favorites';
+    setSortOption: (option: 'name' | 'count' | 'newest' | 'favorites') => void;
+    onPostClick: (post: PostData) => void; // ✨ Added for post click
+    onToggleFavorite: (id: number) => void; // ✨ Added
 }
 
-const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption }) => {
+const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption, onPostClick, onToggleFavorite }) => {
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -82,19 +84,20 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
     // ✨ Compute Album Stats
     const albumStats = useMemo(() => {
-        const stats: Record<string, { count: number, lastDate: number }> = {};
+        const stats: Record<string, { count: number, folderCount: number, lastDate: number }> = {};
 
         // Initialize
         customAlbums.forEach(a => {
-            stats[a.id] = { count: 0, lastDate: a.createdAt || 0 };
+            stats[a.id] = { count: 0, folderCount: 0, lastDate: a.createdAt || 0 };
         });
 
         let othersCount = 0;
 
+        // 1. Count Direct Posts
         posts.forEach(post => {
             let matched = false;
 
-            // 1. ID Match
+            // ID Match
             if (post.albumIds && post.albumIds.length > 0) {
                 post.albumIds.forEach(id => {
                     if (stats[id]) {
@@ -106,13 +109,10 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 });
             }
 
-            // 2. Legacy Tag Match (only if not matched via ID?)
-            // If a post has IDs, we assume it's fully migrated/managed.
-            // If it has NO IDs, fallback to tags.
+            // Legacy Tag Match
             if (!post.albumIds || post.albumIds.length === 0) {
                 if (post.tags) {
                     post.tags.forEach(tag => {
-                        // Find albums with this tag
                         const matchingAlbums = customAlbums.filter(a => a.tag === tag);
                         if (matchingAlbums.length > 0) {
                             matched = true;
@@ -129,19 +129,39 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             if (!matched) othersCount++;
         });
 
+        // 2. Count Direct Sub-folders
+        customAlbums.forEach(a => {
+            if (a.parentId && stats[a.parentId]) {
+                stats[a.parentId].folderCount++;
+            }
+        });
+
         // ✨ Filter Top Level Albums (No parentId)
         const topLevelAlbums = customAlbums.filter(a => !a.parentId);
 
         // Sort Albums
         const sortedAlbums = [...topLevelAlbums].sort((a, b) => {
             if (sortOption === 'name') return a.name.localeCompare(b.name);
-            if (sortOption === 'count') return stats[b.id].count - stats[a.id].count;
+            if (sortOption === 'count') return (stats[b.id].count + stats[b.id].folderCount) - (stats[a.id].count + stats[a.id].folderCount);
             if (sortOption === 'newest') return stats[b.id].lastDate - stats[a.id].lastDate;
             return 0;
         });
 
         return { sortedAlbums, stats, othersCount };
     }, [posts, customAlbums, sortOption]);
+
+    // ✨ Filter for "All Posts" section
+    const filteredAllPosts = useMemo(() => {
+        let result = [...posts];
+        if (sortOption === 'favorites') {
+            result = result.filter(p => p.isFavorite);
+        } else if (sortOption === 'newest') {
+            result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        } else if (sortOption === 'name') {
+            result.sort((a, b) => a.title.localeCompare(b.title));
+        }
+        return result;
+    }, [posts, sortOption]);
 
     const handleMenuClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -158,6 +178,14 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
         }
     };
 
+    const formatStats = (info: { count: number, folderCount: number }) => {
+        const parts = [];
+        if (info.folderCount > 0) parts.push(`폴더 ${info.folderCount}개`);
+        if (info.count > 0) parts.push(`기록 ${info.count}개`);
+        if (parts.length === 0) return "비어있음";
+        return parts.join(' · ');
+    };
+
     return (
         <div>
             {/* 상단 헤더 (Start Writing Buttons etc) - Simplified inline for brevity or reuse existing code structure */}
@@ -171,13 +199,13 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-9 items-center">
-                        {(['name', 'newest', 'count'] as const).map(opt => (
+                        {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
                             <button
                                 key={opt}
                                 onClick={() => setSortOption(opt)}
                                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                             >
-                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순' }[opt]}
+                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
                             </button>
                         ))}
                     </div>
@@ -188,7 +216,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {albumStats.sortedAlbums.map(album => {
-                    const count = albumStats.stats[album.id].count;
+                    const stats = albumStats.stats[album.id];
                     const coverKey = getCoverKey(album);
 
                     return (
@@ -196,7 +224,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                             <AlbumBook
                                 title={album.name}
                                 tag={album.tag || undefined}
-                                count={count}
+                                count={formatStats(stats)}
                                 config={coverConfigs[coverKey] || coverConfigs[album.name]}
                                 className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                             />
@@ -218,7 +246,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
                 {/* Others Album */}
                 {(albumStats.othersCount > 0 || albumStats.sortedAlbums.length === 0) && (
-                    <div onClick={() => onAlbumClick(null)} className="relative group cursor-pointer">
+                    <div onClick={() => onAlbumClick('__others__')} className="relative group cursor-pointer">
                         <AlbumBook title="미분류 보관함" count={albumStats.othersCount} config={coverConfigs['__others__']} className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300" showFullTitle={true} />
                         <div className="absolute top-2 right-2 z-30">
                             <button onClick={(e) => handleMenuClick(e, '__others__')} className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 backdrop-blur-sm rounded-full shadow-sm"><MoreVertical size={18} /></button>

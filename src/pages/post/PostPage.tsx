@@ -26,12 +26,18 @@ const Post: React.FC = () => {
     };
 
     // 폴더 뷰를 위한 필터링 로직
-    const filteredPosts = editor.selectedAlbumId === null
+    const filteredPosts = (editor.selectedAlbumId === null || editor.selectedAlbumId === '__others__')
         ? editor.posts.filter(p => {
-            // Others: No ID AND (No Tags OR Tags don't match any album)
-            const hasId = p.albumIds && p.albumIds.length > 0;
-            if (hasId) return false;
-            // Legacy check: if tags exist, check if they map to any album
+            // Others: No VALID ID AND (If no IDs, No Matching Tags)
+
+            // 1. Check if ANY of the post's albumIds map to a real, existing album
+            const hasValidId = p.albumIds?.some(id => editor.customAlbums.some(a => a.id === id));
+            if (hasValidId) return false; // Belongs to a real album
+
+            // 2. If it has IDs but none were valid (orphaned), it belongs to Others (we ignore tags if IDs exist, tracing PostAlbumPage logic)
+            if (p.albumIds && p.albumIds.length > 0) return true;
+
+            // 3. If no IDs, check tags (Legacy support)
             const hasMatchingTag = p.tags?.some(t => editor.customAlbums.some(a => a.tag === t));
             return !hasMatchingTag;
         })
@@ -64,21 +70,27 @@ const Post: React.FC = () => {
                         onDeleteAlbum={editor.handleDeleteAlbum}
                         sortOption={editor.sortOption}
                         setSortOption={editor.setSortOption}
+                        onPostClick={editor.handlePostClick} // ✨ Added
+                        onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
                     />
                 )}
 
                 {/* 2) 폴더 뷰 (앨범 상세) */}
                 {editor.viewMode === 'folder' && (
                     <PostFolderPage
-                        albumName={editor.selectedAlbumId ? (editor.customAlbums.find(a => a.id === editor.selectedAlbumId)?.name || 'Unknown') : null}
                         albumId={editor.selectedAlbumId}
+                        albumName={editor.selectedAlbumId === '__others__' ? '미분류 보관함' : (editor.selectedAlbumId ? (editor.customAlbums.find(a => a.id === editor.selectedAlbumId)?.name || 'Unknown') : null)}
                         posts={filteredPosts}
+                        allPosts={editor.posts}
                         onBack={() => editor.setViewMode('album')}
                         onPostClick={editor.handlePostClick}
                         onStartWriting={editor.handleStartWriting}
                         onCreateAlbum={editor.handleCreateAlbum}
                         customAlbums={editor.customAlbums}
                         onAlbumClick={editor.handleAlbumClick}
+                        onDeletePost={editor.handleDeletePost}
+                        onDeleteAlbum={editor.handleDeleteAlbum}
+                        onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
                     />
                 )}
 

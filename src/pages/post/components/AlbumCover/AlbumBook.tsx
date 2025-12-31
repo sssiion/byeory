@@ -7,7 +7,7 @@ interface Props {
     config?: AlbumCoverConfig;
     title: string;
     tag?: string; // Optional separate tag
-    count?: number;
+    count?: number | string;
     onClick?: () => void;
     className?: string;
     showFullTitle?: boolean;
@@ -123,7 +123,7 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
                                 className="w-1.5 h-1.5 rounded-full inline-block"
                                 style={{ backgroundColor: activeConfig.labelColor || '#1f2937' }}
                             />
-                            {count}개의 기록
+                            {typeof count === 'number' ? `${count}개의 기록` : count}
                         </p>
                     )}
                 </div>
