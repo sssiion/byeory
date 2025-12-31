@@ -81,6 +81,7 @@ const ProfileEditScreen: React.FC = () => {
             const file = (e.target as HTMLInputElement).files?.[0];
 
             if (file) {
+
                 try {
                     setIsUploading(true); // 업로드 시작 상태 표시
                     // [STEP 1] 기존 이미지가 있다면 삭제! (이 부분이 추가되었습니다)
@@ -102,6 +103,7 @@ const ProfileEditScreen: React.FC = () => {
                 } finally {
                     setIsUploading(false); // 성공/실패 여부와 관계없이 로딩 종료
                 }
+
             }
         };
 

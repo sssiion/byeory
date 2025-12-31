@@ -183,14 +183,14 @@ function ProfilePage() {
                         <h3 className="px-6 py-4 border-b font-medium theme-text-primary theme-border">계정</h3>
                         <button
                             onClick={() => navigate('/profile/edit')}
-                            className={`w-full px-6 py-4 text-left transition-colors flex items-center justify-between ${provider === 'GOOGLE' ? '' : 'border-b'} hover:opacity-80 theme-border`}
+                            className={`w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border`}
                         >
                             <div className="flex items-center gap-3">
                                 <User className="w-5 h-5 theme-text-secondary" />
                                 <span className="theme-text-primary">프로필 수정</span>
                             </div>
                         </button>
-                        {provider !== 'GOOGLE' && (
+                        {!['GOOGLE', 'NAVER'].includes(provider) && (
                             <button
                                 onClick={() => navigate('/profile/password')}
                                 className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between border-b hover:opacity-80 theme-border"

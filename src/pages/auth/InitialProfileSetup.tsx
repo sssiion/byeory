@@ -54,6 +54,7 @@ const InitialProfileSetup: React.FC = () => {
             const file = (e.target as HTMLInputElement).files?.[0];
 
             if (file) {
+
                 try {
                     setIsUploading(true); // 업로드 시작 상태 표시
 
