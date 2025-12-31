@@ -26,9 +26,25 @@ const Post: React.FC = () => {
     };
 
     // 폴더 뷰를 위한 필터링 로직
-    const filteredPosts = editor.selectedAlbumTag === null
-        ? editor.posts.filter(p => !p.tags || p.tags.length === 0)
-        : editor.posts.filter(p => p.tags?.includes(editor.selectedAlbumTag!));
+    const filteredPosts = editor.selectedAlbumId === null
+        ? editor.posts.filter(p => {
+            // Others: No ID AND (No Tags OR Tags don't match any album)
+            const hasId = p.albumIds && p.albumIds.length > 0;
+            if (hasId) return false;
+            // Legacy check: if tags exist, check if they map to any album
+            const hasMatchingTag = p.tags?.some(t => editor.customAlbums.some(a => a.tag === t));
+            return !hasMatchingTag;
+        })
+        : editor.posts.filter(p => {
+            // Priority: ID match
+            if (p.albumIds?.includes(editor.selectedAlbumId!)) return true;
+            // Fallback: Legacy Tag match (only if no IDs present on post)
+            if (!p.albumIds || p.albumIds.length === 0) {
+                const targetAlbum = editor.customAlbums.find(a => a.id === editor.selectedAlbumId);
+                if (targetAlbum?.tag && p.tags?.includes(targetAlbum.tag)) return true;
+            }
+            return false;
+        });
 
     return (
         <div className="min-h-screen pb-32">
@@ -46,28 +62,34 @@ const Post: React.FC = () => {
                         onStartWriting={editor.handleStartWriting}
                         onRenameAlbum={editor.handleRenameAlbum}
                         onDeleteAlbum={editor.handleDeleteAlbum}
+                        sortOption={editor.sortOption}
+                        setSortOption={editor.setSortOption}
                     />
                 )}
 
                 {/* 2) 폴더 뷰 (앨범 상세) */}
                 {editor.viewMode === 'folder' && (
                     <PostFolderPage
-                        tagName={editor.selectedAlbumTag}
+                        albumName={editor.selectedAlbumId ? (editor.customAlbums.find(a => a.id === editor.selectedAlbumId)?.name || 'Unknown') : null}
+                        albumId={editor.selectedAlbumId}
                         posts={filteredPosts}
                         onBack={() => editor.setViewMode('album')}
                         onPostClick={editor.handlePostClick}
                         onStartWriting={editor.handleStartWriting}
+                        onCreateAlbum={editor.handleCreateAlbum}
+                        customAlbums={editor.customAlbums}
+                        onAlbumClick={editor.handleAlbumClick}
                     />
                 )}
 
-                {/* 3) 리스트 뷰 (전체 보기용 - 필요 시 사용) */}
+                {/* 3) 리스트 뷰 (전체 보기용 - 필요 시 사용)
                 {editor.viewMode === 'list' && (
                     <PostListPage
                         posts={editor.posts}
                         onStartWriting={editor.handleStartWriting}
                         onPostClick={editor.handlePostClick}
                     />
-                )}
+                )} */}
 
                 {/* 4) 읽기 모드 */}
                 {editor.viewMode === 'read' && (
@@ -96,7 +118,9 @@ const Post: React.FC = () => {
                         try {
                             const stored = localStorage.getItem('album_covers_v1');
                             const covers = stored ? JSON.parse(stored) : {};
-                            covers[name] = coverConfig;
+                            // ✨ Use composite key: name::tag
+                            const key = `${name}::${tags[0] || ''}`;
+                            covers[key] = coverConfig;
                             localStorage.setItem('album_covers_v1', JSON.stringify(covers));
 
                             // Notify PostAlbumPage

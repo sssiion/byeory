@@ -108,8 +108,8 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
                                 className="bg-white/30 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/40 shadow-sm"
                                 style={{ color: activeConfig.labelColor || '#1f2937' }}
                             >
-                                {/* Truncate Tag to 5 chars */}
-                                #{tag.length > 5 ? `${tag.slice(0, 5)}...` : tag}
+                                {/* ✨ Robust Hash Display: Always exact one hash */}
+                                #{tag.replace(/^#+/, '')}
                             </span>
                         )}
                     </div>

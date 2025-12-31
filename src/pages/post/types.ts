@@ -49,7 +49,8 @@ export interface PostData {
     id: number;
     title: string;
     date: string;
-    tags?: string[]; // ✨ 태그 (앨범 분류용)
+    tags?: string[]; // ✨ 태그 (앨범 분류용 - 하위 호환성 및 단순 태그용)
+    albumIds?: string[]; // ✨ 앨범 ID (고유 저장 위치)
     blocks: Block[];
     stickers: Sticker[];
     floatingTexts: FloatingText[];
