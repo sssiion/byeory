@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { fetchPostsFromApi } from '../../../../../pages/post/api.ts'; // 제공해주신 api.ts 경로 확인 필요
+import { fetchPostsFromApi } from '../../../../../../pages/post/api.ts'; // 제공해주신 api.ts 경로 확인 필요
 interface HeatmapProps {
     viewMode: 'year' | 'month' | 'week'; // 보기 모드
     themeColor: string; // 잔디 색상

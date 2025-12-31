@@ -10,7 +10,7 @@ import {
     ThumbsUp,
     Heart,
     Zap,
-    Star, Search
+    Star, Search, Film
 } from 'lucide-react';
 import type { WidgetBlock } from '../types';
 import { getLabelByType } from '../utils';
@@ -1117,53 +1117,7 @@ const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock }) => {
                         </div>
                     )}
 
-                    {/* C. 차트 데이터 (Pie, Bar) - 라벨/값 관리 */}
-                    {(type === 'chart-pie' || type === 'chart-bar') && (
-                        <div className="space-y-2">
-                            <div className="flex text-xs text-gray-500 px-1">
-                                <span className="flex-1">라벨</span>
-                                <span className="w-16">값</span>
-                                <span className="w-6"></span>
-                            </div>
-                            {(content.data || []).map((item: any, idx: number) => (
-                                <div key={idx} className="flex gap-2 items-center">
-                                    <Input
-                                        value={item.label}
-                                        onChange={(val: string) => {
-                                            const newData = [...content.data];
-                                            newData[idx].label = val;
-                                            updateContent('data', newData);
-                                        }}
-                                    />
-                                    <input
-                                        type="number"
-                                        value={item.value}
-                                        onChange={(e) => {
-                                            const newData = [...content.data];
-                                            newData[idx].value = Number(e.target.value);
-                                            updateContent('data', newData);
-                                        }}
-                                        className="w-16 bg-gray-800 text-white p-2 rounded border border-gray-600 outline-none text-xs"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            const newData = content.data.filter((_: any, i: number) => i !== idx);
-                                            updateContent('data', newData);
-                                        }}
-                                        className="text-gray-500 hover:text-red-400"
-                                    >
-                                        <Trash2 size={14}/>
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                onClick={() => updateContent('data', [...(content.data || []), { label: '항목', value: 10 }])}
-                                className="w-full py-2 text-xs bg-indigo-900/50 text-indigo-400 rounded hover:bg-indigo-900"
-                            >
-                                + 데이터 추가
-                            </button>
-                        </div>
-                    )}
+
 
                     {(type === 'chart-pie' || type === 'chart-bar' || type === 'chart-radar') && (
                         <div className="space-y-3">

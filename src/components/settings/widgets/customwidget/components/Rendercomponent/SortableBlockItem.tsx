@@ -1,11 +1,11 @@
 // ✅ dnd-kit 용 SortableBlockItem.tsx
 
 import React from 'react';
-import type {ContainerLocation, WidgetBlock} from '../types';
+import type {ContainerLocation, WidgetBlock} from '../../types.ts';
 import {useSortable} from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
 import {GripVertical, Trash2} from 'lucide-react';
-import BlockRenderer from './BlockRenderer';
+import BlockRenderer from '../BlockRenderer.tsx';
 
 interface SortableBlockItemProps {
     block: WidgetBlock;

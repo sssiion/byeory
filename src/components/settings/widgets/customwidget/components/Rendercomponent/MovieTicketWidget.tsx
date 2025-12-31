@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import {CalendarDays, ChevronDown, ChevronUp, Clapperboard, Film, MessageSquare} from "lucide-react";
 import type {WidgetBlock} from "../../types.ts";
-import BookInfoWidget from "./BookInfoWidget.tsx";
+
 
 interface Props {
     block: WidgetBlock; // 혹은 any
