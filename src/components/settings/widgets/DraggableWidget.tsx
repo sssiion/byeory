@@ -5,6 +5,7 @@ import { Maximize2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { type WidgetInstance, WIDGET_REGISTRY } from './Registry';
 import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
+import { useCredits } from '../../../context/CreditContext';
 
 interface DraggableWidgetProps {
     widget: WidgetInstance;
@@ -37,6 +38,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
+
+    // ✨ Context for generic interaction quest
+    const { triggerWidgetInteraction } = useCredits();
 
     const [{ isDragging }, drag, preview] = useDrag({
         type: ItemTypes.WIDGET,
@@ -88,7 +92,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     const isTransparent = widget.type === 'transparent';
 
 
-// 🌟 [핵심 수정] 위젯 렌더링 로직 분기
+    // 🌟 [핵심 수정] 위젯 렌더링 로직 분기
     let WidgetComponent: any = null;
     let registryItem: any = WIDGET_REGISTRY[widget.type];
     if (!registryItem) return null;
@@ -104,10 +108,19 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                 content: (widget.props as any).content || {},
                 styles: (widget.props as any).styles || {}
             };
-            return <BlockRenderer block={blockData} />;
+            // Provide dummy props for BlockRenderer as it expects editor props
+            return <BlockRenderer
+                block={blockData}
+                selectedBlockId={null}
+                onSelectBlock={() => { }}
+                onRemoveBlock={() => { }}
+                activeContainer={null as any}
+                onSetActiveContainer={() => { }}
+                onUpdateBlock={() => { }}
+            />;
         };
         // 가짜 registryItem 생성 (에러 방지용)
-        registryItem = { category: 'My Saved', validSizes: [[1,1], [1, 2], [2, 1], [2, 2]] };
+        registryItem = { category: 'My Saved', validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] };
     }
     // 2. 일반 레지스트리 위젯인 경우
     else {
@@ -121,6 +134,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         opacity: isDragging ? 0 : 1,
         zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
     };
+
     // Mobile Override (2-Column Flow)
     if (isMobile) {
         gridStyle = {
@@ -151,6 +165,9 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                 if (isMobile && isEditMode) {
                     onSelect?.();
                     e.stopPropagation(); // Prevent deselecting from background click
+                } else if (!isEditMode) {
+                    // ✨ Trigger "Play Widget" Quest on generic interaction (click)
+                    triggerWidgetInteraction();
                 }
             }}
             onContextMenu={(e) => {
@@ -165,6 +182,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     gridSize={{ w, h }}
                     updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
                     widgetId={widget.id}
+                    // ✨ In case specific widgets need to trigger it explicitly (e.g., drag internal items)
+                    onInteraction={triggerWidgetInteraction}
                 />
             </div>
 
@@ -197,7 +216,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         [1, 1], [2, 1], [3, 1],
                                         [1, 2], [2, 2], [3, 2],
                                         [2, 3], [3, 3], [4, 2]
-                                    ]).filter(([cw, ch]) => {
+                                    ]).filter(([cw, ch]: [number, number]) => {
                                         if (isMobile) {
                                             if (cw > 2) return false; // Hide sizes wider than 2 cols on mobile
                                             if (ch > 2) return false; // Hide sizes taller than 2 rows on mobile (Global Rule)
@@ -231,7 +250,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         if (registryItem.minW && cw < registryItem.minW) return false;
                                         if (registryItem.minH && ch < registryItem.minH) return false;
                                         return true;
-                                    }).map(([cw, ch]) => (
+                                    }).map(([cw, ch]: [number, number]) => (
                                         <button
                                             key={`${cw}x${ch}`}
                                             onClick={(e) => {

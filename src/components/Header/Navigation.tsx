@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SettingsModal from '../settings/Settings';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Settings } from 'lucide-react';
+import { User, Settings, Coins } from 'lucide-react';
+import { useCredits } from '../../context/CreditContext';
 import { useMenu } from '../settings/menu/MenuSettings';
 import { useAuth } from '../../context/AuthContext';
+import DailyQuestModal from '../Credit/DailyQuestModal'; // Import Modal
 import { useDrag, useDrop } from 'react-dnd';
 
 interface DraggableMenuItemProps {
@@ -108,7 +110,9 @@ const Navigation: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isQuestModalOpen, setIsQuestModalOpen] = useState(false); // Modal State
     const { isLoggedIn } = useAuth();
+    const { credits } = useCredits();
 
     // Menu Context
     const { menuItems, isEditMode, setIsEditMode, moveMenuItem } = useMenu();
@@ -219,10 +223,23 @@ const Navigation: React.FC = () => {
                 {/* Right Icons */}
                 <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary justify-self-end">
                     {showTimer && elapsedTime && (
-                        <div className="font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap">
+                        <div className={`font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap ${isEditMode ? 'opacity-50 cursor-not-allowed select-none' : ''}`}>
                             {elapsedTime}
                         </div>
                     )}
+
+                    <div
+                        className={`flex items-center space-x-1 font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap transition-transform ${isEditMode
+                                ? 'opacity-50 cursor-not-allowed select-none'
+                                : 'cursor-pointer hover:scale-105 active:scale-95'
+                            }`}
+                        title="Daily Quests & Rewards"
+                        onClick={() => !isEditMode && setIsQuestModalOpen(true)}
+                    >
+                        <Coins className="w-3 h-3 md:w-4 md:h-4 text-yellow-500 fill-yellow-500/20" />
+                        <span>{credits.toLocaleString()}</span>
+                    </div>
+
                     <button
                         className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => {
@@ -284,6 +301,11 @@ const Navigation: React.FC = () => {
                     setIsEditMode(true);
                     navigate('/home');
                 }}
+            />
+            {/* Daily Quest Modal */}
+            <DailyQuestModal
+                isOpen={isQuestModalOpen}
+                onClose={() => setIsQuestModalOpen(false)}
             />
         </>
     );

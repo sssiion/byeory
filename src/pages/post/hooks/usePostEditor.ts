@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } from '../types';
+import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
 // 캔버스 크기 고정 (EditorCanvas.tsx와 동일하게 설정)
 
 export const usePostEditor = () => {
-    // ... (상태 변수들 기존과 동일) ...
+    // ✨ Credit Context Trigger
+    const { triggerPostCreation } = useCredits();
+
     // ✨ 커스텀 앨범 타입 정의
     // ✨ 커스텀 앨범 타입 정의
     interface CustomAlbum {
@@ -203,6 +206,10 @@ export const usePostEditor = () => {
         setIsSaving(true);
         try {
             await savePostToApi(postData, !!currentPostId);
+
+            // ✨ 포스트 저장 성공 후 퀘스트 완료 처리
+            triggerPostCreation();
+
             alert("저장 완료!");
             fetchPosts();
             setViewMode('list');

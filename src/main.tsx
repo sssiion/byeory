@@ -31,6 +31,7 @@ import JoinPage from './pages/auth/JoinPage'
 import FindPasswordPage from './pages/auth/FindPasswordPage'
 import { AuthProvider } from './context/AuthContext'
 import { TodoProvider } from './context/TodoContext'
+import { CreditProvider } from './context/CreditContext'
 
 // Initialize theme from localStorage
 const savedTheme = localStorage.getItem('theme') || 'default';
@@ -139,26 +140,28 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <MenuProvider>
           <ThemeProvider>
-            <TodoProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<RootRouting />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/join" element={<JoinPage />} />
-                  <Route path="/find-password" element={<FindPasswordPage />} />
-                  <Route path="/home" element={<MainPage />} />
-                  <Route path="/post" element={<PostPage />} />
-                  <Route path="/todo" element={<TodoPage />} />
-                  <Route path="/community" element={<CommunityPage />} />
-                  <Route path="/market" element={<MarketPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/profile/edit" element={<ProfileEditScreen />} />
-                  <Route path="/profile/password" element={<PasswordChangeScreen />} />
-                  <Route path="/profile/delete" element={<GetOutPage />} />
-                  <Route path="/setup-profile" element={<InitialProfileSetup />} />
-                </Routes>
-              </BrowserRouter>
-            </TodoProvider>
+            <CreditProvider>
+              <TodoProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<RootRouting />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/join" element={<JoinPage />} />
+                    <Route path="/find-password" element={<FindPasswordPage />} />
+                    <Route path="/home" element={<MainPage />} />
+                    <Route path="/post" element={<PostPage />} />
+                    <Route path="/todo" element={<TodoPage />} />
+                    <Route path="/community" element={<CommunityPage />} />
+                    <Route path="/market" element={<MarketPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/profile/edit" element={<ProfileEditScreen />} />
+                    <Route path="/profile/password" element={<PasswordChangeScreen />} />
+                    <Route path="/profile/delete" element={<GetOutPage />} />
+                    <Route path="/setup-profile" element={<InitialProfileSetup />} />
+                  </Routes>
+                </BrowserRouter>
+              </TodoProvider>
+            </CreditProvider>
           </ThemeProvider>
         </MenuProvider>
       </AuthProvider>
