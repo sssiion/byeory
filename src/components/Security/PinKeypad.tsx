@@ -73,7 +73,8 @@ const PinKeypad: React.FC<PinKeypadProps> = ({
                     <button
                         key={num}
                         onClick={() => handleNumberClick(num)}
-                        className="w-16 h-16 rounded-full theme-bg-card hover:bg-[var(--bg-hover)] theme-text-primary text-2xl font-medium transition-colors shadow-sm border theme-border flex items-center justify-center active:scale-95"
+                        disabled={isAnimating}
+                        className="w-16 h-16 rounded-full theme-bg-card hover:bg-[var(--bg-hover)] theme-text-primary text-2xl font-medium transition-colors shadow-sm border theme-border flex items-center justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {num}
                     </button>
@@ -83,14 +84,16 @@ const PinKeypad: React.FC<PinKeypadProps> = ({
 
                 <button
                     onClick={() => handleNumberClick(0)}
-                    className="w-16 h-16 rounded-full theme-bg-card hover:bg-[var(--bg-hover)] theme-text-primary text-2xl font-medium transition-colors shadow-sm border theme-border flex items-center justify-center active:scale-95"
+                    disabled={isAnimating}
+                    className="w-16 h-16 rounded-full theme-bg-card hover:bg-[var(--bg-hover)] theme-text-primary text-2xl font-medium transition-colors shadow-sm border theme-border flex items-center justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     0
                 </button>
 
                 <button
                     onClick={handleDelete}
-                    className="w-16 h-16 rounded-full hover:bg-[var(--bg-hover)] text-[var(--icon-color)] transition-colors flex items-center justify-center active:scale-95"
+                    disabled={isAnimating}
+                    className="w-16 h-16 rounded-full hover:bg-[var(--bg-hover)] text-[var(--icon-color)] transition-colors flex items-center justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Delete className="w-6 h-6" />
                 </button>
