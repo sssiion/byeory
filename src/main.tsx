@@ -8,7 +8,7 @@ import CommunityPage from './pages/community/CommunityPage'
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 
 import { ThemeProvider } from './context/ThemeContext';
-import MarketPage from './pages/market/MarketPage'
+import MarketPage from './pages/Market/MarketPage'
 
 import ProfilePage from './pages/profile/ProfilePage'
 import ProfileEditScreen from './pages/profile/ProfileEditScreen';
@@ -33,10 +33,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
 import { TodoProvider } from './context/TodoContext'
 import { CreditProvider } from './context/CreditContext'
-import { PinProvider } from './context/PinContext';
-import PinLockOverlay from './components/Security/PinLockOverlay';
-import PinSetup from './pages/settings/PinSetup';
-import PinChange from './pages/settings/PinChange';
+
 
 // Initialize theme from localStorage
 const savedTheme = localStorage.getItem('theme') || 'default';
@@ -148,33 +145,26 @@ createRoot(document.getElementById('root')!).render(
             <CreditProvider>
               <TodoProvider>
                 <BrowserRouter>
-                  <PinProvider>
-                    <PinLockOverlay />
-                    <Routes>
-                      <Route path="/" element={<RootRouting />} />
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/join" element={<JoinPage />} />
-                      <Route path="/find-password" element={<FindPasswordPage />} />
+                  <Routes>
+                    <Route path="/" element={<RootRouting />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/join" element={<JoinPage />} />
+                    <Route path="/find-password" element={<FindPasswordPage />} />
 
-                      {/* Protected Routes */}
-                      <Route element={<ProtectedRoute />}>
-                        <Route path="/home" element={<MainPage />} />
-                        <Route path="/post" element={<PostPage />} />
-                        <Route path="/todo" element={<TodoPage />} />
-                        <Route path="/community" element={<CommunityPage />} />
-                        <Route path="/market" element={<MarketPage />} />
-                        <Route path="/profile" element={<ProfilePage />} />
-                        <Route path="/profile/edit" element={<ProfileEditScreen />} />
-                        <Route path="/profile/password" element={<PasswordChangeScreen />} />
-                        <Route path="/profile/delete" element={<GetOutPage />} />
-                        <Route path="/setup-profile" element={<InitialProfileSetup />} />
-
-                        {/* PIN Routes */}
-                        <Route path="/settings/pin/setup" element={<PinSetup />} />
-                        <Route path="/settings/pin/change" element={<PinChange />} />
-                      </Route>
-                    </Routes>
-                  </PinProvider>
+                    {/* Protected Routes */}
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/home" element={<MainPage />} />
+                      <Route path="/post" element={<PostPage />} />
+                      <Route path="/todo" element={<TodoPage />} />
+                      <Route path="/community" element={<CommunityPage />} />
+                      <Route path="/market" element={<MarketPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                      <Route path="/profile/edit" element={<ProfileEditScreen />} />
+                      <Route path="/profile/password" element={<PasswordChangeScreen />} />
+                      <Route path="/profile/delete" element={<GetOutPage />} />
+                      <Route path="/setup-profile" element={<InitialProfileSetup />} />
+                    </Route>
+                  </Routes>
                 </BrowserRouter>
               </TodoProvider>
             </CreditProvider>

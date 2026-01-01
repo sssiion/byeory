@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import ForcedPinInputModal from '../components/Security/ForcedPinInputModal';
 
 interface AuthContextType {
     isLoggedIn: boolean;
@@ -19,6 +20,9 @@ interface AuthContextType {
     logout: () => void;
     user: { email: string } | null;
     sessionStartTime: number | null;
+    checkPinStatus: () => Promise<boolean>;
+    unlockRequest: () => Promise<string | null>;
+    unlockVerify: (code: string) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +31,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<{ email: string } | null>(null);
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+    const [showPinModal, setShowPinModal] = useState(false);
+
+    const [isPinLocked, setIsPinLocked] = useState(false);
+
+    const triggerPinFlow = async (token: string) => {
+        try {
+            // 1. Check status first to know if locked
+            const statusRes = await fetch('http://localhost:8080/api/pin/status', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            let locked = false;
+            if (statusRes.ok) {
+                const status = await statusRes.json();
+                locked = status.locked;
+            }
+
+            // 2. Check if PIN is set
+            const checkRes = await fetch('http://localhost:8080/api/pin/check', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (checkRes.ok) {
+                const isPinSet = await checkRes.json();
+                if (isPinSet === true) {
+                    const isVerified = sessionStorage.getItem('pin_verified') === 'true';
+                    if (!isVerified) {
+                        setIsPinLocked(locked);
+                        setShowPinModal(true);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("PIN check failed", err);
+        }
+    };
 
     const parseJwt = (token: string) => {
         try {
@@ -53,6 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setSessionStartTime(now);
                     localStorage.setItem('sessionStartTime', now.toString());
                 }
+
+                // Check PIN status on refresh
+                triggerPinFlow(token);
             } else {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('sessionStartTime');
@@ -66,6 +109,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('userEmail');
     }, []);
 
+
+    const checkPinStatus = async (): Promise<boolean> => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return false;
+
+        try {
+            const response = await fetch('http://localhost:8080/api/pin/check', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                const isPinSet = await response.json();
+                return isPinSet === true;
+            }
+        } catch (error) {
+            console.error("Failed to check PIN status:", error);
+        }
+        return false;
+    };
 
     const setLoginState = (email: string) => {
         setIsLoggedIn(true);
@@ -163,6 +226,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 // Use the existing login logic to update state
                 setLoginState(email);
+
+                // Initialize PIN flow (checks if locked or set)
+                await triggerPinFlow(data.accessToken);
+
                 return true;
             } else {
                 console.error("Login failed: No access token received");
@@ -206,6 +273,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     }
 
                     setLoginState(email);
+
+                    // Initialize PIN flow (checks if locked or set)
+                    await triggerPinFlow(data.accessToken);
+
                     return true;
                 } else {
                     console.error("Login failed: No access token received");
@@ -275,6 +346,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoggedIn(false);
         setUser(null);
         setSessionStartTime(null);
+        setShowPinModal(false);
+        setIsPinLocked(false);
 
         // Remove only Auth-related items
         localStorage.removeItem('accessToken');
@@ -283,6 +356,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('sessionStartTime');
         localStorage.removeItem('isProfileSetupCompleted');
         localStorage.removeItem('temp_social_profile');
+        sessionStorage.removeItem('pin_verified'); // Clear PIN verification
 
         // Clear session specific items
         sessionStorage.removeItem('session_playtime_seconds');
@@ -291,9 +365,127 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // so that settings persist across logins.
     };
 
+    const handlePinSubmit = async (pin: string): Promise<string | null> => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return "로그인이 필요합니다.";
+
+        try {
+            const response = await fetch('http://localhost:8080/api/pin/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ pin })
+            });
+
+            if (response.ok) {
+                const isCorrect = await response.json();
+                if (isCorrect === true) {
+                    setShowPinModal(false);
+                    setIsPinLocked(false);
+                    sessionStorage.setItem('pin_verified', 'true'); // Mark as verified for this session
+                    return null;
+                } else {
+                    // Fetch status to get fail count and lock status
+                    const statusRes = await fetch('http://localhost:8080/api/pin/status', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (statusRes.ok) {
+                        const status = await statusRes.json();
+                        if (status.locked) {
+                            setIsPinLocked(true);
+                        }
+                        return `PIN 번호가 일치하지 않습니다. (${status.failureCount}/5)`;
+                    }
+
+                    return 'PIN 번호가 일치하지 않습니다.';
+                }
+            } else {
+                // If 400 or other error, check if it's because it's locked
+                const statusRes = await fetch('http://localhost:8080/api/pin/status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (statusRes.ok) {
+                    const status = await statusRes.json();
+                    if (status.locked) {
+                        setIsPinLocked(true);
+                        return `PIN 입력 횟수를 초과하여 계정이 잠겼습니다. (${status.failureCount}/5)`;
+                    }
+                }
+                return '본인 인증에 실패했습니다.';
+            }
+        } catch (error) {
+            console.error("PIN verification error:", error);
+            return "서버 연결 오류가 발생했습니다.";
+        }
+    };
+
+    const handleUnlockRequest = async (): Promise<string | null> => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return "로그인이 필요합니다.";
+
+        try {
+            const response = await fetch('http://localhost:8080/api/pin/unlock-request', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                return null; // Success
+            } else {
+                return "인증코드 발송에 실패했습니다.";
+            }
+        } catch (error) {
+            console.error("Unlock request error:", error);
+            return "서버 연결 오류가 발생했습니다.";
+        }
+    };
+
+    const handleEmailCodeSubmit = async (code: string): Promise<string | null> => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return "로그인이 필요합니다.";
+
+        try {
+            const response = await fetch('http://localhost:8080/api/pin/unlock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ code })
+            });
+
+            if (response.ok) {
+                setShowPinModal(false);
+                setIsPinLocked(false);
+                sessionStorage.setItem('pin_verified', 'true'); // PIN is deleted/disabled, mark session as free
+                return null;
+            } else {
+                return "유효하지 않은 인증코드입니다.";
+            }
+        } catch (error) {
+            console.error("Unlock verification error:", error);
+            return "서버 연결 오류가 발생했습니다.";
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ isLoggedIn, socialLogin, localLogin, signup, logout, user, sessionStartTime }}>
+        <AuthContext.Provider value={{
+            isLoggedIn, socialLogin, localLogin, signup, logout, user, sessionStartTime,
+            checkPinStatus, unlockRequest: handleUnlockRequest, unlockVerify: handleEmailCodeSubmit
+        }}>
             {children}
+            {showPinModal && (
+                <ForcedPinInputModal
+                    onSubmit={isPinLocked ? handleEmailCodeSubmit : handlePinSubmit}
+                    onUnlockRequest={handleUnlockRequest}
+                    isLocked={isPinLocked}
+                />
+            )}
         </AuthContext.Provider>
     );
 };
