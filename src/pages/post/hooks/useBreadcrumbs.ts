@@ -12,7 +12,8 @@ export const useBreadcrumbs = (
     currentId: string | null,
     customAlbums: CustomAlbum[],
     onNavigate: (id: string | null) => void,
-    baseLabel: string = '내 앨범'
+    baseLabel: string = '내 앨범',
+    disableLast: boolean = true // ✨ New param to control active state of last item
 ) => {
     return useMemo(() => {
         const items: BreadcrumbItem[] = [
@@ -22,12 +23,21 @@ export const useBreadcrumbs = (
         // ✨ Nest __others__ under __all__
         if (currentId === '__others__') {
             items.push({ label: '모든 기록 보관함', icon: Folder, onClick: () => onNavigate('__all__') });
-            items.push({ label: '미분류', icon: Folder }); // Last item, no onClick
+            // For __others__, it's a leaf node, so we respect disableLast
+            items.push({
+                label: '미분류',
+                icon: Folder,
+                onClick: disableLast ? undefined : () => onNavigate('__others__')
+            });
             return items;
         }
 
         if (currentId === '__all__') {
-            items.push({ label: '모든 기록 보관함', icon: Folder });
+            items.push({
+                label: '모든 기록 보관함',
+                icon: Folder,
+                onClick: disableLast ? undefined : () => onNavigate('__all__')
+            });
             return items;
         }
 
@@ -48,14 +58,15 @@ export const useBreadcrumbs = (
         chain.forEach((album, index) => {
             // First item in chain (Root) gets Book icon, others get Folder icon
             const isRoot = !album.parentId;
+            const isLast = index === chain.length - 1;
 
             items.push({
                 label: album.name,
                 icon: isRoot ? Book : Folder, // ✨ Specific Icon Logic
-                onClick: index === chain.length - 1 ? undefined : () => onNavigate(album.id)
+                onClick: (isLast && disableLast) ? undefined : () => onNavigate(album.id)
             });
         });
 
         return items;
-    }, [currentId, customAlbums, onNavigate, baseLabel]);
+    }, [currentId, customAlbums, onNavigate, baseLabel, disableLast]);
 };

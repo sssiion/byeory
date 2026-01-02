@@ -148,72 +148,78 @@ const PostFolderPage: React.FC<Props> = ({ albumId, posts, allPosts, onPostClick
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* 1. Add Folder: Only in Root Albums (and not All Records) */}
                         {albumId !== '__all__' && !customAlbums.find(a => a.id === albumId)?.parentId && (
-                            <>
-                                <button
-                                    onClick={() => setIsCreateFolderOpen(true)}
-                                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
-                                >
-                                    <Folder size={16} />
-                                    폴더 추가
-                                </button>
-                                <button
-                                    onClick={() => onStartWriting(albumId || undefined)}
-                                    className="flex items-center gap-2 px-5 h-9 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"
-                                >
-                                    <PenLine size={18} />
-                                    기록 남기기
-                                </button>
-                            </>
+                            <button
+                                onClick={() => setIsCreateFolderOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                            >
+                                <Folder size={16} />
+                                폴더 추가
+                            </button>
+                        )}
+
+                        {/* 2. Write Record: Enabled in Root Albums, Sub-Albums, and Unclassified */}
+                        {albumId && albumId !== '__all__' && (
+                            <button
+                                onClick={() => onStartWriting(albumId)}
+                                className="flex items-center gap-2 px-5 h-9 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"
+                            >
+                                <PenLine size={18} />
+                                기록 남기기
+                            </button>
                         )}
                     </div>
                 </div>
 
+
                 {/* ✨ Sub-Albums (Folders) Display - Droppable */}
-                {subAlbums.length > 0 && (
-                    <div className="mb-8">
-                        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                            <Folder size={20} className="text-yellow-500" />
-                            {albumId === '__all__' ? '모든 폴더' :
-                                albumId === '__others__' ? '미분류 보관함의 폴더' :
-                                    `${customAlbums.find(a => a.id === albumId)?.name || '폴더'}의 폴더`}
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                            {subAlbums.map(album => (
-                                <DroppableFolder key={album.id} id={album.id}>
-                                    <div
-                                        onClick={() => onAlbumClick(album.id)}
-                                        className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] hover:shadow-md transition cursor-pointer flex flex-col items-center justify-center gap-2 group relative h-full"
-                                    >
-                                        {/* ✨ Delete Folder Button */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (confirm(`'${album.name}' 폴더와 그 안의 모든 내용이 삭제됩니다.\n계속하시겠습니까?`)) {
-                                                    onDeleteAlbum(album.id);
-                                                }
-                                            }}
-                                            className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all z-10"
+                {
+                    subAlbums.length > 0 && (
+                        <div className="mb-8">
+                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                                <Folder size={20} className="text-yellow-500" />
+                                {albumId === '__all__' ? '모든 폴더' :
+                                    albumId === '__others__' ? '미분류 보관함의 폴더' :
+                                        `${customAlbums.find(a => a.id === albumId)?.name || '폴더'}의 폴더`}
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {subAlbums.map(album => (
+                                    <DroppableFolder key={album.id} id={album.id}>
+                                        <div
+                                            onClick={() => onAlbumClick(album.id)}
+                                            className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] hover:shadow-md transition cursor-pointer flex flex-col items-center justify-center gap-2 group relative h-full"
                                         >
-                                            <Trash2 size={16} />
-                                        </button>
+                                            {/* ✨ Delete Folder Button */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm(`'${album.name}' 폴더와 그 안의 모든 내용이 삭제됩니다.\n계속하시겠습니까?`)) {
+                                                        onDeleteAlbum(album.id);
+                                                    }
+                                                }}
+                                                className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all z-10"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
 
-                                        {/* ✨ Parent Name Indication */}
-                                        {albumId === '__all__' && album.parentId && album.parentId !== '__all__' && (
-                                            <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full mb-1">
-                                                {customAlbums.find(p => p.id === album.parentId)?.name || '알 수 없음'}
-                                            </span>
-                                        )}
+                                            {/* ✨ Parent Name Indication */}
+                                            {albumId === '__all__' && album.parentId && album.parentId !== '__all__' && (
+                                                <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full mb-1">
+                                                    {customAlbums.find(p => p.id === album.parentId)?.name || '알 수 없음'}
+                                                </span>
+                                            )}
 
-                                        <Folder size={40} className="text-indigo-200 group-hover:text-indigo-400 transition-colors" />
-                                        <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
-                                        <span className="text-[10px] text-[var(--text-secondary)]">{getSubAlbumStats(album.id)}</span>
-                                    </div>
-                                </DroppableFolder>
-                            ))}
+                                            <Folder size={40} className="text-indigo-200 group-hover:text-indigo-400 transition-colors" />
+                                            <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
+                                            <span className="text-[10px] text-[var(--text-secondary)]">{getSubAlbumStats(album.id)}</span>
+                                        </div>
+                                    </DroppableFolder>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* 글 목록 - Draggable */}
                 <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({posts.length})</h3>

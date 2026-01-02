@@ -5,8 +5,8 @@ import { LAYOUT_PRESETS } from './constants';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
-// 백엔드 API 주소 (로컬 개발 환경 예시)
-const API_BASE_URL = "http://localhost:8080/api/posts";
+// 백엔드 API 주소 (Vite Proxy 사용 시 상대 경로)
+const API_BASE_URL = "/api/posts";
 export const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 export const deleteOldImage = async (oldUrl: string | null) => {
@@ -121,6 +121,14 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
 };
 // 게시글 목록 조회 (GET)
 export const fetchPostsFromApi = async () => {
+    // [임시 저장소] 로컬 스토리지 사용 (백엔드 미연동 상태)
+    // 실제 백엔드 연동 시, 아래 로컬 스토리지 코드를 삭제하고 주석 처리된 백엔드 코드를 사용하세요.
+    await new Promise(resolve => setTimeout(resolve, 300)); // 네트워크 딜레이 시뮬레이션
+    const localData = localStorage.getItem('local_posts');
+    const posts = localData ? JSON.parse(localData) : [];
+    return posts.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    /* [백엔드 연동 시 수정 필요]
     try {
         // 백엔드의 GET /api/posts 엔드포인트 호출
         const response = await fetch(`${API_BASE_URL}`);
@@ -130,10 +138,36 @@ export const fetchPostsFromApi = async () => {
         console.error(error);
         return [];
     }
+    */
 };
 
 // 게시글 저장 (생성 POST / 수정 PUT)
 export const savePostToApi = async (postData: any, isUpdate: boolean = false) => {
+    // [임시 저장소] 로컬 스토리지 사용
+    await new Promise(resolve => setTimeout(resolve, 500)); // 네트워크 딜레이 시뮬레이션
+
+    const localData = localStorage.getItem('local_posts');
+    let posts = localData ? JSON.parse(localData) : [];
+
+    if (isUpdate) {
+        // 수정 로직
+        const index = posts.findIndex((p: any) => p.id === postData.id);
+        if (index !== -1) {
+            posts[index] = { ...postData, date: new Date().toISOString() };
+        }
+    } else {
+        // 생성 로직 (ID 생성 포함)
+        const newId = Date.now();
+        const newPost = { ...postData, id: newId, date: new Date().toISOString() };
+        posts.push(newPost);
+        // 생성된 ID 반환을 위해 postData 업데이트
+        postData.id = newId;
+    }
+
+    localStorage.setItem('local_posts', JSON.stringify(posts));
+    return postData;
+
+    /* [백엔드 연동 시 수정 필요]
     try {
         const url = isUpdate ? `${API_BASE_URL}/${postData.id}` : API_BASE_URL;
         const method = isUpdate ? "PUT" : "POST";
@@ -152,10 +186,24 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
         console.error(error);
         throw error;
     }
+    */
 };
 
 // 게시글 삭제
 export const deletePostApi = async (id: string | number) => {
+    // [임시 저장소] 로컬 스토리지 사용
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const localData = localStorage.getItem('local_posts');
+    if (localData) {
+        let posts = JSON.parse(localData);
+        posts = posts.filter((p: any) => String(p.id) !== String(id));
+        localStorage.setItem('local_posts', JSON.stringify(posts));
+    }
+    console.log(`[DELETE] Post ${id} deleted (LocalStorage).`);
+    return true;
+
+    /* [백엔드 연동 시 수정 필요]
     try {
         const url = `${API_BASE_URL}/${id}`;
         const response = await fetch(url, {
@@ -169,4 +217,5 @@ export const deletePostApi = async (id: string | number) => {
         console.error("삭제 API 오류:", error);
         return false;
     }
+    */
 };

@@ -12,7 +12,7 @@ interface Props {
 
 const PostViewPage: React.FC<Props> = ({ editor }) => {
     // ✨ Breadcrumb Logic
-    const breadcrumbs = useBreadcrumbs(editor.selectedAlbumId, editor.customAlbums, editor.handleAlbumClick);
+    const breadcrumbs = useBreadcrumbs(editor.selectedAlbumId, editor.customAlbums, editor.handleAlbumClick, '내 앨범', false);
 
     const handleDelete = async () => {
         if (!editor.currentPostId) return;
