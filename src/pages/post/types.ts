@@ -45,16 +45,39 @@ export interface FloatingImage extends BaseFloatingItem {
     url: string;
 }
 
+export type PostMode = 'AUTO' | 'MANUAL';
+
+export interface Album {
+    id: number;
+    title: string;
+    description?: string;
+    coverImage?: string;
+    isFavorite?: boolean;
+}
+
+export interface Folder {
+    id: number;
+    name: string;
+    parentId?: number;
+    isFavorite?: boolean;
+}
+
 export interface PostData {
     id: number;
     title: string;
     date: string;
     tags?: string[]; // ✨ 태그 (앨범 분류용 - 하위 호환성 및 단순 태그용)
-    albumIds?: string[]; // ✨ 앨범 ID (고유 저장 위치)
+
+    // ✨ New fields for Album/Note Management
+    mode?: PostMode;
+    targetAlbumIds?: number[]; // MANUAL 모드일 때만 전송
+    isFavorite?: boolean; // ✨ 즐겨찾기 여부
+
+    // Legacy or internal fields
+    albumIds?: string[];
     blocks: Block[];
     stickers: Sticker[];
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
     titleStyles?: Record<string, any>;
-    isFavorite?: boolean; // ✨ 즐겨찾기 여부
 }

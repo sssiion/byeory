@@ -56,7 +56,7 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-[var(--bg-card)] rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="bg-[var(--bg-modal)] rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up max-h-[90vh] overflow-y-auto custom-scrollbar backdrop-blur-md">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-[var(--text-primary)]">새 앨범 만들기</h3>
@@ -76,7 +76,7 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="예: 맛집 탐방, 여행 기록"
-                            className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                            className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-secondary)] text-[var(--text-primary)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
                         />
                     </div>
 
@@ -95,7 +95,7 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                             </button>
                         </div>
 
-                        <div className="flex justify-center bg-[var(--bg-primary)] rounded-xl p-6 border border-[var(--border-color)]">
+                        <div className="flex justify-center bg-[var(--bg-card-secondary)] rounded-xl p-6 border border-[var(--border-color)]">
                             <AlbumBook
                                 title={name || "새 앨범"}
                                 tag={selectedTag || undefined} // Pass the selected tag
@@ -113,14 +113,14 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                             </label>
                         </div>
 
-                        <div className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition bg-[var(--bg-primary)] flex items-center gap-2">
+                        <div className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition bg-[var(--bg-card-secondary)] flex items-center gap-2">
                             <span className="text-indigo-500 font-bold ml-1">#</span>
                             <input
                                 type="text"
                                 value={selectedTag || ''}
                                 onChange={(e) => setSelectedTag(e.target.value)}
                                 placeholder="태그 입력"
-                                className="flex-1 outline-none bg-transparent font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)]"
+                                className="flex-1 outline-none bg-transparent font-medium text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
                                 maxLength={10}
                             />
                         </div>
@@ -135,7 +135,7 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition"
+                            className="flex-1 py-3 px-4 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 shadow-lg shadow-indigo-500/20 transition"
                         >
                             {selectedTag ? '앨범 만들기' : '폴더 만들기'}
                         </button>

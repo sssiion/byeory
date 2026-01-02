@@ -88,7 +88,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     };
 
     return (
-        <div className={`group relative mb-6 flex gap-6 items-start ${readOnly ? '' : `hover:bg-gray-50 rounded-xl p-2 -ml-2 transition ${isSelected ? 'bg-gray-50' : ''}`}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
+        <div className={`group relative mb-6 flex gap-6 items-start p-2 -ml-2 rounded-xl transition ${readOnly ? '' : `hover:bg-gray-50 ${isSelected ? 'bg-gray-50' : ''}`}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
 
             {!readOnly && (
                 <>

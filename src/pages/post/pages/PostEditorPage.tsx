@@ -24,7 +24,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
             <EditorCanvas
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
-                viewMode={'editor'} setViewMode={editor.setViewMode as any}
+                viewMode={'editor'}
                 blocks={editor.blocks} setBlocks={editor.setBlocks}
                 stickers={editor.stickers} floatingTexts={editor.floatingTexts}
                 floatingImages={editor.floatingImages}
@@ -83,7 +83,6 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
                 currentTags={editor.currentTags}
                 onTagsChange={editor.setTags}
-                customAlbums={editor.customAlbums}
             />
 
             <SavePostModal
@@ -97,6 +96,12 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 selectedAlbumIds={editor.targetAlbumIds}
                 onAlbumIdsChange={editor.setTargetAlbumIds}
                 onCreateAlbum={editor.handleCreateAlbum}
+                onDeleteAlbum={editor.handleDeleteAlbum}
+                posts={editor.posts}
+                mode={editor.mode}
+                setMode={editor.setMode}
+                isFavorite={editor.isFavorite}
+                setIsFavorite={editor.setIsFavorite}
             />
         </div>
     );

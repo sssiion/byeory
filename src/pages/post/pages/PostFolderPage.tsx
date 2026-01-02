@@ -1,8 +1,8 @@
 // ✨ Import customAlbum for props
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CreateFolderModal from '../components/CreateFolderModal';
 import type { PostData } from '../types';
-import { ArrowLeft, Folder, PenLine, Trash2 } from 'lucide-react';
+import { ArrowLeft, Folder, PenLine, Trash2, X } from 'lucide-react';
 import PostBreadcrumb from '../components/PostBreadcrumb';
 import { useBreadcrumbs } from '../hooks/useBreadcrumbs';
 import { DndContext, useDraggable, useDroppable, type DragEndEvent, useSensors, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
@@ -54,118 +54,135 @@ interface Props {
     onDeleteAlbum: (id: string) => void;
     onToggleFavorite: (id: number) => void; // ✨ New Prop
     onMovePost: (postId: string | number, targetAlbumId: string | null) => void; // ✨ DnD Prop
+    onRefresh?: () => void; // ✨ Data Refresh Trigger
 }
 
-const PostFolderPage: React.FC<Props> = ({ albumId, posts, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onMovePost }) => {
+const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+
+    // ✨ Local State for API Data
+    const [contents, setContents] = useState<{ type: 'POST' | 'FOLDER', data: any }[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false); // For "Add Existing"
+
+    // ✨ Fetch Contents
+    const loadContents = async () => {
+        if (albumId) {
+            // Loading state only if no data (initial load) to prevent flicker on update
+            if (contents.length === 0) setIsLoading(true);
+            try {
+                // Import dynamically or assume it's imported at top (I'll add import line)
+                const data = await import('../api').then(m => m.fetchAlbumContents(albumId, allPosts, customAlbums));
+                setContents(data as any);
+            } catch (e) {
+                console.error("Failed to load album contents", e);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        loadContents();
+    }, [albumId, allPosts, customAlbums /* ✨ Added customAlbums to trigger refresh on folder creation */]);
+
+    // ✨ Derived Lists from Local Content
+    const folders = contents.filter(c => c.type === 'FOLDER').map(c => c.data);
+    const localPosts = contents.filter(c => c.type === 'POST').map(c => c.data as PostData);
 
     // ✨ Use Breadcrumb Hook
     const breadcrumbItems = useBreadcrumbs(albumId, customAlbums, onAlbumClick);
 
-    // ✨ Filter sub-folders
-    let subAlbums = albumId === '__all__'
-        ? customAlbums.filter(a => a.parentId) // ✨ Show ONLY sub-folders in All Records
-        : customAlbums.filter(a => a.parentId === albumId);
-
-    // ✨ Virtual Folder: "Unclassified" inside "All Records"
-    // Only show if there are actually unclassified posts
-    if (albumId === '__all__') {
-        const unclassifiedCount = allPosts.filter(p => !p.albumIds || p.albumIds.length === 0).length;
-        if (unclassifiedCount > 0) {
-            subAlbums = [{
-                id: '__others__',
-                name: '미분류',
-                tag: null,
-                parentId: '__all__', // Virtual parent
-                isFavorite: false
-            }, ...subAlbums];
-        }
-    }
-
-    // ✨ Calculate stats for sub-albums (Preview)
-    const getSubAlbumStats = (subAlbumId: string) => {
-        if (subAlbumId === '__others__') {
-            const count = allPosts.filter(p => !p.albumIds || p.albumIds.length === 0).length;
-            return `기록 ${count}개`;
-        }
-        const postCount = allPosts.filter(p => p.albumIds?.includes(subAlbumId) || p.tags?.some(t => customAlbums.find(a => a.id === subAlbumId)?.tag === t)).length;
-        return `기록 ${postCount}개`;
+    // ✨ Item Management Handlers
+    const handleManageItem = async (action: 'ADD' | 'REMOVE', type: 'POST' | 'FOLDER', id: string | number) => {
+        if (!albumId) return;
+        const api = await import('../api');
+        await api.manageAlbumItem(albumId, action, type, id);
+        // loadContents(); // ✨ Removed: useEffect will trigger via allPosts change if onRefresh works
+        onRefresh?.();
     };
 
     const handleCreateFolder = (name: string) => {
         return onCreateAlbum(name, [], albumId);
     };
 
-    // ✨ Handle Drag End
-    const handleDragEnd = (event: DragEndEvent) => {
+    // ✨ Handle Drag End (Local Implementation via API)
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
         if (!over) return;
 
-        // Check if dropped on a folder
         const targetFolderId = String(over.id);
-        const isActivePost = posts.some(p => String(p.id) === String(active.id));
-        const isTargetFolder = subAlbums.some(a => a.id === targetFolderId);
+        const isActivePost = localPosts.some(p => String(p.id) === String(active.id));
 
-        if (isActivePost && isTargetFolder) {
-            onMovePost(active.id, targetFolderId);
+        // Move Post to Folder
+        if (isActivePost) {
+            const api = await import('../api');
+            await api.manageAlbumItem(targetFolderId, 'ADD', 'POST', active.id);
+            if (albumId && albumId !== '__all__' && albumId !== '__others__') {
+                await api.manageAlbumItem(albumId, 'REMOVE', 'POST', active.id);
+            }
+            onRefresh?.();
         }
     };
 
-    // ✨ DnD Sensors (Prevent click blocking)
+    // ✨ DnD Sensors
     const sensors = useSensors(
-        useSensor(MouseSensor, {
-            activationConstraint: {
-                distance: 10, // 10px movement required to start drag
-            },
-        }),
-        useSensor(TouchSensor, {
-            activationConstraint: {
-                delay: 250, // Press and hold 250ms to start drag
-                tolerance: 5,
-            },
-        })
+        useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
     );
+
+    // ✨ Picker State
+    const [selectedPickerIds, setSelectedPickerIds] = useState<string[]>([]);
+    const pickerCandidates = allPosts.filter(p => !localPosts.some(lp => lp.id === p.id)); // Exclude already in album
 
     return (
         <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
             <div>
-                {/* 상단 네비게이션 (Breadcrumb) - ✨ Increased Z-Index to avoid blocking */}
+                {/* Navigation & Header */}
                 <div className="flex items-center justify-between mb-8 relative z-50">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <button
                             onClick={() => {
                                 const parent = customAlbums.find(a => a.id === albumId)?.parentId;
                                 onAlbumClick(parent || null);
                             }}
-                            className="p-2 hover:bg-gray-100 rounded-full transition text-gray-500 hover:text-gray-900"
+                            className="p-3 hover:bg-[var(--bg-card-secondary)] rounded-full transition text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                         >
-                            <ArrowLeft size={20} />
+                            <ArrowLeft size={24} />
                         </button>
-
-                        <div className="flex items-center text-sm">
+                        <div className="flex items-center text-lg font-medium">
                             <PostBreadcrumb items={breadcrumbItems} />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* 1. Add Folder: Only in Root Albums (and not All Records) */}
+                    <div className="flex items-center gap-3">
+                        {/* ✨ Add Existing Item Button */}
+                        {albumId && albumId !== '__all__' && albumId !== '__others__' && (
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="flex items-center gap-2 px-4 h-12 text-base font-bold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors"
+                            >
+                                <Folder size={18} />
+                                항목 추가
+                            </button>
+                        )}
+
                         {albumId !== '__all__' && !customAlbums.find(a => a.id === albumId)?.parentId && (
                             <button
                                 onClick={() => setIsCreateFolderOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                                className="flex items-center gap-2 px-4 h-12 text-base font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-transparent hover:border-indigo-200"
                             >
-                                <Folder size={16} />
+                                <Folder size={18} />
                                 폴더 추가
                             </button>
                         )}
 
-                        {/* 2. Write Record: Enabled in Root Albums, Sub-Albums, and Unclassified */}
                         {albumId && albumId !== '__all__' && (
                             <button
                                 onClick={() => onStartWriting(albumId)}
-                                className="flex items-center gap-2 px-5 h-9 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"
+                                className="flex items-center gap-2 px-6 h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-base"
                             >
-                                <PenLine size={18} />
+                                <PenLine size={20} />
                                 기록 남기기
                             </button>
                         )}
@@ -173,103 +190,161 @@ const PostFolderPage: React.FC<Props> = ({ albumId, posts, allPosts, onPostClick
                 </div>
 
 
-                {/* ✨ Sub-Albums (Folders) Display - Droppable */}
-                {
-                    subAlbums.length > 0 && (
-                        <div className="mb-8">
-                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-                                <Folder size={20} className="text-yellow-500" />
-                                {albumId === '__all__' ? '모든 폴더' :
-                                    albumId === '__others__' ? '미분류 보관함의 폴더' :
-                                        `${customAlbums.find(a => a.id === albumId)?.name || '폴더'}의 폴더`}
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                {subAlbums.map(album => (
-                                    <DroppableFolder key={album.id} id={album.id}>
-                                        <div
-                                            onClick={() => onAlbumClick(album.id)}
-                                            className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] hover:shadow-md transition cursor-pointer flex flex-col items-center justify-center gap-2 group relative h-full"
+                {/* Folders Display */}
+                {folders.length > 0 && (
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                            <Folder size={20} className="text-yellow-500" />
+                            폴더
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                            {folders.map((album: any) => (
+                                <DroppableFolder key={album.id} id={album.id}>
+                                    <div
+                                        onClick={() => onAlbumClick(album.id)}
+                                        className="bg-[var(--bg-card)] p-4 rounded-xl border border-[var(--border-color)] hover:shadow-md transition cursor-pointer flex flex-col items-center justify-center gap-2 group relative h-full"
+                                    >
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`'${album.name}' 폴더와 그 안의 모든 내용이 삭제됩니다.\n계속하시겠습니까?`)) {
+                                                    onDeleteAlbum(album.id);
+                                                }
+                                            }}
+                                            className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all z-10"
                                         >
-                                            {/* ✨ Delete Folder Button */}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (confirm(`'${album.name}' 폴더와 그 안의 모든 내용이 삭제됩니다.\n계속하시겠습니까?`)) {
-                                                        onDeleteAlbum(album.id);
-                                                    }
-                                                }}
-                                                className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all z-10"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-
-                                            {/* ✨ Parent Name Indication */}
-                                            {albumId === '__all__' && album.parentId && album.parentId !== '__all__' && (
-                                                <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full mb-1">
-                                                    {customAlbums.find(p => p.id === album.parentId)?.name || '알 수 없음'}
-                                                </span>
-                                            )}
-
-                                            <Folder size={40} className="text-indigo-200 group-hover:text-indigo-400 transition-colors" />
-                                            <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
-                                            <span className="text-[10px] text-[var(--text-secondary)]">{getSubAlbumStats(album.id)}</span>
-                                        </div>
-                                    </DroppableFolder>
-                                ))}
-                            </div>
+                                            <Trash2 size={16} />
+                                        </button>
+                                        <Folder size={40} className="text-indigo-200 group-hover:text-indigo-400 transition-colors" />
+                                        <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
+                                        {/* Stats approximation */}
+                                        <span className="text-[10px] text-[var(--text-secondary)]">
+                                            폴더
+                                        </span>
+                                    </div>
+                                </DroppableFolder>
+                            ))}
                         </div>
-                    )
-                }
+                    </div>
+                )}
 
-                {/* 글 목록 - Draggable */}
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({posts.length})</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {posts.length === 0 ? (
+                {/* Posts Display */}
+                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({localPosts.length})</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {localPosts.length === 0 ? (
                         <div className="col-span-full py-20 text-center text-gray-400">
-                            {subAlbums.length > 0 ? "폴더를 선택하거나 기록을 남겨보세요." : "이 폴더에는 아직 글이 없습니다."}
+                            {isLoading ? "로딩 중..." : "이 폴더에는 아직 글이 없습니다."}
                         </div>
                     ) : (
-                        posts.map(p => (
+                        localPosts.map(p => (
                             <DraggablePost key={p.id} id={p.id}>
-                                <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] p-6 rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-full">
-                                    <div className="text-4xl mb-4">📜</div>
+                                <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden">
+                                    {/* 1. Top - Thumbnail (60%) */}
+                                    <div className="h-[60%] w-full bg-white relative overflow-hidden">
+                                        {(() => {
+                                            // 1. Try Image First
+                                            const imgBlock = p.blocks?.find((b: any) => b.imageUrl);
+                                            const floatImg = p.floatingImages?.[0]?.url;
+                                            const sticker = p.stickers?.[0]?.url;
+                                            const thumb = imgBlock?.imageUrl || floatImg || sticker;
 
-                                    {/* ✨ Delete Button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (confirm('정말 삭제하시겠습니까?')) {
-                                                onDeletePost(p.id);
+                                            if (thumb) {
+                                                return <img src={thumb} alt={p.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />;
                                             }
-                                        }}
-                                        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag start on button
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
 
-                                    {/* ✨ Favorite Button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onToggleFavorite(p.id);
-                                        }}
-                                        className={`absolute top-4 ${p.isFavorite ? 'right-12 opacity-100' : 'right-12 opacity-0 group-hover:opacity-100'} p-2 rounded-full transition-all ${p.isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'} cursor-pointer`}
-                                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag start
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill={p.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                                    </button>
+                                            // 2. Live DOM Preview (Content Capture)
+                                            // Scale down the content to look like a thumbnail
+                                            return (
+                                                <div
+                                                    className="w-[200%] h-[200%] origin-top-left p-6 bg-white text-gray-800 select-none"
+                                                    style={{ transform: 'scale(0.5)' }}
+                                                >
+                                                    <div className="space-y-4">
+                                                        {p.blocks?.slice(0, 4).map((b: any, i: number) => {
+                                                            if (b.type === 'heading1') return <h1 key={i} className="text-3xl font-bold border-b pb-2">{b.text}</h1>;
+                                                            if (b.type === 'heading2') return <h2 key={i} className="text-2xl font-bold">{b.text}</h2>;
+                                                            if (b.type === 'heading3') return <h3 key={i} className="text-xl font-bold text-gray-600">{b.text}</h3>;
+                                                            if (b.type === 'paragraph' || b.type === 'text') return <p key={i} className="text-base leading-relaxed text-gray-600 line-clamp-3">{b.text}</p>;
+                                                            if (b.type === 'bullet-list') return <ul key={i} className="list-disc pl-5 space-y-1">{b.content?.items?.map((it: string, j: number) => <li key={j} className="text-base">{it}</li>)}</ul>;
+                                                            return null;
+                                                        })}
+                                                        {(!p.blocks || p.blocks.length === 0) && (
+                                                            <div className="text-4xl text-gray-200 font-bold">내용 없음</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
 
-                                    <h3 className="font-bold text-lg truncate text-[var(--text-primary)]">{p.title}</h3>
-                                    <p className="text-[var(--text-secondary)] text-sm">{p.date}</p>
-                                    {/* 태그 표시 */}
-                                    {p.tags && p.tags.length > 0 && (
-                                        <div className="mt-3 flex flex-wrap gap-1">
-                                            {p.tags.map(t => (
-                                                <span key={t} className="text-xs px-2 py-1 bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] rounded-full">#{t}</span>
-                                            ))}
+                                        {/* Overlay Gradient for depth */}
+                                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+                                    </div>
+
+                                    {/* 2. Bottom - Info (40%) */}
+                                    <div className="h-[40%] p-5 flex flex-col justify-between bg-[var(--bg-card)]">
+                                        <div className="space-y-2">
+                                            <h4 className="font-bold text-[var(--text-primary)] text-lg line-clamp-1 leading-tight">{p.title}</h4>
+
+                                            {/* Hashtags */}
+                                            <div className="flex flex-wrap gap-1.5 h-6 overflow-hidden">
+                                                {p.tags && p.tags.length > 0 ? (
+                                                    p.tags.map((t: string) => (
+                                                        <span key={t} className="text-[11px] font-medium text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-md truncate">#{t}</span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-[11px] text-[var(--text-secondary)] opacity-50">태그 없음</span>
+                                                )}
+                                            </div>
                                         </div>
-                                    )}
+
+                                        {/* Footer: Actions & Date */}
+                                        <div className="flex items-end justify-between mt-2 pt-2 border-t border-[var(--border-color)]/50">
+                                            <span className="text-[11px] font-medium text-[var(--text-secondary)] tracking-tight">
+                                                {p.date}
+                                            </span>
+
+                                            <div className="flex gap-1" onPointerDown={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onToggleFavorite(p.id);
+                                                    }}
+                                                    className={`p-1.5 rounded-lg transition-all ${p.isFavorite ? 'text-yellow-400 bg-yellow-400/10' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)]'}`}
+                                                    title="즐겨찾기"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                                </button>
+
+                                                {(albumId === '__all__' || albumId === '__others__') ? (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm("정말 이 기록을 영구 삭제하시겠습니까?")) {
+                                                                onDeletePost(p.id);
+                                                            }
+                                                        }}
+                                                        className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="영구 삭제"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (confirm("이 앨범에서 제거하시겠습니까?")) {
+                                                                handleManageItem('REMOVE', 'POST', p.id);
+                                                            }
+                                                        }}
+                                                        className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="앨범에서 제거"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </DraggablePost>
                         ))
@@ -282,6 +357,55 @@ const PostFolderPage: React.FC<Props> = ({ albumId, posts, allPosts, onPostClick
                     onClose={() => setIsCreateFolderOpen(false)}
                     onCreate={handleCreateFolder}
                 />
+
+                {/* ✨ Picker Modal */}
+                {isAddModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-[var(--bg-modal)] rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh] border border-[var(--border-color)] backdrop-blur-md">
+                            <div className="px-6 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
+                                <h3 className="font-bold text-lg text-[var(--text-primary)]">게시물 추가하기</h3>
+                                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-[var(--bg-card-secondary)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X size={24} /></button>
+                            </div>
+                            <div className="p-4 overflow-y-auto space-y-2 flex-1 custom-scrollbar">
+                                {pickerCandidates.length === 0 ? <div className="text-center py-10 text-[var(--text-tertiary)]">추가할 수 있는 기록이 없습니다.</div> :
+                                    pickerCandidates.map(p => (
+                                        <div key={p.id}
+                                            onClick={() => {
+                                                if (selectedPickerIds.includes(String(p.id))) setSelectedPickerIds(prev => prev.filter(id => id !== String(p.id)));
+                                                else setSelectedPickerIds(prev => [...prev, String(p.id)]);
+                                            }}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${selectedPickerIds.includes(String(p.id)) ? 'border-indigo-500 bg-indigo-50/10' : 'border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)]'}`}
+                                        >
+                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${selectedPickerIds.includes(String(p.id)) ? 'bg-indigo-500 border-indigo-500' : 'border-[var(--border-color)] bg-[var(--bg-card-secondary)]'}`}>
+                                                {selectedPickerIds.includes(String(p.id)) && <div className="w-2 h-2 bg-white rounded-full" />}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-sm text-[var(--text-primary)]">{p.title}</div>
+                                                <div className="text-xs text-[var(--text-secondary)]">{p.date}</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                            <div className="p-4 border-t border-[var(--border-color)] flex justify-end gap-2">
+                                <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] rounded-lg transition-colors">취소</button>
+                                <button
+                                    onClick={async () => {
+                                        for (const id of selectedPickerIds) {
+                                            await handleManageItem('ADD', 'POST', id);
+                                        }
+                                        setSelectedPickerIds([]);
+                                        setIsAddModalOpen(false);
+                                    }}
+                                    disabled={selectedPickerIds.length === 0}
+                                    className="px-6 py-2 text-sm font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-lg hover:opacity-90 disabled:opacity-50 transition-all shadow-md shadow-indigo-500/20"
+                                >
+                                    {selectedPickerIds.length}개 추가
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </DndContext>
     );

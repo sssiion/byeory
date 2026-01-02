@@ -45,6 +45,10 @@ export const usePostEditor = () => {
     // ✨ 커스텀 앨범 목록 (로컬 스토리지 사용)
     const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
 
+    // ✨ New fields for Album/Note Management
+    const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
+    const [isFavorite, setIsFavorite] = useState(false);
+
     const [currentTags, setCurrentTags] = useState<string[]>([]); // ✨ 현재 작성 중인 포스트의 태그들
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
     // ✨ Sort Option Persistence
@@ -271,6 +275,10 @@ export const usePostEditor = () => {
                 let parsedTags = p.tags || [];
                 let parsedAlbumIds = p.albumIds || [];
 
+                // ✨ Metadata Fallback Variables
+                let metadataAlbumIds: string[] | null = null;
+                let metadataTags: string[] | null = null;
+
                 // 메타데이터 블록 추출
                 rawBlocks.forEach((b: Block) => {
                     if (b.type === 'paragraph' && b.text && b.text.startsWith('<!--METADATA:')) {
@@ -278,10 +286,10 @@ export const usePostEditor = () => {
                             const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
                             const metadata = JSON.parse(json);
                             if (metadata.titleStyles) parsedTitleStyles = metadata.titleStyles;
-                            // ✨ Metadata fallback for tags if backend doesn't support it
-                            if (metadata.tags && Array.isArray(metadata.tags)) parsedTags = metadata.tags;
-                            // ✨ Metadata fallback for albumIds
-                            if (metadata.albumIds && Array.isArray(metadata.albumIds)) parsedAlbumIds = metadata.albumIds;
+
+                            // Capture for fallback usage later
+                            if (metadata.tags && Array.isArray(metadata.tags)) metadataTags = metadata.tags;
+                            if (metadata.albumIds && Array.isArray(metadata.albumIds)) metadataAlbumIds = metadata.albumIds;
                         } catch (e) {
                             console.error('Failed to parse metadata block', e);
                         }
@@ -290,16 +298,32 @@ export const usePostEditor = () => {
                     }
                 });
 
+                // 3. ✨ Priority Logic Fix: DB Properties > Metadata
+                if (p.albumIds && Array.isArray(p.albumIds)) {
+                    parsedAlbumIds = p.albumIds;
+                } else if (metadataAlbumIds) {
+                    parsedAlbumIds = metadataAlbumIds;
+                }
+
+                if (p.tags && Array.isArray(p.tags)) {
+                    parsedTags = p.tags;
+                } else if (metadataTags) {
+                    parsedTags = metadataTags;
+                }
+
                 return {
                     id: p.id,
                     title: p.title,
-                    date: new Date(p.createdAt || p.created_at).toLocaleDateString(),
+                    date: (() => {
+                        const d = new Date(p.date || p.createdAt || p.created_at || Date.now());
+                        return `${d.toLocaleDateString()} ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+                    })(),
                     blocks: contentBlocks,
-                    // DB에 저장된 PX 값을 그대로 사용
+
                     stickers: p.stickers || [],
                     floatingTexts: p.floatingTexts || [],
                     floatingImages: p.floatingImages || [],
-                    albumIds: parsedAlbumIds, // ✨ Load albumIds from metadata fallback if needed
+                    albumIds: parsedAlbumIds,
                     titleStyles: parsedTitleStyles || {
                         fontSize: '30px',
                         fontWeight: 'bold',
@@ -307,7 +331,9 @@ export const usePostEditor = () => {
                         color: '#000000',
                         textAlign: 'left'
                     },
-                    tags: parsedTags.filter((t: string) => t && t !== 'undefined' && t !== 'null') // Filter invalid tags
+                    tags: parsedTags.filter((t: string) => t && t !== 'undefined' && t !== 'null'),
+                    mode: p.mode,
+                    isFavorite: p.isFavorite,
                 };
             }));
         }
@@ -337,9 +363,16 @@ export const usePostEditor = () => {
         // ✨ 앨범 문맥이 있으면 해당 앨범 자동 선택
         if (initialAlbumId) {
             setTargetAlbumIds([initialAlbumId]);
+            setMode('MANUAL'); // ✨ If starting from album, prefer MANUAL? Or keep AUTO? 
+            // Usually if user is inside an album and clicks "Add Post", they probably want it there.
+            // But let's stick to default AUTO unless user explicitly sets it.
+            // Actually, if we set targetAlbumIds, we should probably set MANUAL if we want to enforce it.
+            // But let's leave it as AUTO default, user can switch.
         } else {
             setTargetAlbumIds([]);
+            setMode('AUTO');
         }
+        setIsFavorite(false);
         setViewMode('editor');
     };
 
@@ -357,6 +390,8 @@ export const usePostEditor = () => {
         setFloatingImages(post.floatingImages || []);
         setCurrentTags(post.tags || []); // ✨ 태그 로드
         setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
+        setMode(post.mode || 'AUTO'); // ✨ Load mode
+        setIsFavorite(post.isFavorite || false); // ✨ Load favorite
         setViewMode('read');
     };
 
@@ -414,7 +449,9 @@ export const usePostEditor = () => {
             floatingImages,   // 있는 그대로 저장
             titleStyles,     // 백엔드 지원 시 사용
             tags: safeTags, // ✨ 태그 저장
-            albumIds: safeAlbumIds // ✨ 앨범 ID 저장
+            albumIds: safeAlbumIds, // ✨ 앨범 ID 저장
+            mode, // ✨ New field
+            isFavorite // ✨ New field
         };
 
         setIsSaving(true);
@@ -579,9 +616,48 @@ export const usePostEditor = () => {
     };
 
 
+
+    // ✨ Browser History Sync for Back Button Support & Refresh Restoration
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            if (event.state && event.state.viewMode) {
+                // Restore state from history
+                setViewMode(event.state.viewMode);
+                setSelectedAlbumId(event.state.selectedAlbumId || null);
+            } else {
+                // Default state (Album List)
+                setViewMode('album');
+                setSelectedAlbumId(null);
+            }
+        };
+
+        // ✨ Handle Initial Load (Refresh) with Hash
+        const hash = window.location.hash;
+        if (hash.startsWith('#album/')) {
+            const albumId = hash.replace('#album/', '');
+            if (albumId) {
+                setViewMode('folder');
+                setSelectedAlbumId(albumId);
+                // Ensure history state is synced so Back works
+                window.history.replaceState({ viewMode: 'folder', selectedAlbumId: albumId }, '', hash);
+            }
+        }
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     const handleAlbumClick = (id: string | null) => {
+        const newMode = id ? 'folder' : 'album';
         setSelectedAlbumId(id);
-        setViewMode(id ? 'folder' : 'album');
+        setViewMode(newMode);
+
+        // ✨ Push state to history
+        // Construct a URL-friendly fragment or query param if desired, 
+        // but for now, we just push state object to keep it simple without full router.
+        // We can use hash: #album/id or just keep URL stable and use state.
+        // User asked for Back button support, so history API is key.
+        window.history.pushState({ viewMode: newMode, selectedAlbumId: id }, '', id ? `#album/${id}` : '#albums');
     };
 
     // ✨ Handle Move Post (Drag and Drop)
@@ -660,6 +736,9 @@ export const usePostEditor = () => {
         sortOption, setSortOption, handleDeletePost, // ✨ 정렬 및 삭제 핸들러 노출
         handleToggleFavorite, // ✨ 즐겨찾기 핸들러 노출
         handleToggleAlbumFavorite, // ✨ 앨범 즐겨찾기 핸들러 추가
-        handleMovePost // ✨ Drag and Drop Move Handler
+        handleMovePost, // ✨ DnD Handler Exposed
+        mode, setMode, // ✨ Expose mode
+        isFavorite, setIsFavorite, // ✨ Expose isFavorite
+        refreshPosts: fetchPosts // ✨ Expose data refresh trigger
     };
 };

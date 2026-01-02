@@ -82,6 +82,7 @@ const Post: React.FC = () => {
                         onDeleteAlbum={editor.handleDeleteAlbum}
                         onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
                         onMovePost={editor.handleMovePost} // ✨ DnD Added
+                        onRefresh={editor.refreshPosts} // ✨ Added
                     />
                 )}
 

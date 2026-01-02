@@ -74,7 +74,6 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
                 currentTags={editor.currentTags}
                 onTagsChange={editor.setTags}
-                customAlbums={editor.customAlbums}
             />
 
             {/* ✨ 저장 위치 선택 모달 */}
@@ -91,6 +90,10 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onCreateAlbum={editor.handleCreateAlbum}
                 onDeleteAlbum={editor.handleDeleteAlbum}
                 posts={editor.posts}
+                mode={editor.mode}
+                setMode={editor.setMode}
+                isFavorite={editor.isFavorite}
+                setIsFavorite={editor.setIsFavorite}
             />
         </div>
     );

@@ -29,7 +29,7 @@ const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-            <div className="bg-[var(--bg-card)] rounded-2xl w-full max-w-sm p-6 shadow-2xl transform transition-all animate-scale-up border border-[var(--border-color)]" onClick={e => e.stopPropagation()}>
+            <div className="bg-[var(--bg-modal)] rounded-2xl w-full max-w-sm p-6 shadow-2xl transform transition-all animate-scale-up border border-[var(--border-color)] backdrop-blur-md" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
                         <Folder className="text-indigo-500" size={24} />
@@ -52,7 +52,7 @@ const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate }) => {
                             onKeyDown={handleKeyDown}
                             autoFocus
                             placeholder="예: 여행, 맛집, 일상"
-                            className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                            className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-secondary)] text-[var(--text-primary)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
                         />
                     </div>
 
@@ -65,7 +65,7 @@ const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate }) => {
                         </button>
                         <button
                             onClick={handleCreate}
-                            className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition"
+                            className="flex-1 py-3 px-4 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 shadow-lg shadow-indigo-500/20 transition"
                         >
                             만들기
                         </button>

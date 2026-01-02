@@ -3,10 +3,7 @@ import { STICKERS, LAYOUT_PRESETS } from '../../constants';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot } from 'lucide-react';
 
 
-interface CustomAlbum {
-    name: string;
-    tag: string | null;
-}
+
 
 interface Props {
     isSaving: boolean;
@@ -29,7 +26,6 @@ interface Props {
     // New Props for Save Location
     currentTags: string[];
     onTagsChange: (tags: string[]) => void;
-    customAlbums: CustomAlbum[];
 }
 
 const EditorSidebar: React.FC<Props> = ({
@@ -37,7 +33,7 @@ const EditorSidebar: React.FC<Props> = ({
     onAddBlock, onAddFloatingText, onAddSticker, onAddFloatingImage,
     rawInput, setRawInput, selectedLayoutId, setSelectedLayoutId,
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
-    currentTags, onTagsChange, customAlbums
+    currentTags, onTagsChange
 }) => {
     const triggerFileClick = () => fileInputRef.current?.click();
 
@@ -131,6 +127,44 @@ const EditorSidebar: React.FC<Props> = ({
                             </button>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* ✨ Tags Section (Real-time Visualization) */}
+            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-lg">🏷️</span>
+                        태그
+                    </h3>
+                </div>
+                <div className="p-4 flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-1 mb-2">
+                        {currentTags.map(tag => (
+                            <span key={tag} className="px-2 py-1 bg-[var(--btn-bg)] text-[var(--btn-text)] text-xs rounded-full flex items-center gap-1 opacity-90">
+                                #{tag}
+                                <button onClick={() => onTagsChange(currentTags.filter(t => t !== tag))} className="hover:text-red-200"><X size={12} /></button>
+                            </span>
+                        ))}
+                    </div>
+                    <input
+                        placeholder="태그 입력 (Space/Ent)"
+                        className="w-full p-2 bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-lg text-sm outline-none focus:border-[var(--btn-bg)] transition-colors"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                const val = e.currentTarget.value.trim();
+                                if (val) {
+                                    // Remove # if present
+                                    const tag = val.replace(/^#/, '');
+                                    if (!currentTags.includes(tag)) {
+                                        onTagsChange([...currentTags, tag]);
+                                    }
+                                    e.currentTarget.value = '';
+                                }
+                            }
+                        }}
+                    />
                 </div>
             </div>
 

@@ -18,9 +18,10 @@ interface Props {
     onCreateAlbum: (name: string, tags: string[]) => string | null;
     onDeleteAlbum: (id: string) => void;
     posts: PostData[];
+    mode: 'AUTO' | 'MANUAL'; // ✨ New Prop
 }
 
-const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [], onTagsChange, onAlbumIdsChange, customAlbums, onCreateAlbum, onDeleteAlbum, posts }) => {
+const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [], onTagsChange, onAlbumIdsChange, customAlbums, onCreateAlbum, onDeleteAlbum, posts, mode }) => {
     // State for Tag Input
     const [tagInput, setTagInput] = useState("");
     // State for Album Search
@@ -77,7 +78,7 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
         filteredAlbums = Array.from(new Set(combined.map(a => a.id)))
             .map(id => combined.find(a => a.id === id)!);
 
-    } else if (currentTags.length > 0) {
+    } else if (currentTags.length > 0 && mode === 'AUTO') { // ✨ Only filter by tags in AUTO mode
         // ... (existing tag logic) ...
         // Find albums that match any of the current tags
         const tagMatches = customAlbums.filter(album =>
@@ -138,13 +139,7 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
 
     // --- Auto-Select Logic ---
     React.useEffect(() => {
-        if (currentTags.length > 0 && !albumSearch.trim()) {
-            // ... (keep existing auto-select logic but account for hierarchy/filteredAlbums if needed)
-            // Actually, the previous simple logic is fine for "exact match". 
-            // If we want auto-select to include children, we should use the same filteredAlbums logic.
-            // But usually auto-select is specific to the tag. Let's keep it simple for now or use the hierarchy.
-            // Let's rely on the filteredAlbums calculation above which now includes children.
-
+        if (mode === 'AUTO' && currentTags.length > 0 && !albumSearch.trim()) {
             // Only auto-select if we are in the "Tag Mode" (no manual search)
             const autoSelectIds = filteredAlbums.map(a => a.id);
 
@@ -152,8 +147,11 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
             if (combined.length !== selectedAlbumIds.length) {
                 onAlbumIdsChange(combined);
             }
+        } else if (mode === 'AUTO' && currentTags.length === 0) {
+            // In Auto mode, if no tags, maybe clear selection if it was auto-selected?
+            // But let's not be too aggressive clearing user selection if they mixed modes.
         }
-    }, [currentTags, customAlbums.length, albumSearch]);
+    }, [currentTags, customAlbums.length, albumSearch, mode]);
     // Added albumSearch dependency so it only runs when search is empty (implied by logic above)
 
     // Calculate Hidden Selected Items
@@ -163,10 +161,10 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
     return (
         <div className="space-y-6">
             {/* 1. Tag Settings Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 ${mode === 'MANUAL' ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                 <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                     <Hash size={18} className="text-indigo-500" />
-                    태그 설정
+                    태그 설정 {mode === 'MANUAL' && <span className="text-xs font-normal text-gray-500">(자동 분류 모드 전용)</span>}
                 </h3>
 
                 <div className="relative mb-3">
@@ -176,7 +174,8 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                         onChange={(e) => setTagInput(e.target.value)}
                         onKeyDown={handleTagKeyDown}
                         placeholder="해시태그 입력 (Enter로 추가)"
-                        className="w-full pl-3 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        disabled={mode === 'MANUAL'}
+                        className="w-full pl-3 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-gray-100"
                     />
                 </div>
 
@@ -187,7 +186,8 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                             <span>#{tag}</span>
                             <button
                                 onClick={() => removeTag(tag)}
-                                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-indigo-200 text-indigo-500"
+                                disabled={mode === 'MANUAL'}
+                                className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-indigo-200 text-indigo-500 disabled:pointer-events-none"
                             >
                                 <X size={10} strokeWidth={3} />
                             </button>
@@ -200,16 +200,17 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
             </div>
 
             {/* 2. Save Location Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-4 ${mode === 'AUTO' ? 'opacity-70 pointer-events-none' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
                         <FolderOpen size={18} className="text-indigo-500" />
-                        저장 위치 선택
+                        저장 위치 선택 {mode === 'AUTO' && <span className="text-xs font-normal text-gray-500">(자동 선택됨)</span>}
                     </h3>
 
                     <button
                         onClick={handleToggleAll}
-                        className="text-xs font-medium text-gray-400 hover:text-gray-600 underline decoration-gray-300 underline-offset-2 transition-colors"
+                        disabled={mode === 'AUTO'}
+                        className="text-xs font-medium text-gray-400 hover:text-gray-600 underline decoration-gray-300 underline-offset-2 transition-colors disabled:pointer-events-none"
                     >
                         {selectedAlbumIds.length > 0 ? '전부 해제' : '전부 선택'}
                     </button>
@@ -222,7 +223,8 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                         value={albumSearch}
                         onChange={(e) => setAlbumSearch(e.target.value)}
                         placeholder="앨범 검색 또는 새 앨범 추가..."
-                        className="w-full pl-3 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                        disabled={mode === 'AUTO'}
+                        className="w-full pl-3 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:bg-gray-100"
                     />
                 </div>
 
@@ -268,8 +270,9 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                                             <Check size={12} className="text-white" />
                                         </div>
                                         <button
-                                            onClick={() => toggleAlbum(id)}
-                                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            onClick={() => toggleAlbum(id)} // Allowed to uncheck even in AUTO? Maybe not.
+                                            disabled={mode === 'AUTO'}
+                                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -284,11 +287,7 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                     {/* 1. Filtered or Tag-Matched Albums */}
                     {filteredAlbums.map((album) => {
                         const isSelected = selectedAlbumIds.includes(album.id);
-                        const pathName = getAlbumPath(album.id); // Display hierarchy name? User asked for "Album > Folder" in the summary, maybe in list too?
-                        // Usually list implies context. But let's verify if user wants "Seoul > Gangnam" in the main list. 
-                        // "Like image 1 search results" -> Image 1 just shows "Seoul". 
-                        // But if I search Seoul, and Gangnam appears, showing "Gangnam" or "Seoul > Gangnam"? 
-                        // Safe bet: Show full path if it's a child.
+                        const pathName = getAlbumPath(album.id);
 
                         // Stats Logic
                         const recordCount = posts.filter(p => {
@@ -307,8 +306,8 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                                     }`}
                             >
                                 <div
-                                    className="flex items-center gap-3 flex-1 cursor-pointer"
-                                    onClick={() => toggleAlbum(album.id)}
+                                    className={`flex items-center gap-3 flex-1 ${mode === 'AUTO' ? '' : 'cursor-pointer'}`}
+                                    onClick={() => mode !== 'AUTO' && toggleAlbum(album.id)}
                                 >
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
                                         {album.parentId ? <Folder size={16} /> : <Book size={16} />}
@@ -328,8 +327,8 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
 
                                 <div className="flex items-center gap-2">
                                     <div
-                                        onClick={() => toggleAlbum(album.id)}
-                                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${isSelected
+                                        onClick={() => mode !== 'AUTO' && toggleAlbum(album.id)}
+                                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${mode !== 'AUTO' ? 'cursor-pointer' : ''} ${isSelected
                                             ? 'bg-indigo-500 border-indigo-500'
                                             : 'bg-white border-gray-300'
                                             }`}
@@ -343,7 +342,8 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                                                 onDeleteAlbum(album.id);
                                             }
                                         }}
-                                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        disabled={mode === 'AUTO'}
+                                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none"
                                     >
                                         <Trash2 size={14} />
                                     </button>
@@ -357,7 +357,7 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                         <div
                             key={`create-${tag}`}
                             onClick={() => handleCreateAlbum(tag)}
-                            className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 cursor-pointer hover:bg-indigo-50 transition-colors mb-2 group"
+                            className={`flex items-center gap-3 p-3 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 cursor-pointer hover:bg-indigo-50 transition-colors mb-2 group ${mode === 'AUTO' ? 'pointer-events-none opacity-50' : ''}`}
                         >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-100 text-indigo-600 group-hover:bg-indigo-200 transition-colors">
                                 <Sparkles size={16} />
@@ -365,7 +365,6 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                             <div className="flex flex-col">
                                 <span className="text-sm font-bold text-indigo-900 flex items-center gap-1.5">
                                     '{tag}' 앨범 만들기
-                                    {/* NEW Badge */}
                                     <span className="px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full font-bold">NEW</span>
                                 </span>
                                 <span className="text-xs text-indigo-600/70">
