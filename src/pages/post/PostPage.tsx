@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import { usePostEditor } from './hooks/usePostEditor';
-import PostListPage from './pages/PostListPage';
+
 import PostViewPage from './pages/PostViewPage';
 import PostEditorPage from './pages/PostEditorPage';
 import PostCreatePage from './pages/PostCreatePage';
@@ -26,16 +26,12 @@ const Post: React.FC = () => {
     };
 
     // 폴더 뷰를 위한 필터링 로직
-    const filteredPosts = editor.selectedAlbumId === null
-        ? editor.posts.filter(p => {
-            // Others: No ID AND (No Tags OR Tags don't match any album)
-            const hasId = p.albumIds && p.albumIds.length > 0;
-            if (hasId) return false;
-            // Legacy check: if tags exist, check if they map to any album
-            const hasMatchingTag = p.tags?.some(t => editor.customAlbums.some(a => a.tag === t));
-            return !hasMatchingTag;
-        })
+    const filteredPosts = (editor.selectedAlbumId === null || editor.selectedAlbumId === '__others__')
+        ? editor.posts.filter(p => !p.albumIds || p.albumIds.length === 0)
         : editor.posts.filter(p => {
+            // ✨ All Records view: Show ALL posts
+            if (editor.selectedAlbumId === '__all__') return true;
+
             // Priority: ID match
             if (p.albumIds?.includes(editor.selectedAlbumId!)) return true;
             // Fallback: Legacy Tag match (only if no IDs present on post)
@@ -64,21 +60,28 @@ const Post: React.FC = () => {
                         onDeleteAlbum={editor.handleDeleteAlbum}
                         sortOption={editor.sortOption}
                         setSortOption={editor.setSortOption}
+                        onPostClick={editor.handlePostClick} // ✨ Added
+                        onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
+                        handleToggleAlbumFavorite={editor.handleToggleAlbumFavorite} // ✨ Added
                     />
                 )}
 
                 {/* 2) 폴더 뷰 (앨범 상세) */}
                 {editor.viewMode === 'folder' && (
                     <PostFolderPage
-                        albumName={editor.selectedAlbumId ? (editor.customAlbums.find(a => a.id === editor.selectedAlbumId)?.name || 'Unknown') : null}
                         albumId={editor.selectedAlbumId}
                         posts={filteredPosts}
-                        onBack={() => editor.setViewMode('album')}
+                        allPosts={editor.posts}
+                        // onBack prop removed
                         onPostClick={editor.handlePostClick}
                         onStartWriting={editor.handleStartWriting}
                         onCreateAlbum={editor.handleCreateAlbum}
                         customAlbums={editor.customAlbums}
                         onAlbumClick={editor.handleAlbumClick}
+                        onDeletePost={editor.handleDeletePost}
+                        onDeleteAlbum={editor.handleDeleteAlbum}
+                        onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
+                        onMovePost={editor.handleMovePost} // ✨ DnD Added
                     />
                 )}
 

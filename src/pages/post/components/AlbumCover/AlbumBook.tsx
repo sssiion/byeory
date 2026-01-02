@@ -7,7 +7,7 @@ interface Props {
     config?: AlbumCoverConfig;
     title: string;
     tag?: string; // Optional separate tag
-    count?: number;
+    count?: number | string;
     onClick?: () => void;
     className?: string;
     showFullTitle?: boolean;
@@ -41,10 +41,16 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
             };
         }
         if (isPattern) {
+            const baseSize = activeConfig.backgroundSize || '20px 20px';
+            const scale = (activeConfig.patternScale || 100) / 100;
+            const [w, h] = baseSize.split(' ').map(s => parseFloat(s));
+            const calculatedSize = w && h ? `${w * scale}px ${h * scale}px` : baseSize;
+
             return {
                 backgroundImage: activeConfig.value,
-                backgroundColor: activeConfig.backgroundColor || activeConfig.spineColor || '#ffffff', // ✨ Fix priority
-                backgroundSize: activeConfig.backgroundSize || '20px 20px'
+                backgroundColor: activeConfig.backgroundColor || activeConfig.spineColor || '#ffffff',
+                backgroundSize: calculatedSize,
+                backgroundPosition: `${activeConfig.patternPositionX || 0}% ${activeConfig.patternPositionY || 0}%`
             };
         }
         return { backgroundColor: activeConfig.value };
@@ -123,7 +129,7 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
                                 className="w-1.5 h-1.5 rounded-full inline-block"
                                 style={{ backgroundColor: activeConfig.labelColor || '#1f2937' }}
                             />
-                            {count}개의 기록
+                            {typeof count === 'number' ? `${count}개의 기록` : count}
                         </p>
                     )}
                 </div>

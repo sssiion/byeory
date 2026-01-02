@@ -4,7 +4,7 @@ import { X, Folder } from 'lucide-react';
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    onCreate: (name: string) => void;
+    onCreate: (name: string) => string | null | void;
 }
 
 const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate }) => {
@@ -14,9 +14,13 @@ const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate }) => {
 
     const handleCreate = () => {
         if (!name.trim()) return alert("폴더 이름을 입력해주세요.");
-        onCreate(name);
-        setName('');
-        onClose();
+        const result = onCreate(name);
+
+        // ✨ Only close if creation succeeded (result is not null/false)
+        if (result) {
+            setName('');
+            onClose();
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

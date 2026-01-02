@@ -17,7 +17,7 @@ export const deleteOldImage = async (oldUrl: string | null) => {
         // 예: .../public/blog-assets/2024...png -> 2024...png
         const filePath = oldUrl.split('/blog-assets/').pop();
 
-        if (filePath) {
+        if (filePath && supabase) {
             const { error } = await supabase.storage
                 .from('blog-assets')
                 .remove([filePath]); // 파일 삭제 요청
@@ -154,9 +154,19 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
     }
 };
 
-// 게시글 삭제 (Mock)
-export const deletePostApi = async (id: number) => {
-    // 백엔드 구현 전까지는 성공한 것으로 간주
-    console.log(`[DELETE Mock] Post ${id} deleted.`);
-    return Promise.resolve(true);
+// 게시글 삭제
+export const deletePostApi = async (id: string | number) => {
+    try {
+        const url = `${API_BASE_URL}/${id}`;
+        const response = await fetch(url, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) throw new Error("삭제 실패");
+        console.log(`[DELETE] Post ${id} deleted.`);
+        return true;
+    } catch (error) {
+        console.error("삭제 API 오류:", error);
+        return false;
+    }
 };

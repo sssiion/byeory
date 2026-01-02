@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { ChevronRight, Home, Trash2, Folder, PenLine } from 'lucide-react';
+import React from 'react';
+import { ChevronRight, Trash2, PenLine } from 'lucide-react';
 import PostBreadcrumb from '../components/PostBreadcrumb';
+import { useBreadcrumbs } from '../hooks/useBreadcrumbs';
 
 import EditorCanvas from '../components/editor/EditorCanvas';
 import { usePostEditor } from '../hooks/usePostEditor';
@@ -11,42 +12,12 @@ interface Props {
 
 const PostViewPage: React.FC<Props> = ({ editor }) => {
     // ✨ Breadcrumb Logic
-    const breadcrumbs = useMemo(() => {
-        const items = [
-            { label: '내 앨범', onClick: () => { editor.handleAlbumClick(null); editor.setViewMode('album'); }, icon: Home }
-        ];
-
-        if (editor.selectedAlbumId) {
-            const album = editor.customAlbums.find(a => a.id === editor.selectedAlbumId);
-            if (album) {
-                items.push({
-                    label: album.name,
-                    onClick: () => { editor.setViewMode('folder'); },
-                    icon: Folder
-                });
-            }
-        } else {
-            // If selectedAlbumId is null, it effectively means "Unclassified" (Others) path technically,
-            // depending on how PostFolderPage handles it. 
-            // But if we are in 'read' mode, we might just want to show "Others" if we came from there.
-            // However, editor.selectedAlbumId is stateful.
-            // If we just came from Album page directly (impossible?), or from Others.
-            // Let's assume if we are here, we have a context.
-            // If null, we can add "미분류" for clarity if desired, or just skip.
-            // For now, let's treat null as "Unclassified" if the user wants to go back there.
-            items.push({
-                label: '미분류 보관함',
-                onClick: () => { editor.setViewMode('folder'); },
-                icon: Folder
-            });
-        }
-        return items;
-    }, [editor.selectedAlbumId, editor.customAlbums]);
+    const breadcrumbs = useBreadcrumbs(editor.selectedAlbumId, editor.customAlbums, editor.handleAlbumClick);
 
     const handleDelete = async () => {
         if (!editor.currentPostId) return;
         if (confirm('정말 이 기록을 삭제하시겠습니까?')) {
-            await editor.deletePost(editor.currentPostId);
+            await editor.handleDeletePost(editor.currentPostId);
         }
     };
 
@@ -97,7 +68,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
             <EditorCanvas
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
-                viewMode={'read'} setViewMode={editor.setViewMode as any}
+                viewMode={'read'}
                 blocks={editor.blocks} setBlocks={editor.setBlocks}
                 stickers={editor.stickers} floatingTexts={editor.floatingTexts}
                 floatingImages={editor.floatingImages}

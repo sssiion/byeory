@@ -56,4 +56,5 @@ export interface PostData {
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
     titleStyles?: Record<string, any>;
+    isFavorite?: boolean; // ✨ 즐겨찾기 여부
 }

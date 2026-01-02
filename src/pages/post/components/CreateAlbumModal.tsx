@@ -105,11 +105,11 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                         </div>
                     </div>
 
-                    {/* 3. 대표 해시태그 (선택) */}
+                    {/* 3. 해시태그 */}
                     <div>
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-bold text-[var(--text-secondary)]">
-                                대표 해시태그 <span className="text-[var(--text-tertiary)] font-normal text-xs">(선택)</span>
+                                해시태그
                             </label>
                         </div>
 
@@ -119,14 +119,11 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                                 type="text"
                                 value={selectedTag || ''}
                                 onChange={(e) => setSelectedTag(e.target.value)}
-                                placeholder="태그 입력 (비워두면 폴더로 생성)"
+                                placeholder="태그 입력"
                                 className="flex-1 outline-none bg-transparent font-medium text-[var(--text-primary)] placeholder-[var(--text-tertiary)]"
                                 maxLength={10}
                             />
                         </div>
-                        <p className="text-xs text-[var(--text-tertiary)] mt-1 ml-1">
-                            태그를 입력하면 '앨범'으로, 비워두면 단순 '폴더'로 기능합니다.
-                        </p>
                     </div>
 
                     <div className="flex gap-3 mt-4 pt-2">

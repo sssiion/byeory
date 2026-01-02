@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import type { PostData } from '../types';
+// ✨ Added GalleryHorizontal for All Posts icon
 import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles } from 'lucide-react';
 import RenameAlbumModal from '../components/RenameAlbumModal';
 import AlbumBook from '../components/AlbumCover/AlbumBook';
@@ -14,11 +15,14 @@ interface Props {
     onStartWriting: () => void;
     onRenameAlbum: (id: string, newName: string) => void;
     onDeleteAlbum: (id: string) => void;
-    sortOption: 'name' | 'count' | 'newest';
-    setSortOption: (option: 'name' | 'count' | 'newest') => void;
+    sortOption: 'name' | 'count' | 'newest' | 'favorites';
+    setSortOption: (option: 'name' | 'count' | 'newest' | 'favorites') => void;
+    onPostClick: (post: PostData) => void;
+    onToggleFavorite: (id: number) => void;
+    handleToggleAlbumFavorite: (id: string) => void; // ✨ New
 }
 
-const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption }) => {
+const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite }) => {
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -53,9 +57,9 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
     const handleSaveCover = (config: AlbumCoverConfig) => {
         if (!editingCoverId) return;
-        const album = editingCoverId === '__others__' ? null : customAlbums.find(a => a.id === editingCoverId);
+        const album = (editingCoverId === '__others__' || editingCoverId === '__all__') ? null : customAlbums.find(a => a.id === editingCoverId);
 
-        const key = album ? getCoverKey(album) : '__others__';
+        const key = album ? getCoverKey(album) : editingCoverId;
 
         setCoverConfigs(prev => {
             const next = { ...prev, [key]: config };
@@ -82,19 +86,20 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
     // ✨ Compute Album Stats
     const albumStats = useMemo(() => {
-        const stats: Record<string, { count: number, lastDate: number }> = {};
+        const stats: Record<string, { count: number, folderCount: number, lastDate: number }> = {};
 
         // Initialize
         customAlbums.forEach(a => {
-            stats[a.id] = { count: 0, lastDate: a.createdAt || 0 };
+            stats[a.id] = { count: 0, folderCount: 0, lastDate: a.createdAt || 0 };
         });
 
         let othersCount = 0;
 
+        // 1. Count Direct Posts
         posts.forEach(post => {
             let matched = false;
 
-            // 1. ID Match
+            // ID Match
             if (post.albumIds && post.albumIds.length > 0) {
                 post.albumIds.forEach(id => {
                     if (stats[id]) {
@@ -106,13 +111,10 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 });
             }
 
-            // 2. Legacy Tag Match (only if not matched via ID?)
-            // If a post has IDs, we assume it's fully migrated/managed.
-            // If it has NO IDs, fallback to tags.
+            // Legacy Tag Match
             if (!post.albumIds || post.albumIds.length === 0) {
                 if (post.tags) {
                     post.tags.forEach(tag => {
-                        // Find albums with this tag
                         const matchingAlbums = customAlbums.filter(a => a.tag === tag);
                         if (matchingAlbums.length > 0) {
                             matched = true;
@@ -129,19 +131,33 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             if (!matched) othersCount++;
         });
 
+        // 2. Count Direct Sub-folders
+        customAlbums.forEach(a => {
+            if (a.parentId && stats[a.parentId]) {
+                stats[a.parentId].folderCount++;
+            }
+        });
+
         // ✨ Filter Top Level Albums (No parentId)
         const topLevelAlbums = customAlbums.filter(a => !a.parentId);
 
         // Sort Albums
         const sortedAlbums = [...topLevelAlbums].sort((a, b) => {
             if (sortOption === 'name') return a.name.localeCompare(b.name);
-            if (sortOption === 'count') return stats[b.id].count - stats[a.id].count;
+            if (sortOption === 'count') return (stats[b.id].count + stats[b.id].folderCount) - (stats[a.id].count + stats[a.id].folderCount);
             if (sortOption === 'newest') return stats[b.id].lastDate - stats[a.id].lastDate;
+            if (sortOption === 'favorites') {
+                // Favorites first, then by name
+                if (a.isFavorite === b.isFavorite) return a.name.localeCompare(b.name);
+                return a.isFavorite ? -1 : 1;
+            }
             return 0;
         });
 
         return { sortedAlbums, stats, othersCount };
     }, [posts, customAlbums, sortOption]);
+
+
 
     const handleMenuClick = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -158,6 +174,16 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
         }
     };
 
+    const formatStats = (info: { count: number, folderCount: number }) => {
+        const parts = [];
+        if (info.folderCount > 0) parts.push(`폴더 ${info.folderCount}개`);
+        if (info.count > 0) parts.push(`기록 ${info.count}개`);
+        if (parts.length === 0) return "비어있음";
+        return parts.join(' · ');
+    };
+
+
+
     return (
         <div>
             {/* 상단 헤더 (Start Writing Buttons etc) - Simplified inline for brevity or reuse existing code structure */}
@@ -171,13 +197,13 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-9 items-center">
-                        {(['name', 'newest', 'count'] as const).map(opt => (
+                        {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
                             <button
                                 key={opt}
                                 onClick={() => setSortOption(opt)}
                                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                             >
-                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순' }[opt]}
+                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
                             </button>
                         ))}
                     </div>
@@ -187,8 +213,10 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                {/* ✨ All Posts Card - Fixed Position */}
+                {/* ✨ All Records Album (Replaces Uncategorized) */}
                 {albumStats.sortedAlbums.map(album => {
-                    const count = albumStats.stats[album.id].count;
+                    const stats = albumStats.stats[album.id];
                     const coverKey = getCoverKey(album);
 
                     return (
@@ -196,10 +224,22 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                             <AlbumBook
                                 title={album.name}
                                 tag={album.tag || undefined}
-                                count={count}
+                                count={formatStats(stats)}
                                 config={coverConfigs[coverKey] || coverConfigs[album.name]}
                                 className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                             />
+
+                            {/* Favorite Button for Album */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleAlbumFavorite(album.id);
+                                }}
+                                className={`absolute top-2 left-2 p-1.5 rounded-full z-30 transition-all ${album.isFavorite ? 'text-yellow-400 opacity-100' : 'text-gray-300 opacity-0 group-hover:opacity-100 hover:text-yellow-400 hover:bg-white/50'}`}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={album.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            </button>
+
                             <div className="absolute top-2 right-2 z-30">
                                 <button onClick={(e) => handleMenuClick(e, album.id)} className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
                                     <MoreVertical size={18} />
@@ -216,20 +256,28 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     );
                 })}
 
-                {/* Others Album */}
-                {(albumStats.othersCount > 0 || albumStats.sortedAlbums.length === 0) && (
-                    <div onClick={() => onAlbumClick(null)} className="relative group cursor-pointer">
-                        <AlbumBook title="미분류 보관함" count={albumStats.othersCount} config={coverConfigs['__others__']} className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300" showFullTitle={true} />
-                        <div className="absolute top-2 right-2 z-30">
-                            <button onClick={(e) => handleMenuClick(e, '__others__')} className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 backdrop-blur-sm rounded-full shadow-sm"><MoreVertical size={18} /></button>
-                            {activeDropdownId === '__others__' && (
-                                <div className="absolute top-8 right-0 bg-white border border-gray-200 shadow-xl rounded-xl w-48 py-2 z-50 animate-scale-up origin-top-right cursor-default" onClick={e => e.stopPropagation()}>
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingCoverId('__others__'); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Sparkles size={16} /> 표지 꾸미기</button>
-                                </div>
-                            )}
-                        </div>
+                {/* ✨ All Records Album (Moved to End) */}
+                <div onClick={() => onAlbumClick('__all__')} className="relative group cursor-pointer">
+                    <AlbumBook
+                        title="모든 기록 보관함"
+                        count={`기록 ${posts.length}개`}
+                        config={coverConfigs['__all__']}
+                        className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
+                        showFullTitle={true}
+                    />
+                    {/* Helper Menu for Cover Customization */}
+                    <div className="absolute top-2 right-2 z-30">
+                        <button onClick={(e) => handleMenuClick(e, '__all__')} className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
+                            <MoreVertical size={18} />
+                        </button>
+                        {activeDropdownId === '__all__' && (
+                            <div className="absolute top-8 right-0 bg-white border border-gray-200 shadow-xl rounded-xl w-48 py-2 z-50 animate-scale-up origin-top-right cursor-default" onClick={e => e.stopPropagation()}>
+                                <button onClick={(e) => { e.stopPropagation(); setEditingCoverId('__all__'); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Sparkles size={16} /> 표지 꾸미기</button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
+
             </div>
 
             {/* Modals */}
@@ -268,9 +316,9 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             />
             {editingCoverId && (
                 <CoverCustomizer
-                    albumTitle={editingCoverId === '__others__' ? '미분류 보관함' : customAlbums.find(a => a.id === editingCoverId)?.name || ''}
-                    albumTag={editingCoverId === '__others__' ? undefined : (customAlbums.find(a => a.id === editingCoverId)?.tag || undefined)}
-                    initialConfig={editingCoverId === '__others__' ? (coverConfigs['__others__'] || undefined) : (coverConfigs[getCoverKey(customAlbums.find(a => a.id === editingCoverId))] || undefined)}
+                    albumTitle={editingCoverId === '__all__' ? '모든 기록 보관함' : (customAlbums.find(a => a.id === editingCoverId)?.name || '')}
+                    albumTag={editingCoverId === '__all__' ? undefined : (customAlbums.find(a => a.id === editingCoverId)?.tag || undefined)}
+                    initialConfig={editingCoverId === '__all__' ? (coverConfigs['__all__'] || undefined) : (coverConfigs[getCoverKey(customAlbums.find(a => a.id === editingCoverId))] || undefined)}
                     onSave={handleSaveCover}
                     onClose={() => setEditingCoverId(null)}
                 />
