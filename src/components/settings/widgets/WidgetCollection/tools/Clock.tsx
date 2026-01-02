@@ -109,7 +109,7 @@ export function ClockWidget({ gridSize }: { gridSize?: { w: number, h: number } 
         const hours = (time.getHours() % 12) + minutes / 60;
 
         return (
-            <div className="relative w-32 h-32 rounded-full bg-white shadow-[inset_0_2px_8px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-center">
+            <div className="relative w-32 h-32 rounded-full bg-white/80 backdrop-blur-sm shadow-[inset_0_2px_8px_rgba(0,0,0,0.05)] border border-gray-100 flex items-center justify-center">
                 {[...Array(12)].map((_, i) => (
                     <div
                         key={i}

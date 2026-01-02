@@ -6,13 +6,14 @@ interface WidgetWrapperProps {
     style?: React.CSSProperties;
     title?: string;
     headerRight?: React.ReactNode;
+    headerClassName?: string;
     onClick?: () => void;
 }
 
-export const WidgetWrapper = React.memo(({ children, className = '', style, title, headerRight, onClick }: WidgetWrapperProps) => (
+export const WidgetWrapper = React.memo(({ children, className = '', style, title, headerRight, headerClassName = '', onClick }: WidgetWrapperProps) => (
     <div className={`widget-wrapper w-full h-full flex flex-col bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] overflow-hidden ${className}`} style={style} onClick={onClick}>
         {title && (
-            <div className="px-3 py-2 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)] shrink-0">
+            <div className={`px-3 py-2 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)] shrink-0 ${headerClassName}`}>
                 <span className="text-xs font-bold text-[var(--text-secondary)] truncate">{title}</span>
                 {headerRight}
             </div>

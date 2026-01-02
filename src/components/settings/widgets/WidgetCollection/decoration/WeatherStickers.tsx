@@ -34,7 +34,7 @@ export function WeatherStickers({ gridSize }: WeatherStickersProps) {
         return (
             <WidgetWrapper className="bg-transparent border-none shadow-none p-0 flex items-center justify-center">
                 <div
-                    className={`w-full h-full max-w-[90%] max-h-[90%] flex items-center justify-center rounded-2xl border-4 ${currentSticker.bg} ${currentSticker.border} shadow-lg rotate-3 transition-transform hover:rotate-6 active:scale-95 cursor-pointer`}
+                    className={`w-full h-full max-w-[90%] max-h-[90%] flex items-center justify-center rounded-2xl border-4 ${currentSticker.bg} ${currentSticker.border} shadow-lg transition-transform active:scale-95 cursor-pointer`}
                     onClick={() => {
                         // Cycle through stickers on click in small mode
                         const idx = STICKERS.findIndex(s => s.id === selectedId);

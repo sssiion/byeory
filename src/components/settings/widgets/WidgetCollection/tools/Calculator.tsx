@@ -189,10 +189,10 @@ export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize
             ) : (
                 <>
                     {/* Display */}
-                    <div className="flex-1 flex flex-col justify-end items-end mb-4 px-2 mt-8">
+                    <div className="flex-1 flex flex-col justify-end items-end mb-2 px-1 min-h-[60px]">
                         <div className="text-xs theme-text-secondary h-4">{equation}</div>
                         <div className={`font-mono font-bold theme-text-primary break-all text-right transition-all
-                            ${display.length > 10 ? 'text-2xl' : 'text-4xl'}
+                            ${display.length > 10 ? 'text-xl' : 'text-3xl'}
                         `}>
                             {display}
                         </div>
@@ -200,7 +200,7 @@ export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize
 
                     {/* Scientific Keypad */}
                     {mode === 'scientific' && (
-                        <div className="grid grid-cols-4 gap-2 mb-2 animate-in fade-in zoom-in-95">
+                        <div className="grid grid-cols-4 gap-1 mb-1 animate-in fade-in zoom-in-95 shrink-0">
                             <ScientificBtn label="sin" fn="sin(" onClick={handleInput} />
                             <ScientificBtn label="cos" fn="cos(" onClick={handleInput} />
                             <ScientificBtn label="tan" fn="tan(" onClick={handleInput} />
@@ -213,33 +213,33 @@ export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize
                     )}
 
                     {/* Keypad */}
-                    <div className="grid grid-cols-4 gap-2">
-                        <button onClick={handleClear} className="col-span-1 h-12 rounded-xl bg-red-100 text-red-500 font-bold hover:bg-red-200 transition-colors">AC</button>
-                        <button onClick={handleBackspace} className="col-span-1 h-12 rounded-xl theme-bg-card-secondary theme-text-primary flex items-center justify-center hover:bg-gray-200 transition-colors"><Delete size={18} /></button>
-                        <button onClick={() => handleOperator('%')} className="col-span-1 h-12 rounded-xl theme-bg-card-secondary theme-text-primary font-bold hover:bg-gray-200 transition-colors">%</button>
-                        <button onClick={() => handleOperator('/')} className="col-span-1 h-12 rounded-xl bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><Divide size={18} /></button>
+                    <div className="flex-1 grid grid-cols-4 gap-1 min-h-0">
+                        <button onClick={handleClear} className="col-span-1 rounded-lg bg-red-100 text-red-500 font-bold hover:bg-red-200 transition-colors text-sm">AC</button>
+                        <button onClick={handleBackspace} className="col-span-1 rounded-lg theme-bg-card-secondary theme-text-primary flex items-center justify-center hover:bg-gray-200 transition-colors"><Delete size={16} /></button>
+                        <button onClick={() => handleOperator('%')} className="col-span-1 rounded-lg theme-bg-card-secondary theme-text-primary font-bold hover:bg-gray-200 transition-colors text-sm">%</button>
+                        <button onClick={() => handleOperator('/')} className="col-span-1 rounded-lg bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><Divide size={16} /></button>
 
                         {[7, 8, 9].map(n => (
-                            <button key={n} onClick={() => handleInput(String(n))} className="h-12 rounded-xl theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">{n}</button>
+                            <button key={n} onClick={() => handleInput(String(n))} className="rounded-lg theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">{n}</button>
                         ))}
-                        <button onClick={() => handleOperator('*')} className="h-12 rounded-xl bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><X size={18} /></button>
+                        <button onClick={() => handleOperator('*')} className="rounded-lg bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><X size={16} /></button>
 
                         {[4, 5, 6].map(n => (
-                            <button key={n} onClick={() => handleInput(String(n))} className="h-12 rounded-xl theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">{n}</button>
+                            <button key={n} onClick={() => handleInput(String(n))} className="rounded-lg theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">{n}</button>
                         ))}
-                        <button onClick={() => handleOperator('-')} className="h-12 rounded-xl bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><Minus size={18} /></button>
+                        <button onClick={() => handleOperator('-')} className="rounded-lg bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><Minus size={16} /></button>
 
                         {[1, 2, 3].map(n => (
-                            <button key={n} onClick={() => handleInput(String(n))} className="h-12 rounded-xl theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">{n}</button>
+                            <button key={n} onClick={() => handleInput(String(n))} className="rounded-lg theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">{n}</button>
                         ))}
-                        <button onClick={() => handleOperator('+')} className="h-12 rounded-xl bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><Plus size={18} /></button>
+                        <button onClick={() => handleOperator('+')} className="rounded-lg bg-[var(--btn-bg)]/10 text-[var(--btn-bg)] flex items-center justify-center font-bold hover:bg-[var(--btn-bg)]/20 transition-colors"><Plus size={16} /></button>
 
-                        <div className="col-span-2 grid grid-cols-2 gap-2">
-                            <button onClick={() => handleInput('0')} className="col-span-1 h-12 rounded-xl theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">0</button>
-                            <button onClick={() => handleInput('.')} className="col-span-1 h-12 rounded-xl theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">.</button>
+                        <div className="col-span-2 grid grid-cols-2 gap-1">
+                            <button onClick={() => handleInput('0')} className="col-span-1 rounded-lg theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">0</button>
+                            <button onClick={() => handleInput('.')} className="col-span-1 rounded-lg theme-bg-card border theme-border theme-text-primary font-bold text-lg hover:bg-gray-50 transition-colors shadow-sm">.</button>
                         </div>
 
-                        <button onClick={calculate} className="col-span-2 h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] flex items-center justify-center font-bold text-lg shadow-md hover:opacity-90 transition-opacity"><Equal size={24} /></button>
+                        <button onClick={calculate} className="col-span-2 rounded-lg bg-[var(--btn-bg)] text-[var(--btn-text)] flex items-center justify-center font-bold text-lg shadow-md hover:opacity-90 transition-opacity"><Equal size={20} /></button>
                     </div>
                 </>
             )}

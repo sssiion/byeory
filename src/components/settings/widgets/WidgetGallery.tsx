@@ -191,9 +191,9 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
     const categories = Object.keys(groupedWidgets);
 
     return (
-        <div className="h-full flex flex-col bg-[var(--bg-card)]">
+        <div className="h-full flex flex-col bg-[var(--bg-card)] dark:bg-slate-900">
             {/* Header */}
-            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] sticky top-0 z-20">
+            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] dark:bg-slate-900 sticky top-0 z-20">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     <input

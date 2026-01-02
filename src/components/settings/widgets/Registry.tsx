@@ -30,7 +30,7 @@ import { ColorPalette, ColorPaletteConfig } from './WidgetCollection/tools/Color
 import { FandomCalendar, FandomCalendarConfig } from './WidgetCollection/tools/FandomCalendar';
 
 import * as Logic from './WidgetCollection/logic';
-import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
+
 
 export interface WidgetLayout {
     x: number;
@@ -869,43 +869,7 @@ export const WIDGET_REGISTRY: Record<string, { component: React.ComponentType<an
     'highlighter': { component: Controllers.Highlighter, label: '형광펜 모드', description: '화면의 중요 부분을 형광펜으로 칠하듯 강조합니다.', defaultSize: '1x1', category: 'Global', keywords: ['paint', 'draw', 'mark', '펜'] },
     'physics-box': { component: Controllers.PhysicsBox, label: '물리 상자', description: '위젯들이 중력에 의해 서로 부딪히고 튀어 오릅니다.', defaultSize: '1x1', category: 'Global', keywords: ['gravity', 'bounce', 'game', '물리'] },
     'magnifier': { component: Controllers.Magnifier, label: '돋보기', description: '화면의 특정 부분을 크게 확대해서 볼 수 있습니다.', defaultSize: '1x1', category: 'Global', keywords: ['zoom', 'big', 'view', '확대'] },
-    'ruby-text': { component: Controllers.RubyText, label: '루비 문자', description: '텍스트 위에 발음이나 설명을 작게 달아줍니다.', defaultSize: '1x1', category: 'Global', keywords: ['text', 'annotation', 'font', '문자'] },
-    'custom-block': {
-        label: 'Custom Widget',
-        category: 'My Saved',
-        defaultSize: '1x1',
-        component: (props: any) => {
-            // 🌟 1. 타입 찾기 (여러 군데를 뒤져봅니다)
-            // props.type이 없으면 -> props.content.type을 확인 -> 그래도 없으면 unknown
-            const realType = props.type || (props.content && props.content.type) || 'unknown';
-
-            const blockData = {
-                id: props.widgetId,
-                type: realType,
-                content: props.content || {},
-                styles: props.styles || {}
-            };
-
-            // 🌟 2. 디버깅용 로그 (나오는지 확인)
-            if (realType === 'unknown') {
-                console.error("❌ 위젯 타입을 찾을 수 없습니다:", props);
-                return <div className="bg-red-100 text-red-500 p-2 text-xs">Type Missing</div>;
-            }
-
-            return (
-                <BlockRenderer
-                    block={blockData}
-                    // ... 나머지 props (dummy functions)
-                    selectedBlockId={null}
-                    onSelectBlock={() => {}}
-                    onRemoveBlock={() => {}}
-                    activeContainer={{ blockId: 'root', colIndex: 0 }}
-                    onSetActiveContainer={() => {}}
-                    onUpdateBlock={() => {}}
-                />
-            );
-        }
-    },
+    'ruby-text': { component: Controllers.RubyText, label: '루비 문자', description: '텍스트 위에 발음이나 설명을 작게 달아줍니다.', defaultSize: '1x1', category: 'Global', keywords: ['text', 'annotation', 'font', '문자'] }
 };
 
 // Auto-load saved configurations from DB (localStorage)

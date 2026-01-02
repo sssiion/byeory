@@ -5,7 +5,7 @@ import { useWidgetStorage } from '../SDK';
 
 export const FormulaBlockConfig = {
     defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
+    validSizes: [[2, 2]] as [number, number][],
 };
 
 export const FormulaBlock = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {

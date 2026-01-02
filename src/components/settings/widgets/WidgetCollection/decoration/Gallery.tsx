@@ -26,7 +26,7 @@ export const PhotoGallery = React.memo(function PhotoGallery({ gridSize }: Photo
 
     if (isSmall) {
         return (
-            <WidgetWrapper title="Gallery">
+            <WidgetWrapper title="Gallery" headerClassName="!bg-white/60 dark:!bg-black/60 backdrop-blur-md border-b-0 absolute top-0 left-0 right-0 z-10">
                 <div className="w-full h-full relative cursor-pointer group">
                     <img src={images[0]} alt="" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />

@@ -19,7 +19,7 @@ export function Typewriter({ gridSize }: TypewriterProps) {
     };
 
     return (
-        <WidgetWrapper className="bg-[#f0e6d2] dark:bg-stone-800 border-none p-0 relative shadow-md">
+        <WidgetWrapper className="bg-[#f0e6d2] dark:bg-stone-800 border-none p-0 relative shadow-md items-stretch">
             {/* Paper Texture */}
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/old-map.png')] opacity-30 pointer-events-none"></div>
 
@@ -28,7 +28,7 @@ export function Typewriter({ gridSize }: TypewriterProps) {
                 <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-zinc-600"></div>
             </div>
 
-            <div className="p-4 h-full pt-6 relative">
+            <div className="p-4 w-full h-full pt-6 relative">
                 <textarea
                     value={text}
                     onChange={handleChange}
