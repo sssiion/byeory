@@ -71,6 +71,7 @@ const MainPage: React.FC = () => {
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
     const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
+    const [editingWidgetData, setEditingWidgetData] = useState<any>(null);
 
     // Track dragging state for dynamic buffer
     const [isDragging, setIsDragging] = useState(false);
@@ -767,7 +768,14 @@ const MainPage: React.FC = () => {
                                 <button onClick={() => setIsCatalogOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X /></button>
                             </div>
                             <div className="flex-1 min-h-0 flex flex-col relative">
-                                <WidgetGallery onSelect={addWidget} />
+                                <WidgetGallery
+                                    onSelect={addWidget}
+                                    onEdit={(data) => {
+                                        setEditingWidgetData(data);
+                                        setIsBuilderOpen(true);
+                                        setIsCatalogOpen(false);
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>
@@ -845,7 +853,11 @@ const MainPage: React.FC = () => {
                     isBuilderOpen && (
                         <div className="fixed inset-0 z-50 bg-[#1F1F1F] animate-in slide-in-from-bottom-5 duration-300">
                             <WidgetBuilder
-                                onExit={() => setIsBuilderOpen(false)}
+                                onExit={() => {
+                                    setIsBuilderOpen(false);
+                                    setEditingWidgetData(null);
+                                }}
+                                initialData={editingWidgetData}
                             />
                         </div>
                     )

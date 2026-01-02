@@ -1,25 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Settings2 } from 'lucide-react';
 import type { WidgetBlock, BlockType, ContainerLocation } from './types';
 import { WIDGET_SIZES, BLOCK_COSTS } from './constants';
-import {getDefaultContent, getLabelByType} from './utils';
+import { getDefaultContent, getLabelByType } from './utils';
 
 // 분리된 컴포넌트 임포트
 import LeftSidebar from './components/LeftSidebar';
 import RightSidebar from './components/RightSidebar';
 import Canvas from './components/Canvas';
 import type { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
-import {saveWidget} from "./widgetApi.ts";
+import { saveWidget, updateWidget } from "./widgetApi.ts";
 
 interface Props {
     onExit: () => void;
-    onSave?: (data: any) => void;
+    initialData?: any; // 🌟 수정 시 데이터 주입
 }
 
-const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
+const WidgetBuilder: React.FC<Props> = ({ onExit, initialData }) => {
     const [currentSizeKey, setCurrentSizeKey] = useState<keyof typeof WIDGET_SIZES>('2x2');
+
+    // 🌟 초기 데이터가 있으면 blocks에 로드
     const [blocks, setBlocks] = useState<WidgetBlock[]>([]);
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+
+    // 🌟 initialData가 변경되면 상태 동기화 (Edit 모드 버그 수정)
+    useEffect(() => {
+        if (initialData) {
+            const loadedBlock: WidgetBlock = {
+                id: initialData.id || initialData._id || `blk-${Date.now()}`,
+                type: initialData.type,
+                content: initialData.content || {},
+                styles: initialData.styles || {}
+            };
+            setBlocks([loadedBlock]);
+            setSelectedBlockId(loadedBlock.id);
+        } else {
+            // 초기 데이터가 없으면 초기화 (선택적)
+            // setBlocks([]);
+            // setSelectedBlockId(null);
+        }
+    }, [initialData]);
+
     const [activeContainer, setActiveContainer] = useState<ContainerLocation>(null);
     const currentSize = WIDGET_SIZES[currentSizeKey];
 
@@ -74,7 +95,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
         if (cost > remainingCapacity) { alert("공간 부족!"); return; }
 
         const newBlock: WidgetBlock = {
-            id: `blk-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            id: `blk - ${Date.now()} -${Math.random().toString(36).substr(2, 5)} `,
             type,
             content: getDefaultContent(type),
             styles: { color: '#1e293b', align: 'left', fontSize: 14 }
@@ -83,7 +104,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
         if (activeContainer) {
             setBlocks(prev => {
                 const copy = JSON.parse(JSON.stringify(prev));
-                const targetListId = `COL-${activeContainer.blockId}-${activeContainer.colIndex}`;
+                const targetListId = `COL - ${activeContainer.blockId} -${activeContainer.colIndex} `;
                 const targetList = getListFromId(targetListId, copy);
                 if (targetList) targetList.unshift(newBlock);
                 else copy.unshift(newBlock);
@@ -112,7 +133,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
         const updateRecursive = (items: WidgetBlock[]): WidgetBlock[] => {
             return items.map(item => {
                 if (item.id === id) {
-                    if ('color' in updates || 'bgColor' in updates || 'fontSize' in updates || 'align' in updates || 'bold' in updates) {
+                    if ('color' in updates || 'bgColor' in updates || 'fontSize' in updates || 'align' in updates || 'bold' in updates || 'italic' in updates || 'underline' in updates || 'strikethrough' in updates) {
                         return { ...item, styles: { ...item.styles, ...updates } };
                     }
                     return { ...item, ...updates };
@@ -126,16 +147,6 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
         setBlocks(prev => updateRecursive(prev));
     };
 
-    const handleSave = () => {
-        const widgetData = {
-            size: currentSizeKey,
-            blocks,
-            createdAt: new Date().toISOString(),
-        };
-        onSave?.(widgetData);
-    };
-
-    // --- DnD Helpers (Moved Up) ---
     const getContainerIdFromDroppable = (over: any): string | undefined => {
         return (over?.data?.current?.containerId as string | undefined)
             ?? (typeof over?.id === 'string' ? (over.id as string) : undefined);
@@ -172,7 +183,6 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
 
     const handleDndKitDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-        // setActiveId(null); // ❌ 오류 수정: setActiveId는 Canvas에 있으므로 여기서 호출 안 함
         if (!over) return;
 
         const activeId = active.id as string;
@@ -200,51 +210,60 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
                 return draft;
             });
         }
-        // 드래그가 끝나면 activeContainer 선택 해제 (선택사항)
-        // setActiveContainer(null);
     };
+
     // 🌟 저장 로직 핸들러
     const handleSaveToCloud = async () => {
         if (!selectedBlock) return;
 
-        // 위젯 이름 입력 받기
-        const name = prompt("이 위젯을 저장할 이름을 입력하세요:", getLabelByType(selectedBlock.type));
+        const defaultName = initialData?.name || getLabelByType(selectedBlock.type);
+        const name = prompt("이 위젯을 저장할 이름을 입력하세요:", defaultName);
         if (!name) return;
 
         try {
-            await saveWidget(selectedBlock, name);
-            alert(`'${name}' 위젯이 서버에 저장되었습니다! ☁️`);
+            // DB ID 호환성 처리 (_id vs id)
+            const targetId = initialData?.id || initialData?._id;
+
+            if (targetId) {
+                // 수정
+                await updateWidget(targetId, selectedBlock, name);
+                alert(`'${name}' 위젯이 업데이트되었습니다! ☁️`);
+            } else {
+                // 신규 저장
+                await saveWidget(selectedBlock, name);
+                alert(`'${name}' 위젯이 서버에 저장되었습니다! ☁️`);
+            }
         } catch (e) {
             alert('저장에 실패했습니다.');
         }
     };
 
+    // 🌟 테마 적용 (bg-white / dark:bg-[#1F1F1F] 등)
     return (
-        <div className="min-h-screen bg-[#1F1F1F] flex flex-col text-slate-200 font-sans">
-            <header className="h-16 border-b border-gray-700 bg-[#252525] flex items-center justify-between px-6 shadow-md z-20">
+        <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col text-[var(--text-primary)] font-sans transition-colors">
+            <header className="h-16 border-b border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between px-6 shadow-md z-20">
                 <div className="flex items-center gap-4">
-                    <button onClick={onExit} className="p-2 hover:bg-gray-600 rounded-full transition">
-                        <ArrowLeft size={20} className="text-gray-400" />
+                    <button onClick={onExit} className="p-2 hover:bg-[var(--bg-card-secondary)] rounded-full transition text-[var(--text-secondary)]">
+                        <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Settings2 size={18} className="text-indigo-400"/> 커스텀 위젯 빌더
+                    <h1 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <Settings2 size={18} className="text-indigo-400" /> 커스텀 위젯 빌더
                     </h1>
                 </div>
-                <div className="flex bg-gray-800 p-1 rounded-lg">
+                <div className="flex bg-[var(--bg-card-secondary)] p-1 rounded-lg">
                     {Object.entries(WIDGET_SIZES).map(([key, val]) => (
                         <button
                             key={key}
                             onClick={() => setCurrentSizeKey(key as any)}
-                            className={`px-3 py-1 text-xs font-bold rounded transition-colors ${
-                                currentSizeKey === key ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-200'
-                            }`}
+                            className={`px-3 py-1 text-xs font-bold rounded transition-colors ${currentSizeKey === key ? 'bg-indigo-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                }`}
                         >
                             {val.label}
                         </button>
                     ))}
                 </div>
-                <button onClick={handleSaveToCloud} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition shadow-lg">
-                    저장하기
+                <button onClick={handleSaveToCloud} className="px-5 py-2 bg-[var(--btn-bg)] hover:brightness-110 text-[var(--btn-text)] text-sm font-bold rounded-lg transition shadow-lg">
+                    {initialData ? '수정 저장' : '저장하기'}
                 </button>
             </header>
 
@@ -262,7 +281,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, onSave }) => {
                     onSetActiveContainer={setActiveContainer}
                     onUpdateBlock={updateBlock}
                     onDragEnd={handleDndKitDragEnd}
-                    onDragOver={handleDndKitDragOver} // 🆕 추가: DragOver 핸들러 전달
+                    onDragOver={handleDndKitDragOver}
                 />
                 <RightSidebar
                     selectedBlock={selectedBlock}

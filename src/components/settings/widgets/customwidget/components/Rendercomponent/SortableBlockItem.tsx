@@ -1,10 +1,10 @@
 // ✅ dnd-kit 용 SortableBlockItem.tsx
 
 import React from 'react';
-import type {ContainerLocation, WidgetBlock} from '../../types.ts';
-import {useSortable} from '@dnd-kit/sortable';
-import {CSS} from '@dnd-kit/utilities';
-import {GripVertical, Trash2} from 'lucide-react';
+import type { ContainerLocation, WidgetBlock } from '../../types.ts';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, Trash2 } from 'lucide-react';
 import BlockRenderer from '../BlockRenderer.tsx';
 
 interface SortableBlockItemProps {
@@ -19,7 +19,7 @@ interface SortableBlockItemProps {
 }
 
 const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
-    const {block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer,} = props;
+    const { block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer, } = props;
 
     const {
         attributes,
@@ -52,18 +52,17 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                 onSelectBlock(block.id);
             }}
             className={`
-        relative group rounded-lg transition-all border-2 cursor-pointer flex items-stretch bg-white
-        ${
-                selectedBlockId === block.id
-                    ? 'border-indigo-500 bg-indigo-50/10 ring-2 ring-indigo-200'
-                    : 'border-transparent hover:border-gray-200 hover:bg-gray-50'
-            }
+        relative group rounded-lg transition-all border-2 cursor-pointer flex items-stretch bg-transparent
+        ${selectedBlockId === block.id
+                    ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30'
+                    : 'border-transparent hover:border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)]'
+                }
       `}
             {...attributes}
         >
             <div
                 {...listeners}
-                className="flex items-center justify-center px-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-600"
+                className="flex items-center justify-center px-2 cursor-grab active:cursor-grabbing text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
                 <GripVertical size={16} />
             </div>

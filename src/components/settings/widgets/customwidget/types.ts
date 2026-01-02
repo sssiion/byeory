@@ -16,7 +16,7 @@ export type BlockType =
     | 'unit-converter' | 'calculator' | 'random-picker' | 'map-pin'
     | 'zip-viewer' | 'rss-reader' | 'link-bookmark' | 'pdf-viewer' | 'export-button'
     // NEW (학습)
-    | 'flashcards' | 'mindmap' | 'book-info'| 'movie-ticket' ;
+    | 'flashcards' | 'mindmap' | 'book-info' | 'movie-ticket';
 
 // 블록 스타일 정의
 export interface WidgetBlockStyle {
@@ -27,6 +27,7 @@ export interface WidgetBlockStyle {
     bold?: boolean;
     italic?: boolean;
     underline?: boolean;
+    strikethrough?: boolean; // New
     columnCount?: 2 | 3 | 4; // 다단 컬럼용
 }
 export type MindmapNodeData = { label: string };

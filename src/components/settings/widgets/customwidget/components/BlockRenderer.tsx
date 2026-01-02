@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect } from 'react';
 import type { WidgetBlock, ContainerLocation } from '../types';
 import {
     Check,
@@ -33,58 +33,11 @@ import {
     type Edge,
     type EdgeChange,
     type NodeChange,
+    type Node,
     ReactFlow
 } from "@xyflow/react";
-import type {Connection} from "puppeteer";
+import type { Connection } from "puppeteer";
 import PdfDropViewer from "./Rendercomponent/PdfDropViewer.tsx";
-
-// 🆕 [Helper] 자동 높이 조절 Textarea (Notion 느낌)
-const AutoResizeTextarea = ({
-                                value, onChange, style, className, placeholder, isSingleLine = false
-                            }: any) => {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // 높이 자동 조절 함수
-    const adjustHeight = () => {
-        const el = textareaRef.current;
-        if (el) {
-            el.style.height = 'auto'; // 높이 초기화
-            el.style.height = el.scrollHeight + 'px'; // 내용만큼 늘리기
-        }
-    };
-
-    useEffect(() => {
-        adjustHeight();
-    }, [value]);
-
-    return (
-        <textarea
-            ref={textareaRef}
-            value={value}
-            placeholder={placeholder}
-            rows={1}
-            onChange={(e) => {
-                onChange(e.target.value);
-                adjustHeight();
-            }}
-            // 🔥 [핵심 수정] 드래그 라이브러리가 마우스 클릭을 감지하지 못하게 막음
-            onPointerDown={(e) => e.stopPropagation()}
-            // 🔥 중요: 입력 중에는 드래그(DnD) 막기 & 부모 선택 막기
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-                // 엔터키 방지 (헤딩 같은 한 줄 입력용일 때)
-                if (isSingleLine && e.key === 'Enter') {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                }
-                e.stopPropagation(); // 키 입력 이벤트 전파 방지
-            }}
-            style={{ ...style, resize: 'none', overflow: 'hidden' }}
-            className={`bg-transparent outline-none w-full p-0 m-0 border-none focus:ring-0 ${className}`}
-        />
-    );
-};
-
 
 interface RendererProps {
     block: WidgetBlock;
@@ -102,6 +55,11 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     const { styles, content, type } = block;
     const { block: _unusedBlock, ...otherProps } = props;
 
+    const textDecoration = [
+        styles.underline ? 'underline' : '',
+        styles.strikethrough ? 'line-through' : ''
+    ].filter(Boolean).join(' ');
+
     const commonStyle = {
         color: styles.color,
         backgroundColor: styles.bgColor,
@@ -109,11 +67,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         textAlign: styles.align as any,
         fontWeight: styles.bold ? 'bold' : 'normal',
         fontStyle: styles.italic ? 'italic' : 'normal',
-    };
-
-    // 🆕 헬퍼: 텍스트 업데이트 함수
-    const updateText = (newText: string) => {
-        onUpdateBlock(block.id, { content: { ...content, text: newText } });
+        textDecoration: textDecoration || undefined,
     };
 
     // --- 🔥 컬럼(Columns) 렌더링 로직 (dnd-kit로 변경) ---
@@ -348,7 +302,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                         {data.map((item: any, i: number) => (
                             <div key={i} className="flex justify-between items-center text-[10px]">
                                 <span className="flex items-center gap-1 truncate"><span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: colors[i % colors.length] }}></span><span className="truncate">{item.label}</span></span>
-                                <span className="font-bold ml-1">{Math.round((item.value/total)*100)}%</span>
+                                <span className="font-bold ml-1">{Math.round((item.value / total) * 100)}%</span>
                             </div>
                         ))}
                     </div>
@@ -382,7 +336,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             return (
                 <div style={{ backgroundColor: styles.bgColor || '#eff6ff' }} className="p-3 rounded-lg flex items-center justify-between gap-2 overflow-hidden">
                     <div className="min-w-0">
-                        <div className="text-[10px] text-gray-500 font-bold uppercase truncate flex items-center gap-1"><CalendarDays size={10}/> {content.title}</div>
+                        <div className="text-[10px] text-gray-500 font-bold uppercase truncate flex items-center gap-1"><CalendarDays size={10} /> {content.title}</div>
                         <div className="text-[10px] text-gray-400 truncate">{content.date}</div>
                     </div>
                     <div className="text-xl font-black text-indigo-600 whitespace-nowrap">{dDay}</div>
@@ -394,8 +348,8 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'divider': return <div className="py-2"><hr className="border-t border-gray-200" style={{ borderColor: styles.color }} /></div>;
 
         // --- 7. 리스트류 ---
-        case 'bullet-list': return <ul style={commonStyle} className="list-disc list-inside space-y-1 text-gray-800">{content.items.map((it:string, i:number) => <li key={i} className="break-words">{it}</li>)}</ul>;
-        case 'number-list': return <ol style={commonStyle} className="list-decimal list-inside space-y-1 text-gray-800">{content.items.map((it:string, i:number) => <li key={i} className="break-words">{it}</li>)}</ol>;
+        case 'bullet-list': return <ul style={commonStyle} className="list-disc list-inside space-y-1 text-gray-800">{content.items.map((it: string, i: number) => <li key={i} className="break-words">{it}</li>)}</ul>;
+        case 'number-list': return <ol style={commonStyle} className="list-decimal list-inside space-y-1 text-gray-800">{content.items.map((it: string, i: number) => <li key={i} className="break-words">{it}</li>)}</ol>;
 
         // --- 8. 토글 목록 ---
         case 'toggle-list': return <ToggleItem title={content.title} items={content.items} style={commonStyle} />;
@@ -457,7 +411,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 </div>
             );
 
-// 🌟 5. 수식 (Math) - LaTeX
+        // 🌟 5. 수식 (Math) - LaTeX
         case 'math':
             // 수식이 비어있으면 안내 문구 표시
             if (!content.text) return <div className="text-gray-400 text-xs italic">(수식을 입력하세요)</div>;
@@ -481,7 +435,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'typing-text':
             return <TypingTextItem content={content} style={commonStyle} />;
 
-// 🌟 7. 스크롤 텍스트 (Scroll Text, Marquee)
+        // 🌟 7. 스크롤 텍스트 (Scroll Text, Marquee)
         case 'scroll-text':
             return (
                 <div className="w-full overflow-hidden bg-gray-100 rounded border border-gray-200 py-2 relative flex items-center">
@@ -614,7 +568,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         case 'pdf-viewer':
             return <PdfDropViewer block={block} {...otherProps} />
 
-                // BlockRenderer.tsx (switch 내부에 추가)
+        // BlockRenderer.tsx (switch 내부에 추가)
         case 'flashcards': {
             const title: string = content.title || 'Flashcards';
             const cards = (content.cards || []) as { id: string; front: string; back: string }[];

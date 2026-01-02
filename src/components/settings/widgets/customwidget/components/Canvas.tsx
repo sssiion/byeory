@@ -80,19 +80,18 @@ const Canvas: React.FC<Props> = (props) => {
     };
 
     return (
-        <main className="flex-1 bg-[#1F1F1F] relative flex flex-col items-center pt-16 p-8 overflow-auto gap-8">
+        <main className="flex-1 bg-[var(--bg-primary)] relative flex flex-col items-center pt-16 p-8 overflow-auto gap-8">
             {/* 상단 스토리지 게이지 */}
-            <div className="bg-[#2a2a2a] px-5 py-2.5 rounded-full flex items-center gap-4 shadow-xl border border-white/5 sticky top-0 z-30">
-                <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Storage</span>
-                <div className="w-40 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div className="bg-[var(--bg-card-secondary)] px-5 py-2.5 rounded-full flex items-center gap-4 shadow-xl border border-[var(--border-color)] sticky top-0 z-30">
+                <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Storage</span>
+                <div className="w-40 h-1.5 bg-[var(--bg-card)] rounded-full overflow-hidden">
                     <div
-                        className={`h-full transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) ${
-                            isFull ? 'bg-red-500' : 'bg-indigo-500'
-                        }`}
+                        className={`h-full transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) ${isFull ? 'bg-red-500' : 'bg-indigo-500'
+                            }`}
                         style={{ width: `${usagePercent}%` }}
                     />
                 </div>
-                <span className={`text-xs font-mono font-bold ${isFull ? 'text-red-400' : 'text-gray-300'}`}>
+                <span className={`text-xs font-mono font-bold ${isFull ? 'text-red-400' : 'text-[var(--text-secondary)]'}`}>
                     {usedCapacity} / {maxCapacity}
                 </span>
             </div>
@@ -100,7 +99,7 @@ const Canvas: React.FC<Props> = (props) => {
             {/* 메인 캔버스 영역 */}
             <div className="relative group/canvas">
                 <div
-                    className="bg-white rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-[#111]"
+                    className="bg-[var(--bg-card)] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
                     style={{ width: currentSize.w, height: currentSize.h, padding: '24px' }}
                     onClick={() => {
                         onSelectBlock(null);
@@ -116,7 +115,7 @@ const Canvas: React.FC<Props> = (props) => {
                     >
                         <div ref={setNodeRef} className="flex-1 flex flex-col gap-3 min-h-full">
                             {blocks.length === 0 ? (
-                                <div className="flex-1 flex flex-col items-center justify-center text-gray-300 border-2 border-dashed border-gray-100 rounded-[1.5rem] bg-gray-50/50 transition-colors group-hover/canvas:bg-gray-50">
+                                <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-color)] rounded-[1.5rem] bg-[var(--bg-card-secondary)]/50 transition-colors group-hover/canvas:bg-[var(--bg-card-secondary)]">
                                     <Smartphone size={40} className="mb-3 opacity-20" />
                                     <p className="text-sm font-semibold opacity-40">좌측에서 기능을 끌어오세요</p>
                                 </div>
@@ -153,9 +152,9 @@ const Canvas: React.FC<Props> = (props) => {
                 </div>
 
                 {/* 하단 사이즈 표시 바닥 정보 */}
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-bold text-gray-500 bg-[#2a2a2a] px-4 py-1.5 rounded-full border border-gray-700 opacity-0 group-hover/canvas:opacity-100 transition-opacity">
+                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--bg-card-secondary)] px-4 py-1.5 rounded-full border border-[var(--border-color)] opacity-0 group-hover/canvas:opacity-100 transition-opacity">
                     <span>WIDTH {currentSize.w}px</span>
-                    <span className="text-gray-700">|</span>
+                    <span className="text-[var(--text-secondary)]">|</span>
                     <span>HEIGHT {currentSize.h}px</span>
                 </div>
             </div>

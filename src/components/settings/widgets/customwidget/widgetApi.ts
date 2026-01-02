@@ -25,11 +25,52 @@ export const getMyWidgets = async () => {
                 size: 100
             }
         });
-
         return response.data.content || [];
     } catch (error) {
         console.error('위젯 로드 실패:', error);
         return [];
+    }
+};
+
+export const deleteWidget = async (id: string) => {
+    const token = getToken();
+    try {
+        await axios.delete(`${API_BASE_URL}/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-User-Id': TEMP_USER_ID,
+            }
+        });
+        return true;
+    } catch (error) {
+        console.error('위젯 삭제 실패:', error);
+        throw error;
+    }
+};
+
+export const updateWidget = async (id: string, block: any, name: string) => {
+    const token = getToken();
+    try {
+        const response = await axios.put(
+            `${API_BASE_URL}/${id}`,
+            {
+                name: name,
+                type: block.type,
+                content: block.content,
+                styles: block.styles,
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'X-User-Id': TEMP_USER_ID,
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('위젯 수정 실패:', error);
+        throw error;
     }
 };
 
