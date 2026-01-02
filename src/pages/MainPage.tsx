@@ -5,7 +5,7 @@ import MenuSettings, { useMenu } from '../components/settings/menu/MenuSettings'
 import { WIDGET_REGISTRY, type WidgetType, type WidgetInstance, type WidgetLayout } from '../components/settings/widgets/Registry';
 import { WidgetGallery } from '../components/settings/widgets/WidgetGallery';
 import { DraggableWidget } from '../components/settings/widgets/DraggableWidget';
-import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical, ArrowUp } from 'lucide-react';
+import { Plus, X, RefreshCw, LayoutGrid, AlignStartVertical, ArrowUp, FolderOpen } from 'lucide-react';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
@@ -13,6 +13,7 @@ import { clampWidget, resolveCollisions, compactLayout } from '../components/set
 import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer';
 import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder.tsx";
 import { WidgetInfoModal } from '../components/settings/widgets/WidgetInfoModal';
+import { PresetManager } from '../components/settings/widgets/PresetManager';
 import { useIsMobile } from '../hooks';
 
 // Default Grid Size
@@ -69,6 +70,7 @@ const MainPage: React.FC = () => {
     const [isArrangeConfirmOpen, setIsArrangeConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    const [isPresetManagerOpen, setIsPresetManagerOpen] = useState(false);
 
     // Track dragging state for dynamic buffer
     const [isDragging, setIsDragging] = useState(false);
@@ -604,6 +606,12 @@ const MainPage: React.FC = () => {
         }
     };
 
+    const handleLoadPreset = (newWidgets: WidgetInstance[], newGridSize: { cols: number; rows: number }) => {
+        setWidgets(newWidgets);
+        setGridSize(newGridSize);
+        setIsPresetManagerOpen(false);
+    };
+
 
     if (isBuilderOpen) {
         return (
@@ -684,6 +692,14 @@ const MainPage: React.FC = () => {
                                                 title="Auto Arrange"
                                             >
                                                 <AlignStartVertical size={18} />
+                                            </button>
+
+                                            <button
+                                                onClick={() => setIsPresetManagerOpen(true)}
+                                                className="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-lg text-sm font-bold bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--btn-bg)] hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                                title="Presets"
+                                            >
+                                                <FolderOpen size={18} />
                                             </button>
 
                                             <button
@@ -779,56 +795,72 @@ const MainPage: React.FC = () => {
                                     onClick={handleArrange}
                                     className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--btn-bg)] text-white hover:opacity-90 transition-colors"
                                 >
-                                    실행
+                                    예, 정렬합니다
                                 </button>
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Preset Manager Modal */}
+                {isPresetManagerOpen && (
+                    <PresetManager
+                        currentWidgets={widgets}
+                        currentGridSize={gridSize}
+                        onLoad={handleLoadPreset}
+                        onClose={() => setIsPresetManagerOpen(false)}
+                    />
                 )}
 
                 {/* Reset Confirm Modal */}
-                {isResetConfirmOpen && (
-                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                        <div className="bg-[var(--bg-card)] w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in duration-200">
-                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">레이아웃 초기화</h3>
-                            <p className="text-[var(--text-secondary)] mb-6">
-                                모든 위젯 설정이 초기화됩니다. 계속하시겠습니까?
-                            </p>
-                            <div className="flex gap-3 justify-end">
-                                <button
-                                    onClick={() => setIsResetConfirmOpen(false)}
-                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] hover:bg-gray-200 transition-colors"
-                                >
-                                    취소
-                                </button>
-                                <button
-                                    onClick={handleReset}
-                                    className="px-4 py-2 rounded-lg text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
-                                >
-                                    초기화
-                                </button>
+                {
+                    isResetConfirmOpen && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                            <div className="bg-[var(--bg-card)] w-full max-w-sm rounded-2xl shadow-2xl p-6 animate-in zoom-in duration-200">
+                                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">레이아웃 초기화</h3>
+                                <p className="text-[var(--text-secondary)] mb-6">
+                                    모든 위젯 설정이 초기화됩니다. 계속하시겠습니까?
+                                </p>
+                                <div className="flex gap-3 justify-end">
+                                    <button
+                                        onClick={() => setIsResetConfirmOpen(false)}
+                                        className="px-4 py-2 rounded-lg text-sm font-bold bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] hover:bg-gray-200 transition-colors"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        onClick={handleReset}
+                                        className="px-4 py-2 rounded-lg text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                                    >
+                                        초기화
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* Custom Widget Builder Modal */}
-                {isBuilderOpen && (
-                    <div className="fixed inset-0 z-50 bg-[#1F1F1F] animate-in slide-in-from-bottom-5 duration-300">
-                        <WidgetBuilder
-                            onExit={() => setIsBuilderOpen(false)}
-                        />
-                    </div>
-                )}
+                {
+                    isBuilderOpen && (
+                        <div className="fixed inset-0 z-50 bg-[#1F1F1F] animate-in slide-in-from-bottom-5 duration-300">
+                            <WidgetBuilder
+                                onExit={() => setIsBuilderOpen(false)}
+                            />
+                        </div>
+                    )
+                }
 
                 {/* Widget Info/Help Modal */}
-                {infoWidget && (
-                    <WidgetInfoModal
-                        widget={infoWidget}
-                        onClose={() => setInfoWidget(null)}
-                        showAction={false}
-                    />
-                )}
+                {
+                    infoWidget && (
+                        <WidgetInfoModal
+                            widget={infoWidget}
+                            onClose={() => setInfoWidget(null)}
+                            showAction={false}
+                        />
+                    )
+                }
 
                 {/* Scroll To Top Button */}
                 <button
@@ -838,7 +870,7 @@ const MainPage: React.FC = () => {
                 >
                     <ArrowUp size={24} />
                 </button>
-            </div>
+            </div >
         </DndProvider >
     );
 };
