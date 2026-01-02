@@ -99,7 +99,8 @@ const Canvas: React.FC<Props> = (props) => {
             {/* 메인 캔버스 영역 */}
             <div className="relative group/canvas">
                 <div
-                    className="bg-[var(--bg-card)] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
+                    id="canvas-boundary"
+                    className=" bg-[var(--bg-card)] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
                     style={{ width: currentSize.w, height: currentSize.h, padding: '24px' }}
                     onClick={() => {
                         onSelectBlock(null);
@@ -117,7 +118,7 @@ const Canvas: React.FC<Props> = (props) => {
                             {blocks.length === 0 ? (
                                 <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-color)] rounded-[1.5rem] bg-[var(--bg-card-secondary)]/50 transition-colors group-hover/canvas:bg-[var(--bg-card-secondary)]">
                                     <Smartphone size={40} className="mb-3 opacity-20" />
-                                    <p className="text-sm font-semibold opacity-40">좌측에서 기능을 끌어오세요</p>
+                                    <p className="text-sm font-semibold opacity-40">좌측에서 기능을 클릭하세요.</p>
                                 </div>
                             ) : (
                                 <SortableContext

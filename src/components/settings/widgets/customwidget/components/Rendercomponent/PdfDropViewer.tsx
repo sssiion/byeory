@@ -51,6 +51,7 @@ export default function PdfDropViewer({ height = '100%' }: Props) {
                 overflow: 'hidden',
                 background: '#fff',
             }}
+            className="w-full h-full"
         >
             {/* react-pdf-viewer는 pdf.js worker를 지정하는 패턴을 사용합니다. [page:0] */}
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">

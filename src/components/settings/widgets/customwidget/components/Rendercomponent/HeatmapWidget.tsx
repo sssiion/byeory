@@ -100,7 +100,7 @@ const HeatmapWidget: React.FC<HeatmapProps> = ({ viewMode, themeColor }) => {
     });
 
     return (
-        <div className="flex flex-col gap-2 w-full h-full overflow-hidden">
+        <div className="h-full w-full flex flex-col gap-2 w-full h-full overflow-hidden">
             <div className="flex items-end gap-1 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-200">
                 {weeks.map((week, wIdx) => (
                     <div key={wIdx} className="flex flex-col gap-1">
