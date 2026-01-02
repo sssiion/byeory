@@ -20,6 +20,7 @@ interface DraggableWidgetProps {
     isSelected?: boolean;
     onSelect?: () => void;
     onShowInfo?: () => void;
+    onUpdateWidget?: (id: string, updates: any) => void; // ✨ New Prop
 }
 
 const ItemTypes = {
@@ -38,7 +39,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     isMobile = false,
     isSelected = false,
     onSelect,
-    onShowInfo
+    onShowInfo,
+    onUpdateWidget
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
@@ -102,40 +104,15 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         drag(drop(ref));
     }
 
-
-
-
     const { x, y, w, h } = widget.layout;
     const isTransparent = widget.type === 'transparent';
-
 
     // 🌟 [핵심 수정] 위젯 렌더링 로직 분기
     let WidgetComponent: any = null;
     let registryItem: any = WIDGET_REGISTRY[widget.type];
-    if (!registryItem) return null;
 
     // 1. 커스텀 블록 (저장된 위젯)인 경우
     if (widget.type === 'custom-block' || !registryItem) {
-        // registryItem이 없으면 커스텀으로 간주 (또는 에러 방지)
-        WidgetComponent = (props: any) => {
-            // props.block이 있으면 그걸 쓰고, 없으면 widget.props를 block 형태로 변환
-            const blockData = props.block || {
-                id: widget.id,
-                type: (widget.props as any).type || widget.type, // 원래 타입 보존
-                content: (widget.props as any).content || {},
-                styles: (widget.props as any).styles || {}
-            };
-            // Provide dummy props for BlockRenderer as it expects editor props
-            return <BlockRenderer
-                block={blockData}
-                selectedBlockId={null}
-                onSelectBlock={() => { }}
-                onRemoveBlock={() => { }}
-                activeContainer={null as any}
-                onSetActiveContainer={() => { }}
-                onUpdateBlock={() => { }}
-            />;
-        };
         // 가짜 registryItem 생성 (에러 방지용)
         registryItem = { category: 'My Saved', validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] };
     }
@@ -151,10 +128,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         opacity: isDragging ? 0 : 1,
         zIndex: isDragging ? 50 : (showSizeMenu ? 60 : 1),
     };
-
-    // Mobile Override: We now rely on explicit 2-column layout passed from MainPage,
-    // so we don't need to force 'span' styles here anymore. 
-    // We only keep the zIndex and specific interaction styles.
 
     return (
         <motion.div
@@ -189,14 +162,34 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         >
             {/* Widget Content */}
             <div className={`w-full h-full transition-transform overflow-hidden rounded-2xl ${isEditMode ? 'pointer-events-none' : ''}`}>
-                <WidgetComponent
-                    {...(widget.props || {})}
-                    gridSize={{ w, h }}
-                    updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
-                    widgetId={widget.id}
-                    // ✨ In case specific widgets need to trigger it explicitly (e.g., drag internal items)
-                    onInteraction={triggerWidgetInteraction}
-                />
+                {(widget.type === 'custom-block' || !WIDGET_REGISTRY[widget.type]) ? (
+                    <BlockRenderer
+                        block={{
+                            id: widget.id,
+                            type: (widget.props as any).type || widget.type,
+                            content: (widget.props as any).content || {},
+                            styles: (widget.props as any).styles || {}
+                        }}
+                        selectedBlockId={null}
+                        onSelectBlock={() => { }}
+                        onRemoveBlock={() => { }}
+                        activeContainer={null as any}
+                        onSetActiveContainer={() => { }}
+                        onUpdateBlock={(id, updates) => {
+                            if (onUpdateWidget) {
+                                onUpdateWidget(widget.id, updates);
+                            }
+                        }}
+                    />
+                ) : (
+                    <WidgetComponent
+                        {...(widget.props || {})}
+                        gridSize={{ w, h }}
+                        updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
+                        widgetId={widget.id}
+                        onInteraction={triggerWidgetInteraction}
+                    />
+                )}
             </div>
 
             {/* Edit Overlay */}

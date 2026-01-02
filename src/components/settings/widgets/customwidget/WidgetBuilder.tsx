@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings2 } from 'lucide-react';
 import type { WidgetBlock, BlockType, ContainerLocation } from './types';
 import { WIDGET_SIZES, BLOCK_COSTS } from './constants';
@@ -14,9 +14,10 @@ import { saveWidget, updateWidget } from "./widgetApi.ts";
 interface Props {
     onExit: () => void;
     initialData?: any; // 🌟 수정 시 데이터 주입
+    onSave?: (savedData: any) => void; // 🌟 저장 완료 콜백 추가
 }
 
-const WidgetBuilder: React.FC<Props> = ({ onExit, initialData }) => {
+const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
     const [currentSizeKey, setCurrentSizeKey] = useState<keyof typeof WIDGET_SIZES>('2x2');
 
     // 🌟 초기 데이터가 있으면 blocks에 로드
@@ -26,18 +27,26 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData }) => {
     // 🌟 initialData가 변경되면 상태 동기화 (Edit 모드 버그 수정)
     useEffect(() => {
         if (initialData) {
-            const loadedBlock: WidgetBlock = {
-                id: initialData.id || initialData._id || `blk-${Date.now()}`,
-                type: initialData.type,
-                content: initialData.content || {},
-                styles: initialData.styles || {}
-            };
-            setBlocks([loadedBlock]);
-            setSelectedBlockId(loadedBlock.id);
+            // 🌟 Composite Widget(다중 블록) 로드 확인
+            if (initialData.type === 'custom-block' && initialData.content?.children) {
+                setBlocks(initialData.content.children);
+                // 첫 번째 블록 선택 (없으면 null)
+                if (initialData.content.children.length > 0) {
+                    setSelectedBlockId(initialData.content.children[0].id);
+                }
+            } else {
+                // 단일 블록 로드
+                const loadedBlock: WidgetBlock = {
+                    id: initialData.id || initialData._id || `blk-${Date.now()}`,
+                    type: initialData.type,
+                    content: initialData.content || {},
+                    styles: initialData.styles || {}
+                };
+                setBlocks([loadedBlock]);
+                setSelectedBlockId(loadedBlock.id);
+            }
         } else {
-            // 초기 데이터가 없으면 초기화 (선택적)
-            // setBlocks([]);
-            // setSelectedBlockId(null);
+            // 초기 상태 (빈 캔버스)
         }
     }, [initialData]);
 
@@ -213,27 +222,49 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData }) => {
     };
 
     // 🌟 저장 로직 핸들러
+    // 🌟 저장 로직 핸들러
+    // 🌟 저장 로직 핸들러
     const handleSaveToCloud = async () => {
-        if (!selectedBlock) return;
+        if (blocks.length === 0) return;
 
-        const defaultName = initialData?.name || getLabelByType(selectedBlock.type);
+        // 🌟 다중 블록이면 'custom-block'으로 랩핑하여 저장
+        let blockToSave: WidgetBlock;
+
+        // 🌟 수정된 로직: 블록이 1개면 그대로 저장
+        // 🌟 항상 'custom-block'으로 통일하여 저장 (데이터 일관성 유지)
+        blockToSave = {
+            id: `group-${Date.now()}`,
+            type: 'custom-block',
+            content: { children: blocks },
+            styles: {},
+        };
+
+        const defaultName = initialData?.name || (blocks.length > 1 ? 'Composite Widget' : getLabelByType(blockToSave.type));
         const name = prompt("이 위젯을 저장할 이름을 입력하세요:", defaultName);
         if (!name) return;
 
         try {
             // DB ID 호환성 처리 (_id vs id)
             const targetId = initialData?.id || initialData?._id;
+            let result;
 
             if (targetId) {
                 // 수정
-                await updateWidget(targetId, selectedBlock, name);
+                result = await updateWidget(targetId, blockToSave, name);
                 alert(`'${name}' 위젯이 업데이트되었습니다! ☁️`);
             } else {
                 // 신규 저장
-                await saveWidget(selectedBlock, name);
+                result = await saveWidget(blockToSave, name);
                 alert(`'${name}' 위젯이 서버에 저장되었습니다! ☁️`);
             }
+
+            // 🌟 저장 후 부모에게 알림 (데이터 갱신용)
+            if (onSave && result) {
+                onSave(result);
+            }
+
         } catch (e) {
+            console.error(e);
             alert('저장에 실패했습니다.');
         }
     };

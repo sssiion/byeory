@@ -525,6 +525,10 @@ const MainPage: React.FC = () => {
 
     // ...
 
+
+
+
+
     const gridCells = [];
     const currentCols = isMobile ? 2 : gridSize.cols;
     for (let y = 1; y <= finalRows; y++) {
@@ -544,13 +548,10 @@ const MainPage: React.FC = () => {
 
     // Pass selection props to DraggableWidget via render logic?
     // Wait, GridCell renders empty cells. DraggableWidget is rendered where?
-    // Ah, I missed where DraggableWidget is rendered. It must be rendered absolutely or inside the grid?
-    // Checking previous file view... I don't see DraggableWidget loop in MainPage.
-    // It must be rendered *on top* of the gridCells loop or I missed it.
+    // Ah, I missed where DraggableWidget is rendered. It must be rendered *on top* of the gridCells loop or I missed it.
     // Let me check lines 350+ of MainPage again.
     // Ah, GridCell is just the droppable background.
     // The actual widgets must be rendered separately.
-
 
     // Controls Scroll Logic
     const controlsRef = React.useRef<HTMLDivElement>(null);
@@ -566,15 +567,27 @@ const MainPage: React.FC = () => {
 
         el.addEventListener('scroll', checkScroll);
         window.addEventListener('resize', checkScroll);
-        // Initial check
         checkScroll();
 
         return () => {
             el.removeEventListener('scroll', checkScroll);
             window.removeEventListener('resize', checkScroll);
         };
-    }, [isWidgetEditMode, isMenuEditMode, isMobile]); // Re-check on mode change
-
+    }, [isWidgetEditMode, isMenuEditMode, isMobile]);
+    const handleUpdateWidgetData = useCallback((id: string, updates: any) => {
+        setWidgets(prev => prev.map(w => {
+            if (w.id === id) {
+                const newProps = { ...w.props };
+                if (updates.content) newProps.content = { ...(newProps.content || {}), ...updates.content };
+                if (updates.styles) newProps.styles = { ...(newProps.styles || {}), ...updates.styles };
+                Object.keys(updates).forEach(key => {
+                    if (key !== 'content' && key !== 'styles') newProps[key] = updates[key];
+                });
+                return { ...w, props: newProps };
+            }
+            return w;
+        }));
+    }, []);
 
     // Handle Help Button
     const handleShowHelp = (widget: WidgetInstance) => {
@@ -601,7 +614,6 @@ const MainPage: React.FC = () => {
                 };
             }
         }
-
         if (info) {
             setInfoWidget(info);
         }
@@ -617,7 +629,14 @@ const MainPage: React.FC = () => {
     if (isBuilderOpen) {
         return (
             <WidgetBuilder
-                onExit={() => setIsBuilderOpen(false)}
+                initialData={editingWidgetData}
+                onExit={() => {
+                    setIsBuilderOpen(false);
+                    setEditingWidgetData(null);
+                }}
+                onSave={(savedData) => {
+                    setEditingWidgetData(savedData);
+                }}
             />
         );
     }
@@ -752,6 +771,7 @@ const MainPage: React.FC = () => {
                                         isSelected={selectedWidgetId === widget.id}
                                         onSelect={() => setSelectedWidgetId(prev => prev === widget.id ? null : widget.id)}
                                         onShowInfo={() => handleShowHelp(widget)}
+                                        onUpdateWidget={handleUpdateWidgetData}
                                     />
                                 ))}
                             </div>
@@ -858,6 +878,9 @@ const MainPage: React.FC = () => {
                                     setEditingWidgetData(null);
                                 }}
                                 initialData={editingWidgetData}
+                                onSave={(savedData) => {
+                                    setEditingWidgetData(savedData);
+                                }}
                             />
                         </div>
                     )
