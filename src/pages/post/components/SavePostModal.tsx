@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Save } from 'lucide-react';
 import SaveLocationWidget from './SaveLocationWidget';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { PostData } from '../types';
 
 interface Props {
     isOpen: boolean;
@@ -15,12 +16,15 @@ interface Props {
     selectedAlbumIds: string[];
     onAlbumIdsChange: (ids: string[]) => void;
     onCreateAlbum: (name: string, tags: string[]) => string | null;
+    onDeleteAlbum: (id: string) => void; // ✨ New
+    posts: PostData[]; // ✨ New
 }
 
 const SavePostModal: React.FC<Props> = ({
     isOpen, onClose, onConfirm,
     currentTags, onTagsChange, customAlbums, isSaving,
-    selectedAlbumIds, onAlbumIdsChange, onCreateAlbum
+    selectedAlbumIds, onAlbumIdsChange, onCreateAlbum,
+    onDeleteAlbum, posts
 }) => {
     if (!isOpen) return null;
 
@@ -53,6 +57,8 @@ const SavePostModal: React.FC<Props> = ({
                             selectedAlbumIds={selectedAlbumIds}
                             onAlbumIdsChange={onAlbumIdsChange}
                             onCreateAlbum={onCreateAlbum}
+                            onDeleteAlbum={onDeleteAlbum}
+                            posts={posts}
                         />
                     </div>
 

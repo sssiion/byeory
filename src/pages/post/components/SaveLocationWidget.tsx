@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Check, Hash, FolderOpen, Sparkles } from 'lucide-react';
+import { Check, Hash, FolderOpen, Sparkles, Trash2 } from 'lucide-react';
+import type { PostData } from '../types';
 
 interface CustomAlbum {
     id: string;
     name: string;
     tag: string | null;
+    parentId?: string | null;
 }
 
 interface Props {
@@ -14,9 +16,11 @@ interface Props {
     onAlbumIdsChange: (ids: string[]) => void;
     customAlbums: CustomAlbum[];
     onCreateAlbum: (name: string, tags: string[]) => string | null;
+    onDeleteAlbum: (id: string) => void; // ✨ New
+    posts: PostData[]; // ✨ New for stats
 }
 
-const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [], onTagsChange, onAlbumIdsChange, customAlbums, onCreateAlbum }) => {
+const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [], onTagsChange, onAlbumIdsChange, customAlbums, onCreateAlbum, onDeleteAlbum, posts }) => {
     const [inputValue, setInputValue] = useState("");
 
     // ✨ Filter albums based on search input
@@ -137,16 +141,30 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                 ) : (
                     filteredAlbums.map((album) => {
                         const isSelected = selectedAlbumIds.includes(album.id);
+
+                        // ✨ Calculate Stats
+                        // Count posts in this album (ID match or Tag match)
+                        const recordCount = posts.filter(p => {
+                            if (p.albumIds && p.albumIds.includes(album.id)) return true;
+                            if ((!p.albumIds || p.albumIds.length === 0) && p.tags && album.tag && p.tags.includes(album.tag)) return true;
+                            return false;
+                        }).length;
+
+                        // Count direct sub-folders
+                        const folderCount = customAlbums.filter(a => a.parentId === album.id).length;
+
                         return (
                             <div
                                 key={album.id}
-                                onClick={() => toggleAlbum(album.id)}
-                                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected
+                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isSelected
                                     ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-500/20'
                                     : 'bg-white border-gray-100 hover:bg-gray-50'
                                     }`}
                             >
-                                <div className="flex items-center gap-3">
+                                <div
+                                    className="flex items-center gap-3 flex-1 cursor-pointer"
+                                    onClick={() => toggleAlbum(album.id)}
+                                >
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
                                         <FolderOpen size={16} />
                                     </div>
@@ -154,16 +172,40 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                                         <span className={`text-sm font-bold ${isSelected ? 'text-indigo-900' : 'text-gray-700'}`}>
                                             {album.name}
                                         </span>
-                                        <span className="text-xs text-gray-400">
-                                            #{album.tag || '태그없음'}
+                                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                                            <span>#{album.tag || '태그없음'}</span>
+                                            <span>·</span>
+                                            <span>폴더 {folderCount}</span>
+                                            <span>·</span>
+                                            <span>기록 {recordCount}</span>
                                         </span>
                                     </div>
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected
-                                    ? 'bg-indigo-500 border-indigo-500'
-                                    : 'bg-white border-gray-300'
-                                    }`}>
-                                    {isSelected && <Check size={12} className="text-white" />}
+
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        onClick={() => toggleAlbum(album.id)}
+                                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${isSelected
+                                            ? 'bg-indigo-500 border-indigo-500'
+                                            : 'bg-white border-gray-300'
+                                            }`}
+                                    >
+                                        {isSelected && <Check size={12} className="text-white" />}
+                                    </div>
+
+                                    {/* ✨ Delete Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`'${album.name}' 앨범을 삭제하시겠습니까?\n\n⚠️ 주의: 앨범에 포함된 모든 하위 폴더와 기록이 영구적으로 삭제됩니다.`)) {
+                                                onDeleteAlbum(album.id);
+                                            }
+                                        }}
+                                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="앨범 삭제"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
                                 </div>
                             </div>
                         );

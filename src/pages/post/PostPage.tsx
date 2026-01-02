@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import { usePostEditor } from './hooks/usePostEditor';
-import PostListPage from './pages/PostListPage';
+
 import PostViewPage from './pages/PostViewPage';
 import PostEditorPage from './pages/PostEditorPage';
 import PostCreatePage from './pages/PostCreatePage';
@@ -42,6 +42,9 @@ const Post: React.FC = () => {
             return !hasMatchingTag;
         })
         : editor.posts.filter(p => {
+            // ✨ All Records view: Show ALL posts
+            if (editor.selectedAlbumId === '__all__') return true;
+
             // Priority: ID match
             if (p.albumIds?.includes(editor.selectedAlbumId!)) return true;
             // Fallback: Legacy Tag match (only if no IDs present on post)
@@ -72,6 +75,7 @@ const Post: React.FC = () => {
                         setSortOption={editor.setSortOption}
                         onPostClick={editor.handlePostClick} // ✨ Added
                         onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
+                        handleToggleAlbumFavorite={editor.handleToggleAlbumFavorite} // ✨ Added
                     />
                 )}
 
@@ -79,7 +83,6 @@ const Post: React.FC = () => {
                 {editor.viewMode === 'folder' && (
                     <PostFolderPage
                         albumId={editor.selectedAlbumId}
-                        albumName={editor.selectedAlbumId === '__others__' ? '미분류 보관함' : (editor.selectedAlbumId ? (editor.customAlbums.find(a => a.id === editor.selectedAlbumId)?.name || 'Unknown') : null)}
                         posts={filteredPosts}
                         allPosts={editor.posts}
                         onBack={() => editor.setViewMode('album')}

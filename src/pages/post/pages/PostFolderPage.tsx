@@ -2,13 +2,11 @@
 import React, { useState } from 'react';
 import CreateFolderModal from '../components/CreateFolderModal';
 import type { PostData } from '../types';
-import { ArrowLeft, Home, Folder, PenLine, Trash2, MoreVertical } from 'lucide-react';
-import PostBreadcrumb from '../components/PostBreadcrumb';
+import { ArrowLeft, Home, Folder, PenLine, Trash2 } from 'lucide-react';
+import PostBreadcrumb, { type BreadcrumbItem } from '../components/PostBreadcrumb';
 
 interface Props {
-    albumName: string | null;
     albumId: string | null;
-    albumName?: string | null; // ✨ Added usage due to PostPage change
     posts: PostData[];
     allPosts: PostData[]; // ✨ Needed for sub-album stats
     onBack: () => void;
@@ -18,12 +16,12 @@ interface Props {
     // ✨ New Prop for looking up sub-albums
     customAlbums: any[];
     onAlbumClick: (id: string | null) => void;
-    onDeletePost: (id: string) => void;
+    onDeletePost: (id: number | string) => void;
     onDeleteAlbum: (id: string) => void;
     onToggleFavorite: (id: number) => void; // ✨ New Prop
 }
 
-const PostFolderPage: React.FC<Props> = ({ albumId, albumName, posts, allPosts, onBack, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite }) => {
+const PostFolderPage: React.FC<Props> = ({ albumId, posts, allPosts, onBack, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
 
     // ✨ Generic Helper to get parent chain
@@ -41,22 +39,30 @@ const PostFolderPage: React.FC<Props> = ({ albumId, albumName, posts, allPosts, 
     };
 
     // ✨ Build Breadcrumb Items
-    const breadcrumbItems = [
+    const breadcrumbItems: BreadcrumbItem[] = [
         { label: '내 앨범', icon: Home, onClick: onBack }, // Base (clicks back to root)
     ];
 
     if (albumId === '__others__') {
-        breadcrumbItems.push({ label: '미분류 보관함', icon: Folder, onClick: undefined });
+        breadcrumbItems.push({ label: '미분류 보관함', icon: Folder });
+    } else if (albumId === '__all__') {
+        breadcrumbItems.push({ label: '모든 기록 보관함', icon: Folder });
     } else {
-        breadcrumbItems.push(...getParentChain(albumId, customAlbums).map((album, index, array) => ({
-            label: album.name,
-            icon: Folder,
-            onClick: index === array.length - 1 ? undefined : () => onAlbumClick(album.id)
-        })));
+        breadcrumbItems.push(...getParentChain(albumId, customAlbums).map((album, index, array) => {
+            const isLast = index === array.length - 1;
+            return {
+                label: album.name,
+                icon: Folder,
+                onClick: isLast ? undefined : () => onAlbumClick(album.id)
+            };
+        }));
     }
 
     // ✨ Filter sub-folders
-    const subAlbums = customAlbums.filter(a => a.parentId === albumId);
+    // If __all__, show All Root Albums (those without parents)
+    const subAlbums = albumId === '__all__'
+        ? customAlbums.filter(a => !a.parentId)
+        : customAlbums.filter(a => a.parentId === albumId);
 
     // ✨ Calculate stats for sub-albums (Preview)
     const getSubAlbumStats = (subAlbumId: string) => {
@@ -94,20 +100,24 @@ const PostFolderPage: React.FC<Props> = ({ albumId, albumName, posts, allPosts, 
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setIsCreateFolderOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
-                    >
-                        <Folder size={16} />
-                        폴더 추가
-                    </button>
-                    <button
-                        onClick={() => onStartWriting(albumId || undefined)}
-                        className="flex items-center gap-2 px-5 h-9 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"
-                    >
-                        <PenLine size={18} />
-                        기록 남기기
-                    </button>
+                    {albumId !== '__all__' && (
+                        <>
+                            <button
+                                onClick={() => setIsCreateFolderOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                            >
+                                <Folder size={16} />
+                                폴더 추가
+                            </button>
+                            <button
+                                onClick={() => onStartWriting(albumId || undefined)}
+                                className="flex items-center gap-2 px-5 h-9 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"
+                            >
+                                <PenLine size={18} />
+                                기록 남기기
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 

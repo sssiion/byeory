@@ -41,10 +41,16 @@ const AlbumBook: React.FC<Props> = ({ config, title, tag, count, onClick, classN
             };
         }
         if (isPattern) {
+            const baseSize = activeConfig.backgroundSize || '20px 20px';
+            const scale = (activeConfig.patternScale || 100) / 100;
+            const [w, h] = baseSize.split(' ').map(s => parseFloat(s));
+            const calculatedSize = w && h ? `${w * scale}px ${h * scale}px` : baseSize;
+
             return {
                 backgroundImage: activeConfig.value,
-                backgroundColor: activeConfig.backgroundColor || activeConfig.spineColor || '#ffffff', // ✨ Fix priority
-                backgroundSize: activeConfig.backgroundSize || '20px 20px'
+                backgroundColor: activeConfig.backgroundColor || activeConfig.spineColor || '#ffffff',
+                backgroundSize: calculatedSize,
+                backgroundPosition: `${activeConfig.patternPositionX || 0}% ${activeConfig.patternPositionY || 0}%`
             };
         }
         return { backgroundColor: activeConfig.value };

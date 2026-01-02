@@ -46,7 +46,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
     const handleDelete = async () => {
         if (!editor.currentPostId) return;
         if (confirm('정말 이 기록을 삭제하시겠습니까?')) {
-            await editor.deletePost(editor.currentPostId);
+            await editor.handleDeletePost(editor.currentPostId);
         }
     };
 
@@ -97,7 +97,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
             <EditorCanvas
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
-                viewMode={'read'} setViewMode={editor.setViewMode as any}
+                viewMode={'read'}
                 blocks={editor.blocks} setBlocks={editor.setBlocks}
                 stickers={editor.stickers} floatingTexts={editor.floatingTexts}
                 floatingImages={editor.floatingImages}

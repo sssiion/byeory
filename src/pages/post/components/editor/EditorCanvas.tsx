@@ -19,7 +19,6 @@ interface Props {
     selectedId: string | null;
     selectedType?: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null;
 
-    setViewMode: (m: 'editor') => void;
     setBlocks: React.Dispatch<React.SetStateAction<Block[]>>;
     onSelect: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title') => void;
     onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
@@ -30,7 +29,7 @@ interface Props {
 
 const EditorCanvas: React.FC<Props> = ({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
-    setViewMode, setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
+    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
 }) => {
 
     // 드래그가 끝났을 때 순서를 바꾸는 함수

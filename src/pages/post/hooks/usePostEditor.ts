@@ -16,6 +16,7 @@ export const usePostEditor = () => {
         tag: string | null;
         createdAt?: number;
         parentId?: string | null; // ✨ Nested Folder Support
+        isFavorite?: boolean; // ✨ Album Favorite
     }
 
     const [viewMode, setViewMode] = useState<ViewMode>('album');
@@ -47,7 +48,7 @@ export const usePostEditor = () => {
     const [currentTags, setCurrentTags] = useState<string[]>([]); // ✨ 현재 작성 중인 포스트의 태그들
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
     // ✨ Sort Option Persistence
-    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest'>(() => {
+    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>(() => {
         return (localStorage.getItem('post_sort_option') as any) || 'name';
     });
 
@@ -70,7 +71,8 @@ export const usePostEditor = () => {
                 // ✨ Migration: Assign IDs if missing
                 const migrated = validAlbums.map((a: any) => ({
                     ...a,
-                    id: a.id || `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                    id: a.id || `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    isFavorite: a.isFavorite || false
                 }));
 
                 if (JSON.stringify(migrated) !== JSON.stringify(validAlbums)) {
@@ -90,7 +92,8 @@ export const usePostEditor = () => {
                         id: `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                         name,
                         tag: null,
-                        createdAt: Date.now()
+                        createdAt: Date.now(),
+                        isFavorite: false
                     })); // 마이그레이션 시 현재 시간 부여
                     setCustomAlbums(migrated as CustomAlbum[]);
                     localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
@@ -113,7 +116,8 @@ export const usePostEditor = () => {
             name,
             tag,
             createdAt: Date.now(),
-            parentId: parentId || null // ✨ Set parentId
+            parentId: parentId || null, // ✨ Set parentId
+            isFavorite: false
         };
         const newAlbums = [...customAlbums, newAlbum];
         setCustomAlbums(newAlbums);
@@ -125,6 +129,15 @@ export const usePostEditor = () => {
     const handleRenameAlbum = (id: string, newName: string) => {
         const next = customAlbums.map(a =>
             a.id === id ? { ...a, name: newName } : a
+        );
+        setCustomAlbums(next);
+        localStorage.setItem('my_custom_albums_v2', JSON.stringify(next));
+    };
+
+    // ✨ Toggle Album Favorite
+    const handleToggleAlbumFavorite = (id: string) => {
+        const next = customAlbums.map(a =>
+            a.id === id ? { ...a, isFavorite: !a.isFavorite } : a
         );
         setCustomAlbums(next);
         localStorage.setItem('my_custom_albums_v2', JSON.stringify(next));
@@ -204,7 +217,7 @@ export const usePostEditor = () => {
     };
 
     // ✨ Delete Post Handler (Single)
-    const handleDeletePost = async (id: string) => {
+    const handleDeletePost = async (id: string | number) => {
         if (!confirm('정말 삭제하시겠습니까?')) return;
 
         // 1. Optimistic Update
@@ -350,7 +363,9 @@ export const usePostEditor = () => {
         // targetAlbumIds에 있는 것은 이미 존재하는 앨범.
         // currentTags에 있지만 targetAlbumIds와 매핑되지 않는 것은 "새 앨범"으로 간주하거나, 단순 태그.
 
-        const finalAlbumIds = [...targetAlbumIds];
+        // ✨ DEFENSIVE: Ensure primitives for Metadata to avoid Circular JSON
+        const safeTags = Array.isArray(currentTags) ? currentTags.filter(t => typeof t === 'string') : [];
+        const safeAlbumIds = Array.isArray(targetAlbumIds) ? targetAlbumIds.filter(id => typeof id === 'string') : [];
 
         // 메타데이터 블록 생성 (제목 스타일, 태그, 앨범 ID 저장용)
         // ✨ Safe Metadata Generation: Construct a fresh object to avoid circular references
@@ -362,7 +377,7 @@ export const usePostEditor = () => {
             textAlign: titleStyles.textAlign || 'left'
         };
 
-        const metadata = { titleStyles: safeTitleStyles, tags: currentTags, albumIds: finalAlbumIds };
+        const metadata = { titleStyles: safeTitleStyles, tags: safeTags, albumIds: safeAlbumIds };
 
         let metadataString = "{}";
         try {
@@ -391,8 +406,8 @@ export const usePostEditor = () => {
             floatingTexts,   // 있는 그대로 저장
             floatingImages,   // 있는 그대로 저장
             titleStyles,     // 백엔드 지원 시 사용
-            tags: currentTags, // ✨ 태그 저장
-            albumIds: finalAlbumIds // ✨ 앨범 ID 저장
+            tags: safeTags, // ✨ 태그 저장
+            albumIds: safeAlbumIds // ✨ 앨범 ID 저장
         };
 
         setIsSaving(true);
@@ -579,6 +594,7 @@ export const usePostEditor = () => {
         currentTags, setTags: setCurrentTags, // ✨ 태그 상태 노출
         targetAlbumIds, setTargetAlbumIds, // ✨ 앨범 ID 선택 상태 노출
         sortOption, setSortOption, handleDeletePost, // ✨ 정렬 및 삭제 핸들러 노출
-        handleToggleFavorite // ✨ 즐겨찾기 핸들러 노출
+        handleToggleFavorite, // ✨ 즐겨찾기 핸들러 노출
+        handleToggleAlbumFavorite // ✨ 앨범 즐겨찾기 핸들러 추가
     };
 };
