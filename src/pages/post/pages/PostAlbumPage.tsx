@@ -22,7 +22,7 @@ interface Props {
     handleToggleAlbumFavorite: (id: string) => void; // ✨ New
 }
 
-const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption, onPostClick, onToggleFavorite, handleToggleAlbumFavorite }) => {
+const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite }) => {
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -316,9 +316,9 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             />
             {editingCoverId && (
                 <CoverCustomizer
-                    albumTitle={editingCoverId === '__all__' ? '모든 기록 보관함' : (editingCoverId === '__others__' ? '미분류 보관함' : customAlbums.find(a => a.id === editingCoverId)?.name || '')}
-                    albumTag={editingCoverId === '__all__' || editingCoverId === '__others__' ? undefined : (customAlbums.find(a => a.id === editingCoverId)?.tag || undefined)}
-                    initialConfig={editingCoverId === '__all__' ? (coverConfigs['__all__'] || undefined) : (editingCoverId === '__others__' ? (coverConfigs['__others__'] || undefined) : (coverConfigs[getCoverKey(customAlbums.find(a => a.id === editingCoverId))] || undefined))}
+                    albumTitle={editingCoverId === '__all__' ? '모든 기록 보관함' : (customAlbums.find(a => a.id === editingCoverId)?.name || '')}
+                    albumTag={editingCoverId === '__all__' ? undefined : (customAlbums.find(a => a.id === editingCoverId)?.tag || undefined)}
+                    initialConfig={editingCoverId === '__all__' ? (coverConfigs['__all__'] || undefined) : (coverConfigs[getCoverKey(customAlbums.find(a => a.id === editingCoverId))] || undefined)}
                     onSave={handleSaveCover}
                     onClose={() => setEditingCoverId(null)}
                 />

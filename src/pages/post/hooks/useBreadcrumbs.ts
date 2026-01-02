@@ -1,0 +1,61 @@
+import { useMemo } from 'react';
+import { Home, Folder, Book } from 'lucide-react';
+import type { BreadcrumbItem } from '../components/PostBreadcrumb';
+
+interface CustomAlbum {
+    id: string;
+    name: string;
+    parentId?: string | null;
+}
+
+export const useBreadcrumbs = (
+    currentId: string | null,
+    customAlbums: CustomAlbum[],
+    onNavigate: (id: string | null) => void,
+    baseLabel: string = '내 앨범'
+) => {
+    return useMemo(() => {
+        const items: BreadcrumbItem[] = [
+            { label: baseLabel, icon: Home, onClick: () => onNavigate(null) }
+        ];
+
+        // ✨ Nest __others__ under __all__
+        if (currentId === '__others__') {
+            items.push({ label: '모든 기록 보관함', icon: Folder, onClick: () => onNavigate('__all__') });
+            items.push({ label: '미분류', icon: Folder }); // Last item, no onClick
+            return items;
+        }
+
+        if (currentId === '__all__') {
+            items.push({ label: '모든 기록 보관함', icon: Folder });
+            return items;
+        }
+
+        if (!currentId) return items;
+
+        const chain: CustomAlbum[] = [];
+        let curr = customAlbums.find(a => a.id === currentId);
+
+        // Prevent infinite loops
+        let depth = 0;
+        while (curr && depth < 10) {
+            chain.unshift(curr);
+            if (!curr.parentId) break;
+            curr = customAlbums.find(a => a.id === curr!.parentId);
+            depth++;
+        }
+
+        chain.forEach((album, index) => {
+            // First item in chain (Root) gets Book icon, others get Folder icon
+            const isRoot = !album.parentId;
+
+            items.push({
+                label: album.name,
+                icon: isRoot ? Book : Folder, // ✨ Specific Icon Logic
+                onClick: index === chain.length - 1 ? undefined : () => onNavigate(album.id)
+            });
+        });
+
+        return items;
+    }, [currentId, customAlbums, onNavigate, baseLabel]);
+};

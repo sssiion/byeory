@@ -110,6 +110,13 @@ export const usePostEditor = () => {
         // ✨ Removed duplicate check to allow same tag/name but different ID
         if (name.trim() === "") return null;
 
+        // ✨ Check for duplicate name in same parent
+        const isDuplicate = customAlbums.some(a => a.name === name && a.parentId === (parentId || null));
+        if (isDuplicate) {
+            alert("이미 존재하는 폴더 이름입니다.");
+            return null;
+        }
+
         const newId = `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const newAlbum: CustomAlbum = {
             id: newId,
@@ -577,6 +584,63 @@ export const usePostEditor = () => {
         setViewMode(id ? 'folder' : 'album');
     };
 
+    // ✨ Handle Move Post (Drag and Drop)
+    const handleMovePost = async (postId: string | number, targetAlbumId: string | null) => {
+        const targetPost = posts.find(p => String(p.id) === String(postId));
+        if (!targetPost) return;
+
+        let newAlbumIds = targetPost.albumIds || [];
+        const currentContextId = selectedAlbumId;
+
+        if (targetAlbumId) {
+            // 1. Add Target ID
+            if (!newAlbumIds.includes(targetAlbumId)) {
+                newAlbumIds = [...newAlbumIds, targetAlbumId];
+            }
+
+            // 2. Remove Source ID (Context)
+            // Standard "Move" behavior: Remove from current folder if we are in one.
+            if (currentContextId && currentContextId !== '__all__' && currentContextId !== '__others__') {
+                newAlbumIds = newAlbumIds.filter(id => id !== currentContextId);
+            }
+        }
+
+        // 3. ✨ CRITICAL: Update Metadata Block to ensure persistence
+        // The backend/fetch logic relies on the metadata block inside `blocks`. 
+        // We must update it, otherwise `fetchPosts` will revert to old IDs.
+
+        const newBlocks = targetPost.blocks.map(b => {
+            if (b.type === 'paragraph' && b.text && b.text.startsWith('<!--METADATA:')) {
+                try {
+                    const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
+                    const metadata = JSON.parse(json);
+
+                    // Update albumIds in metadata
+                    // ✨ CRITICAL: Preserve tags! If we don't include them, they might be lost if only defined in DB/API but not metadata.
+                    const newMetadata = {
+                        ...metadata,
+                        albumIds: newAlbumIds,
+                        tags: targetPost.tags || [] // Ensure tags are persisted
+                    };
+                    const newText = `<!--METADATA:${JSON.stringify(newMetadata)}-->`;
+
+                    return { ...b, text: newText };
+                } catch (e) {
+                    console.error("Failed to update metadata during move", e);
+                    return b;
+                }
+            }
+            return b;
+        });
+
+        // Update Local State
+        const updatedPost = { ...targetPost, albumIds: newAlbumIds, blocks: newBlocks };
+        setPosts(prev => prev.map(p => String(p.id) === String(postId) ? updatedPost : p));
+
+        // API Call
+        await savePostToApi(updatedPost, true);
+    };
+
     return {
         viewMode, setViewMode, posts, title, setTitle, titleStyles, setTitleStyles,
         blocks, setBlocks, stickers, floatingTexts, floatingImages,
@@ -595,6 +659,7 @@ export const usePostEditor = () => {
         targetAlbumIds, setTargetAlbumIds, // ✨ 앨범 ID 선택 상태 노출
         sortOption, setSortOption, handleDeletePost, // ✨ 정렬 및 삭제 핸들러 노출
         handleToggleFavorite, // ✨ 즐겨찾기 핸들러 노출
-        handleToggleAlbumFavorite // ✨ 앨범 즐겨찾기 핸들러 추가
+        handleToggleAlbumFavorite, // ✨ 앨범 즐겨찾기 핸들러 추가
+        handleMovePost // ✨ Drag and Drop Move Handler
     };
 };

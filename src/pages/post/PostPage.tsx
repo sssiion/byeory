@@ -27,20 +27,7 @@ const Post: React.FC = () => {
 
     // 폴더 뷰를 위한 필터링 로직
     const filteredPosts = (editor.selectedAlbumId === null || editor.selectedAlbumId === '__others__')
-        ? editor.posts.filter(p => {
-            // Others: No VALID ID AND (If no IDs, No Matching Tags)
-
-            // 1. Check if ANY of the post's albumIds map to a real, existing album
-            const hasValidId = p.albumIds?.some(id => editor.customAlbums.some(a => a.id === id));
-            if (hasValidId) return false; // Belongs to a real album
-
-            // 2. If it has IDs but none were valid (orphaned), it belongs to Others (we ignore tags if IDs exist, tracing PostAlbumPage logic)
-            if (p.albumIds && p.albumIds.length > 0) return true;
-
-            // 3. If no IDs, check tags (Legacy support)
-            const hasMatchingTag = p.tags?.some(t => editor.customAlbums.some(a => a.tag === t));
-            return !hasMatchingTag;
-        })
+        ? editor.posts.filter(p => !p.albumIds || p.albumIds.length === 0)
         : editor.posts.filter(p => {
             // ✨ All Records view: Show ALL posts
             if (editor.selectedAlbumId === '__all__') return true;
@@ -85,7 +72,7 @@ const Post: React.FC = () => {
                         albumId={editor.selectedAlbumId}
                         posts={filteredPosts}
                         allPosts={editor.posts}
-                        onBack={() => editor.setViewMode('album')}
+                        // onBack prop removed
                         onPostClick={editor.handlePostClick}
                         onStartWriting={editor.handleStartWriting}
                         onCreateAlbum={editor.handleCreateAlbum}
@@ -94,6 +81,7 @@ const Post: React.FC = () => {
                         onDeletePost={editor.handleDeletePost}
                         onDeleteAlbum={editor.handleDeleteAlbum}
                         onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
+                        onMovePost={editor.handleMovePost} // ✨ DnD Added
                     />
                 )}
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, AlertCircle } from 'lucide-react';
 import SaveLocationWidget from './SaveLocationWidget';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PostData } from '../types';
@@ -60,6 +60,17 @@ const SavePostModal: React.FC<Props> = ({
                             onDeleteAlbum={onDeleteAlbum}
                             posts={posts}
                         />
+
+                        {/* Unclassified Warning */}
+                        {currentTags.length === 0 && selectedAlbumIds.length === 0 && (
+                            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                                <AlertCircle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                                <div className="text-sm text-amber-800">
+                                    <span className="font-bold">주의:</span> 저장 위치(태그 또는 앨범)가 선택되지 않았습니다.<br />
+                                    이 경우 <span className="font-bold">모든 기록 보관함 (미분류)</span>에 저장됩니다.
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}
