@@ -20,6 +20,7 @@ export type BlockType =
 
 // 블록 스타일 정의
 export interface WidgetBlockStyle {
+
     color?: string;
     bgColor?: string; // 형광펜, 콜아웃 배경 등
     fontSize?: number;
@@ -51,6 +52,7 @@ export type MindmapContent = {
 export interface WidgetBlock {
     id: string;
     type: BlockType;
+    layout?: BlockLayout;
     content: any; // 텍스트, 리스트 아이템, 수식 등
     styles: WidgetBlockStyle;
     action?: string; // 버튼 등 액션
@@ -62,9 +64,12 @@ export type Flashcard = {
 };
 
 export interface WidgetSize {
-    w: number;
-    h: number;
+
     label: string;
+}
+export interface BlockLayout {
+    w: number | string; // 픽셀(number) 또는 '100%'(string) 허용
+    h: number | string; // 'auto' 또는 픽셀
 }
 // 🆕 [중요] 다단 컬럼 포커스 위치 타입
 // (어떤 블록의 몇 번째 칸이 선택되었는지 저장)

@@ -222,8 +222,6 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
     };
 
     // 🌟 저장 로직 핸들러
-    // 🌟 저장 로직 핸들러
-    // 🌟 저장 로직 핸들러
     const handleSaveToCloud = async () => {
         if (blocks.length === 0) return;
 

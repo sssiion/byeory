@@ -72,7 +72,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
 
     return (
         <Tag
-            className={`${className} cursor-text hover:bg-black/5 rounded px-1 transition-colors -mx-1 border border-transparent hover:border-black/10`}
+            className={`${className} cursor-text hover:bg-black/5 rounded px-1 transition-colors -mx-1 border border-transparent hover:border-black/10 w-full h-full`}
             style={{ ...style, minHeight: '1em' }}
             onClick={(e) => {
                 e.stopPropagation(); // Prevent drag start if possible
