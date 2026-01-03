@@ -7,6 +7,7 @@ import PostBreadcrumb from '../components/PostBreadcrumb';
 import { useBreadcrumbs } from '../hooks/useBreadcrumbs';
 import { DndContext, useDraggable, useDroppable, type DragEndEvent, useSensors, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import PostThumbnail from '../components/PostThumbnail';
 
 // ✨ Helper Components for DnD
 const DraggablePost = ({ id, children }: { id: string | number, children: React.ReactNode }) => {
@@ -241,40 +242,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                 <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden">
                                     {/* 1. Top - Thumbnail (60%) */}
                                     <div className="h-[60%] w-full bg-white relative overflow-hidden">
-                                        {(() => {
-                                            // 1. Try Image First
-                                            const imgBlock = p.blocks?.find((b: any) => b.imageUrl);
-                                            const floatImg = p.floatingImages?.[0]?.url;
-                                            const sticker = p.stickers?.[0]?.url;
-                                            const thumb = imgBlock?.imageUrl || floatImg || sticker;
-
-                                            if (thumb) {
-                                                return <img src={thumb} alt={p.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />;
-                                            }
-
-                                            // 2. Live DOM Preview (Content Capture)
-                                            // Scale down the content to look like a thumbnail
-                                            return (
-                                                <div
-                                                    className="w-[200%] h-[200%] origin-top-left p-6 bg-white text-gray-800 select-none"
-                                                    style={{ transform: 'scale(0.5)' }}
-                                                >
-                                                    <div className="space-y-4">
-                                                        {p.blocks?.slice(0, 4).map((b: any, i: number) => {
-                                                            if (b.type === 'heading1') return <h1 key={i} className="text-3xl font-bold border-b pb-2">{b.text}</h1>;
-                                                            if (b.type === 'heading2') return <h2 key={i} className="text-2xl font-bold">{b.text}</h2>;
-                                                            if (b.type === 'heading3') return <h3 key={i} className="text-xl font-bold text-gray-600">{b.text}</h3>;
-                                                            if (b.type === 'paragraph' || b.type === 'text') return <p key={i} className="text-base leading-relaxed text-gray-600 line-clamp-3">{b.text}</p>;
-                                                            if (b.type === 'bullet-list') return <ul key={i} className="list-disc pl-5 space-y-1">{b.content?.items?.map((it: string, j: number) => <li key={j} className="text-base">{it}</li>)}</ul>;
-                                                            return null;
-                                                        })}
-                                                        {(!p.blocks || p.blocks.length === 0) && (
-                                                            <div className="text-4xl text-gray-200 font-bold">내용 없음</div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
+                                        <PostThumbnail post={p} width={400} height={320} />
 
                                         {/* Overlay Gradient for depth */}
                                         <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
