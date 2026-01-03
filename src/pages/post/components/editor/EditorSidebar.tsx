@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
 import { STICKERS, LAYOUT_PRESETS } from '../../constants';
+import { useMarket } from '../../../../hooks/useMarket';
+// Note: STICKERS is now an array of objects, not strings. The import is correct but usage changed.
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot } from 'lucide-react';
 
 
@@ -35,6 +37,8 @@ const EditorSidebar: React.FC<Props> = ({
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
     currentTags, onTagsChange
 }) => {
+    const { isOwned, buyItem } = useMarket();
+
     const triggerFileClick = () => fileInputRef.current?.click();
 
     // 자유 사진용 input ref
@@ -115,17 +119,45 @@ const EditorSidebar: React.FC<Props> = ({
                 </div>
 
                 <div className="px-4 pb-4 pt-2 border-t border-[var(--border-color)]">
-                    <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-3 mt-2 uppercase tracking-wider">Stickers</h4>
+                    <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-3 mt-2 uppercase tracking-wider flex justify-between items-center">
+                        Stickers
+                        <a href="/market" className="text-[10px] text-indigo-500 hover:underline">Get more</a>
+                    </h4>
                     <div className="grid grid-cols-4 gap-2">
-                        {STICKERS.map((url, i) => (
-                            <button
-                                key={i}
-                                onClick={() => onAddSticker(url)}
-                                className="aspect-square hover:bg-[var(--bg-card-secondary)] p-1.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all active:scale-95"
-                            >
-                                <img src={url} className="w-full h-full object-contain filter drop-shadow-sm" alt="sticker" />
-                            </button>
-                        ))}
+                        {STICKERS.map((sticker) => {
+                            // Check ownership
+                            const owned = !sticker.isPremium || isOwned(sticker.id) || (sticker.packId && isOwned(sticker.packId));
+                            const isLocked = !owned;
+
+                            return (
+                                <button
+                                    key={sticker.id}
+                                    title={isLocked ? `구매하기 (${sticker.price} C)` : '사용하기'}
+                                    onClick={() => {
+                                        if (isLocked) {
+                                            if (confirm(`이 스티커를 ${sticker.price} 크레딧에 구매하시겠습니까?\n(마켓에서 팩으로 구매하면 더 저렴할 수 있습니다!)`)) {
+                                                if (buyItem(sticker.id, sticker.price || 100)) {
+                                                    alert('구매가 완료되었습니다!');
+                                                } else {
+                                                    alert('크레딧이 부족합니다.');
+                                                }
+                                            }
+                                            return;
+                                        }
+                                        onAddSticker(sticker.url);
+                                    }}
+                                    className={`relative aspect-square hover:bg-[var(--bg-card-secondary)] p-1.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all active:scale-95 ${isLocked ? 'grayscale opacity-70' : ''}`}
+                                >
+                                    <img src={sticker.url} className="w-full h-full object-contain filter drop-shadow-sm" alt="sticker" />
+                                    {isLocked && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 rounded-xl text-white drop-shadow-md">
+                                            <span className="text-xs">🔒</span>
+                                            <span className="text-[10px] font-bold">{sticker.price}</span>
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

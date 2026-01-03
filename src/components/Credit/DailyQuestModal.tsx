@@ -9,7 +9,7 @@ interface DailyQuestModalProps {
 }
 
 const DailyQuestModal: React.FC<DailyQuestModalProps> = ({ isOpen, onClose }) => {
-    const { credits, dailyQuests, claimQuest, resetTime } = useCredits();
+    const { credits, addCredits, dailyQuests, claimQuest, resetTime } = useCredits();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'quests' | 'shop'>('quests');
 
@@ -151,7 +151,16 @@ const DailyQuestModal: React.FC<DailyQuestModalProps> = ({ isOpen, onClose }) =>
                                         { amount: 1200, price: '₩10,000', color: 'bg-pink-500', best: true },
                                         { amount: 3000, price: '₩25,000', color: 'bg-yellow-500' },
                                     ].map((item, i) => (
-                                        <button key={i} className="relative group p-3 rounded-xl border theme-border bg-[var(--bg-card)] hover:border-primary/50 transition-all flex flex-col items-center gap-2 text-center">
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                if (confirm(`${item.price}으로 ${item.amount} 크레딧을 충전하시겠습니까? (테스트 결제)`)) {
+                                                    addCredits(item.amount, 'Credit Charge (Test)');
+                                                    alert(`${item.amount} 크레딧이 충전되었습니다!`);
+                                                }
+                                            }}
+                                            className="relative group p-3 rounded-xl border theme-border bg-[var(--bg-card)] hover:border-primary/50 transition-all flex flex-col items-center gap-2 text-center"
+                                        >
                                             {item.best && (
                                                 <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">BEST</span>
                                             )}
