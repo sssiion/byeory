@@ -1,8 +1,34 @@
-export const STICKERS = [
-    'https://cdn-icons-png.flaticon.com/512/833/833472.png', // 하트
-    'https://cdn-icons-png.flaticon.com/512/1828/1828884.png', // 별
-    'https://cdn-icons-png.flaticon.com/512/785/785116.png', // 불
-    'https://cdn-icons-png.flaticon.com/512/346/346167.png', // 꽃
+export interface StickerItemDef {
+    id: string;
+    url: string;
+    isPremium: boolean;
+    price?: number;
+    packId?: string; // Links to MarketItem.id
+}
+
+export const STICKERS: StickerItemDef[] = [
+    // Free Stickers (Default)
+    { id: 'free_1', url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png', isPremium: false },
+    { id: 'free_2', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png', isPremium: false },
+    { id: 'free_3', url: 'https://cdn-icons-png.flaticon.com/512/785/785116.png', isPremium: false },
+    { id: 'free_4', url: 'https://cdn-icons-png.flaticon.com/512/346/346167.png', isPremium: false },
+    { id: 'free_5', url: 'https://cdn-icons-png.flaticon.com/512/742/742751.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Smile
+    { id: 'free_6', url: 'https://cdn-icons-png.flaticon.com/512/169/169367.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Sun
+    { id: 'free_7', url: 'https://cdn-icons-png.flaticon.com/512/414/414825.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Cloud
+    { id: 'free_8', url: 'https://cdn-icons-png.flaticon.com/512/651/651717.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Music
+    { id: 'free_9', url: 'https://cdn-icons-png.flaticon.com/512/190/190411.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Check
+    { id: 'free_10', url: 'https://cdn-icons-png.flaticon.com/512/126/126473.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Thumbs up
+
+    // Premium Stickers (From Mock Market)
+    // Pack 001: Cute Cat
+    { id: 'cat_1', url: 'https://cdn-icons-png.flaticon.com/512/616/616408.png', isPremium: true, price: 200, packId: 'sticker_pack_001' },
+    { id: 'cat_2', url: 'https://cdn-icons-png.flaticon.com/512/616/616430.png', isPremium: true, price: 200, packId: 'sticker_pack_001' },
+
+    // Pack 002: Vintage Label
+    { id: 'vintage_1', url: 'https://cdn-icons-png.flaticon.com/512/2361/2361730.png', isPremium: true, price: 300, packId: 'sticker_pack_002' },
+
+    // Pack 003: Pixel Art
+    { id: 'pixel_1', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603762.png', isPremium: true, price: 250, packId: 'sticker_pack_003' },
 ];
 
 // 사용 가능한 폰트 목록 (Google Fonts)

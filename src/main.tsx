@@ -32,6 +32,7 @@ const backendOptions = isMobile ? { enableMouseEvents: true } : {};
 
 import './assets/main.css'
 import './assets/themes.css'
+//import './assets/index.css'
 import LoginPage from './pages/auth/LoginPage'
 import JoinPage from './pages/auth/JoinPage'
 import FindPasswordPage from './pages/auth/FindPasswordPage'
@@ -130,6 +131,7 @@ if (savedManualBtnTextColor) {
 }
 
 import WelcomePage from './pages/WelcomePage';
+import AnalysisPage from "./pages/profile/analysis/AnalysisPage.tsx";
 
 const RootRouting = () => {
   const token = localStorage.getItem('accessToken');
@@ -170,6 +172,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route path="/profile/password" element={<PasswordChangeScreen />} />
                       <Route path="/profile/delete" element={<GetOutPage />} />
                       <Route path="/setup-profile" element={<InitialProfileSetup />} />
+                      <Route path="/profile/analysis" element={<AnalysisPage />} />
                     </Route>
                   </Routes>
                 </BrowserRouter>
