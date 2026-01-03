@@ -140,8 +140,8 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
         <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
             <div>
                 {/* Navigation & Header */}
-                <div className="flex items-center justify-between mb-8 relative z-50">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 relative z-50 space-y-4 md:space-y-0">
+                    <div className="flex items-center gap-4 w-full md:w-auto">
                         <button
                             onClick={() => {
                                 const parent = customAlbums.find(a => a.id === albumId)?.parentId;
@@ -151,17 +151,17 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         >
                             <ArrowLeft size={24} />
                         </button>
-                        <div className="flex items-center text-lg font-medium">
+                        <div className="flex items-center text-lg font-medium overflow-hidden">
                             <PostBreadcrumb items={breadcrumbItems} />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 md:gap-3 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
                         {/* ✨ Add Existing Item Button */}
                         {albumId && albumId !== '__all__' && albumId !== '__others__' && (
                             <button
                                 onClick={() => setIsAddModalOpen(true)}
-                                className="flex items-center gap-2 px-4 h-12 text-base font-bold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors"
+                                className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors whitespace-nowrap flex-shrink-0"
                             >
                                 <Folder size={18} />
                                 항목 추가
@@ -171,7 +171,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         {albumId !== '__all__' && !customAlbums.find(a => a.id === albumId)?.parentId && (
                             <button
                                 onClick={() => setIsCreateFolderOpen(true)}
-                                className="flex items-center gap-2 px-4 h-12 text-base font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-transparent hover:border-indigo-200"
+                                className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-transparent hover:border-indigo-200 whitespace-nowrap flex-shrink-0"
                             >
                                 <Folder size={18} />
                                 폴더 추가
@@ -181,7 +181,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         {albumId && albumId !== '__all__' && (
                             <button
                                 onClick={() => onStartWriting(albumId)}
-                                className="flex items-center gap-2 px-6 h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-base"
+                                className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0"
                             >
                                 <PenLine size={20} />
                                 기록 남기기

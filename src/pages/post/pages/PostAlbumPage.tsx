@@ -204,7 +204,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     return (
         <div>
             {/* 상단 헤더 (Start Writing Buttons etc) - Simplified inline for brevity or reuse existing code structure */}
-            <div className="flex justify-between items-end mb-8 border-b border-[var(--border-color)] pb-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-[var(--border-color)] pb-4 space-y-4 md:space-y-0">
                 <div>
                     <h2 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
                         <Folder className="text-yellow-400 fill-yellow-400" size={32} />
@@ -212,20 +212,20 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     </h2>
                     <p className="text-[var(--text-secondary)] text-sm mt-2 ml-1">나만의 추억 보관함입니다.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-12 items-center">
+                <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+                    <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-10 md:h-12 items-center flex-shrink-0">
                         {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
                             <button
                                 key={opt}
                                 onClick={() => setSortOption(opt)}
-                                className={`px-3 py-3 text-xs font-bold rounded-md transition-all ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                className={`px-2 md:px-3 py-1.5 md:py-3 text-[10px] md:text-xs font-bold rounded-md transition-all whitespace-nowrap ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                             >
                                 {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
                             </button>
                         ))}
                     </div>
-                    <button onClick={onCreateAlbum} className="flex items-center gap-1 px-3 h-12 rounded-xl border border-[var(--border-color)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-all font-medium group"><Plus size={16} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" /><Folder size={18} className="text-[var(--text-secondary)] group-hover:text-yellow-500 group-hover:fill-yellow-500 transition-colors" /></button>
-                    <button onClick={onStartWriting} className="flex items-center gap-2 px-5 h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20"><PenLine size={18} />기록 남기기</button>
+                    <button onClick={onCreateAlbum} className="flex items-center gap-1 px-3 h-10 md:h-12 rounded-xl border border-[var(--border-color)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-all font-medium group flex-shrink-0"><Plus size={16} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" /><Folder size={18} className="text-[var(--text-secondary)] group-hover:text-yellow-500 group-hover:fill-yellow-500 transition-colors" /></button>
+                    <button onClick={onStartWriting} className="flex items-center gap-2 px-4 md:px-5 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 whitespace-nowrap flex-shrink-0"><PenLine size={18} />기록 남기기</button>
                 </div>
             </div>
 

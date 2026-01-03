@@ -112,10 +112,10 @@ const EditorCanvas: React.FC<Props> = ({
     return (
         // 최상위 컨테이너 (배경 스크롤 담당)
         <div
-            className="w-full h-full flex justify-center overflow-x-auto overflow-y-visible py-8"
+            className="w-full h-full flex justify-center overflow-x-auto overflow-y-visible py-4 md:py-8 px-2 md:px-0"
             onClick={onBackgroundClick}
         >
-            <div className="w-[800px] min-w-[800px] bg-white rounded-xl shadow-xl min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden">
+            <div className={`${viewMode === 'read' ? 'w-full max-w-[800px]' : 'w-[800px] min-w-[800px]'} bg-white rounded-xl shadow-xl min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden`}>
 
                 {/* 헤더 */}
                 <div
@@ -146,7 +146,7 @@ const EditorCanvas: React.FC<Props> = ({
                     />
                 </div>
 
-                <div className="flex-1 pl-12 py-12 pr-16 relative pb-40">
+                <div className={`flex-1 relative pb-40 ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>
 
                     {/* 1. DragDropContext는 가장 바깥에 위치 */}
                     <DragDropContext onDragEnd={onDragEnd}>

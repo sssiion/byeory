@@ -135,9 +135,9 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
 
             {/* 3. 사진 왼쪽 + 글 오른쪽 */}
             {block.type === 'image-left' && (
-                <div className="w-full flex flex-row gap-6 items-start">
-                    <div className="w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
-                    <div className="flex-1 min-w-0 pt-2 relative">
+                <div className="w-full flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+                    <div className="w-full md:w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
+                    <div className="w-full md:flex-1 min-w-0 md:pt-2 relative">
                         <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
 
                     </div>
@@ -146,12 +146,14 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
 
             {/* 4. 글 왼쪽 + 사진 오른쪽 */}
             {block.type === 'image-right' && (
-                <div className="w-full flex flex-row gap-6 items-start">
-                    <div className="flex-1 min-w-0 pt-2 relative">
+                <div className="w-full flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+                    {/* Mobile: Image First, Text Second? Or Text first? Usually stacked = Image top is standard for blog cards, but for 'Image Right' layout, preserving text first on mobile is fine, OR moving image to top. Let's keep DOM order for now (Text top) but common pattern is Image Top. Let's swap order for mobile? No, let's keep text top to match DOM flow unless user asks. */}
+                    {/* Actually, standard responsive 'Image Right' often becomes 'Image Top' or 'Image Bottom'. Let's stick to 'Text Top' (natural flow) for now. */}
+                    <div className="w-full md:flex-1 min-w-0 md:pt-2 relative order-2 md:order-1">
                         <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
 
                     </div>
-                    <div className="w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
+                    <div className="w-full md:w-1/2 flex-shrink-0 order-1 md:order-2">{renderImageArea(block.imageUrl, 1, true)}</div>
                 </div>
             )}
 

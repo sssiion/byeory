@@ -24,7 +24,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
     return (
         <div className="flex flex-col h-auto min-h-[85vh] gap-6 relative items-center">
             {/* ✨ Breadcrumbs & Actions Header */}
-            <div className="w-full max-w-[800px] flex justify-between items-center py-2 px-1 mb-0">
+            <div className="w-full max-w-[800px] flex justify-between items-center py-2 px-4 md:px-1 mb-0 box-border">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => {
