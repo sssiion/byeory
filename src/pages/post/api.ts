@@ -6,13 +6,14 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
+const BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = `${BASE_URL}/api/posts`;
+const API_ALBUM_URL = `${BASE_URL}/api/albums`;
 
 // ✨ Singleton Pattern for Supabase Client
-// Prevents "Multiple GoTrueClient instances detected" warning during HMR/Navigation
 const getSupabaseClient = () => {
     if (!SUPABASE_URL || !SUPABASE_KEY) return null;
 
-    // Check for existing instance in global scope (for HMR)
     const globalVar = window as any;
     if (!globalVar.__supabaseClient) {
         globalVar.__supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -22,29 +23,34 @@ const getSupabaseClient = () => {
 
 export const supabase = getSupabaseClient();
 
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+};
+
 export const deleteOldImage = async (oldUrl: string | null) => {
-    if (!oldUrl) return; // 삭제할 URL이 없으면 종료
+    if (!oldUrl) return;
 
     try {
-        // URL에서 파일 경로만 추출하는 로직
-        // 예: .../public/blog-assets/2024...png -> 2024...png
         const filePath = oldUrl.split('/blog-assets/').pop();
 
         if (filePath && supabase) {
             const { error } = await supabase.storage
                 .from('blog-assets')
-                .remove([filePath]); // 파일 삭제 요청
+                .remove([filePath]);
 
             if (error) {
                 console.warn("기존 이미지 삭제 실패 (무시하고 진행):", error);
-            } else {
-
             }
         }
     } catch (e) {
         console.warn("삭제 로직 처리 중 오류:", e);
     }
 };
+
 export const uploadImageToSupabase = async (file: File): Promise<string | null> => {
     if (!supabase) return null;
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -61,7 +67,6 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
 
     const MODEL_NAME = "gemma-3-12b-it";
 
-    // 프롬프트 대폭 수정: 창작 금지, 정리 및 배포에 집중
     const prompt = `
         역할: 너는 사용자가 입력한 텍스트를 보기 좋게 다듬어서 배치해주는 '텍스트 편집자'야.
         
@@ -132,84 +137,40 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
         throw new Error("AI 생성 실패");
     }
 };
+
 // 게시글 목록 조회 (GET)
 export const fetchPostsFromApi = async () => {
-    // [임시 저장소] 로컬 스토리지 사용 (백엔드 미연동 상태)
-    // 실제 백엔드 연동 시, 아래 로컬 스토리지 코드를 삭제하고 주석 처리된 백엔드 코드를 사용하세요.
-    await new Promise(resolve => setTimeout(resolve, 300)); // 네트워크 딜레이 시뮬레이션
-    const localData = localStorage.getItem('local_posts');
-    const posts = localData ? JSON.parse(localData) : [];
-    return posts.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    /* [백엔드 연동 시 수정 필요]
     try {
-        // 백엔드의 GET /api/posts 엔드포인트 호출
-        const response = await fetch(`${API_BASE_URL}`);
+        const response = await fetch(`${API_BASE_URL}`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error("게시글 불러오기 실패");
-        return await response.json();
+        const posts = await response.json();
+        // ✨ Map 'hashtags' (Backend) -> 'tags' (Frontend)
+        return posts.map((p: any) => ({
+            ...p,
+            tags: p.hashtags || p.tags || []
+        }));
     } catch (error) {
         console.error(error);
         return [];
     }
-    */
 };
 
 // 게시글 저장 (생성 POST / 수정 PUT)
 export const savePostToApi = async (postData: any, isUpdate: boolean = false) => {
-    // [임시 저장소] 로컬 스토리지 사용
-    await new Promise(resolve => setTimeout(resolve, 500)); // 네트워크 딜레이 시뮬레이션
-
-    const localData = localStorage.getItem('local_posts');
-    let posts = localData ? JSON.parse(localData) : [];
-
-    // Ensure hashtags are string arrays
-    const finalPostData = {
-        ...postData,
-        hashtags: postData.tags || [],
-        mode: postData.mode || 'AUTO',
-    };
-
-    if (isUpdate) {
-        // 수정 로직
-        const index = posts.findIndex((p: any) => p.id === postData.id);
-        if (index !== -1) {
-            posts[index] = { ...finalPostData, date: new Date().toISOString() };
-        }
-    } else {
-        // 생성 로직 (ID 생성 포함)
-        const newId = Date.now();
-        const newPost = { ...finalPostData, id: newId, date: new Date().toISOString() };
-        posts.push(newPost);
-        // 생성된 ID 반환을 위해 postData 업데이트
-        postData.id = newId;
-    }
-
-    localStorage.setItem('local_posts', JSON.stringify(posts));
-    return postData;
-
-    /* [백엔드 연동 시 수정 필요]
     try {
         const url = isUpdate ? `${API_BASE_URL}/${postData.id}` : API_BASE_URL;
         const method = isUpdate ? "PUT" : "POST";
 
-        // BE Req Body Spec:
-        // {
-        //   "title": "게시글 제목",
-        //   "hashtags": ["여행", "서울"], 
-        //   "mode": "MANUAL", // 또는 "AUTO"
-        //   "targetAlbumIds": [1, 5], // MANUAL 모드일 때만 전송
-        //   "isFavorite": true
-        // }
-        // Note: postData includes blocks etc. Make sure backend handles them or strip them if needed for this specific endpoint, 
-        // but likely backend needs content too. Assuming backend takes full object or we just send what's required.
-        // For now sending full postData.
-        
         const response = await fetch(url, {
             method: method,
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(postData),
+            headers: getAuthHeaders(),
+            // ✨ Map 'tags' (Frontend) -> 'hashtags' (Backend)
+            body: JSON.stringify({
+                ...postData,
+                hashtags: postData.tags
+            }),
         });
 
         if (!response.ok) throw new Error("저장 실패");
@@ -218,38 +179,103 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
         console.error(error);
         throw error;
     }
-    */
 };
 
 // 게시글 삭제
 export const deletePostApi = async (id: string | number) => {
-    // [임시 저장소] 로컬 스토리지 사용
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const localData = localStorage.getItem('local_posts');
-    if (localData) {
-        let posts = JSON.parse(localData);
-        posts = posts.filter((p: any) => String(p.id) !== String(id));
-        localStorage.setItem('local_posts', JSON.stringify(posts));
-    }
-    console.log(`[DELETE] Post ${id} deleted (LocalStorage).`);
-    return true;
-
-    /* [백엔드 연동 시 수정 필요]
     try {
         const url = `${API_BASE_URL}/${id}`;
         const response = await fetch(url, {
             method: "DELETE",
+            headers: getAuthHeaders()
         });
 
         if (!response.ok) throw new Error("삭제 실패");
-        console.log(`[DELETE] Post ${id} deleted.`);
         return true;
     } catch (error) {
         console.error("삭제 API 오류:", error);
         return false;
     }
-    */
+};
+
+// 앨범 목록 조회 (GET)
+export const fetchAlbumsFromApi = async () => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("앨범 불러오기 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// 앨범 단건 조회 (GET)
+export const fetchAlbumApi = async (id: string | number) => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}/${id}`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("앨범 정보 불러오기 실패");
+        const album = await response.json();
+        return {
+            ...album,
+            id: String(album.id),
+            parentId: album.parentId ? String(album.parentId) : null
+        };
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+// 앨범 생성 (POST)
+export const createAlbumApi = async (albumData: any) => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(albumData),
+        });
+        if (!response.ok) throw new Error("앨범 생성 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+// 앨범 수정 (PUT)
+export const updateAlbumApi = async (id: string | number, albumData: any) => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}/${id}`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(albumData),
+        });
+        if (!response.ok) throw new Error("앨범 수정 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+// 앨범 삭제 (DELETE)
+export const deleteAlbumApi = async (id: string | number) => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}/${id}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("앨범 삭제 실패");
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
 };
 
 // 앨범 콘텐츠 조회
@@ -258,193 +284,209 @@ export const fetchAlbumContents = async (
     providedPosts?: any[],
     providedAlbums?: any[]
 ) => {
-    let localPosts: any[] = providedPosts || [];
-    let localAlbums: any[] = providedAlbums || [];
-
-    if (!providedPosts || !providedAlbums) {
-        // [Mock] LocalStorage 기반 리얼 Mock (Delay only if reading from disk)
-        await new Promise(resolve => setTimeout(resolve, 300));
-        if (!providedPosts) localPosts = JSON.parse(localStorage.getItem('local_posts') || '[]');
-        if (!providedAlbums) localAlbums = JSON.parse(localStorage.getItem('my_custom_albums_v2') || '[]');
-    }
-
-    const contents: any[] = [];
     const targetId = String(albumId);
 
-    // 1. Posts Fetching
-    let matchedPosts: any[] = [];
+    // 1. Special Folders: Use existing client-side logic (Fetch All)
+    if (targetId === '__all__' || targetId === '__others__') {
+        let posts = providedPosts;
+        let albums = providedAlbums;
 
-    if (targetId === '__all__') {
-        matchedPosts = localPosts;
-    } else if (targetId === '__others__') {
-        // ✨ Unclassified Strict Filter: No albumIds AND No tags
-        matchedPosts = localPosts.filter((p: any) => {
-            const hasManualAlbum = p.albumIds && p.albumIds.length > 0;
-            const hasTags = p.tags && p.tags.length > 0;
-            return !hasManualAlbum && !hasTags;
-        });
-    } else {
-        // ✨ General Album (Hybrid: Manual ID + Auto Tag)
-        const targetAlbum = localAlbums.find((a: any) => String(a.id) === targetId);
-        const albumTag = targetAlbum?.tag;
+        if (!posts) posts = await fetchPostsFromApi();
+        if (!albums) albums = await fetchAlbumsFromApi();
 
-        matchedPosts = localPosts.filter((p: any) => {
-            const isManualMatch = p.albumIds && p.albumIds.includes(targetId);
-            const isAutoMatch = albumTag && p.tags && p.tags.includes(albumTag);
-            return isManualMatch || isAutoMatch;
-        });
-    }
+        const localPosts = posts || [];
+        const localAlbums = albums || [];
+        const contents: any[] = [];
 
-    // ✨ Deduplication
-    matchedPosts.forEach((p: any) => contents.push({ type: 'POST', data: p }));
-
-    // 2. Folders Fetching (Sub-albums)
-    const matchedFolders = localAlbums.filter((a: any) => {
+        // Posts
+        let matchedPosts: any[] = [];
         if (targetId === '__all__') {
-            return !a.parentId;
-        }
-        if (targetId === '__others__') return false;
-        return a.parentId === targetId;
-    });
-
-    // ✨ Virtual 'Unclassified' Folder in 'All Records'
-    if (targetId === '__all__') {
-        const unclassifiedCount = localPosts.filter((p: any) => {
-            const hasManualAlbum = p.albumIds && p.albumIds.length > 0;
-            const hasTags = p.tags && p.tags.length > 0;
-            return !hasManualAlbum && !hasTags;
-        }).length;
-
-        if (unclassifiedCount > 0) {
-            // Unshift so it appears first or Push? User said "folders".
-            // Let's create a Mock Folder object
-            matchedFolders.push({
-                id: '__others__',
-                name: '미분류 보관함',
-                tag: null,
-                createdAt: 0,
-                parentId: null
+            matchedPosts = localPosts;
+        } else {
+            // __others__ : Unclassified
+            matchedPosts = localPosts.filter((p: any) => {
+                const hasManualAlbum = p.albumIds && p.albumIds.length > 0;
+                const hasTags = p.tags && p.tags.length > 0;
+                return !hasManualAlbum && !hasTags;
             });
         }
-    }
+        matchedPosts.forEach((p: any) => contents.push({ type: 'POST', data: p }));
 
-    matchedFolders.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
+        // Folders
+        const matchedFolders = localAlbums.filter((a: any) => {
+            if (targetId === '__all__') return !a.parentId;
+            return false; // __others__ has no sub-folders
+        });
 
-    // Sort
-    const sortedFolders = matchedFolders.sort((a: any, b: any) => a.name.localeCompare(b.name));
+        // Virtual 'Unclassified' Folder
+        if (targetId === '__all__') {
+            const unclassifiedCount = localPosts.filter((p: any) => {
+                const hasManualAlbum = p.albumIds && p.albumIds.length > 0;
+                const hasTags = p.tags && p.tags.length > 0;
+                return !hasManualAlbum && !hasTags;
+            }).length;
 
-    // ✨ Sort: Favorites First, then Date Descending
-    const sortedPosts = matchedPosts.sort((a: any, b: any) => {
-        // 1. Favorite Priority
-        if (a.isFavorite && !b.isFavorite) return -1;
-        if (!a.isFavorite && b.isFavorite) return 1;
-
-        // 2. Date Descending (Newest first)
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-
-    return [
-        ...sortedFolders.map((d: any) => ({ type: 'FOLDER' as const, data: d })),
-        ...sortedPosts.map((d: any) => ({ type: 'POST' as const, data: d }))
-    ];
-};
-
-// 앨범 항목 관리 (추가/삭제)
-export const manageAlbumItem = async (albumId: string | number, action: 'ADD' | 'REMOVE', type: 'POST' | 'FOLDER', contentId: string | number) => {
-    // [Mock] LocalStorage Modification
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-
-    if (type === 'POST') {
-        const localPosts = JSON.parse(localStorage.getItem('local_posts') || '[]');
-        const targetPostIndex = localPosts.findIndex((p: any) => String(p.id) === String(contentId));
-
-        if (targetPostIndex === -1) return false;
-
-        const post = localPosts[targetPostIndex];
-        const currentAlbumIds: string[] = post.albumIds || [];
-        const currentTags: string[] = post.tags || [];
-        const targetAlbumId = String(albumId);
-
-        // Get Schema for Auto-Tagging check
-        const localAlbums = JSON.parse(localStorage.getItem('my_custom_albums_v2') || '[]');
-        const targetAlbum = localAlbums.find((a: any) => String(a.id) === targetAlbumId);
-        const representativeTag = targetAlbum?.tag;
-        let modified = false;
-
-        if (action === 'ADD') {
-            if (!currentAlbumIds.includes(targetAlbumId)) {
-                post.albumIds = [...currentAlbumIds, targetAlbumId];
-                modified = true;
-            }
-        } else if (action === 'REMOVE') {
-            // 1. Remove Manual ID
-            if (currentAlbumIds.includes(targetAlbumId)) {
-                post.albumIds = currentAlbumIds.filter((id: string) => id !== targetAlbumId);
-                modified = true;
-            }
-
-            // 2. ✨ Remove Representative Tag
-            if (representativeTag && currentTags.includes(representativeTag)) {
-                post.tags = currentTags.filter((t: string) => t !== representativeTag);
-                modified = true;
-            }
-        }
-
-        if (modified) {
-            // ✨ CRITICAL: Update Metadata Block to prevent revert
-            // The fetchPosts logic re-hydrates from Metadata, so we must sync it.
-            const newAlbumIds = post.albumIds;
-            const newTags = post.tags;
-
-            if (post.blocks) {
-                post.blocks = post.blocks.map((b: any) => {
-                    if (b.type === 'paragraph' && b.text && b.text.startsWith('<!--METADATA:')) {
-                        try {
-                            const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
-                            const metadata = JSON.parse(json);
-                            const newMetadata = {
-                                ...metadata,
-                                albumIds: newAlbumIds,
-                                tags: newTags
-                            };
-                            return { ...b, text: `<!--METADATA:${JSON.stringify(newMetadata)}-->` };
-                        } catch (e) { return b; }
-                    }
-                    return b;
+            if (unclassifiedCount > 0) {
+                matchedFolders.push({
+                    id: '__others__',
+                    name: '미분류 보관함',
+                    tag: null,
+                    createdAt: 0,
+                    parentId: null
                 });
             }
-            // If no metadata block exists, we don't create one here (savePostToApi handles creation usually).
-            // But if it existed, we updated it.
-        } else {
-            return false;
         }
+        matchedFolders.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
 
-        localPosts[targetPostIndex] = post;
-        localStorage.setItem('local_posts', JSON.stringify(localPosts));
-        return true;
+        // Sort
+        const sortedFolders = matchedFolders.sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const sortedPosts = matchedPosts.sort((a: any, b: any) => {
+            if (a.isFavorite && !b.isFavorite) return -1;
+            if (!a.isFavorite && b.isFavorite) return 1;
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+
+        return [
+            ...sortedFolders.map((d: any) => ({ type: 'FOLDER' as const, data: d })),
+            ...sortedPosts.map((d: any) => ({ type: 'POST' as const, data: d }))
+        ];
     }
 
+    // 2. Specific Album: Use Optimized Backend Endpoint
+    // GET /api/albums/{id}/contents
+    try {
+        const response = await fetch(`${API_ALBUM_URL}/${targetId}/contents`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) throw new Error("앨범 콘텐츠 불러오기 실패");
+
+        const data = await response.json();
+        const contents: any[] = [];
+
+        // Handle various backend response formats (checking properties or dedicated keys)
+        if (data.albums && Array.isArray(data.albums)) {
+            data.albums.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
+        }
+        if (data.posts && Array.isArray(data.posts)) {
+            data.posts.forEach((p: any) => contents.push({ type: 'POST', data: { ...p, tags: p.hashtags || p.tags || [] } }));
+        }
+
+        // If returned as a flat list with 'type' or just mixed properties
+        if (Array.isArray(data)) {
+            data.forEach((item: any) => {
+                // ✨ Fix for Wrapper Format (Backend V2 Response)
+                if (item.type && item.content) {
+                    if (item.type === 'POST') {
+                        contents.push({
+                            type: 'POST',
+                            data: {
+                                ...item.content,
+                                tags: item.content.hashtags || item.content.tags || []
+                            }
+                        });
+                    } else if (item.type === 'FOLDER' || item.type === 'ALBUM') {
+                        contents.push({
+                            type: 'FOLDER',
+                            data: {
+                                ...item.content,
+                                id: String(item.content.id),
+                                parentId: item.content.parentId ? String(item.content.parentId) : null
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // Heuristic to distinguish: Album has 'name', Post has 'title'
+                if (item.name && !item.title) contents.push({
+                    type: 'FOLDER',
+                    data: {
+                        ...item,
+                        id: String(item.id),
+                        parentId: item.parentId ? String(item.parentId) : null
+                    }
+                });
+                else if (item.title) contents.push({ type: 'POST', data: { ...item, tags: item.hashtags || item.tags || [] } });
+            });
+        }
+
+        return contents;
+
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+};
+
+// 앨범 관리 (항목 추가/제거/이동) - Optimized API
+export const manageAlbumContentApi = async (
+    albumId: string | number,
+    action: 'ADD' | 'REMOVE' | 'MOVE',
+    postId: string | number,
+    sourceAlbumId?: string | number // ✨ New param for MOVE
+) => {
+    try {
+        const payload: any = {
+            action,
+            contentId: postId,
+            type: 'POST'
+        };
+
+        if (action === 'MOVE' && sourceAlbumId) {
+            payload.sourceAlbumId = sourceAlbumId;
+        }
+
+        const response = await fetch(`${API_ALBUM_URL}/${albumId}/manage`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+
+// 앨범 항목 관리 Wrapper
+export const manageAlbumItem = async (
+    albumId: string | number,
+    action: 'ADD' | 'REMOVE' | 'MOVE',
+    type: 'POST' | 'FOLDER',
+    contentId: string | number,
+    sourceAlbumId?: string | number // ✨ New param passed through
+) => {
+
+    // Post Management: Use Optimized Endpoint
+    if (type === 'POST') {
+        // ✨ Pass sourceAlbumId if present
+        const success = await manageAlbumContentApi(albumId, action, contentId, sourceAlbumId);
+        if (success) {
+            return true;
+        }
+        return false;
+    }
+
+    // Folder Management: Move Folder (Change Parent)
     if (type === 'FOLDER') {
-        const localAlbums = JSON.parse(localStorage.getItem('my_custom_albums_v2') || '[]');
-        const targetAlbumIndex = localAlbums.findIndex((a: any) => String(a.id) === String(contentId));
+        const albums = await fetchAlbumsFromApi();
+        const targetAlbum = albums.find((a: any) => String(a.id) === String(contentId));
 
-        if (targetAlbumIndex === -1) return false;
+        if (!targetAlbum) return false;
 
-        const album = localAlbums[targetAlbumIndex];
+        let newParentId = targetAlbum.parentId;
 
-        if (action === 'ADD') {
-            album.parentId = String(albumId);
+        if (action === 'ADD' || action === 'MOVE') { // Treat MOVE same as ADD for folders (re-parenting)
+            newParentId = String(albumId);
         } else if (action === 'REMOVE') {
-            if (album.parentId === String(albumId)) {
-                album.parentId = null;
+            if (String(newParentId) === String(albumId)) {
+                newParentId = null;
             }
         }
 
-        // Folder parentId logic doesn't use Metadata blocks, so this is safe.
-
-        localAlbums[targetAlbumIndex] = album;
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(localAlbums));
+        const updatedAlbum = { ...targetAlbum, parentId: newParentId };
+        await updateAlbumApi(contentId, updatedAlbum);
         return true;
     }
 

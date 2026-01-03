@@ -65,6 +65,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
 
     // ✨ Local State for API Data
     const [contents, setContents] = useState<{ type: 'POST' | 'FOLDER', data: any }[]>([]);
+    const [currentAlbum, setCurrentAlbum] = useState<any | null>(null); // ✨ Current Album Info
     const [isLoading, setIsLoading] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false); // For "Add Existing"
 
@@ -74,9 +75,27 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
             // Loading state only if no data (initial load) to prevent flicker on update
             if (contents.length === 0) setIsLoading(true);
             try {
-                // Import dynamically or assume it's imported at top (I'll add import line)
-                const data = await import('../api').then(m => m.fetchAlbumContents(albumId, allPosts, customAlbums));
+                const api = await import('../api');
+
+                // 1. Fetch Contents
+                const data = await api.fetchAlbumContents(albumId, allPosts, customAlbums);
                 setContents(data as any);
+
+                // 2. Fetch Current Album Details (for Breadcrumbs & Root Path)
+                if (albumId !== '__all__' && albumId !== '__others__') {
+                    const albumInfo = await api.fetchAlbumApi(albumId);
+                    if (albumInfo) {
+                        setCurrentAlbum({
+                            id: String(albumInfo.id),
+                            name: albumInfo.name,
+                            parentId: albumInfo.parentId ? String(albumInfo.parentId) : null,
+                            type: albumInfo.type
+                        });
+                    }
+                } else {
+                    setCurrentAlbum(null);
+                }
+
             } catch (e) {
                 console.error("Failed to load album contents", e);
             } finally {
@@ -93,16 +112,25 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     const folders = contents.filter(c => c.type === 'FOLDER').map(c => c.data);
     const localPosts = contents.filter(c => c.type === 'POST').map(c => c.data as PostData);
 
+    // ✨ Augmented Albums for Breadcrumbs (Include current if missing from global list)
+    const augmentedAlbums = React.useMemo(() => {
+        if (!currentAlbum) return customAlbums;
+        const exists = customAlbums.some(a => String(a.id) === String(currentAlbum.id));
+        if (exists) return customAlbums;
+        return [...customAlbums, currentAlbum];
+    }, [customAlbums, currentAlbum]);
+
     // ✨ Use Breadcrumb Hook
-    const breadcrumbItems = useBreadcrumbs(albumId, customAlbums, onAlbumClick);
+    const breadcrumbItems = useBreadcrumbs(albumId, augmentedAlbums, onAlbumClick);
 
     // ✨ Item Management Handlers
     const handleManageItem = async (action: 'ADD' | 'REMOVE', type: 'POST' | 'FOLDER', id: string | number) => {
         if (!albumId) return;
         const api = await import('../api');
         await api.manageAlbumItem(albumId, action, type, id);
-        // loadContents(); // ✨ Removed: useEffect will trigger via allPosts change if onRefresh works
+        loadContents(); // ✨ Trigger explicit refresh locally
         onRefresh?.();
+        // Also refresh global posts to update album counts or tags if needed
     };
 
     const handleCreateFolder = (name: string) => {
@@ -114,17 +142,37 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
         const { active, over } = event;
         if (!over) return;
 
-        const targetFolderId = String(over.id);
         const isActivePost = localPosts.some(p => String(p.id) === String(active.id));
+        if (!isActivePost) return;
+
+        const overData = over.data.current;
+        let targetFolderId: string | null = null;
+
+        // 1. Detect target (Folder item OR Breadcrumb item)
+        if (overData?.type === 'BREADCRUMB') {
+            targetFolderId = overData.albumId !== undefined ? (overData.albumId === null ? null : String(overData.albumId)) : null;
+        } else {
+            targetFolderId = String(over.id);
+        }
+
+        const api = await import('../api');
+        let success = false;
 
         // Move Post to Folder
-        if (isActivePost) {
-            const api = await import('../api');
-            await api.manageAlbumItem(targetFolderId, 'ADD', 'POST', active.id);
-            if (albumId && albumId !== '__all__' && albumId !== '__others__') {
-                await api.manageAlbumItem(albumId, 'REMOVE', 'POST', active.id);
-            }
-            onRefresh?.();
+        // ✨ Use Atomic MOVE Action if moving from a valid album
+        if (albumId && albumId !== '__all__' && albumId !== '__others__') {
+            success = await api.manageAlbumItem(targetFolderId || '__all__', 'MOVE', 'POST', active.id, albumId);
+        } else {
+            success = await api.manageAlbumItem(targetFolderId || '__all__', 'ADD', 'POST', active.id);
+        }
+
+        // ✨ Optimistic UI Update: Remove from view immediately
+        if (success) {
+            setContents(prev => prev.filter(item => {
+                // Keep if not the moved post
+                if (item.type === 'POST' && String(item.data.id) === String(active.id)) return false;
+                return true;
+            }));
         }
     };
 
@@ -146,7 +194,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     <div className="flex items-center gap-4 w-full md:w-auto">
                         <button
                             onClick={() => {
-                                const parent = customAlbums.find(a => a.id === albumId)?.parentId;
+                                const parent = augmentedAlbums.find(a => String(a.id) === String(albumId))?.parentId;
                                 onAlbumClick(parent || null);
                             }}
                             className="p-3 hover:bg-[var(--bg-card-secondary)] rounded-full transition text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -158,8 +206,8 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
 
                             {/* ✨ Room Settings Trigger */}
                             {(() => {
-                                const currentAlbum = customAlbums.find(a => a.id === albumId);
-                                if (currentAlbum?.type === 'room') {
+                                const activeAlbum = augmentedAlbums.find(a => String(a.id) === String(albumId));
+                                if (activeAlbum?.type === 'room') {
                                     return (
                                         <button
                                             onClick={() => setRoomSettingsId(albumId!)}
@@ -187,7 +235,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                             </button>
                         )}
 
-                        {albumId !== '__all__' && !customAlbums.find(a => a.id === albumId)?.parentId && (
+                        {albumId !== '__all__' && !augmentedAlbums.find(a => String(a.id) === String(albumId))?.parentId && (
                             <button
                                 onClick={() => setIsCreateFolderOpen(true)}
                                 className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-transparent hover:border-indigo-200 whitespace-nowrap flex-shrink-0"
@@ -417,7 +465,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     <RoomSettingsModal
                         isOpen={!!roomSettingsId}
                         onClose={() => setRoomSettingsId(null)}
-                        album={customAlbums.find(a => a.id === roomSettingsId)!}
+                        album={augmentedAlbums.find(a => a.id === roomSettingsId)!}
                     />
                 )}
             </div>

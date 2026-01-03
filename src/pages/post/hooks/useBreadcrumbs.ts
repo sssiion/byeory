@@ -17,14 +17,15 @@ export const useBreadcrumbs = (
 ) => {
     return useMemo(() => {
         const items: BreadcrumbItem[] = [
-            { label: baseLabel, icon: Home, onClick: () => onNavigate(null) }
+            { id: null, label: baseLabel, icon: Home, onClick: () => onNavigate(null) }
         ];
 
         // ✨ Nest __others__ under __all__
         if (currentId === '__others__') {
-            items.push({ label: '모든 기록 보관함', icon: Folder, onClick: () => onNavigate('__all__') });
+            items.push({ id: '__all__', label: '모든 기록 보관함', icon: Folder, onClick: () => onNavigate('__all__') });
             // For __others__, it's a leaf node, so we respect disableLast
             items.push({
+                id: '__others__',
                 label: '미분류',
                 icon: Folder,
                 onClick: disableLast ? undefined : () => onNavigate('__others__')
@@ -34,6 +35,7 @@ export const useBreadcrumbs = (
 
         if (currentId === '__all__') {
             items.push({
+                id: '__all__',
                 label: '모든 기록 보관함',
                 icon: Folder,
                 onClick: disableLast ? undefined : () => onNavigate('__all__')
@@ -44,14 +46,14 @@ export const useBreadcrumbs = (
         if (!currentId) return items;
 
         const chain: CustomAlbum[] = [];
-        let curr = customAlbums.find(a => a.id === currentId);
+        let curr = customAlbums.find(a => String(a.id) === String(currentId));
 
         // Prevent infinite loops
         let depth = 0;
         while (curr && depth < 10) {
             chain.unshift(curr);
             if (!curr.parentId) break;
-            curr = customAlbums.find(a => a.id === curr!.parentId);
+            curr = customAlbums.find(a => String(a.id) === String(curr!.parentId));
             depth++;
         }
 
@@ -61,6 +63,7 @@ export const useBreadcrumbs = (
             const isLast = index === chain.length - 1;
 
             items.push({
+                id: album.id,
                 label: album.name,
                 icon: isRoot ? Book : Folder, // ✨ Specific Icon Logic
                 onClick: (isLast && disableLast) ? undefined : () => onNavigate(album.id)

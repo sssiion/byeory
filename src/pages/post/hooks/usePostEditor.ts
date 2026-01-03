@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -34,7 +34,7 @@ export const usePostEditor = () => {
     const [selectedLayoutId, setSelectedLayoutId] = useState('type-a');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    // ✨ 커스텀 앨범 목록 (로컬 스토리지 사용)
+    // ✨ 커스텀 앨범 목록 (API 사용)
     const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
 
     // ✨ New fields for Album/Note Management
@@ -55,174 +55,109 @@ export const usePostEditor = () => {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // ✨ Fetch Initial Data (Posts & Albums from API)
     useEffect(() => {
-        if (supabase) fetchPosts();
-
-        // 로컬 스토리지에서 커스텀 앨범 목록 불러오기
-        const savedAlbums = localStorage.getItem('my_custom_albums_v2');
-        if (savedAlbums) {
-            try {
-                const parsed = JSON.parse(savedAlbums);
-                const validAlbums = parsed.filter((a: any) => a.name && a.name !== 'undefined' && a.name !== 'null');
-
-                // ✨ Migration: Assign IDs if missing
-                const migrated = validAlbums.map((a: any) => ({
-                    ...a,
-                    id: a.id || `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    isFavorite: a.isFavorite || false,
-                    type: a.type || 'album' // Default type
-                }));
-
-                if (JSON.stringify(migrated) !== JSON.stringify(validAlbums)) {
-                    localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
-                }
-                setCustomAlbums(migrated);
-            } catch (e) { }
-        } else {
-            // 마이그레이션: 구 버전 데이터가 있으면 변환 시도
-            const oldAlbums = localStorage.getItem('my_custom_albums');
-            if (oldAlbums) {
-                try {
-                    const parsed: string[] = JSON.parse(oldAlbums);
-                    // Filter out invalid names
-                    const validNames = parsed.filter(name => name && name !== 'undefined' && name !== 'null');
-                    const migrated = validNames.map(name => ({
-                        id: `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        name,
-                        tag: null,
-                        createdAt: Date.now(),
-                        isFavorite: false,
-                        type: 'album'
-                    })); // 마이그레이션 시 현재 시간 부여
-                    setCustomAlbums(migrated as CustomAlbum[]);
-                    localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
-                } catch (e) { }
-            }
+        if (supabase) {
+            fetchPosts();
+            fetchAlbums();
         }
     }, []);
 
-    // 앨범 생성 핸들러 (Updated Signature)
-    const handleCreateAlbum = (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any) => {
-        if (!name) return null;
-        const tag = tags[0] || null;
+    // ✨ 앨범 목록 불러오기 (API)
+    const fetchAlbums = async () => {
+        const data = await fetchAlbumsFromApi();
+        if (data) {
+            // ✨ Helper to flatten hierarchy if backend returns tree
+            const flatten = (list: any[]): any[] => {
+                return list.reduce((acc, item) => {
+                    acc.push(item);
+                    if (item.children && Array.isArray(item.children)) {
+                        acc.push(...flatten(item.children));
+                    }
+                    return acc;
+                }, []);
+            };
 
-        // ✨ Removed duplicate check to allow same tag/name but different ID
-        if (name.trim() === "") return null;
+            const flatData = flatten(Array.isArray(data) ? data : []);
 
-        // ✨ Check for duplicate name in same parent
-        const isDuplicate = customAlbums.some(a => a.name === name && a.parentId === (parentId || null));
-        if (isDuplicate) {
-            alert("이미 존재하는 폴더 이름입니다.");
-            return null;
+            // API returns array of Album (number ID), we need to adapt to CustomAlbum (string ID potentially, but let's try to unify)
+            // Frontend assumes string IDs heavily for logic. Let's cast to string.
+            const adapted: CustomAlbum[] = flatData.map((a: any) => ({
+                id: String(a.id),
+                name: a.name,
+                tag: a.tag,
+                createdAt: new Date(a.createdAt || Date.now()).getTime(),
+                parentId: a.parentId ? String(a.parentId) : null,
+                isFavorite: a.isFavorite || false,
+                type: a.type || 'album'
+            }));
+            setCustomAlbums(adapted);
         }
+    };
+    // 앨범 생성 핸들러 (API Integration)
+    const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album') => {
+        if (!name || name.trim() === "") return null;
 
-        const newId = `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newAlbum: CustomAlbum = {
-            id: newId,
+        // Optimistic UI Update (Optional, skipping for simplicity & correctness)
+
+        const newAlbumData = {
             name,
-            tag,
-            createdAt: Date.now(),
+            tag: tags[0] || null,
             parentId: parentId || null,
-            isFavorite: false,
-            type,
-            roomConfig
+            type
         };
-        const newAlbums = [...customAlbums, newAlbum];
-        setCustomAlbums(newAlbums);
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(newAlbums));
-        return newId; // ✨ Return ID for auto-selection
+
+        const created = await createAlbumApi(newAlbumData);
+        if (created) {
+            await fetchAlbums(); // Refresh list
+            return String(created.id);
+        }
+        return null;
     };
 
-    // 앨범 이름 변경 핸들러
-    const handleRenameAlbum = (id: string, newName: string) => {
-        const next = customAlbums.map(a =>
-            a.id === id ? { ...a, name: newName } : a
-        );
-        setCustomAlbums(next);
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(next));
+    // 앨범 이름 변경 핸들러 (API Integration)
+    const handleRenameAlbum = async (id: string, newName: string) => {
+        const target = customAlbums.find(a => a.id === id);
+        if (!target) return;
+
+        await updateAlbumApi(id, { ...target, name: newName });
+        await fetchAlbums();
     };
 
-    // ✨ Toggle Album Favorite
-    const handleToggleAlbumFavorite = (id: string) => {
-        const next = customAlbums.map(a =>
-            a.id === id ? { ...a, isFavorite: !a.isFavorite } : a
-        );
-        setCustomAlbums(next);
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(next));
+    // ✨ Toggle Album Favorite (API Integration)
+    const handleToggleAlbumFavorite = async (id: string) => {
+        const target = customAlbums.find(a => a.id === id);
+        if (!target) return;
+
+        // Optimistic
+        setCustomAlbums(prev => prev.map(a => a.id === id ? { ...a, isFavorite: !a.isFavorite } : a));
+
+        const success = await updateAlbumApi(id, { ...target, isFavorite: !target.isFavorite });
+        if (!success) {
+            // Revert
+            setCustomAlbums(prev => prev.map(a => a.id === id ? target : a));
+        }
     };
 
-    // 앨범 삭제 핸들러 (Recursive + Content Deletion)
+    // 앨범 삭제 핸들러 (API Integration)
     const handleDeleteAlbum = async (id: string) => {
-        // 1. Identify all albums to delete (Target + Descendants)
-        const getDescendants = (parentId: string): string[] => {
-            const children = customAlbums.filter(a => a.parentId === parentId);
-            let ids = children.map(c => c.id);
-            children.forEach(c => {
-                ids = [...ids, ...getDescendants(c.id)];
-            });
-            return ids;
-        };
-        const allToDeleteIds = [id, ...getDescendants(id)];
+        if (!confirm('정말 이 앨범을 삭제하시겠습니까? 포함된 폴더와 내용은 유지되거나 삭제될 수 있습니다(백엔드 정책 따름).')) return;
 
-        // 2. Remove albums
-        const nextAlbums = customAlbums.filter(a => !allToDeleteIds.includes(a.id));
-        setCustomAlbums(nextAlbums);
-        localStorage.setItem('my_custom_albums_v2', JSON.stringify(nextAlbums));
+        // Optimistic UI
+        setCustomAlbums(prev => prev.filter(a => a.id !== id));
 
-        // 3. Handle Posts
-        // Logic: Remove deleted IDs from posts. If a post has NO valid IDs left (and isn't tagged to a surviving album), delete it.
-        // Logic: Remove deleted IDs from posts. If a post has NO valid IDs left (and isn't tagged to a surviving album), delete it.
-
-        // We need to process essentially all posts to clean up references
-        const updatedPosts = posts.map(p => {
-            if (!p.albumIds) return p;
-
-            // Remove deleted IDs
-            const stats = p.albumIds.filter(aid => !allToDeleteIds.includes(aid));
-            if (stats.length !== p.albumIds.length) {
-                return { ...p, albumIds: stats };
-            }
-            return p;
-        });
-
-        // Now filter out "orphaned" posts if they should be deleted
-        // User said: "contents should also be deleted"
-        // If a post was in a deleted folder, and is now in NO folder (empty albumIds)
-        // AND it doesn't match any legacy tags of surviving albums -> Delete it.
-        const finalPosts = updatedPosts.filter(p => {
-            // If it still has album IDs, keep it
-            if (p.albumIds && p.albumIds.length > 0) return true;
-
-            // If no IDs, check if it was affected by deletion (was it in one of the deleted albums?)
-            // We can check if the ORIGINAL post had one of the deleted IDs.
-            const original = posts.find(op => op.id === p.id);
-            const wasInDeleted = original?.albumIds?.some(aid => allToDeleteIds.includes(aid));
-
-            if (wasInDeleted) {
-                // It was in a deleted album, and now has no IDs.
-                // Check legacy tags just in case
-                const hasSurvivorTag = p.tags?.some(t => nextAlbums.some(a => a.tag === t));
-                if (hasSurvivorTag) return true; // Keep if linked by tag to survivor
-                return false; // DELETE
-            }
-
-            return true; // Wasn't involved, keep
-        });
-
-        setPosts(finalPosts);
-        // Note: In a real app, we'd batch delete from backend here.
-        // For now simulating by saving if we had a save mechanism for bulk posts,
-        // but since posts are saved individually in this app structure, we rely on local state 
-        // until next fetch or save. 
-        // WAIT: We need to persist this deletion!
-        // The current app seems to fetch from API. We need a way to delete from API.
-        // The existing `handleDeletePost` calls `deletePostFromApi`.
-        // We should identify IDs to delete and call API.
-
-        const postsToDelete = posts.filter(p => !finalPosts.find(fp => fp.id === p.id));
-        // ✨ Call real API for deletion
-        postsToDelete.forEach(p => deletePostApi(p.id));
+        const success = await deleteAlbumApi(id);
+        if (success) {
+            await fetchAlbums(); // Refresh to sync backend cascade state
+            await fetchAlbums(); // Refresh to sync backend cascade state
+            // if (activeDropdownId === id) setActiveDropdownId(null); // Cleanup UI state if needed, though this hook doesn't hold it.
+        } else {
+            alert("앨범 삭제 실패");
+            await fetchAlbums(); // Revert
+        }
     };
+
+    // ... (Dropdown state logic is in Component, not Hook. Proceeding.)
 
     // ✨ Delete Post Handler (Single)
     const handleDeletePost = async (id: string | number) => {
@@ -278,15 +213,28 @@ export const usePostEditor = () => {
 
                 // 메타데이터 블록 추출
                 rawBlocks.forEach((b: Block) => {
-                    if (b.type === 'paragraph' && b.text && b.text.startsWith('<!--METADATA:')) {
+                    // ✨ Robust Metadata Detection (Regex)
+                    const cleanText = b.text ? b.text.trim() : "";
+                    // Debug Log to help user trace the issue
+                    if (cleanText.includes('METADATA')) {
+                        console.log('[Debug] Metadata Candidate:', b.id, cleanText);
+                    }
+
+                    const metaRegex = /<!--METADATA:(.*?)-->/;
+                    const match = cleanText.match(metaRegex);
+
+                    if (b.type === 'paragraph' && match) {
                         try {
-                            const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
+                            // match[1] contains the JSON string
+                            const json = match[1];
                             const metadata = JSON.parse(json);
                             if (metadata.titleStyles) parsedTitleStyles = metadata.titleStyles;
 
                             // Capture for fallback usage later
                             if (metadata.tags && Array.isArray(metadata.tags)) metadataTags = metadata.tags;
                             if (metadata.albumIds && Array.isArray(metadata.albumIds)) metadataAlbumIds = metadata.albumIds;
+
+                            console.log('[Debug] Metadata Parsed:', metadata);
                         } catch (e) {
                             console.error('Failed to parse metadata block', e);
                         }
@@ -294,6 +242,7 @@ export const usePostEditor = () => {
                         contentBlocks.push(b);
                     }
                 });
+
 
                 // 3. ✨ Priority Logic Fix: DB Properties > Metadata
                 if (p.albumIds && Array.isArray(p.albumIds)) {
@@ -360,11 +309,7 @@ export const usePostEditor = () => {
         // ✨ 앨범 문맥이 있으면 해당 앨범 자동 선택
         if (initialAlbumId) {
             setTargetAlbumIds([initialAlbumId]);
-            setMode('MANUAL'); // ✨ If starting from album, prefer MANUAL? Or keep AUTO? 
-            // Usually if user is inside an album and clicks "Add Post", they probably want it there.
-            // But let's stick to default AUTO unless user explicitly sets it.
-            // Actually, if we set targetAlbumIds, we should probably set MANUAL if we want to enforce it.
-            // But let's leave it as AUTO default, user can switch.
+            setMode('MANUAL');
         } else {
             setTargetAlbumIds([]);
             setMode('AUTO');
@@ -400,58 +345,44 @@ export const usePostEditor = () => {
 
         // 캔버스가 고정 픽셀(800px)이므로 변환 없이 그대로 저장합니다.
 
-        // ✨ 1. 태그 기반 앨범 자동 생성 로직 (Refactored for IDs)
-        // targetAlbumIds에 있는 것은 이미 존재하는 앨범.
-        // currentTags에 있지만 targetAlbumIds와 매핑되지 않는 것은 "새 앨범"으로 간주하거나, 단순 태그.
-
         // ✨ DEFENSIVE: Ensure primitives for Metadata to avoid Circular JSON
         const safeTags = Array.isArray(currentTags) ? currentTags.filter(t => typeof t === 'string') : [];
         const safeAlbumIds = Array.isArray(targetAlbumIds) ? targetAlbumIds.filter(id => typeof id === 'string') : [];
 
-        // 메타데이터 블록 생성 (제목 스타일, 태그, 앨범 ID 저장용)
-        // ✨ Safe Metadata Generation: Construct a fresh object to avoid circular references
-        const safeTitleStyles = {
-            fontSize: titleStyles.fontSize || '30px',
-            fontWeight: titleStyles.fontWeight || 'bold',
-            fontFamily: titleStyles.fontFamily || "'Noto Sans KR', sans-serif",
-            color: titleStyles.color || '#000000',
-            textAlign: titleStyles.textAlign || 'left'
-        };
+        // ✨ Auto-Link Logic: Resolve IDs for Tags (AUTO Mode)
+        const finalAlbumIds = new Set(safeAlbumIds); // Start with manually selected IDs
 
-        const metadata = { titleStyles: safeTitleStyles, tags: safeTags, albumIds: safeAlbumIds };
+        if (mode === 'AUTO' && safeTags.length > 0) {
+            // Remove duplicates from tags to avoid redundant ops
+            const uniqueTags = Array.from(new Set(safeTags));
 
-        let metadataString = "{}";
-        try {
-            metadataString = JSON.stringify(metadata);
-        } catch (e) {
-            console.error("Failed to stringify metadata:", e);
-            metadataString = JSON.stringify({
-                titleStyles: { fontSize: '30px', fontWeight: 'bold' },
-                tags: [],
-                albumIds: []
-            });
+            for (const tag of uniqueTags) {
+                const existing = customAlbums.find(a => a.tag === tag || a.name === tag);
+                if (existing) {
+                    finalAlbumIds.add(existing.id);
+                } else {
+                    // Auto-create and get ID
+                    // Note: We await sequentially
+                    const newId = await handleCreateAlbum(tag, [tag]);
+                    if (newId) finalAlbumIds.add(newId);
+                }
+            }
         }
-
-        const metadataBlock: Block = {
-            id: `meta-${Date.now()}`,
-            type: 'paragraph',
-            text: `<!--METADATA:${metadataString}-->`,
-            styles: { display: 'none' }
-        };
+        const mergedAlbumIds = Array.from(finalAlbumIds);
 
         const postData = {
             id: currentPostId,
             title,
-            blocks: [...blocks, metadataBlock], // 마지막에 숨김 블록 추가
-            stickers,        // 있는 그대로 저장
-            floatingTexts,   // 있는 그대로 저장
-            floatingImages,   // 있는 그대로 저장
-            titleStyles,     // 백엔드 지원 시 사용
-            tags: safeTags, // ✨ 태그 저장
-            albumIds: safeAlbumIds, // ✨ 앨범 ID 저장
-            mode, // ✨ New field
-            isFavorite, // ✨ New field
-            visibility // ✨ New field for Rooms
+            blocks: blocks.filter(b => !b.text || !b.text.includes('<!--METADATA:')),
+            stickers,
+            floatingTexts,
+            floatingImages,
+            titleStyles,
+            tags: safeTags,
+            albumIds: mergedAlbumIds,
+            mode,
+            isFavorite,
+            visibility
         };
 
         setIsSaving(true);
@@ -653,68 +584,38 @@ export const usePostEditor = () => {
         setViewMode(newMode);
 
         // ✨ Push state to history
-        // Construct a URL-friendly fragment or query param if desired, 
-        // but for now, we just push state object to keep it simple without full router.
-        // We can use hash: #album/id or just keep URL stable and use state.
-        // User asked for Back button support, so history API is key.
         window.history.pushState({ viewMode: newMode, selectedAlbumId: id }, '', id ? `#album/${id}` : '#albums');
     };
 
     // ✨ Handle Move Post (Drag and Drop)
     const handleMovePost = async (postId: string | number, targetAlbumId: string | null) => {
-        const targetPost = posts.find(p => String(p.id) === String(postId));
-        if (!targetPost) return;
+        // Use New API Endpoint
+        // POST /api/albums/{id}/manage (wrapped in manageAlbumItem)
 
-        let newAlbumIds = targetPost.albumIds || [];
-        const currentContextId = selectedAlbumId;
-
-        if (targetAlbumId) {
-            // 1. Add Target ID
-            if (!newAlbumIds.includes(targetAlbumId)) {
-                newAlbumIds = [...newAlbumIds, targetAlbumId];
+        // Optimistic Update
+        setPosts(prev => prev.map(p => {
+            if (String(p.id) !== String(postId)) return p;
+            let newIds = p.albumIds || [];
+            if (targetAlbumId) {
+                if (!newIds.includes(targetAlbumId)) newIds = [...newIds, targetAlbumId];
+                // Remove from current context if applicable
+                if (selectedAlbumId && selectedAlbumId !== '__all__' && selectedAlbumId !== '__others__') {
+                    newIds = newIds.filter(id => id !== selectedAlbumId);
+                }
             }
+            return { ...p, albumIds: newIds };
+        }));
 
-            // 2. Remove Source ID (Context)
-            // Standard "Move" behavior: Remove from current folder if we are in one.
-            if (currentContextId && currentContextId !== '__all__' && currentContextId !== '__others__') {
-                newAlbumIds = newAlbumIds.filter(id => id !== currentContextId);
+        const { manageAlbumItem } = await import('../api'); // lazy load to avoid circular deps if any
+        if (targetAlbumId) {
+            await manageAlbumItem(targetAlbumId, 'ADD', 'POST', postId);
+            if (selectedAlbumId && selectedAlbumId !== '__all__' && selectedAlbumId !== '__others__') {
+                await manageAlbumItem(selectedAlbumId, 'REMOVE', 'POST', postId);
             }
         }
 
-        // 3. ✨ CRITICAL: Update Metadata Block to ensure persistence
-        // The backend/fetch logic relies on the metadata block inside `blocks`. 
-        // We must update it, otherwise `fetchPosts` will revert to old IDs.
-
-        const newBlocks = targetPost.blocks.map(b => {
-            if (b.type === 'paragraph' && b.text && b.text.startsWith('<!--METADATA:')) {
-                try {
-                    const json = b.text.replace('<!--METADATA:', '').replace('-->', '');
-                    const metadata = JSON.parse(json);
-
-                    // Update albumIds in metadata
-                    // ✨ CRITICAL: Preserve tags! If we don't include them, they might be lost if only defined in DB/API but not metadata.
-                    const newMetadata = {
-                        ...metadata,
-                        albumIds: newAlbumIds,
-                        tags: targetPost.tags || [] // Ensure tags are persisted
-                    };
-                    const newText = `<!--METADATA:${JSON.stringify(newMetadata)}-->`;
-
-                    return { ...b, text: newText };
-                } catch (e) {
-                    console.error("Failed to update metadata during move", e);
-                    return b;
-                }
-            }
-            return b;
-        });
-
-        // Update Local State
-        const updatedPost = { ...targetPost, albumIds: newAlbumIds, blocks: newBlocks };
-        setPosts(prev => prev.map(p => String(p.id) === String(postId) ? updatedPost : p));
-
-        // API Call
-        await savePostToApi(updatedPost, true);
+        // Refresh to ensure sync
+        fetchPosts();
     };
 
     return {
