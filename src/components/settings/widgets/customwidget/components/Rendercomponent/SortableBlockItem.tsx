@@ -139,7 +139,7 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
 
                     {/* 컨텐츠 영역 (BlockRenderer) */}
                     {/* min-w-0와 h-full을 주어 부모 크기 변화에 따라 컨텐츠도 같이 변하게 함 */}
-                    <div className="flex-1 min-w-0 h-full py-2 pr-2">
+                    <div className="flex-1 min-w-0 h-full ">
                         <BlockRenderer
                             block={block}
                             selectedBlockId={selectedBlockId}

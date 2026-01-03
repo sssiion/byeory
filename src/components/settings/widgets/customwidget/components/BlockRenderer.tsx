@@ -53,56 +53,139 @@ interface RendererProps {
 
 
 // --- Helper Components (Defined before BlockRenderer to avoid usage-before-declaration) ---
-const ToggleItem = ({ title, items, style }: any) => {
+const ToggleItem = ({ block, onUpdateBlock, style }: any) => {
+    const { content } = block;
     const [isOpen, setIsOpen] = useState(false);
+    const items = content.items || [];
+
+    // 리스트 아이템 개별 수정 헬퍼 함수
+    const handleItemUpdate = (index: number, newVal: string) => {
+        const newItems = [...items];
+        newItems[index] = newVal;
+        onUpdateBlock(block.id, { content: { ...content, items: newItems } });
+    };
+
     return (
         <div className="w-full h-full">
-            <div onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 p-1 rounded select-none">
-                {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span style={style} className="font-bold truncate">{title}</span>
+            {/* 헤더 영역 */}
+            <div
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
+                }}
+                className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 p-1 rounded select-none group"
+            >
+                <div className="text-gray-400 group-hover:text-gray-600">
+                    {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </div>
+
+                {/* 🌟 제목을 EditableText로 변경 */}
+                <div className="flex-1 min-w-0 font-bold">
+                    <EditableText
+                        tagName="span"
+                        text={content.title}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
+                        style={style}
+                        className="truncate" // 말줄임 처리
+                        placeholder="토글 제목"
+                    />
+                </div>
             </div>
+
+            {/* 펼쳐진 내용 */}
             {isOpen && (
                 <ul className="pl-6 mt-1 list-disc text-gray-600 space-y-1">
-                    {items.map((it: string, i: number) => <li key={i} style={{ fontSize: '0.9em' }} className="break-words">{it}</li>)}
+                    {items.map((it: string, i: number) => (
+                        <li key={i} style={{ fontSize: '0.9em' }} className="break-words pl-1">
+                            {/* 🌟 리스트 아이템도 EditableText로 변경 */}
+                            <EditableText
+                                tagName="span"
+                                text={it}
+                                onUpdate={(val) => handleItemUpdate(i, val)}
+                                style={{...style, fontWeight: 'normal'}} // 본문은 굵기 빼기
+                                placeholder={`항목 ${i + 1}`}
+                            />
+                        </li>
+                    ))}
                 </ul>
             )}
         </div>
     );
 };
-
-const AccordionItem = ({ title, body, style }: any) => {
+const AccordionItem = ({ block, onUpdateBlock, style }: any) => {
+    const { content } = block;
     const [isOpen, setIsOpen] = useState(false);
+
     return (
-        <div className="w-full h-full border border-gray-200 rounded-lg overflow-hidden  bg-white shadow-sm">
-            <div onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }} className="bg-gray-50 p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors">
-                <span style={style} className="font-bold text-gray-800 truncate">{title}</span>
-                {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <div className="w-full h-full border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm flex flex-col">
+            <div
+                onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+                className="bg-gray-50 p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition-colors shrink-0"
+            >
+                {/* 제목 수정 */}
+                <div className="flex-1 min-w-0 font-bold text-gray-800">
+                    <EditableText
+                        tagName="span"
+                        text={content.title}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
+                        style={style}
+                        className="truncate"
+                        placeholder="아코디언 제목"
+                    />
+                </div>
+                <div className="text-gray-500 ml-2">
+                    {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </div>
             </div>
-            {isOpen && <div className="p-3 text-sm border-t border-gray-100 bg-white text-gray-600 leading-relaxed whitespace-pre-wrap break-words">{body}</div>}
+
+            {/* 본문 수정 */}
+            {isOpen && (
+                <div className="p-3 text-sm border-t border-gray-100 bg-white text-gray-600 leading-relaxed break-words h-full">
+                    <EditableText
+                        tagName="p"
+                        text={content.body}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, body: val } })}
+                        style={style}
+                        className="whitespace-pre-wrap"
+                        placeholder="내용을 입력하세요..."
+                    />
+                </div>
+            )}
         </div>
     );
 };
 
-const SpoilerItem = ({ content, style }: any) => {
+// 🌟 2. 스포일러 수정: 내용 수정 가능하게 변경
+const SpoilerItem = ({ block, onUpdateBlock, style }: any) => {
+    const { content } = block;
     const [isRevealed, setIsRevealed] = useState(false);
 
     return (
         <div
-            onClick={() => {
-                setIsRevealed(!isRevealed);
-            }}
-            className={`h-full w-full
-                relative p-3 rounded-lg border transition-all cursor-pointer group select-none
+            onClick={() => setIsRevealed(!isRevealed)}
+            className={`h-full w-full relative p-3 rounded-lg border transition-all cursor-pointer group select-none flex flex-col
                 ${isRevealed
-                    ? 'bg-gray-50 border-gray-200 text-gray-800'
-                    : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
-                }
+                ? 'bg-gray-50 border-gray-200 text-gray-800'
+                : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
+            }
             `}
             style={style}
         >
-            <p className={`break-words ${isRevealed ? '' : 'blur-sm select-none'}`}>
-                {content.text}
-            </p>
+            <div className={`break-words w-full h-full ${isRevealed ? '' : 'blur-sm select-none pointer-events-none'}`}>
+                {/* 공개되었을 때만 편집 가능하도록 함 */}
+                {isRevealed ? (
+                    <EditableText
+                        tagName="p"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={style}
+                        placeholder="스포일러 내용"
+                    />
+                ) : (
+                    <p>{content.text || '스포일러 내용'}</p>
+                )}
+            </div>
+
             {!isRevealed && (
                 <div className="absolute inset-0 flex items-center justify-center gap-2 text-gray-400 font-medium">
                     <EyeOff size={18} />
@@ -444,52 +527,56 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     const renderWidgetContent = () => {
         switch (type) {
         // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
-        case 'heading1':
-            return (
-                <EditableText
-                    tagName="h1"
-                    text={content.text}
-                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                    style={commonStyle}
-                    className="text-2xl font-bold mb-2 border-b pb-1 border-gray-100 break-words"
-                    placeholder="Heading 1"
-                />
-            );
-        case 'heading2':
-            return (
-                <EditableText
-                    tagName="h2"
-                    text={content.text}
-                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                    style={commonStyle}
-                    className="text-xl font-bold mb-1 mt-2 break-words"
-                    placeholder="Heading 2"
-                />
-            );
-        case 'heading3':
-            return (
-                <div className="h-full w-full overflow-hidden">
-                <EditableText
-                    tagName="h3"
-                    text={content.text}
-                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                    style={commonStyle}
-                    className="text-lg font-semibold mb-1 break-words"
-                    placeholder="Heading 3"
-                />
-                </div>
-            );
-        case 'text':
-            return (
-                <EditableText
-                    tagName="p"
-                    text={content.text}
-                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                    style={commonStyle}
-                    className="whitespace-pre-wrap leading-relaxed break-words"
-                    placeholder="텍스트를 입력하세요..."
-                />
-            );
+            case 'heading1':
+                return (
+                    <EditableText
+                        tagName="h1"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={commonStyle}
+                        // 🌟 [수정] mb-2, border-b, pb-1 제거 -> 여백 없이 딱 맞게
+                        className="text-2xl font-bold break-words leading-none"
+                        placeholder="Heading 1"
+                    />
+                );
+            case 'heading2':
+                return (
+                    <EditableText
+                        tagName="h2"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={commonStyle}
+                        // 🌟 [수정] mb-1, mt-2 제거 -> 여백 없이 딱 맞게
+                        className="text-xl font-bold break-words leading-none"
+                        placeholder="Heading 2"
+                    />
+                );
+            case 'heading3':
+                return (
+                    <div className="h-full w-full overflow-hidden">
+                        <EditableText
+                            tagName="h3"
+                            text={content.text}
+                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                            style={commonStyle}
+                            // 🌟 [수정] mb-1 제거
+                            className="text-lg font-semibold break-words leading-none"
+                            placeholder="Heading 3"
+                        />
+                    </div>
+                );
+            case 'text':
+                return (
+                    <EditableText
+                        tagName="p"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={commonStyle}
+                        // 🌟 [수정] leading-relaxed(줄간격 넓게)를 제거하거나 leading-normal/none으로 변경
+                        className="whitespace-pre-wrap break-words leading-normal"
+                        placeholder="텍스트를 입력하세요..."
+                    />
+                );
         case 'quote':
             return (
                 <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="border-l-4 pl-3 py-1 my-2 text-gray-600 italic bg-gray-50 rounded-r break-words">
@@ -648,12 +735,31 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 <div className="space-y-1.5 w-full h-full">
                     {(content.items || []).map((it: any, i: number) => (
                         <div key={i} className="flex items-start gap-2 group">
-                            <div className={`mt-0.5 w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 transition-colors ${it.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-400 bg-white'}`}>
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newItems = [...(content.items || [])];
+                                    newItems[i] = { ...newItems[i], done: !newItems[i].done };
+                                    onUpdateBlock(block.id, { content: { ...content, items: newItems } });
+                                }}
+                                className={`mt-0.5 w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${it.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-400 bg-white'}`}
+                            >
                                 {it.done && <Check size={10} strokeWidth={4} />}
                             </div>
-                            <span className={`text-sm transition-all break-words flex-1 ${it.done ? 'text-gray-400 line-through' : 'text-gray-800'}`} style={commonStyle}>
-                                {it.text}
-                            </span>
+                            {/* 할 일 텍스트도 수정 가능하게 변경 */}
+                            <div className="flex-1 min-w-0">
+                                <EditableText
+                                    tagName="span"
+                                    text={it.text}
+                                    onUpdate={(val) => {
+                                        const newItems = [...(content.items || [])];
+                                        newItems[i] = { ...newItems[i], text: val };
+                                        onUpdateBlock(block.id, { content: { ...content, items: newItems } });
+                                    }}
+                                    style={{...commonStyle, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? '#9ca3af' : styles.color }}
+                                    className="text-sm break-words"
+                                />
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -784,15 +890,56 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         // --- 6. 구분선 ---
         case 'divider': return <div className="w-full h-full py-2"><hr className="border-t border-gray-200" style={{ borderColor: styles.color }} /></div>;
         // --- 7. 리스트류 ---
-        case 'bullet-list': return <ul style={commonStyle} className="w-full h-full list-disc list-inside space-y-1 text-gray-800">{content.items.map((it: string, i: number) => <li key={i} className="break-words">{it}</li>)}</ul>;
-        case 'number-list': return <ol style={commonStyle} className="w-full h-full list-decimal list-inside space-y-1 text-gray-800">{content.items.map((it: string, i: number) => <li key={i} className="break-words">{it}</li>)}</ol>;
-        // --- 8. 토글 목록 ---
-        case 'toggle-list': return <ToggleItem title={content.title} items={content.items} style={commonStyle} />;
+        case 'bullet-list': return (
+            <ul style={commonStyle} className="w-full h-full list-disc list-inside space-y-1 text-gray-800">
+                {(content.items || []).map((it: string, i: number) => (
+                    <li key={i} className="break-words pl-1">
+                        <EditableText
+                            tagName="span"
+                            text={it}
+                            onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
+                            style={commonStyle}
+                            placeholder={`항목 ${i+1}`}
+                        />
+                    </li>
+                ))}
+            </ul>
+        );
+        case 'number-list':
+            return (
+                <ol style={commonStyle} className="w-full h-full list-decimal list-inside space-y-1 text-gray-800">
+                    {(content.items || []).map((it: string, i: number) => (
+                        <li key={i} className="break-words pl-1">
+                            <EditableText
+                                tagName="span"
+                                text={it}
+                                onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
+                                style={commonStyle}
+                                placeholder={`항목 ${i+1}`}
+                            />
+                        </li>
+                    ))}
+                </ol>
+            );
+            // --- 8. 토글 목록 ---
+        case 'toggle-list':
+                return (
+                    <ToggleItem
+                        block={block}
+                        onUpdateBlock={onUpdateBlock}
+                        style={commonStyle}
+                    />
+                );
         // --- 9. 아코디언 ---
-        case 'accordion': return <AccordionItem title={content.title} body={content.body} style={commonStyle} />;
+        case 'accordion': return (
+            <AccordionItem
+                block={block} // title, body 대신 block 전체 전달
+                onUpdateBlock={onUpdateBlock}
+                style={commonStyle}
+            />
+        );
         case 'callout': {
             const calloutType = content.type || 'info';
-            // 타입별 스타일 및 아이콘 설정
             // @ts-ignore
             const configMap = {
                 info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: <Info size={20} className="text-blue-500" /> },
@@ -805,9 +952,25 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             return (
                 <div className={`h-full w-full p-4 rounded-lg border flex gap-3 ${config.bg} ${config.border} break-words`}>
                     <div className="flex-shrink-0 mt-0.5">{config.icon}</div>
-                    <div className="flex flex-col min-w-0">
-                        {content.title && <span className={`font-bold mb-1 ${config.text}`}>{content.title}</span>}
-                        <span className="text-gray-700 leading-relaxed text-sm">{content.text}</span>
+                    <div className="flex flex-col min-w-0 flex-1">
+                        {/* 제목 수정 */}
+                        <div className={`font-bold mb-1 ${config.text}`}>
+                            <EditableText
+                                tagName="span"
+                                text={content.title}
+                                onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
+                                placeholder="제목 (선택)"
+                            />
+                        </div>
+                        {/* 내용 수정 */}
+                        <div className="text-gray-700 leading-relaxed text-sm">
+                            <EditableText
+                                tagName="p"
+                                text={content.text}
+                                onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                                placeholder="내용을 입력하세요..."
+                            />
+                        </div>
                     </div>
                 </div>
             );
@@ -826,7 +989,13 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             );
         // 🌟 3. 스포일러 방지 (Spoiler)
         case 'spoiler':
-            return <SpoilerItem content={content} style={commonStyle} />;
+            return (
+                <SpoilerItem
+                    block={block} // content 대신 block 전달
+                    onUpdateBlock={onUpdateBlock}
+                    style={commonStyle}
+                />
+            );
         // 🌟 4. 세로 쓰기 (Vertical Text)
         case 'vertical-text':
             return (
