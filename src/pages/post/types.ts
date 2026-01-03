@@ -71,7 +71,9 @@ export interface PostData {
     // ✨ New fields for Album/Note Management
     mode?: PostMode;
     targetAlbumIds?: number[]; // MANUAL 모드일 때만 전송
+
     isFavorite?: boolean; // ✨ 즐겨찾기 여부
+    visibility?: 'public' | 'private'; // ✨ 모임방 내 공유 여부 (public=공유, private=나만보기)
 
     // Legacy or internal fields
     albumIds?: string[];
@@ -80,4 +82,20 @@ export interface PostData {
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
     titleStyles?: Record<string, any>;
+}
+
+export interface CustomAlbum {
+    id: string;
+    name: string;
+    tag: string | null;
+    createdAt?: number;
+    parentId?: string | null;
+    isFavorite?: boolean;
+    // ✨ New Fields for Meeting Room
+    type?: 'album' | 'room';
+    roomConfig?: {
+        password?: string;
+        description?: string;
+        maxMembers?: number;
+    };
 }

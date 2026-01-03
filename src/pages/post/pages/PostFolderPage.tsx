@@ -1,8 +1,9 @@
 // ✨ Import customAlbum for props
 import React, { useState, useEffect } from 'react';
 import CreateFolderModal from '../components/CreateFolderModal';
+import RoomSettingsModal from '../components/RoomSettingsModal';
 import type { PostData } from '../types';
-import { ArrowLeft, Folder, PenLine, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Folder, PenLine, Trash2, X, Lock, Users } from 'lucide-react';
 import PostBreadcrumb from '../components/PostBreadcrumb';
 import { useBreadcrumbs } from '../hooks/useBreadcrumbs';
 import { DndContext, useDraggable, useDroppable, type DragEndEvent, useSensors, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
@@ -60,6 +61,7 @@ interface Props {
 
 const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+    const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
 
     // ✨ Local State for API Data
     const [contents, setContents] = useState<{ type: 'POST' | 'FOLDER', data: any }[]>([]);
@@ -153,6 +155,23 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         </button>
                         <div className="flex items-center text-lg font-medium overflow-hidden">
                             <PostBreadcrumb items={breadcrumbItems} />
+
+                            {/* ✨ Room Settings Trigger */}
+                            {(() => {
+                                const currentAlbum = customAlbums.find(a => a.id === albumId);
+                                if (currentAlbum?.type === 'room') {
+                                    return (
+                                        <button
+                                            onClick={() => setRoomSettingsId(albumId!)}
+                                            className="ml-2 p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors"
+                                            title="모임 정보"
+                                        >
+                                            <Users size={18} />
+                                        </button>
+                                    );
+                                }
+                                return null;
+                            })()}
                         </div>
                     </div>
 
@@ -198,6 +217,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                             <Folder size={20} className="text-yellow-500" />
                             폴더
                         </h3>
+
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                             {folders.map((album: any) => (
                                 <DroppableFolder key={album.id} id={album.id}>
@@ -216,11 +236,21 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                         >
                                             <Trash2 size={16} />
                                         </button>
-                                        <Folder size={40} className="text-indigo-200 group-hover:text-indigo-400 transition-colors" />
+
+                                        {/* ✨ Room Indicator */}
+                                        {album.type === 'room' && (
+                                            <div className="absolute top-2 left-2 z-20 bg-black/60 backdrop-blur-sm text-white p-1 rounded-full shadow-sm">
+                                                <div className="flex items-center justify-center w-4 h-4">
+                                                    {album.roomConfig?.password ? <Lock size={10} /> : <Users size={10} />}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <Folder size={40} className={`transition-colors ${album.type === 'room' ? 'text-indigo-400' : 'text-indigo-200 group-hover:text-indigo-400'}`} />
                                         <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
                                         {/* Stats approximation */}
                                         <span className="text-[10px] text-[var(--text-secondary)]">
-                                            폴더
+                                            {album.type === 'room' ? '모임방' : '폴더'}
                                         </span>
                                     </div>
                                 </DroppableFolder>
@@ -251,7 +281,15 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                     {/* 2. Bottom - Info (40%) */}
                                     <div className="h-[40%] p-5 flex flex-col justify-between bg-[var(--bg-card)]">
                                         <div className="space-y-2">
-                                            <h4 className="font-bold text-[var(--text-primary)] text-lg line-clamp-1 leading-tight">{p.title}</h4>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h4 className="font-bold text-[var(--text-primary)] text-lg line-clamp-1 leading-tight">{p.title}</h4>
+                                                {/* ✨ Visibility Indicator */}
+                                                {p.visibility === 'private' && (
+                                                    <div className="text-gray-400 p-0.5" title="나만 보기">
+                                                        <Lock size={14} />
+                                                    </div>
+                                                )}
+                                            </div>
 
                                             {/* Hashtags */}
                                             <div className="flex flex-wrap gap-1.5 h-6 overflow-hidden">
@@ -373,6 +411,14 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                             </div>
                         </div>
                     </div>
+                )}
+                {/* ✨ Room Settings Modal */}
+                {roomSettingsId && (
+                    <RoomSettingsModal
+                        isOpen={!!roomSettingsId}
+                        onClose={() => setRoomSettingsId(null)}
+                        album={customAlbums.find(a => a.id === roomSettingsId)!}
+                    />
                 )}
             </div>
         </DndContext>

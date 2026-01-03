@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import type { PostData } from '../types';
 // ✨ Added GalleryHorizontal for All Posts icon
-import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles } from 'lucide-react';
+import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles, Lock, Users } from 'lucide-react';
 import RenameAlbumModal from '../components/RenameAlbumModal';
 import AlbumBook from '../components/AlbumCover/AlbumBook';
 import type { AlbumCoverConfig } from '../components/AlbumCover/constants';
 import CoverCustomizer from '../components/AlbumCover/CoverCustomizer';
+import RoomSettingsModal from '../components/RoomSettingsModal';
 import { countAlbumPosts, countUnclassifiedPosts } from '../utils/albumUtils';
 
 interface Props {
@@ -27,6 +28,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
+    const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ For Room Modal
     const [coverConfigs, setCoverConfigs] = useState<Record<string, AlbumCoverConfig>>({});
     const [editingCoverId, setEditingCoverId] = useState<string | null>(null);
     // const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest'>('name'); // Lifted up
@@ -246,6 +248,15 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                                 className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                             />
 
+                            {/* ✨ Room Indicator */}
+                            {album.type === 'room' && (
+                                <div className="absolute top-2 right-2 z-20 bg-black/60 backdrop-blur-sm text-white p-1 rounded-full shadow-sm">
+                                    <div className="flex items-center justify-center w-5 h-5">
+                                        {album.roomConfig?.password ? <Lock size={12} /> : <Users size={12} />}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Favorite Button for Album */}
                             <button
                                 onClick={(e) => {
@@ -263,6 +274,10 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                                 </button>
                                 {activeDropdownId === album.id && (
                                     <div className="absolute top-8 right-0 bg-white border border-gray-200 shadow-xl rounded-xl w-48 py-2 z-50 animate-scale-up origin-top-right cursor-default" onClick={e => e.stopPropagation()}>
+                                        {/* ✨ Room Info Option */}
+                                        {album.type === 'room' && (
+                                            <button onClick={(e) => { e.stopPropagation(); setRoomSettingsId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-indigo-600 font-medium bg-indigo-50/50"><Users size={16} /> 모임 정보</button>
+                                        )}
                                         <button onClick={(e) => { e.stopPropagation(); setEditingCoverId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Sparkles size={16} /> 표지 꾸미기</button>
                                         <button onClick={(e) => { e.stopPropagation(); setRenamingId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Edit size={16} /> 이름 변경</button>
                                         <button onClick={(e) => handleDeleteClick(e, album.id)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 flex items-center gap-2 text-red-600"><Trash2 size={16} /> 앨범 삭제</button>
@@ -362,6 +377,15 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     initialConfig={(editingCoverId === '__all__' || editingCoverId === '__others__') ? (coverConfigs[editingCoverId] || undefined) : (coverConfigs[getCoverKey(customAlbums.find(a => a.id === editingCoverId))] || undefined)}
                     onSave={handleSaveCover}
                     onClose={() => setEditingCoverId(null)}
+                />
+            )}
+
+            {/* ✨ Room Settings Modal */}
+            {roomSettingsId && (
+                <RoomSettingsModal
+                    isOpen={!!roomSettingsId}
+                    onClose={() => setRoomSettingsId(null)}
+                    album={customAlbums.find(a => a.id === roomSettingsId)!}
                 />
             )}
         </div>

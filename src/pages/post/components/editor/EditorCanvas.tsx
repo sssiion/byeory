@@ -5,7 +5,7 @@ import EditorToolbar from './EditorToolbar';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
-import { Image as ImageIcon, Type, Trash2, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft } from 'lucide-react';
+import { Image as ImageIcon, Type, Trash2, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft, Lock, Globe } from 'lucide-react';
 
 interface Props {
     title: string;
@@ -25,11 +25,16 @@ interface Props {
     onDelete: () => void;
     onBlockImageUpload: (id: string, file: File, idx?: number) => void;
     onBackgroundClick: () => void;
+
+    // ✨ Visibility Props
+    visibility?: 'public' | 'private';
+    setVisibility?: (v: 'public' | 'private') => void;
 }
 
 const EditorCanvas: React.FC<Props> = ({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
-    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
+    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick,
+    visibility = 'public', setVisibility // ✨ Destructure
 }) => {
 
     // 드래그가 끝났을 때 순서를 바꾸는 함수
@@ -119,7 +124,7 @@ const EditorCanvas: React.FC<Props> = ({
 
                 {/* 헤더 */}
                 <div
-                    className={`sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-center rounded-t-xl z-20 transition-all ${viewMode === 'editor' && selectedId === 'title' ? 'ring-2 ring-indigo-200' : ''}`}
+                    className={`sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-start gap-4 rounded-t-xl z-20 transition-all ${viewMode === 'editor' && selectedId === 'title' ? 'ring-2 ring-indigo-200' : ''}`}
                     style={{
                         backgroundColor: titleStyles.backgroundColor || 'rgba(255, 255, 255, 0.95)',
                         borderTopLeftRadius: '0.75rem',
@@ -135,15 +140,36 @@ const EditorCanvas: React.FC<Props> = ({
                         onChange={e => setTitle(e.target.value)}
                         placeholder="제목을 입력하세요"
                         readOnly={viewMode === 'read'}
-                        className="w-full outline-none bg-transparent placeholder-gray-300"
+                        className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0"
                         style={{
                             ...titleStyles,
-                            backgroundColor: 'transparent', // 부모가 색을 가지므로 투명
-                            // 기본 스타일이 덮어씌워지지 않도록 명시
+                            backgroundColor: 'transparent',
                             fontSize: titleStyles.fontSize || '30px',
                             fontWeight: titleStyles.fontWeight || 'bold',
                         }}
                     />
+
+                    {/* ✨ Visibility Toggle (Only in Editor Mode) */}
+                    {viewMode === 'editor' && setVisibility && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setVisibility(visibility === 'private' ? 'public' : 'private');
+                            }}
+                            className={`p-2 rounded-lg flex items-center gap-2 text-sm font-bold transition-all flex-shrink-0 ${visibility === 'private' ? 'bg-gray-100 text-gray-500' : 'bg-indigo-50 text-indigo-600'}`}
+                            title={visibility === 'private' ? "나만 보기 (비공개)" : "모임 멤버와 공유 (공개)"}
+                        >
+                            {visibility === 'private' ? <Lock size={18} /> : <Globe size={18} />}
+                            <span className="hidden md:inline">{visibility === 'private' ? '나만 보기' : '전체 공유'}</span>
+                        </button>
+                    )}
+
+                    {/* ✨ Read Mode Indicator */}
+                    {viewMode === 'read' && visibility === 'private' && (
+                        <div className="p-2 rounded-lg bg-gray-100 text-gray-500" title="나만 보기">
+                            <Lock size={18} />
+                        </div>
+                    )}
                 </div>
 
                 <div className={`flex-1 relative pb-40 ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>

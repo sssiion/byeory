@@ -79,6 +79,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
                 onDelete={() => { }}
                 onBlockImageUpload={() => { }}
                 onBackgroundClick={() => { }}
+                visibility={editor.visibility}
             />
         </div>
     );

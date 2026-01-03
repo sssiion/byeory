@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi } from '../api';
-import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode } from '../types';
+import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
 // 캔버스 크기 고정 (EditorCanvas.tsx와 동일하게 설정)
@@ -9,15 +9,7 @@ export const usePostEditor = () => {
     // ✨ Credit Context Trigger
     const { triggerPostCreation } = useCredits();
 
-    // ✨ 커스텀 앨범 타입 정의
-    interface CustomAlbum {
-        id: string; // ✨ Unique ID added
-        name: string;
-        tag: string | null;
-        createdAt?: number;
-        parentId?: string | null; // ✨ Nested Folder Support
-        isFavorite?: boolean; // ✨ Album Favorite
-    }
+    // ✨ 커스텀 앨범 타입 정의 (Moved to types.ts)
 
     const [viewMode, setViewMode] = useState<ViewMode>('album');
     const [posts, setPosts] = useState<PostData[]>([]);
@@ -51,6 +43,7 @@ export const usePostEditor = () => {
 
     const [currentTags, setCurrentTags] = useState<string[]>([]); // ✨ 현재 작성 중인 포스트의 태그들
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
+    const [visibility, setVisibility] = useState<'public' | 'private'>('public'); // ✨ Visibility State
     // ✨ Sort Option Persistence
     const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>(() => {
         return (localStorage.getItem('post_sort_option') as any) || 'name';
@@ -76,7 +69,8 @@ export const usePostEditor = () => {
                 const migrated = validAlbums.map((a: any) => ({
                     ...a,
                     id: a.id || `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    isFavorite: a.isFavorite || false
+                    isFavorite: a.isFavorite || false,
+                    type: a.type || 'album' // Default type
                 }));
 
                 if (JSON.stringify(migrated) !== JSON.stringify(validAlbums)) {
@@ -97,7 +91,8 @@ export const usePostEditor = () => {
                         name,
                         tag: null,
                         createdAt: Date.now(),
-                        isFavorite: false
+                        isFavorite: false,
+                        type: 'album'
                     })); // 마이그레이션 시 현재 시간 부여
                     setCustomAlbums(migrated as CustomAlbum[]);
                     localStorage.setItem('my_custom_albums_v2', JSON.stringify(migrated));
@@ -106,8 +101,8 @@ export const usePostEditor = () => {
         }
     }, []);
 
-    // 앨범 생성 핸들러
-    const handleCreateAlbum = (name: string, tags: string[], parentId?: string | null) => {
+    // 앨범 생성 핸들러 (Updated Signature)
+    const handleCreateAlbum = (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any) => {
         if (!name) return null;
         const tag = tags[0] || null;
 
@@ -127,8 +122,10 @@ export const usePostEditor = () => {
             name,
             tag,
             createdAt: Date.now(),
-            parentId: parentId || null, // ✨ Set parentId
-            isFavorite: false
+            parentId: parentId || null,
+            isFavorite: false,
+            type,
+            roomConfig
         };
         const newAlbums = [...customAlbums, newAlbum];
         setCustomAlbums(newAlbums);
@@ -373,6 +370,7 @@ export const usePostEditor = () => {
             setMode('AUTO');
         }
         setIsFavorite(false);
+        setVisibility('public');
         setViewMode('editor');
     };
 
@@ -392,6 +390,7 @@ export const usePostEditor = () => {
         setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
         setMode(post.mode || 'AUTO'); // ✨ Load mode
         setIsFavorite(post.isFavorite || false); // ✨ Load favorite
+        setVisibility(post.visibility || 'public'); // ✨ Load visibility
         setViewMode('read');
     };
 
@@ -451,7 +450,8 @@ export const usePostEditor = () => {
             tags: safeTags, // ✨ 태그 저장
             albumIds: safeAlbumIds, // ✨ 앨범 ID 저장
             mode, // ✨ New field
-            isFavorite // ✨ New field
+            isFavorite, // ✨ New field
+            visibility // ✨ New field for Rooms
         };
 
         setIsSaving(true);
@@ -739,6 +739,7 @@ export const usePostEditor = () => {
         handleMovePost, // ✨ DnD Handler Exposed
         mode, setMode, // ✨ Expose mode
         isFavorite, setIsFavorite, // ✨ Expose isFavorite
+        visibility, setVisibility, // ✨ Expose visibility
         refreshPosts: fetchPosts // ✨ Expose data refresh trigger
     };
 };

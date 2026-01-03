@@ -41,6 +41,8 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     editor.setSelectedId(null);
                     editor.setSelectedType(null);
                 }}
+                visibility={editor.visibility}
+                setVisibility={editor.setVisibility}
             />
 
             {/* 오른쪽 사이드바 */}

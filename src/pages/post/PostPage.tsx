@@ -115,8 +115,8 @@ const Post: React.FC = () => {
             <CreateAlbumModal
                 isOpen={isAlbumModalOpen}
                 onClose={() => setIsAlbumModalOpen(false)}
-                onSave={(name, tags, coverConfig) => {
-                    editor.handleCreateAlbum(name, tags);
+                onSave={(name, tags, coverConfig, type, roomConfig) => {
+                    editor.handleCreateAlbum(name, tags, undefined, type, roomConfig);
 
                     if (coverConfig) {
                         try {
