@@ -5,12 +5,8 @@ import MainPage from './pages/MainPage'
 import PostPage from './pages/post/PostPage'
 import TodoPage from './pages/todo/TodoPage'
 import InviteAcceptPage from './pages/post/pages/InviteAcceptPage';
-
-// ... (existing imports)
-
-<Route path="/invite/:code" element={<InviteAcceptPage />} />
-
-import CommunityPage from './pages/community/CommunityPage'
+import RoomJoinPage from './pages/post/pages/RoomJoinPage';
+import CommunityPage from './pages/community/CommunityPage';
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 
 import { ThemeProvider } from './context/ThemeContext';
@@ -159,6 +155,7 @@ createRoot(document.getElementById('root')!).render(
                     <Route path="/join" element={<JoinPage />} />
                     <Route path="/find-password" element={<FindPasswordPage />} />
                     <Route path="/invite/:code" element={<InviteAcceptPage />} />
+                    <Route path="/rooms/:roomId/join" element={<RoomJoinPage />} />
 
                     {/* Protected Routes */}
                     <Route element={<ProtectedRoute />}>

@@ -9,6 +9,7 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const BASE_URL = 'http://localhost:8080';
 const API_BASE_URL = `${BASE_URL}/api/posts`;
 const API_ALBUM_URL = `${BASE_URL}/api/albums`;
+const API_ROOM_URL = `${BASE_URL}/api/rooms`; // ✨ Add Room API URL
 
 // ✨ Singleton Pattern for Supabase Client
 const getSupabaseClient = () => {
@@ -196,10 +197,122 @@ export const fetchAlbumsFromApi = async () => {
                 id: String(a.id),
                 parentId: a.parentId ? String(a.parentId) : null,
                 tag: mappedTag || null,
+                type: 'album', // Explicit type
                 postCount: a.postCount || 0,
                 folderCount: a.folderCount || 0
             };
         });
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ✨ 참여한 모임방 목록 조회 (GET) - 내 리스트
+export const fetchRoomsFromApi = async () => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/my`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("모임방 불러오기 실패");
+        const rooms = await response.json();
+        return rooms.map((r: any) => ({
+            ...r,
+            id: String(r.id),
+            parentId: null, // Rooms are root level usually, or handle if nested
+            tag: r.tag || (r.representativeHashtag ? (r.representativeHashtag.name || r.representativeHashtag.tag) : null),
+            type: 'room',
+            // Map room specific counts if available
+            postCount: r.postCount || 0,
+            folderCount: r.folderCount || 0
+        }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ✨ 모임방 입장 (POST)
+export const joinRoomApi = async (roomId: string, password?: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${roomId}/join`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ password })
+        });
+
+        if (!response.ok) {
+            let errorMessage = "모임방 입장에 실패했습니다.";
+            try {
+                const text = await response.text();
+                if (text) {
+                    try {
+                        const err = JSON.parse(text);
+                        errorMessage = err.message || errorMessage;
+                    } catch (jsonError) {
+                        if (text.length < 200) {
+                            errorMessage = text;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Ignore read error
+            }
+            throw new Error(errorMessage);
+        }
+
+        // Handle success response (body might be empty)
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+    } catch (error: any) {
+        console.error(error);
+        throw error; // Let caller handle error message
+    }
+};
+
+// ✨ 모임방 나가기 (DELETE) - 일반 멤버용
+export const leaveRoomApi = async (roomId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${roomId}/leave`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(err || "모임방 나가기 실패");
+        }
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+
+// ✨ 멤버 강퇴 (DELETE) - 방장용
+export const kickMemberApi = async (roomId: string, userId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${roomId}/members/${userId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            throw new Error("멤버 강퇴 실패");
+        }
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+
+// ✨ 멤버 목록 조회 (GET)
+export const fetchRoomMembersApi = async (roomId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${roomId}/members`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("멤버 목록 불러오기 실패");
+        return await response.json();
     } catch (error) {
         console.error(error);
         return [];
@@ -309,6 +422,34 @@ export const fetchAlbumApi = async (id: string | number) => {
     }
 };
 
+// ✨ 모임방 단건 조회 (GET)
+export const fetchRoomApi = async (id: string | number) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${id}`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("모임방 정보 불러오기 실패");
+        const room = await response.json();
+        return {
+            ...room,
+            id: String(room.id),
+            parentId: null,
+            // Ensure strictly typed fields are passed if backend returns them
+            roomConfig: {
+                description: room.description,
+                password: room.password
+            },
+            coverConfig: room.coverConfig,
+            postCount: room.postCount || 0,
+            folderCount: room.folderCount || 0,
+            type: 'room'
+        };
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
 // 앨범 생성 (POST)
 export const createAlbumApi = async (albumData: any) => {
     try {
@@ -318,6 +459,22 @@ export const createAlbumApi = async (albumData: any) => {
             body: JSON.stringify(albumData),
         });
         if (!response.ok) throw new Error("앨범 생성 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+// ✨ 모임방 생성 (POST)
+export const createRoomApi = async (roomData: any) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}`, { // Use API_ROOM_URL
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(roomData),
+        });
+        if (!response.ok) throw new Error("모임방 생성 실패");
         return await response.json();
     } catch (error) {
         console.error(error);
@@ -360,7 +517,8 @@ export const deleteAlbumApi = async (id: string | number) => {
 export const fetchAlbumContents = async (
     albumId: string | number,
     providedPosts?: any[],
-    providedAlbums?: any[]
+    providedAlbums?: any[],
+    type: 'album' | 'room' = 'album' // ✨ Add type parameter
 ) => {
     const targetId = String(albumId);
 
@@ -412,14 +570,19 @@ export const fetchAlbumContents = async (
         ];
     }
 
-    // 2. Specific Album: Use Optimized Backend Endpoint
-    // GET /api/albums/{id}/contents
+    // 2. Specific Album or Room: Use Optimized Backend Endpoint
+    // GET /api/albums/{id}/contents OR /api/rooms/{id}/content
     try {
-        const response = await fetch(`${API_ALBUM_URL}/${targetId}/contents`, {
+        let url = `${API_ALBUM_URL}/${targetId}/contents`;
+        if (type === 'room') {
+            url = `${API_ROOM_URL}/${targetId}/posts`;
+        }
+
+        const response = await fetch(url, {
             headers: getAuthHeaders()
         });
 
-        if (!response.ok) throw new Error("앨범 콘텐츠 불러오기 실패");
+        if (!response.ok) throw new Error(`${type === 'room' ? '모임방' : '앨범'} 콘텐츠 불러오기 실패`);
 
         const data = await response.json();
         const contents: any[] = [];

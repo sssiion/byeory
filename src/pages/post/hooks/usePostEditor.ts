@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi, createRoomApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -59,10 +59,19 @@ export const usePostEditor = () => {
 
 
 
-    // 2. Fetch Albums from API
+    // 2. Fetch Albums AND Rooms from API
     const fetchAlbums = async () => {
-        const data = await fetchAlbumsFromApi();
-        if (data) {
+        const [albumsData, roomsData] = await Promise.all([
+            fetchAlbumsFromApi(),
+            fetchRoomsFromApi()
+        ]);
+
+        const combinedData = [
+            ...(Array.isArray(albumsData) ? albumsData : []),
+            ...(Array.isArray(roomsData) ? roomsData : [])
+        ];
+
+        if (combinedData.length > 0) {
             // Helper to flatten hierarchy if backend returns tree
             const flatten = (list: any[]): any[] => {
                 return list.reduce((acc, item) => {
@@ -74,7 +83,7 @@ export const usePostEditor = () => {
                 }, []);
             };
 
-            const flatData = flatten(Array.isArray(data) ? data : []);
+            const flatData = flatten(combinedData);
 
             const adapted: CustomAlbum[] = flatData.map((a: any) => ({
                 id: String(a.id),
@@ -83,7 +92,7 @@ export const usePostEditor = () => {
                 createdAt: new Date(a.createdAt || Date.now()).getTime(),
                 parentId: a.parentId ? String(a.parentId) : null,
                 isFavorite: a.isFavorite || false,
-                type: a.type || 'album',
+                type: a.type || 'album', // 'room' type will come from fetchRoomsFromApi result
                 roomConfig: a.roomConfig,
                 coverConfig: a.coverConfig,
                 postCount: a.postCount,
@@ -92,14 +101,33 @@ export const usePostEditor = () => {
 
             // Strictly use backend data. No localStorage merge.
             setCustomAlbums(adapted);
+        } else {
+            setCustomAlbums([]);
         }
     };
     // 앨범 생성 핸들러 (API Integration)
     const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any, coverConfig?: any) => {
         if (!name || name.trim() === "") return null;
 
-        // Optimistic UI Update (Optional, skipping for simplicity & correctness)
+        // ✨ Separate Logic for Room Creation
+        if (type === 'room') {
+            const newRoomData = {
+                name,
+                description: roomConfig?.description,
+                password: roomConfig?.password,
+                tag: tags[0] || null,
+                coverConfig
+            };
 
+            const created = await createRoomApi(newRoomData);
+            if (created) {
+                await fetchAlbums(); // Refresh list (Assuming rooms are fetched together or separate fetch needed?)
+                return String(created.id);
+            }
+            return null;
+        }
+
+        // Standard Album Creation
         const newAlbumData = {
             name,
             tag: tags[0] || null,

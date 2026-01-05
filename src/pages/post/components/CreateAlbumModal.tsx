@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Folder, Users, Lock, Copy, Check, Info } from 'lucide-react';
+import { X, Sparkles, Folder, Users, Lock } from 'lucide-react';
 import AlbumBook from './AlbumCover/AlbumBook';
 import CoverCustomizer from './AlbumCover/CoverCustomizer';
 import type { AlbumCoverConfig } from './AlbumCover/constants';
@@ -22,9 +22,6 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
     const [description, setDescription] = useState('');
     const [password, setPassword] = useState('');
 
-    // Success View State
-    const [createdRoomInfo, setCreatedRoomInfo] = useState<{ name: string, inviteLink: string, password?: string } | null>(null);
-
     // Cover Config State
     const [coverConfig, setCoverConfig] = useState<AlbumCoverConfig>({
         type: 'solid',
@@ -33,8 +30,6 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
         labelColor: COVER_COLORS[0].text
     });
     const [isEditingCover, setIsEditingCover] = useState(false);
-    const [copiedLink, setCopiedLink] = useState(false);
-    const [copiedPw, setCopiedPw] = useState(false);
 
     if (!isOpen) return null;
 
@@ -51,22 +46,14 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
         if (!name.trim()) return alert("이름을 입력해주세요.");
 
         if (mode === 'room') {
-            const inviteLink = `https://byeory.com/invite/${Math.random().toString(36).substr(2, 9)}`;
             const roomConfig = {
                 description,
                 password: password || undefined,
             };
 
-            // Don't call onSave yet, show success screen first for Room
-            setCreatedRoomInfo({
-                name,
-                inviteLink,
-                password: password || undefined
-            });
-
-            // Actual Save happens when closing/confirming the success screen? 
-            // Or save immediately? Let's save immediately so data is secure.
+            // Save immediately without showing mock success screen
             onSave(name, selectedTag || null, null, 'room', roomConfig, coverConfig);
+            handleClose();
         } else {
             // Standard Album
             onSave(name, selectedTag || null, null, 'album', undefined, coverConfig);
@@ -81,7 +68,7 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
         setMode('album');
         setDescription('');
         setPassword('');
-        setCreatedRoomInfo(null);
+
         setCoverConfig({
             type: 'solid',
             value: COVER_COLORS[0].value,
@@ -92,90 +79,13 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
         onClose();
     };
 
-    const copyToClipboard = (text: string, type: 'link' | 'pw') => {
-        navigator.clipboard.writeText(text);
-        if (type === 'link') {
-            setCopiedLink(true);
-            setTimeout(() => setCopiedLink(false), 2000);
-        } else {
-            setCopiedPw(true);
-            setTimeout(() => setCopiedPw(false), 2000);
-        }
-    };
 
-    // ✨ Success View for Room Creation
-    if (createdRoomInfo) {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-                <div className="bg-[var(--bg-modal)] rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up max-h-[90vh] overflow-y-auto custom-scrollbar backdrop-blur-md relative overflow-hidden">
-                    {/* Confetti Decoration (CSS only for simplicity) */}
-                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500"></div>
 
-                    <div className="text-center mb-8 mt-4">
-                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                            <Check size={32} strokeWidth={3} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-[var(--text-primary)]">모임방 개설 완료!</h3>
-                        <p className="text-[var(--text-secondary)] mt-1">친구들을 초대해보세요.</p>
-                    </div>
 
-                    <div className="space-y-6">
-                        <div className="bg-[var(--bg-card-secondary)] rounded-xl p-5 border border-[var(--border-color)] text-center relative overflow-hidden group">
-                            <div className="text-sm text-[var(--text-secondary)] mb-1 font-bold">방 이름</div>
-                            <div className="text-xl font-black text-[var(--text-primary)]">{createdRoomInfo.name}</div>
-                            <div className="absolute -right-4 -bottom-4 opacity-10 text-[var(--text-primary)]">
-                                <Users size={64} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 ml-1 uppercase tracking-wider">초대 링크</label>
-                            <div className="flex gap-2">
-                                <div className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] px-3 py-3 rounded-xl text-sm text-[var(--text-primary)] truncate font-mono">
-                                    {createdRoomInfo.inviteLink}
-                                </div>
-                                <button
-                                    onClick={() => copyToClipboard(createdRoomInfo.inviteLink, 'link')}
-                                    className={`px-4 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedLink ? 'bg-green-500 text-white' : 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:opacity-90'}`}
-                                >
-                                    {copiedLink ? <Check size={18} /> : <Copy size={18} />}
-                                    {copiedLink ? '복사됨' : '복사'}
-                                </button>
-                            </div>
-                        </div>
-
-                        {createdRoomInfo.password && (
-                            <div>
-                                <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1 ml-1 uppercase tracking-wider">비밀번호</label>
-                                <div className="flex gap-2">
-                                    <div className="flex-1 bg-[var(--bg-card)] border border-[var(--border-color)] px-3 py-3 rounded-xl text-sm text-[var(--text-primary)] font-mono tracking-widest text-center">
-                                        {createdRoomInfo.password}
-                                    </div>
-                                    <button
-                                        onClick={() => copyToClipboard(createdRoomInfo.password!, 'pw')}
-                                        className={`px-4 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedPw ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    >
-                                        {copiedPw ? <Check size={18} /> : <Copy size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={handleClose}
-                        className="w-full mt-8 py-4 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-xl font-bold hover:opacity-90 transition-transform active:scale-95 text-lg"
-                    >
-                        입장하기
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className={`bg-[var(--bg-modal)] rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all animate-scale-up max-h-[90vh] overflow-y-auto custom-scrollbar backdrop-blur-md ${isEditingCover ? 'hidden' : ''}`}> {/* Hide when customizer is open to prevent stacking issues visually if needed, though usually customizer is overlay */}
+            <div className={`bg-[var(--bg-modal)] rounded-2xl w-full max-w-2xl p-6 shadow-2xl transform transition-all animate-scale-up max-h-[90vh] overflow-y-auto custom-scrollbar backdrop-blur-md ${isEditingCover ? 'hidden' : ''}`}> {/* Hide when customizer is open to prevent stacking issues visually if needed, though usually customizer is overlay */}
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-2 bg-[var(--bg-card-secondary)] p-1 rounded-lg">
@@ -231,7 +141,7 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
                             <div>
                                 <div className="flex justify-between items-center mb-2">
                                     <label className="block text-sm font-bold text-[var(--text-secondary)] flex items-center gap-1">
-                                        <Lock size={14} /> 비밀번호 설정
+                                        <Lock size={14} /> 비밀번호 설정 <span className="text-red-500">*</span>
                                     </label>
                                     <button
                                         onClick={generatePassword}
@@ -245,7 +155,7 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
                                         type="text"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="설정 시 입장할 때 필요해요 (선택)"
+                                        placeholder="설정 시 입장할 때 필요합니다"
                                         className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-secondary)] text-[var(--text-primary)] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition pl-10"
                                         maxLength={8}
                                     />
@@ -253,15 +163,30 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
                                         <Lock size={16} />
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-1.5 mt-2 text-xs text-[var(--text-tertiary)]">
-                                    <Info size={12} className="mt-0.5 flex-shrink-0" />
-                                    <span>비밀번호를 설정하지 않으면 초대 링크를 가진 누구나 입장할 수 있습니다.</span>
-                                </div>
+
                             </div>
                         </div>
                     )}
 
-                    {/* 3. 표지 설정 (공통) */}
+                    {/* 3. 해시태그 (공통 -> 순서 변경됨) */}
+                    <div>
+                        <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">
+                            해시태그 <span className="text-xs font-normal text-[var(--text-tertiary)]">(선택)</span>
+                        </label>
+                        <div className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition bg-[var(--bg-card-secondary)] flex items-center gap-2">
+                            <span className="text-indigo-500 font-bold ml-1">#</span>
+                            <input
+                                type="text"
+                                value={selectedTag || ''}
+                                onChange={(e) => setSelectedTag(e.target.value)}
+                                placeholder="태그 입력"
+                                className="flex-1 outline-none bg-transparent font-medium text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
+                                maxLength={10}
+                            />
+                        </div>
+                    </div>
+
+                    {/* 4. 표지 설정 (공통 -> 순서 변경됨) */}
                     <div>
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-bold text-[var(--text-secondary)]">
@@ -288,24 +213,6 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
                                     <Users size={16} className="text-indigo-600" />
                                 </div>
                             )}
-                        </div>
-                    </div>
-
-                    {/* 4. 해시태그 (공통) */}
-                    <div>
-                        <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">
-                            해시태그 <span className="text-xs font-normal text-[var(--text-tertiary)]">(선택)</span>
-                        </label>
-                        <div className="w-full px-4 py-3 rounded-xl border border-[var(--border-color)] focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition bg-[var(--bg-card-secondary)] flex items-center gap-2">
-                            <span className="text-indigo-500 font-bold ml-1">#</span>
-                            <input
-                                type="text"
-                                value={selectedTag || ''}
-                                onChange={(e) => setSelectedTag(e.target.value)}
-                                placeholder="태그 입력"
-                                className="flex-1 outline-none bg-transparent font-medium text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
-                                maxLength={10}
-                            />
                         </div>
                     </div>
 

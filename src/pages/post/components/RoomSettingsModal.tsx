@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { X, Copy, Check, Users, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Copy, Check, Users, Settings, LogOut, Loader } from 'lucide-react';
 import type { CustomAlbum } from '../types';
+import { fetchRoomMembersApi, kickMemberApi, leaveRoomApi } from '../api';
 
 interface Props {
     isOpen: boolean;
@@ -13,9 +14,85 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedPw, setCopiedPw] = useState(false);
 
+    // Member Management State
+    const [members, setMembers] = useState<any[]>([]);
+    const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+    const [currentUserRole, setCurrentUserRole] = useState<'OWNER' | 'MEMBER' | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null); // To identify "Me"
+
+    useEffect(() => {
+        if (isOpen && activeTab === 'members') {
+            loadMembers();
+        }
+    }, [isOpen, activeTab]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+                setCurrentUserId(payload.sub ? Number(payload.sub) : (payload.id ? Number(payload.id) : null));
+            } catch (e) {
+                // ignore
+            }
+        }
+    }, []);
+
+    const loadMembers = async () => {
+        setIsLoadingMembers(true);
+        try {
+            const list = await fetchRoomMembersApi(album.id);
+            setMembers(list);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingMembers(false);
+        }
+    };
+
+    // Update role whenever members or currentUserId changes
+    useEffect(() => {
+        if (members.length > 0 && currentUserId) {
+            // Find "me" in the list
+            const me = members.find((m: any) => String(m.userId) === String(currentUserId));
+            console.log("[RoomSettings] My User ID:", currentUserId, "Found Member:", me);
+            if (me) {
+                setCurrentUserRole(me.role);
+            }
+        }
+    }, [members, currentUserId]);
+
+    const handleKick = async (userId: string) => {
+        if (!confirm("정말 이 멤버를 내보내시겠습니까?")) return;
+        const success = await kickMemberApi(album.id, userId);
+        if (success) {
+            alert("멤버를 내보냈습니다.");
+            loadMembers(); // Refresh
+        } else {
+            alert("강퇴 실패");
+        }
+    };
+
+    const handleLeave = async () => {
+        if (!confirm("정말 이 모임에서 나가시겠습니까?")) return;
+        const success = await leaveRoomApi(album.id);
+        if (success) {
+            alert("모임에서 나갔습니다.");
+            onClose();
+            window.location.reload(); // Simple reload to refresh list
+        } else {
+            alert("나가기 실패");
+        }
+    };
+
     if (!isOpen) return null;
 
-    const inviteLink = `${window.location.origin}/invite/${album.id}`;
+    const inviteLink = `${window.location.origin}/rooms/${album.id}/join`;
 
     const copyToClipboard = async (text: string, type: 'link' | 'pw') => {
         try {
@@ -109,31 +186,69 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between p-3 bg-[var(--bg-card-secondary)] rounded-xl border border-[var(--border-color)]">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                                        ME
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-sm text-[var(--text-primary)]">나 (방장)</div>
-                                        <div className="text-xs text-[var(--text-secondary)]">online</div>
-                                    </div>
+                            {isLoadingMembers ? (
+                                <div className="flex justify-center p-8">
+                                    <Loader className="animate-spin text-indigo-500" />
                                 </div>
-                                <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">Owner</span>
-                            </div>
+                            ) : (
+                                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                                    {members.map((member) => (
+                                        <div key={member.userId} className="flex items-center justify-between p-3 bg-[var(--bg-card-secondary)] rounded-xl border border-[var(--border-color)]">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${member.role === 'OWNER' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {member.nickname?.substring(0, 2).toUpperCase() || "MB"}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
+                                                        {member.nickname || "Unknown"}
+                                                        {/* Check matches for (나) indicator */}
+                                                        {String(member.userId) === String(currentUserId) && <span className="text-xs text-[var(--text-tertiary)]">(나)</span>}
+                                                    </div>
+                                                    <div className="text-xs text-[var(--text-secondary)]">{member.email}</div>
+                                                </div>
+                                            </div>
 
-                            {/* Mock friend */}
-                            <div className="flex items-center justify-between p-3 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)] opacity-60">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                        <Users size={20} />
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-sm text-[var(--text-primary)]">친구 초대 대기중...</div>
-                                        <div className="text-xs text-[var(--text-secondary)]">초대 링크를 공유해보세요</div>
-                                    </div>
+                                            <div className="flex items-center gap-2">
+                                                {member.role === 'OWNER' && (
+                                                    <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">Owner</span>
+                                                )}
+
+                                                {/* Owner Actions: Kick others */}
+                                                {currentUserRole === 'OWNER' && member.role !== 'OWNER' && (
+                                                    <button
+                                                        onClick={() => handleKick(member.userId)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="멤버 내보내기"
+                                                    >
+                                                        <LogOut size={16} />
+                                                    </button>
+                                                )}
+
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Leave Room Button (Only for Non-Owners) */}
+                            {currentUserRole !== 'OWNER' && (
+                                <div className="pt-4 border-t border-[var(--border-color)] mt-4">
+                                    <button
+                                        onClick={handleLeave}
+                                        className="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold text-sm hover:bg-red-100 transition flex items-center justify-center gap-2"
+                                    >
+                                        <LogOut size={16} /> 모임 나가기
+                                    </button>
+                                </div>
+                            )}
+
+                            {currentUserRole === 'OWNER' && (
+                                <div className="pt-4 border-t border-[var(--border-color)] mt-4 text-center">
+                                    <p className="text-xs text-[var(--text-secondary)]">
+                                        방장은 나갈 수 없습니다. 방을 삭제해주세요.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

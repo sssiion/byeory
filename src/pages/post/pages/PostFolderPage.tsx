@@ -77,19 +77,31 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
             try {
                 const api = await import('../api');
 
-                // 1. Fetch Contents
-                const data = await api.fetchAlbumContents(albumId, allPosts, customAlbums);
+                // 1. Determine Type from CustomAlbums
+                const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
+                const type = targetAlbum?.type || 'album';
+
+                // 2. Fetch Contents with Type
+                const data = await api.fetchAlbumContents(albumId, allPosts, customAlbums, type as 'album' | 'room');
                 setContents(data as any);
 
-                // 2. Fetch Current Album Details (for Breadcrumbs & Root Path)
+                // 3. Fetch Current Album/Room Details (for Breadcrumbs & Root Path)
                 if (albumId !== '__all__' && albumId !== '__others__') {
-                    const albumInfo = await api.fetchAlbumApi(albumId);
+                    let albumInfo;
+                    if (type === 'room') {
+                        // Use Room API
+                        albumInfo = await api.fetchRoomApi(albumId);
+                    } else {
+                        // Use Album API
+                        albumInfo = await api.fetchAlbumApi(albumId);
+                    }
+
                     if (albumInfo) {
                         setCurrentAlbum({
                             id: String(albumInfo.id),
                             name: albumInfo.name,
                             parentId: albumInfo.parentId ? String(albumInfo.parentId) : null,
-                            type: albumInfo.type
+                            type: albumInfo.type || type // Ensure type is set
                         });
                     }
                 } else {
