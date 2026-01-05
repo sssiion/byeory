@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Heart, ShoppingBag } from 'lucide-react';
+import { Coins, Heart, ShoppingBag, Star } from 'lucide-react';
 import type { MarketItem } from '../../data/mockMarketItems';
 import { useCredits } from '../../context/CreditContext';
 
@@ -11,15 +11,24 @@ interface MerchCardProps {
     isWishlisted?: boolean;
     effectivePrice?: number;
     onClick?: () => void;
+    onClickRating?: () => void;
 }
 
-const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, onClick }) => {
+const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, onClick, onClickRating }) => {
     const { credits } = useCredits();
     const currentPrice = effectivePrice !== undefined ? effectivePrice : item.price;
     const canAfford = credits >= currentPrice;
 
     // Check if discounted
     const isDiscounted = effectivePrice !== undefined && effectivePrice < item.price;
+
+    const parseDate = (date: any) => {
+        if (!date) return null;
+        if (Array.isArray(date)) {
+            return new Date(date[0], date[1] - 1, date[2], date[3] || 0, date[4] || 0, date[5] || 0);
+        }
+        return new Date(date);
+    };
 
     return (
         <div
@@ -33,7 +42,8 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                     <img
                         src={item.imageUrl}
                         alt={item.title}
-                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-sm"
+                        draggable={false}
+                        className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-sm select-none"
                     />
                 ) : (
                     <div className="text-[var(--text-secondary)]">No Image</div>
@@ -68,7 +78,44 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                 <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-4 flex-1">{item.description}</p>
 
                 <div className="flex items-center justify-between mt-auto">
-                    <div className="flex flex-col items-start gap-0.5">
+                    {/* Rating if available */}
+                    {(() => {
+                        const createdDate = parseDate(item.createdAt);
+                        const isNew = createdDate ? (new Date().getTime() - createdDate.getTime()) < (7 * 24 * 60 * 60 * 1000) : false;
+                        const hasRating = (item.averageRating || 0) > 0 || (item.reviewCount || 0) > 0;
+
+                        if (hasRating) {
+                            return (
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onClickRating?.();
+                                    }}
+                                    className="flex items-center gap-1 text-[var(--text-secondary)] text-xs font-medium cursor-pointer hover:bg-[var(--bg-card-secondary)] rounded px-1 transition-colors"
+                                >
+                                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                    <span className="text-[var(--text-primary)] font-bold">{item.averageRating?.toFixed(1) || '0.0'}</span>
+                                    <span className="opacity-50">({item.reviewCount || 0})</span>
+                                </div>
+                            );
+                        } else if (isNew) {
+                            return (
+                                <div className="text-[10px] text-[var(--text-disabled)] font-medium bg-[var(--bg-card-secondary)] px-1.5 py-0.5 rounded-md">
+                                    New
+                                </div>
+                            );
+                        } else {
+                            return (
+                                <div className="flex items-center gap-1 text-[var(--text-secondary)] text-xs font-medium opacity-50">
+                                    <Star className="w-3 h-3 text-[var(--text-disabled)]" />
+                                    <span className="font-bold">0.0</span>
+                                    <span>(0)</span>
+                                </div>
+                            );
+                        }
+                    })()}
+
+                    <div className="flex flex-col items-end gap-0.5 ml-auto">
                         {isDiscounted && !isOwned && (
                             <span className="text-[10px] text-red-400 line-through decoration-red-400/50">
                                 {item.price.toLocaleString()} C

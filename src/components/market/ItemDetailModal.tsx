@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Heart, ShoppingBag, Star, User } from 'lucide-react';
+import { useCredits } from '../../context/CreditContext';
 import type { MarketItem } from '../../data/mockMarketItems';
 
 interface ItemDetailModalProps {
@@ -10,12 +11,101 @@ interface ItemDetailModalProps {
     isOwned: boolean;
     isWishlisted: boolean;
     effectivePrice: number;
+    initialTab?: 'details' | 'reviews';
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
-    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice
+    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details'
 }) => {
-    const [activeTab, setActiveTab] = useState<'details' | 'reviews'>('details');
+    const { userId } = useCredits();
+    const [activeTab, setActiveTab] = useState<'details' | 'reviews'>(initialTab);
+    const [reviews, setReviews] = useState<any[]>([]);
+    const [newRating, setNewRating] = useState(5);
+    const [newReviewContent, setNewReviewContent] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    React.useEffect(() => {
+        if (item) {
+            fetchReviews();
+        }
+    }, [item]);
+
+    const fetchReviews = async () => {
+        const token = localStorage.getItem('accessToken');
+        try {
+            const headers: HeadersInit = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const res = await fetch(`http://localhost:8080/api/market/reviews/${item.id}`, {
+                headers
+            });
+            if (res.ok) {
+                const data = await res.json();
+                // Sort: My review first, then by Id desc (newest)
+                data.sort((a: any, b: any) => {
+                    // Check if a or b is my review. ReviewResponse userId is number, context userId is string
+                    const isMyReviewA = String(a.userId) === String(userId);
+                    const isMyReviewB = String(b.userId) === String(userId);
+                    if (isMyReviewA && !isMyReviewB) return -1;
+                    if (!isMyReviewA && isMyReviewB) return 1;
+                    return b.id - a.id;
+                });
+                setReviews(data);
+            }
+        } catch (e) {
+            console.error("Failed to fetch reviews", e);
+        }
+    };
+
+    const handlePostReview = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+
+        if (!newReviewContent.trim()) {
+            alert("리뷰 내용을 입력해주세요.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const res = await fetch('http://localhost:8080/api/market/reviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    marketItemId: item.id,
+                    content: newReviewContent,
+                    rating: newRating
+                })
+            });
+
+            if (res.ok) {
+                await fetchReviews();
+                setNewReviewContent('');
+                setNewRating(5);
+                alert("리뷰가 등록되었습니다.");
+            } else {
+                const errorText = await res.text();
+                if (res.status === 400 || res.status === 409) {
+                    alert(`리뷰 등록 실패: ${errorText || "이미 등록했거나 오류가 발생했습니다."}`);
+                } else {
+                    alert("리뷰 등록 실패: 잠시 후 다시 시도해주세요.");
+                }
+            }
+        } catch (e) {
+            console.error("Failed to post review", e);
+            alert("오류가 발생했습니다.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (!item) return null;
 
@@ -37,7 +127,8 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         <img
                             src={item.imageUrl}
                             alt={item.title}
-                            className="w-full h-full object-contain drop-shadow-xl"
+                            draggable={false}
+                            className="w-full h-full object-contain drop-shadow-xl select-none"
                         />
                     ) : (
                         <div className="text-[var(--text-secondary)] flex flex-col items-center gap-4">
@@ -62,10 +153,20 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             <span className="px-2 py-1 bg-[var(--bg-card-secondary)] rounded-md text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                                 {item.type?.replace('_', ' ')}
                             </span>
-                            <div className="flex items-center gap-1 text-yellow-500 font-bold text-sm">
+                            {/* Dynamic Header Stats */}
+                            <div
+                                onClick={() => setActiveTab('reviews')}
+                                className="flex items-center gap-1 text-yellow-500 font-bold text-sm cursor-pointer hover:bg-[var(--bg-card-secondary)] rounded-lg px-2 -ml-2 transition-colors py-1"
+                            >
                                 <Star className="w-4 h-4 fill-yellow-500" />
-                                <span>4.8</span>
-                                <span className="text-[var(--text-secondary)] font-normal ml-1">(124개 리뷰)</span>
+                                <span>
+                                    {reviews.length > 0
+                                        ? (reviews.reduce((a, b) => a + b.rating, 0) / reviews.length).toFixed(1)
+                                        : (item.averageRating ? item.averageRating.toFixed(1) : '0.0')}
+                                </span>
+                                <span className="text-[var(--text-secondary)] font-normal ml-1">
+                                    ({reviews.length > 0 ? reviews.length : (item.reviewCount || 0)}개 리뷰)
+                                </span>
                             </div>
                         </div>
                         <h2 className="text-3xl font-black text-[var(--text-primary)] mb-2 leading-tight">{item.title}</h2>
@@ -84,7 +185,10 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             상세 정보
                         </button>
                         <button
-                            onClick={() => setActiveTab('reviews')}
+                            onClick={() => {
+                                setActiveTab('reviews');
+                                if (reviews.length === 0) fetchReviews();
+                            }}
                             className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'reviews' ? 'border-[var(--btn-bg)] text-[var(--text-primary)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                         >
                             리뷰
@@ -115,26 +219,72 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-bold text-[var(--text-primary)]">구매자 리뷰</h3>
-                                    <button className="text-xs font-bold text-[var(--btn-bg)] hover:underline">리뷰 작성</button>
                                 </div>
-                                {/* Mock Reviews */}
-                                {[1, 2, 3].map((_, i) => (
-                                    <div key={i} className="flex gap-4 border-b border-[var(--border-color)] pb-4 last:border-0">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 shrink-0"></div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-bold text-sm text-[var(--text-primary)]">사용자 {i + 1}</span>
-                                                <div className="flex text-yellow-500 gap-0.5">
-                                                    {[...Array(5)].map((_, j) => <Star key={j} className="w-3 h-3 fill-current" />)}
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-[var(--text-secondary)]">
-                                                정말 유용한 아이템입니다! 다이어리 꾸미기에 딱이에요. 추천합니다. 👍
-                                            </p>
-                                            <span className="text-[10px] text-[var(--text-disabled)] mt-2 block">2일 전</span>
+
+                                {/* Review Input Form */}
+                                {isOwned && (
+                                    <div className="bg-[var(--bg-card-secondary)] p-4 rounded-xl mb-4">
+                                        <h4 className="text-sm font-bold mb-2">리뷰 작성하기</h4>
+                                        <div className="flex gap-2 mb-2">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <button key={star} onClick={() => setNewRating(star)}>
+                                                    <Star className={`w-5 h-5 ${star <= newRating ? 'fill-yellow-500 text-yellow-500' : 'text-[var(--text-disabled)]'}`} />
+                                                </button>
+                                            ))}
                                         </div>
+                                        <textarea
+                                            value={newReviewContent}
+                                            onChange={(e) => setNewReviewContent(e.target.value)}
+                                            placeholder="리뷰 내용을 입력하세요..."
+                                            className="w-full p-2 text-sm bg-[var(--bg-card)] rounded-lg border border-[var(--border-color)] mb-2"
+                                            rows={3}
+                                        />
+                                        <button
+                                            onClick={handlePostReview}
+                                            disabled={isSubmitting}
+                                            className="px-4 py-2 bg-[var(--btn-bg)] text-white text-xs font-bold rounded-lg hover:brightness-110 disabled:opacity-50"
+                                        >
+                                            {isSubmitting ? '등록 중...' : '리뷰 등록'}
+                                        </button>
                                     </div>
-                                ))}
+                                )}
+
+                                {/* Reviews List */}
+                                {reviews.length === 0 ? (
+                                    <p className="text-center text-[var(--text-secondary)] py-8">아직 작성된 리뷰가 없습니다.</p>
+                                ) : (
+                                    reviews.map((review) => (
+                                        <div key={review.id} className="flex gap-4 border-b border-[var(--border-color)] pb-4 last:border-0">
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 shrink-0 flex items-center justify-center text-white text-xs font-bold">
+                                                {review.userNickname?.[0]?.toUpperCase() || 'U'}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-sm text-[var(--text-primary)]">{review.userNickname}</span>
+                                                    {String(review.userId) === String(userId) && (
+                                                        <span className="px-1.5 py-0.5 bg-[var(--btn-bg)] text-white text-[10px] font-bold rounded-md">
+                                                            내 리뷰
+                                                        </span>
+                                                    )}
+                                                    <div className="flex text-yellow-500 gap-0.5">
+                                                        {[...Array(5)].map((_, j) => (
+                                                            <Star
+                                                                key={j}
+                                                                className={`w-3 h-3 ${j < review.rating ? 'fill-current' : 'text-[var(--text-disabled)] opacity-30'}`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">
+                                                    {review.content}
+                                                </p>
+                                                <span className="text-[10px] text-[var(--text-disabled)] mt-2 block">
+                                                    {review.createdAt ? new Date(review.createdAt).toLocaleString() : new Date().toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         )}
                     </div>
@@ -175,9 +325,9 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 };
 

@@ -8,6 +8,9 @@ export interface MarketItem {
     imageUrl?: string;
     author: string;
     tags: string[];
+    averageRating?: number;
+    reviewCount?: number;
+    createdAt?: string;
 }
 
 export const MOCK_MARKET_ITEMS: MarketItem[] = [

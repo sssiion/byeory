@@ -3,19 +3,18 @@ import Navigation from '../../components/Header/Navigation';
 import MarketLayout from '../../components/market/MarketLayout';
 import MerchCard from '../../components/market/MerchCard';
 import ItemDetailModal from '../../components/market/ItemDetailModal';
-import { MOCK_MARKET_ITEMS, type MarketItem } from '../../data/mockMarketItems';
+import { type MarketItem } from '../../data/mockMarketItems';
 import { useCredits } from '../../context/CreditContext';
 import { useMarket } from '../../hooks/useMarket';
 import { Search, Plus, FolderOpen, Heart, ShoppingBag } from 'lucide-react';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
-import type { WidgetPreset } from '../../types/preset';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
-    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore } = useMarket(); // destructured marketItems
+    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort } = useMarket(); // destructured marketItems, sort, changeSort
     const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history'>('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortOrder, setSortOrder] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular');
+    // const [sortOrder, setSortOrder] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular'); // Removed in favor of hook state
 
     // Debounce Search
     useEffect(() => {
@@ -29,33 +28,13 @@ const Market: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
     const loadMySellableItems = React.useCallback(async () => {
-        // 1. Dashboard LocalStorage Presets
-        const savedPresets = localStorage.getItem('my_dashboard_presets');
-        let localPresets: WidgetPreset[] = [];
-        if (savedPresets) {
-            try {
-                localPresets = JSON.parse(savedPresets);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // 2. Custom Widgets from API
+        // 1. Custom Widgets from API (Only source now)
         let apiWidgets: any[] = [];
         try {
             apiWidgets = await getMyWidgets();
         } catch (e) {
             console.error("Failed to load custom widgets for market", e);
         }
-
-        const formattedPresets = localPresets.map(p => ({
-            id: p.id,
-            title: p.name,
-            type: 'template_widget',
-            description: `Custom Layout with ${p.widgets.length} widgets.`,
-            price: 0, // Not for sale yet, just listing
-            source: 'local'
-        }));
 
         const formattedWidgets = apiWidgets.map(w => ({
             id: w.id || w._id,
@@ -66,15 +45,7 @@ const Market: React.FC = () => {
             source: 'api'
         }));
 
-        // Filter out items that are already purchased (prevent reselling bought items)
-        // purchasedItems is now an array of objects. We need to check IDs.
-        // Assuming 'apiWidgets' might include bought widgets.
-        // However, 'getMyWidgets' usually returns user's OWNED widgets (created + bought).
-        // If we want to prevent reselling *bought* items, we need to know which ones are bought.
-        // 'purchasedItems' contains items bought from market.
-        // If an item in 'formattedWidgets' has an ID that exists in 'purchasedItems', we should exclude it.
-
-        const allCandidates = [...formattedPresets, ...formattedWidgets];
+        const allCandidates = [...formattedWidgets];
         const sellable = allCandidates.filter(candidate => !isOwned(candidate.id))
             .map(candidate => {
                 const isAlreadySelling = sellingItems.some(s =>
@@ -128,7 +99,8 @@ const Market: React.FC = () => {
     };
 
     // MERGE MOCK ITEMS + BACKEND ITEMS
-    const allMarketItems = [...MOCK_MARKET_ITEMS, ...marketItems];
+    // Since we migrated mock data to DB, we should only use backend items to prevent duplicates and ID mismatches.
+    const allMarketItems = [...marketItems];
 
     const filteredItems = allMarketItems.filter((item: any) => {
         // 1. Tab Filtering
@@ -155,20 +127,6 @@ const Market: React.FC = () => {
             tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
         return matchesSearch;
-    }).sort((a: any, b: any) => {
-        switch (sortOrder) {
-            case 'price_low':
-                return a.price - b.price;
-            case 'price_high':
-                return b.price - a.price;
-            case 'latest':
-                // Mock latest: assume higher ID or reverse index order. 
-                return b.id.localeCompare(a.id);
-            case 'popular':
-            default:
-                // Mock popular: default order
-                return 0;
-        }
     });
 
     return (
@@ -248,8 +206,8 @@ const Market: React.FC = () => {
                             ].map(opt => (
                                 <button
                                     key={opt.id}
-                                    onClick={() => setSortOrder(opt.id as any)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sortOrder === opt.id
+                                    onClick={() => changeSort(opt.id as any)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sort === opt.id
                                         ? 'bg-[var(--btn-bg)] text-white'
                                         : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
                                         }`}
@@ -431,7 +389,9 @@ const Market: React.FC = () => {
                                             isOwned={isOwned(item.id)}
                                             isWishlisted={isWishlisted(item.id)}
                                             effectivePrice={effectivePrice}
+
                                             onClick={() => setSelectedItem(item)}
+                                            onClickRating={() => setSelectedItem({ ...item, initialTab: 'reviews' })}
                                         />
                                     );
                                 })}
@@ -464,6 +424,7 @@ const Market: React.FC = () => {
                     isOwned={isOwned(selectedItem.id)}
                     isWishlisted={isWishlisted(selectedItem.id)}
                     effectivePrice={getPackPrice(selectedItem.id, selectedItem.price)}
+                    initialTab={selectedItem.initialTab}
                 />
             )
             }

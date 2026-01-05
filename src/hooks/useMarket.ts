@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useCredits } from '../context/CreditContext';
 import { STICKERS } from '../pages/post/constants';
-import { MOCK_MARKET_ITEMS } from '../data/mockMarketItems';
+
 
 export const useMarket = () => {
-    const { credits, spendCredits, refreshCredits, userId } = useCredits(); // Using refreshCredits, userId
+    const { credits, refreshCredits, userId } = useCredits(); // Using refreshCredits, userId
     const [purchasedItems, setPurchasedItems] = useState<any[]>([]); // Store full objects now
     const [sellingItems, setSellingItems] = useState<any[]>([]);
     const [marketItems, setMarketItems] = useState<any[]>([]); // All items on sale (from backend)
@@ -12,14 +12,16 @@ export const useMarket = () => {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [keyword, setKeyword] = useState('');
+    const [sort, setSort] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular');
 
     // Function to fetch data from backend
-    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean } = {}) => {
+    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high' } = {}) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
         const targetPage = options.page !== undefined ? options.page : 0;
         const targetKeyword = options.keyword !== undefined ? options.keyword : keyword;
+        const targetSort = options.newSort !== undefined ? options.newSort : sort; // Use passed sort or state
         const isLoadMore = options.isLoadMore || false;
 
         if (!isLoadMore) {
@@ -27,7 +29,7 @@ export const useMarket = () => {
         }
 
         try {
-            // 1. Fetch Purchased Items
+            // 1. Fetch Purchased Items (Only on initial load or if needed? Keep simpler for now, always fetch)
             let backendPurchased: any[] = [];
             const purchasedRes = await fetch('http://localhost:8080/api/market/purchased', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -47,40 +49,14 @@ export const useMarket = () => {
                     status: i.status,
                     createdAt: i.createdAt,
                     salesCount: i.salesCount || 0,
+
+                    averageRating: i.averageRating,
+                    reviewCount: i.reviewCount,
                     isBackend: true
                 }));
             }
 
-            // Merge with Local Storage (Legacy) items
-            const localIds = JSON.parse(localStorage.getItem('market_purchased_items') || '[]');
-            const localItems = localIds.map((id: string) => {
-                // Try to find in MOCK items
-                const mockItem = MOCK_MARKET_ITEMS.find(m => m.id === id);
-                // Try to find in backend items if available (requires them to be fetched already? But this is async...)
-                // We haven't setMarketItems yet in this function scope fully (it sets at end).
-                // But we can check if it's a known backend ID if we had the list.
-                // For now, prioritize Mock as local storage usually stores mock IDs.
-
-                return {
-                    id: id,
-                    title: mockItem ? mockItem.title : (id.startsWith('selling_') ? 'Custom Item' : id),
-                    price: mockItem ? mockItem.price : 0,
-                    type: mockItem ? mockItem.type : 'legacy',
-                    // Use mock image if available
-                    imageUrl: mockItem ? mockItem.imageUrl : undefined,
-                    purchasedAt: new Date().toISOString(), // Mock date
-                    isLegacy: true
-                };
-            });
-
-            // Deduplicate: If backend has same ID, use backend (unlikely for strings vs numbers but needed if we mix)
-            // Actually, Local IDs are like 'pack_basic', Backend are '1', '2'. No collision expected usually.
-            // But we should filter out duplicates just in case.
-            const allItems = [...backendPurchased, ...localItems];
-            // Use a Map to dedup by ID
-            const uniqueItems = Array.from(new Map(allItems.map(item => [item.id, item])).values());
-
-            setPurchasedItems(uniqueItems);
+            setPurchasedItems(backendPurchased);
 
             // 2. Fetch My Selling Items
             const sellingRes = await fetch('http://localhost:8080/api/market/my-items', {
@@ -101,16 +77,27 @@ export const useMarket = () => {
                     createdAt: i.createdAt,
                     salesCount: i.salesCount || 0,
                     referenceId: i.referenceId,
+
+                    averageRating: i.averageRating,
+                    reviewCount: i.reviewCount,
                     isBackend: true
                 }));
                 setSellingItems(backendSelling);
             }
 
             // 3. Fetch All Market Items (For browsing)
+            let sortParam = 'createdAt,desc';
+            switch (targetSort) {
+                case 'popular': sortParam = 'salesCount,desc'; break; // Now supported by @Formula
+                case 'latest': sortParam = 'createdAt,desc'; break;
+                case 'price_low': sortParam = 'price,asc'; break;
+                case 'price_high': sortParam = 'price,desc'; break;
+            }
+
             const query = new URLSearchParams({
                 page: String(targetPage),
                 size: '12',
-                sort: 'createdAt,desc'
+                sort: sortParam
             });
             if (targetKeyword) query.append('keyword', targetKeyword);
 
@@ -134,6 +121,9 @@ export const useMarket = () => {
                     createdAt: i.createdAt,
                     salesCount: i.salesCount || 0,
                     referenceId: i.referenceId,
+
+                    averageRating: i.averageRating,
+                    reviewCount: i.reviewCount,
                     isBackend: true
                 }));
 
@@ -161,7 +151,7 @@ export const useMarket = () => {
         } catch (e) {
             console.error("Failed to fetch market data", e);
         }
-    }, [userId, keyword]);
+    }, [userId, keyword, sort]);
 
     const loadMore = useCallback(() => {
         if (!hasMore) return;
@@ -173,13 +163,32 @@ export const useMarket = () => {
         refreshMarket({ page: 0, keyword: kw, isLoadMore: false });
     }, [refreshMarket]);
 
-    useEffect(() => {
-        // Initial setup
-        const savedWishlist = localStorage.getItem('market_wishlist_items');
-        if (savedWishlist) setWishlistItems(JSON.parse(savedWishlist));
-
-        refreshMarket();
+    const changeSort = useCallback((newSort: 'popular' | 'latest' | 'price_low' | 'price_high') => {
+        setSort(newSort);
+        refreshMarket({ page: 0, newSort: newSort, isLoadMore: false });
     }, [refreshMarket]);
+
+    useEffect(() => {
+        refreshMarket();
+
+        // Fetch Wishlist IDs
+        const fetchWishlist = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+            try {
+                const res = await fetch('http://localhost:8080/api/market/wishlist/ids', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const ids = await res.json();
+                    setWishlistItems(ids.map(String));
+                }
+            } catch (e) {
+                console.error("Failed to fetch wishlist", e);
+            }
+        };
+        fetchWishlist();
+    }, []); // Initial load only, then controlled by refreshMarket dependencies
 
     const isOwned = useCallback((itemId: string) => {
         return purchasedItems.some(item => item.id === String(itemId));
@@ -189,14 +198,30 @@ export const useMarket = () => {
         return wishlistItems.includes(itemId);
     }, [wishlistItems]);
 
-    const toggleWishlist = useCallback((itemId: string) => {
-        const newItem = wishlistItems.includes(itemId)
-            ? wishlistItems.filter(id => id !== itemId)
-            : [...wishlistItems, itemId];
+    const toggleWishlist = useCallback(async (itemId: string) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
 
-        setWishlistItems(newItem);
-        localStorage.setItem('market_wishlist_items', JSON.stringify(newItem));
-    }, [wishlistItems]);
+        try {
+            const res = await fetch(`http://localhost:8080/api/market/wishlist/${itemId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setWishlistItems(prev => {
+                    if (data.added) return [...prev, String(itemId)];
+                    return prev.filter(id => id !== String(itemId));
+                });
+            }
+        } catch (e) {
+            console.error("Failed to toggle wishlist", e);
+        }
+    }, []);
 
     const registerItem = useCallback(async (item: any) => {
         const token = localStorage.getItem('accessToken');
@@ -257,49 +282,32 @@ export const useMarket = () => {
         }
     }, [refreshMarket]);
 
-    const buyItem = useCallback(async (itemId: string, cost: number, additionalIds: string[] = []) => {
+    const buyItem = useCallback(async (itemId: string, cost: number) => {
         if (credits < cost) return false;
 
-        // Check if numeric ID -> Backend Buy
-        if (!isNaN(Number(itemId))) {
-            const token = localStorage.getItem('accessToken');
-            if (!token) return false;
+        const token = localStorage.getItem('accessToken');
+        if (!token) return false;
 
-            try {
-                const response = await fetch(`http://localhost:8080/api/market/buy/${itemId}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+        try {
+            const response = await fetch(`http://localhost:8080/api/market/buy/${itemId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-                if (response.ok) {
-                    await refreshMarket();
-                    await refreshCredits(); // Force refresh credits
-                    return true;
-                } else {
-                    alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
-                    return false;
-                }
-            } catch (e) {
-                console.error(e);
+            if (response.ok) {
+                await refreshMarket();
+                await refreshCredits(); // Force refresh credits
+                return true;
+            } else {
+                alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
                 return false;
             }
-        } else {
-            // Legacy LocalStorage Buy
-            if (spendCredits(cost)) {
-                const localIds = JSON.parse(localStorage.getItem('market_purchased_items') || '[]');
-                const newPurchased = [...localIds, itemId, ...additionalIds];
-                const unique = Array.from(new Set(newPurchased));
-                localStorage.setItem('market_purchased_items', JSON.stringify(unique));
-
-                await refreshMarket(); // Re-read local storage into state
-                // spendCredits already updated local credit state optimistically, 
-                // but we should probably trigger a refresh if we had a server sync mechanism for legacy (we don't really).
-                // But it's fine.
-                return true;
-            }
+        } catch (e) {
+            console.error(e);
+            return false;
         }
-        return false;
-    }, [credits, spendCredits, refreshMarket, refreshCredits]);
+    }, [credits, refreshMarket, refreshCredits]);
+
 
     const getPackPrice = useCallback((packId: string, originalPrice: number) => {
         const packStickers = STICKERS.filter(s => s.packId === packId);
@@ -323,7 +331,10 @@ export const useMarket = () => {
         getPackPrice,
         loadMore,
         search,
+        changeSort,
+        sort,
         hasMore,
         isSearching: !!keyword
     };
 };
+
