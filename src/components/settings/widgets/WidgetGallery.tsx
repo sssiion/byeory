@@ -67,7 +67,7 @@ function WidgetContainer({ children, title, className = '', onInfoClick, isMobil
                     {buttons ? buttons : (
                         <>
                             <button onClick={onInfoClick} className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)] transition-colors"><HelpCircle size={12} /></button>
-                            <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500"><Plus size={14} strokeWidth={3} /></div>
+                            <div className="w-6 h-6 rounded-full bg-[var(--btn-bg)] flex items-center justify-center text-[var(--btn-text)]"><Plus size={14} strokeWidth={3} /></div>
                         </>
                     )}
                 </div>
@@ -191,17 +191,17 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
     const categories = Object.keys(groupedWidgets);
 
     return (
-        <div className="h-full flex flex-col bg-[var(--bg-card)] dark:bg-slate-900">
+        <div className="h-full flex flex-col bg-[var(--bg-card)]">
             {/* Header */}
-            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] dark:bg-slate-900 sticky top-0 z-20">
+            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] sticky top-0 z-20">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--icon-color)]" size={16} />
                     <input
                         type="text"
                         placeholder="위젯 검색 (내 보관함 포함)"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-card-secondary)] border border-transparent focus:bg-white focus:border-blue-500 transition-all outline-none text-sm"
+                        className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-card-secondary)] border border-transparent focus:bg-[var(--bg-card)] focus:border-[var(--btn-bg)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] transition-all outline-none text-sm"
                         autoFocus
                     />
                 </div>
@@ -210,7 +210,7 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
             {/* List */}
             <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 overscroll-contain">
                 {isLoading && (
-                    <div className="flex justify-center p-2 text-xs text-gray-400 gap-2">
+                    <div className="flex justify-center p-2 text-xs text-[var(--text-secondary)] gap-2">
                         <Loader2 className="animate-spin" size={14} /> 불러오는 중...
                     </div>
                 )}
@@ -227,10 +227,10 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
                                 className="w-full flex items-center justify-between p-3 hover:bg-[var(--bg-card-secondary)] transition-colors text-left"
                             >
                                 <div className="flex items-center gap-2">
-                                    <div className={`transition-transform duration-200 ${expandedCategories.has(category) ? 'rotate-90 text-[var(--btn-bg)]' : 'text-gray-400'}`}>
+                                    <div className={`transition-transform duration-200 ${expandedCategories.has(category) ? 'rotate-90 text-[var(--btn-bg)]' : 'text-[var(--icon-color)]'}`}>
                                         <ChevronRight size={16} />
                                     </div>
-                                    <span className={`text-sm font-bold ${category === 'My Saved' ? 'text-indigo-500' : 'text-[var(--text-primary)]'}`}>
+                                    <span className={`text-sm font-bold ${category === 'My Saved' ? 'text-[var(--btn-bg)]' : 'text-[var(--text-primary)]'}`}>
                                         {CATEGORY_TRANSLATIONS[category] || category}
                                     </span>
                                 </div>
@@ -267,7 +267,7 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
                                                                 e.stopPropagation();
                                                                 onEdit?.(widget.data);
                                                             }}
-                                                            className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-indigo-100 hover:text-indigo-600 transition-colors"
+                                                            className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--btn-bg)] transition-colors"
                                                             title="수정"
                                                         >
                                                             <Pencil size={12} />
@@ -307,7 +307,7 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
                                                                 e.stopPropagation();
                                                                 onSelect?.(widget.data);
                                                             }}
-                                                            className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition-colors"
+                                                            className="w-6 h-6 rounded-full bg-[var(--btn-bg)] flex items-center justify-center text-[var(--btn-text)] hover:brightness-110 transition-colors"
                                                             title="추가"
                                                         >
                                                             <Plus size={14} strokeWidth={3} />
@@ -323,7 +323,7 @@ export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
                                                 ) : (
                                                     // 기존 템플릿 로직 (Global 예외처리 등)
                                                     widget.category === 'Global' ? (
-                                                        <div className="text-gray-400 p-2 border rounded-full"><Database size={20} /></div>
+                                                        <div className="text-[var(--text-secondary)] p-2 border rounded-full"><Database size={20} /></div>
                                                     ) : (
                                                         <img
                                                             src={`/thumbnails/${widget.type}.png`}

@@ -65,16 +65,16 @@ export const WidgetInfoModal: React.FC<WidgetInfoProps> = ({
 }) => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[var(--bg-modal)] rounded-2xl shadow-xl border border-[var(--border-color)] p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold text-gray-800">{widget.label}</h3>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 text-gray-400">
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">{widget.label}</h3>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-[var(--bg-card-secondary)] text-[var(--icon-color)]">
                         <X size={18} />
                     </button>
                 </div>
 
                 <div className="space-y-4">
-                    <div className="aspect-video bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden border border-gray-100 p-2">
+                    <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-lg flex items-center justify-center overflow-hidden border border-[var(--border-color)] p-2">
                         {widget.isSaved ? (
                             <div className="w-full h-full transform scale-95 flex items-center justify-center">
                                 {renderWidgetPreview(widget.data)}
@@ -89,22 +89,22 @@ export const WidgetInfoModal: React.FC<WidgetInfoProps> = ({
                         )}
                     </div>
 
-                    <div className="text-sm text-gray-600 px-1">
+                    <div className="text-sm text-[var(--text-secondary)] px-1">
                         {widget.description}
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-2">
-                        <div className="bg-gray-50 rounded-lg p-2.5">
-                            <span className="text-[10px] text-gray-400 block mb-0.5">Category</span>
-                            <span className="text-xs font-medium text-gray-700">
+                        <div className="bg-[var(--bg-card-secondary)] rounded-lg p-2.5">
+                            <span className="text-[10px] text-[var(--text-secondary)] block mb-0.5">Category</span>
+                            <span className="text-xs font-medium text-[var(--text-primary)]">
                                 {CATEGORY_TRANSLATIONS[widget.category] || widget.category}
                             </span>
                         </div>
-                        <div className="bg-gray-50 rounded-lg p-2.5">
-                            <span className="text-[10px] text-gray-400 block mb-0.5">
+                        <div className="bg-[var(--bg-card-secondary)] rounded-lg p-2.5">
+                            <span className="text-[10px] text-[var(--text-secondary)] block mb-0.5">
                                 {widget.isSaved ? "Saved Date" : "Size"}
                             </span>
-                            <span className="text-xs font-medium text-gray-700 font-mono">
+                            <span className="text-xs font-medium text-[var(--text-primary)] font-mono">
                                 {widget.isSaved
                                     ? (typeof widget.description === 'string' ? widget.description.replace('저장된 날짜: ', '') : '-')
                                     : widget.defaultSize || 'Free'}
@@ -118,7 +118,7 @@ export const WidgetInfoModal: React.FC<WidgetInfoProps> = ({
                                 onAction();
                                 onClose();
                             }}
-                            className="w-full py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-2.5 rounded-xl bg-[var(--btn-bg)] hover:bg-[var(--btn-hover)] text-[var(--btn-text)] font-medium text-sm transition-colors flex items-center justify-center gap-2"
                         >
                             <Plus size={16} /> {actionLabel}
                         </button>

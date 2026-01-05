@@ -22,9 +22,10 @@ const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
 // Default Widgets
 const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
     { id: 'w-1', type: 'welcome', layout: { x: 1, y: 1, w: 4, h: 1 } },
-    { id: 'w-2', type: 'theme-guide', layout: { x: 1, y: 2, w: 2, h: 1 } },
-    { id: 'w-3', type: 'feature-card', props: { title: "Feature 1", description: "기능", icon: "1" }, layout: { x: 3, y: 2, w: 1, h: 1 } },
-    { id: 'w-4', type: 'feature-card', props: { title: "Feature 2", description: "기능", icon: "2" }, layout: { x: 4, y: 2, w: 1, h: 1 } },
+    { id: 'w-2', type: 'todo-list', layout: { x: 1, y: 2, w: 2, h: 2 } },
+    { id: 'w-3', type: 'ocean-wave', layout: { x: 3, y: 2, w: 2, h: 1 } },
+    { id: 'w-4', type: 'scratch-card', layout: { x: 3, y: 3, w: 1, h: 1 } },
+    { id: 'w-5', type: 'physics-box', layout: { x: 4, y: 3, w: 1, h: 1 } },
 ];
 
 
@@ -63,9 +64,32 @@ const MainPage: React.FC = () => {
     const { isEditMode: isMenuEditMode } = useMenu();
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false); // State for scroll button visibility
-    const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
+    const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
+        const savedWidgets = localStorage.getItem('my_dashboard_widgets_v3');
+        if (savedWidgets) {
+            try {
+                return JSON.parse(savedWidgets);
+            } catch (e) {
+                return DEFAULT_WIDGETS_V3;
+            }
+        }
+        return DEFAULT_WIDGETS_V3;
+    });
+
     const [widgetSnapshot, setWidgetSnapshot] = useState<WidgetInstance[] | null>(null);
-    const [gridSize, setGridSize] = useState(DEFAULT_GRID_SIZE);
+
+    const [gridSize, setGridSize] = useState<{ cols: number; rows: number }>(() => {
+        const savedGrid = localStorage.getItem('my_dashboard_grid_size_v4');
+        if (savedGrid) {
+            try {
+                return JSON.parse(savedGrid);
+            } catch (e) {
+                return DEFAULT_GRID_SIZE;
+            }
+        }
+        return DEFAULT_GRID_SIZE;
+    });
+
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
     const [isArrangeConfirmOpen, setIsArrangeConfirmOpen] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
@@ -85,37 +109,9 @@ const MainPage: React.FC = () => {
     // Mobile Check
     const isMobile = useIsMobile();
 
-    // Load
-    useEffect(() => {
-        const savedWidgets = localStorage.getItem('my_dashboard_widgets_v3');
-        const savedGrid = localStorage.getItem('my_dashboard_grid_size_v4');
-
-        if (savedWidgets) {
-            try {
-                setWidgets(JSON.parse(savedWidgets));
-            } catch (e) {
-                setWidgets(DEFAULT_WIDGETS_V3);
-            }
-        } else {
-            setWidgets(DEFAULT_WIDGETS_V3);
-        }
-
-        if (savedGrid) {
-            try {
-                setGridSize(JSON.parse(savedGrid));
-            } catch (e) {
-                setGridSize(DEFAULT_GRID_SIZE);
-            }
-        } else {
-            setGridSize(DEFAULT_GRID_SIZE);
-        }
-    }, []);
-
     // Save
     useEffect(() => {
-        if (widgets.length > 0) {
-            localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
-        }
+        localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
         localStorage.setItem('my_dashboard_grid_size_v4', JSON.stringify(gridSize));
     }, [widgets, gridSize]);
 

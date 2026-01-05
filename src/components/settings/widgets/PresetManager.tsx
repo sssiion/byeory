@@ -87,7 +87,7 @@ export const PresetManager: React.FC<PresetManagerProps> = ({
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-200">
             <div className="bg-[var(--bg-card)] w-full max-w-md h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-[var(--border-color)]">
                 {/* Header */}
-                <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)] dark:bg-slate-900 shrink-0">
+                <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-header)] shrink-0">
                     <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
                         <FolderOpen size={20} /> 위젯 프리셋
                     </h3>
@@ -99,7 +99,7 @@ export const PresetManager: React.FC<PresetManagerProps> = ({
                 {/* Fixed Content: Create New UI */}
                 <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)] z-10 shrink-0">
                     {isCreating ? (
-                        <div className="bg-[var(--bg-primary)] p-3 rounded-xl border border-[var(--border-color)] animate-in slide-in-from-top-2">
+                        <div className="bg-[var(--bg-card-secondary)] p-3 rounded-xl border border-[var(--border-color)] animate-in slide-in-from-top-2">
                             <label className="text-xs font-bold text-[var(--text-secondary)] mb-1 block">프리셋 이름</label>
                             <div className="flex gap-2">
                                 <input
