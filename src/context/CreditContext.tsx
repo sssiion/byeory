@@ -168,16 +168,8 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     };
 
-    const spendCredits = (amount: number, reason?: string) => {
-        // Since spending is mostly handled by Market API transaction now,
-        // this method is for optimistic updates or legacy client-side checks.
-        // We will just optimistic check here.
+    const spendCredits = (amount: number, _reason?: string) => {
         if (credits >= amount) {
-            // Ideally we should call an API if this was a generic 'spend' action not covered by other APIs.
-            // But currently only Market uses it.
-            // We will let Market API handle the actual deduction.
-            // We return true to allow UI to proceed if needed, but we don't manually deduct from state
-            // because refreshCredits() should be called after the transaction.
             return true;
         }
         return false;
