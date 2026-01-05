@@ -1,39 +1,37 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 export interface DailyQuest {
     id: string;
     description: string;
     reward: number;
     isCompleted: boolean;
-    isClaimable: boolean; // True if formatting condition met but not yet claimed? Or just use isCompleted for claimed state? 
-    // Let's simplify: 
-    // isCompleted = Claimed and reward received.
-    // We need a way to know if it's "Ready to Claim".
-    // Let's add 'progress' or 'target' maybe? 
-    // For now, simpler: separate 'isCompleted' (claimed) from logic checking readiness.
+    isClaimable: boolean;
     type: 'login' | 'time' | 'widget' | 'post';
-    targetValue?: number; // e.g., 30 for minutes
+    targetValue?: number;
 }
 
 interface CreditContextType {
+    userId: string | null;
     credits: number;
-    addCredits: (amount: number, reason?: string) => void;
+    addCredits: (amount: number, reason?: string) => Promise<void>;
     spendCredits: (amount: number, reason?: string) => boolean;
     dailyQuests: DailyQuest[];
     claimQuest: (questId: string) => void;
-    resetTime: string; // HH:MM:SS until reset
+    resetTime: string;
     triggerWidgetInteraction: () => void;
     triggerPostCreation: () => void;
+    refreshCredits: () => Promise<void>;
 }
 
 const CreditContext = createContext<CreditContextType | undefined>(undefined);
 
 export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [userId, setUserId] = useState<string | null>(null);
     const [credits, setCredits] = useState<number>(0);
     const [resetTime, setResetTime] = useState<string>('');
 
-    // Define refreshCredits before it's used
-    const refreshCredits = async () => {
+    // Memoize refreshCredits
+    const refreshCredits = useCallback(async () => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
         try {
@@ -42,6 +40,9 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             });
             if (response.ok) {
                 const profile = await response.json();
+                if (profile.id) {
+                    setUserId(String(profile.id));
+                }
                 if (profile.credits !== undefined) {
                     setCredits(profile.credits);
                 }
@@ -49,17 +50,17 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } catch (e) {
             console.error("Failed to fetch credits", e);
         }
-    };
+    }, []);
 
     // Helper to get today's date string in KST
-    const getKSTDateString = () => {
+    const getKSTDateString = useCallback(() => {
         return new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Seoul' });
-    };
+    }, []);
 
     const [dailyQuests, setDailyQuests] = useState<DailyQuest[]>(() => {
         const savedQuests = localStorage.getItem('daily_quests');
         const lastQuestDate = localStorage.getItem('last_quest_date');
-        const todayKST = getKSTDateString();
+        const todayKST = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Seoul' });
 
         const defaultQuests: DailyQuest[] = [
             { id: 'login', description: '매일 로그인', reward: 5, isCompleted: false, isClaimable: true, type: 'login' },
@@ -79,55 +80,44 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return defaultQuests;
     });
 
-    // Remove localStorage sync for credits
     useEffect(() => {
         refreshCredits();
-    }, []);
+    }, [refreshCredits]);
 
     useEffect(() => {
         const todayKST = getKSTDateString();
         localStorage.setItem('daily_quests', JSON.stringify(dailyQuests));
         localStorage.setItem('last_quest_date', todayKST);
-    }, [dailyQuests]);
+    }, [dailyQuests, getKSTDateString]);
 
-    // Timer for Reset Time (00:00 KST) and Quest Checks
     useEffect(() => {
         const interval = setInterval(() => {
             const now = new Date();
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
             const kstOffset = 9 * 60 * 60000;
             const nowKST = new Date(utc + kstOffset);
-
-            // Calculate time until next midnight KST
             const tomorrowKST = new Date(nowKST);
             tomorrowKST.setHours(24, 0, 0, 0);
             const diff = tomorrowKST.getTime() - nowKST.getTime();
-
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
             setResetTime(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
         }, 1000);
-
         return () => clearInterval(interval);
     }, []);
 
-    // Periodic Server Playtime Check for Quests (Every 60s)
     useEffect(() => {
         const checkServerPlayTime = async () => {
             const token = localStorage.getItem('accessToken');
             if (!token) return;
-
             try {
                 const response = await fetch('http://localhost:8080/api/user/playtime', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
                 if (response.ok) {
-                    const totalSeconds = await response.json(); // Long (seconds)
+                    const totalSeconds = await response.json();
                     const totalMinutes = Math.floor(totalSeconds / 60);
-
                     setDailyQuests(prev => prev.map(q => {
                         if (q.type === 'time' && !q.isCompleted && !q.isClaimable && q.targetValue) {
                             if (totalMinutes >= q.targetValue) {
@@ -141,15 +131,12 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 console.error("Failed to check server playtime for quests", e);
             }
         };
-
-        const interval = setInterval(checkServerPlayTime, 60000); // Check every minute
-        checkServerPlayTime(); // Initial check
-
+        const interval = setInterval(checkServerPlayTime, 60000);
+        checkServerPlayTime();
         return () => clearInterval(interval);
     }, []);
 
-    const addCredits = async (amount: number, reason?: string) => {
-        // Call API
+    const addCredits = useCallback(async (amount: number, reason?: string) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
         try {
@@ -166,55 +153,78 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } catch (e) {
             console.error("Failed to add credits", e);
         }
-    };
+    }, [refreshCredits]);
 
-    const spendCredits = (amount: number, _reason?: string) => {
+    const spendCredits = useCallback((amount: number, reason?: string) => {
         if (credits >= amount) {
+            setCredits(prev => prev - amount); // Optimistic update
+            // Sync with backend (UserService allows negative addCredits)
+            addCredits(-amount, reason || 'Spent credits').catch(e => {
+                console.error("Failed to sync spent credits", e);
+                refreshCredits();
+            });
             return true;
         }
         return false;
-    };
+    }, [credits, addCredits, refreshCredits]);
 
-    const claimQuest = (questId: string) => {
+    const claimQuest = useCallback((questId: string) => {
+        let questToClaim: DailyQuest | undefined;
         setDailyQuests(prev => {
             const quest = prev.find(q => q.id === questId);
             if (quest && !quest.isCompleted && quest.isClaimable) {
-                addCredits(quest.reward, `Quest Claimed: ${quest.description}`);
+                questToClaim = quest;
                 return prev.map(q => q.id === questId ? { ...q, isCompleted: true } : q);
             }
             return prev;
         });
-    };
 
-    // Auto-enable login quest immediately
+        if (questToClaim) {
+            addCredits(questToClaim.reward, `Quest Claimed: ${questToClaim.description}`);
+        }
+    }, [addCredits]);
+
+
+    // Auto-enable login quest
     useEffect(() => {
         setDailyQuests(prev => prev.map(q =>
             q.type === 'login' && !q.isCompleted ? { ...q, isClaimable: true } : q
         ));
     }, []);
 
-    // Function to trigger generic widget interaction
-    // Can be exposed and called by widgets
-    const triggerWidgetInteraction = () => {
+    const triggerWidgetInteraction = useCallback(() => {
         setDailyQuests(prev => prev.map(q => {
             if (q.id === 'widget_play' && !q.isCompleted) {
                 return { ...q, isClaimable: true };
             }
             return q;
         }));
-    };
+    }, []);
 
-    const triggerPostCreation = () => {
+    const triggerPostCreation = useCallback(() => {
         setDailyQuests(prev => prev.map(q => {
             if (q.id === 'write_post' && !q.isCompleted) {
                 return { ...q, isClaimable: true };
             }
             return q;
         }));
-    };
+    }, []);
+
+    const contextValue = useMemo(() => ({
+        userId,
+        credits,
+        addCredits,
+        spendCredits,
+        dailyQuests,
+        claimQuest,
+        resetTime,
+        triggerWidgetInteraction,
+        triggerPostCreation,
+        refreshCredits
+    }), [userId, credits, addCredits, spendCredits, dailyQuests, claimQuest, resetTime, triggerWidgetInteraction, triggerPostCreation, refreshCredits]);
 
     return (
-        <CreditContext.Provider value={{ credits, addCredits, spendCredits, dailyQuests, claimQuest, resetTime, triggerWidgetInteraction, triggerPostCreation }}>
+        <CreditContext.Provider value={contextValue}>
             {children}
         </CreditContext.Provider>
     );
@@ -227,4 +237,3 @@ export const useCredits = () => {
     }
     return context;
 };
-

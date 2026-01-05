@@ -1,31 +1,86 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useCredits } from '../context/CreditContext';
 import { STICKERS } from '../pages/post/constants';
+import { MOCK_MARKET_ITEMS } from '../data/mockMarketItems';
 
 export const useMarket = () => {
-    const { credits, spendCredits } = useCredits(); // Using addCredits for consistency/refresh
-    const [purchasedItems, setPurchasedItems] = useState<string[]>([]);
+    const { credits, spendCredits, refreshCredits, userId } = useCredits(); // Using refreshCredits, userId
+    const [purchasedItems, setPurchasedItems] = useState<any[]>([]); // Store full objects now
     const [sellingItems, setSellingItems] = useState<any[]>([]);
     const [marketItems, setMarketItems] = useState<any[]>([]); // All items on sale (from backend)
     const [wishlistItems, setWishlistItems] = useState<string[]>([]);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [keyword, setKeyword] = useState('');
 
     // Function to fetch data from backend
-    const refreshMarket = useCallback(async () => {
+    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean } = {}) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
+        const targetPage = options.page !== undefined ? options.page : 0;
+        const targetKeyword = options.keyword !== undefined ? options.keyword : keyword;
+        const isLoadMore = options.isLoadMore || false;
+
+        if (!isLoadMore) {
+            setPage(0); // Reset page on fresh load
+        }
+
         try {
             // 1. Fetch Purchased Items
+            let backendPurchased: any[] = [];
             const purchasedRes = await fetch('http://localhost:8080/api/market/purchased', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (purchasedRes.ok) {
                 const items = await purchasedRes.json();
-                const backendIds = items.map((i: any) => String(i.id));
-                const localIds = JSON.parse(localStorage.getItem('market_purchased_items') || '[]');
-                const merged = Array.from(new Set([...backendIds, ...localIds]));
-                setPurchasedItems(merged as string[]);
+                backendPurchased = items.map((i: any) => ({
+                    id: String(i.id),
+                    title: i.name,
+                    price: i.price,
+                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
+                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
+                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
+                    type: i.category,
+                    author: i.sellerName,
+                    purchasedAt: i.transactionDate,
+                    status: i.status,
+                    createdAt: i.createdAt,
+                    salesCount: i.salesCount || 0,
+                    isBackend: true
+                }));
             }
+
+            // Merge with Local Storage (Legacy) items
+            const localIds = JSON.parse(localStorage.getItem('market_purchased_items') || '[]');
+            const localItems = localIds.map((id: string) => {
+                // Try to find in MOCK items
+                const mockItem = MOCK_MARKET_ITEMS.find(m => m.id === id);
+                // Try to find in backend items if available (requires them to be fetched already? But this is async...)
+                // We haven't setMarketItems yet in this function scope fully (it sets at end).
+                // But we can check if it's a known backend ID if we had the list.
+                // For now, prioritize Mock as local storage usually stores mock IDs.
+
+                return {
+                    id: id,
+                    title: mockItem ? mockItem.title : (id.startsWith('selling_') ? 'Custom Item' : id),
+                    price: mockItem ? mockItem.price : 0,
+                    type: mockItem ? mockItem.type : 'legacy',
+                    // Use mock image if available
+                    imageUrl: mockItem ? mockItem.imageUrl : undefined,
+                    purchasedAt: new Date().toISOString(), // Mock date
+                    isLegacy: true
+                };
+            });
+
+            // Deduplicate: If backend has same ID, use backend (unlikely for strings vs numbers but needed if we mix)
+            // Actually, Local IDs are like 'pack_basic', Backend are '1', '2'. No collision expected usually.
+            // But we should filter out duplicates just in case.
+            const allItems = [...backendPurchased, ...localItems];
+            // Use a Map to dedup by ID
+            const uniqueItems = Array.from(new Map(allItems.map(item => [item.id, item])).values());
+
+            setPurchasedItems(uniqueItems);
 
             // 2. Fetch My Selling Items
             const sellingRes = await fetch('http://localhost:8080/api/market/my-items', {
@@ -42,21 +97,29 @@ export const useMarket = () => {
                     imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
                     type: i.category,
                     author: i.sellerName,
+                    status: i.status,
+                    createdAt: i.createdAt,
+                    salesCount: i.salesCount || 0,
+                    referenceId: i.referenceId,
                     isBackend: true
                 }));
                 setSellingItems(backendSelling);
             }
 
             // 3. Fetch All Market Items (For browsing)
-            const marketRes = await fetch('http://localhost:8080/api/market/items', {
-                // No auth header needed for public market? Or yes? Controller code didn't force it but good practice.
-                // Actually my controller implementation likely requires auth if I put @AuthenticationPrincipal.
-                // Checked controller: getAllOnSaleItems does NOT have @AuthenticationPrincipal, so public access is fine.
-                // But let's send token if available.
+            const query = new URLSearchParams({
+                page: String(targetPage),
+                size: '12',
+                sort: 'createdAt,desc'
+            });
+            if (targetKeyword) query.append('keyword', targetKeyword);
+
+            const marketRes = await fetch(`http://localhost:8080/api/market/items?${query.toString()}`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (marketRes.ok) {
-                const items = await marketRes.json();
+                const data = await marketRes.json();
+                const items = data.content; // Page response
                 const backendItems = items.map((i: any) => ({
                     id: String(i.id),
                     title: i.name,
@@ -66,21 +129,52 @@ export const useMarket = () => {
                     imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
                     type: i.category,
                     author: i.sellerName,
+                    sellerId: i.sellerId,
+                    status: i.status,
+                    createdAt: i.createdAt,
+                    salesCount: i.salesCount || 0,
+                    referenceId: i.referenceId,
                     isBackend: true
                 }));
-                setMarketItems(backendItems);
+
+                // Filter out own items
+                const filteredItems = userId
+                    ? backendItems.filter((i: any) => String(i.sellerId) !== String(userId))
+                    : backendItems;
+
+                if (isLoadMore) {
+                    setMarketItems(prev => {
+                        // Avoid duplicates
+                        const existingIds = new Set(prev.map(p => p.id));
+                        const newUnique = filteredItems.filter((i: any) => !existingIds.has(i.id));
+                        return [...prev, ...newUnique];
+                    });
+                } else {
+                    setMarketItems(filteredItems);
+                }
+                setHasMore(!data.last);
+                if (isLoadMore) {
+                    setPage(targetPage);
+                }
             }
 
         } catch (e) {
             console.error("Failed to fetch market data", e);
         }
-    }, []);
+    }, [userId, keyword]);
+
+    const loadMore = useCallback(() => {
+        if (!hasMore) return;
+        refreshMarket({ page: page + 1, isLoadMore: true });
+    }, [hasMore, page, refreshMarket]);
+
+    const search = useCallback((kw: string) => {
+        setKeyword(kw);
+        refreshMarket({ page: 0, keyword: kw, isLoadMore: false });
+    }, [refreshMarket]);
 
     useEffect(() => {
-        // Initial Load: Load local then refresh from server
-        const savedPurchased = JSON.parse(localStorage.getItem('market_purchased_items') || '[]');
-        setPurchasedItems(savedPurchased);
-
+        // Initial setup
         const savedWishlist = localStorage.getItem('market_wishlist_items');
         if (savedWishlist) setWishlistItems(JSON.parse(savedWishlist));
 
@@ -88,7 +182,7 @@ export const useMarket = () => {
     }, [refreshMarket]);
 
     const isOwned = useCallback((itemId: string) => {
-        return purchasedItems.includes(String(itemId));
+        return purchasedItems.some(item => item.id === String(itemId));
     }, [purchasedItems]);
 
     const isWishlisted = useCallback((itemId: string) => {
@@ -117,7 +211,8 @@ export const useMarket = () => {
                     description: item.description,
                     imageUrl: item.imageUrl,
                     tags: item.tags
-                })
+                }),
+                referenceId: item.originalId?.toString() || item.id?.toString()
             };
 
             const response = await fetch('http://localhost:8080/api/market/items', {
@@ -131,6 +226,7 @@ export const useMarket = () => {
 
             if (response.ok) {
                 await refreshMarket();
+                await refreshCredits();
             } else {
                 alert("아이템 등록 실패");
             }
@@ -138,7 +234,7 @@ export const useMarket = () => {
             console.error(e);
             alert("아이템 등록 중 오류 발생");
         }
-    }, [refreshMarket]);
+    }, [refreshMarket, refreshCredits]);
 
     const cancelItem = useCallback(async (itemId: string) => {
         // check if it's a backend item (numeric ID)
@@ -176,15 +272,8 @@ export const useMarket = () => {
                 });
 
                 if (response.ok) {
-                    // Success
                     await refreshMarket();
-                    // Also force refresh credits in context
-                    // We can't directly call refreshCredits from Context here easily without exposing it,
-                    // but refreshMarket updates purchasedItems.
-                    // CreditContext should ideally auto-refresh or we trigger it.
-                    // The simple hack: add 0 credits to trigger refresh? No that calls API.
-                    // We rely on the fact that next route change or interval will update credits,
-                    // OR we can optimistically deduct.
+                    await refreshCredits(); // Force refresh credits
                     return true;
                 } else {
                     alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
@@ -197,15 +286,20 @@ export const useMarket = () => {
         } else {
             // Legacy LocalStorage Buy
             if (spendCredits(cost)) {
-                const newPurchased = [...purchasedItems, itemId, ...additionalIds];
+                const localIds = JSON.parse(localStorage.getItem('market_purchased_items') || '[]');
+                const newPurchased = [...localIds, itemId, ...additionalIds];
                 const unique = Array.from(new Set(newPurchased));
-                setPurchasedItems(unique as string[]);
                 localStorage.setItem('market_purchased_items', JSON.stringify(unique));
+
+                await refreshMarket(); // Re-read local storage into state
+                // spendCredits already updated local credit state optimistically, 
+                // but we should probably trigger a refresh if we had a server sync mechanism for legacy (we don't really).
+                // But it's fine.
                 return true;
             }
         }
         return false;
-    }, [credits, spendCredits, purchasedItems, refreshMarket]);
+    }, [credits, spendCredits, refreshMarket, refreshCredits]);
 
     const getPackPrice = useCallback((packId: string, originalPrice: number) => {
         const packStickers = STICKERS.filter(s => s.packId === packId);
@@ -226,6 +320,10 @@ export const useMarket = () => {
         buyItem,
         registerItem,
         cancelItem,
-        getPackPrice
+        getPackPrice,
+        loadMore,
+        search,
+        hasMore,
+        isSearching: !!keyword
     };
 };

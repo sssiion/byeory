@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCredits } from '../../context/CreditContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 import NaverLoginButton from '../../components/auth/NaverLoginButton';
@@ -8,6 +9,7 @@ import NaverLoginButton from '../../components/auth/NaverLoginButton';
 function LoginPage() {
     const navigate = useNavigate();
     const { socialLogin, localLogin } = useAuth();
+    const { refreshCredits } = useCredits(); // Using useCredits
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +20,7 @@ function LoginPage() {
         if (email && password) {
             const success = await localLogin(email, password);
             if (success) {
+                await refreshCredits(); // Refresh credits on login
                 // Check if profile setup is done
                 const isSetup = localStorage.getItem('isProfileSetupCompleted');
                 navigate(isSetup === 'true' ? '/' : '/setup-profile');
@@ -113,6 +116,7 @@ function LoginPage() {
                             onSuccess={async (credential) => {
                                 const success = await socialLogin(credential);
                                 if (success) {
+                                    await refreshCredits(); // Refresh credits
                                     // Check if profile setup is done
                                     const isSetup = localStorage.getItem('isProfileSetupCompleted');
                                     navigate(isSetup === 'true' ? '/' : '/setup-profile');
@@ -126,6 +130,7 @@ function LoginPage() {
                             onSuccess={async (credential) => {
                                 const success = await socialLogin(credential);
                                 if (success) {
+                                    await refreshCredits(); // Refresh credits
                                     const isSetup = localStorage.getItem('isProfileSetupCompleted');
                                     navigate(isSetup === 'true' ? '/' : '/setup-profile');
                                 } else {

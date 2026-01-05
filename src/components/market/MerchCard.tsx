@@ -10,9 +10,10 @@ interface MerchCardProps {
     isOwned?: boolean;
     isWishlisted?: boolean;
     effectivePrice?: number;
+    onClick?: () => void;
 }
 
-const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice }) => {
+const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, onClick }) => {
     const { credits } = useCredits();
     const currentPrice = effectivePrice !== undefined ? effectivePrice : item.price;
     const canAfford = credits >= currentPrice;
@@ -21,7 +22,10 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
     const isDiscounted = effectivePrice !== undefined && effectivePrice < item.price;
 
     return (
-        <div className="group relative bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] overflow-hidden hover:border-[var(--btn-bg)] hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+        <div
+            onClick={onClick}
+            className={`group relative bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] overflow-hidden hover:border-[var(--btn-bg)] hover:shadow-lg transition-all duration-300 flex flex-col h-full ${onClick ? 'cursor-pointer' : ''}`}
+        >
             {/* Image Area */}
             <div className="aspect-square bg-[var(--bg-card-secondary)] relative overflow-hidden flex items-center justify-center p-6">
                 {/* ... image code same ... */}
@@ -36,17 +40,19 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                 )}
 
                 {/* Overlay Badge */}
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleWishlist?.(item);
-                        }}
-                        className={`p-2 rounded-full backdrop-blur-md transition-colors ${isWishlisted ? 'bg-red-50 text-red-500' : 'bg-white/10 text-white hover:bg-black/40'}`}
-                    >
-                        <Heart className="w-5 h-5" fill={isWishlisted ? "currentColor" : "none"} />
-                    </button>
-                </div>
+                {onToggleWishlist && (
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleWishlist(item);
+                            }}
+                            className={`p-2 rounded-full backdrop-blur-md transition-colors ${isWishlisted ? 'bg-red-50 text-red-500' : 'bg-white/10 text-white hover:bg-black/40'}`}
+                        >
+                            <Heart className="w-5 h-5" fill={isWishlisted ? "currentColor" : "none"} />
+                        </button>
+                    </div>
+                )}
 
                 {/* Type Badge */}
                 <div className="absolute top-3 left-3">
@@ -76,7 +82,10 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                 </div>
 
                 <button
-                    onClick={() => onBuy(item)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onBuy(item);
+                    }}
                     disabled={isOwned || (!canAfford && !isOwned)}
                     className={`mt-4 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all 
                         ${isOwned
