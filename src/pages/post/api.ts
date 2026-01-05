@@ -146,11 +146,58 @@ export const fetchPostsFromApi = async () => {
         });
         if (!response.ok) throw new Error("게시글 불러오기 실패");
         const posts = await response.json();
-        // ✨ Map 'hashtags' (Backend) -> 'tags' (Frontend)
+
         return posts.map((p: any) => ({
             ...p,
-            tags: p.hashtags || p.tags || []
+            id: Number(p.id),
+            // ✨ Robust Tag Mapping: Handle string[] or {name: string}[]
+            tags: (p.hashtags || []).map((t: any) => {
+                if (typeof t === 'string') return t;
+                return t.name || t.tag || t.tagName || "";
+            }).filter(Boolean),
+            floatingTexts: p.floatingTexts || [],
+            floatingImages: p.floatingImages || [],
+            titleStyles: p.titleStyles || {},
+            // ✨ Robust Album ID Mapping: Handle number[] or {id: number}[]
+            albumIds: (p.targetAlbumIds || []).map((t: any) => {
+                if (typeof t === 'object' && t !== null) return String(t.id);
+                return String(t);
+            }),
+            isFavorite: p.isFavorite || false,
+            mode: p.mode || 'AUTO',
+            visibility: p.visibility || 'public'
         }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ... (skip savePostToApi edits as they are similar logic but outgoing)
+
+// 앨범 목록 조회 (GET)
+export const fetchAlbumsFromApi = async () => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("앨범 불러오기 실패");
+        const albums = await response.json();
+        // ✨ Map IDs to Strings for consistency
+        return albums.map((a: any) => {
+            // ✨ Ensure 'tag' is populated if backend sends representativeHashtag object
+            let mappedTag = a.tag;
+            if (!mappedTag && a.representativeHashtag) {
+                mappedTag = a.representativeHashtag.name || a.representativeHashtag.tag;
+            }
+
+            return {
+                ...a,
+                id: String(a.id),
+                parentId: a.parentId ? String(a.parentId) : null,
+                tag: mappedTag || null
+            };
+        });
     } catch (error) {
         console.error(error);
         return [];
@@ -163,18 +210,52 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
         const url = isUpdate ? `${API_BASE_URL}/${postData.id}` : API_BASE_URL;
         const method = isUpdate ? "PUT" : "POST";
 
+        // ✨ PREPARE PAYLOAD EXACTLY AS PER GUIDE
+        const payload = {
+            title: postData.title,
+            titleStyles: postData.titleStyles || {},
+            blocks: postData.blocks || [],
+            stickers: postData.stickers || [],
+            floatingTexts: postData.floatingTexts || [],
+            floatingImages: postData.floatingImages || [],
+            hashtags: postData.tags || [], // tags -> hashtags
+            mode: postData.mode || 'AUTO',
+            targetAlbumIds: (postData.albumIds || []).map((id: any) => Number(id)).filter((n: number) => !isNaN(n)), // String[] -> Number[]
+            isFavorite: postData.isFavorite || false,
+            // Ensure visibility is included if backend supports it (even if not in guide, safe to send)
+            visibility: postData.visibility
+        };
+
         const response = await fetch(url, {
             method: method,
             headers: getAuthHeaders(),
-            // ✨ Map 'tags' (Frontend) -> 'hashtags' (Backend)
-            body: JSON.stringify({
-                ...postData,
-                hashtags: postData.tags
-            }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) throw new Error("저장 실패");
-        return await response.json();
+        const savedPost = await response.json();
+
+        // ✨ Map response to frontend PostData structure immediately
+        return {
+            ...savedPost,
+            id: Number(savedPost.id),
+            // ✨ Robust Tag Mapping
+            tags: (savedPost.hashtags || []).map((t: any) => {
+                if (typeof t === 'string') return t;
+                return t.name || t.tag || t.tagName || "";
+            }).filter(Boolean),
+            floatingTexts: savedPost.floatingTexts || [],
+            floatingImages: savedPost.floatingImages || [],
+            titleStyles: savedPost.titleStyles || {},
+            // ✨ Robust Album ID Mapping
+            albumIds: (savedPost.targetAlbumIds || []).map((t: any) => {
+                if (typeof t === 'object' && t !== null) return String(t.id);
+                return String(t);
+            }),
+            isFavorite: savedPost.isFavorite || false,
+            mode: savedPost.mode || 'AUTO',
+            visibility: savedPost.visibility || 'public'
+        };
     } catch (error) {
         console.error(error);
         throw error;
@@ -198,19 +279,9 @@ export const deletePostApi = async (id: string | number) => {
     }
 };
 
+// ... (Rest of the file)
 // 앨범 목록 조회 (GET)
-export const fetchAlbumsFromApi = async () => {
-    try {
-        const response = await fetch(`${API_ALBUM_URL}`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) throw new Error("앨범 불러오기 실패");
-        return await response.json();
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-};
+
 
 // 앨범 단건 조회 (GET)
 export const fetchAlbumApi = async (id: string | number) => {
@@ -223,7 +294,10 @@ export const fetchAlbumApi = async (id: string | number) => {
         return {
             ...album,
             id: String(album.id),
-            parentId: album.parentId ? String(album.parentId) : null
+            parentId: album.parentId ? String(album.parentId) : null,
+            // Ensure strictly typed fields are passed if backend returns them
+            roomConfig: album.roomConfig,
+            coverConfig: album.coverConfig
         };
     } catch (error) {
         console.error(error);
@@ -318,24 +392,6 @@ export const fetchAlbumContents = async (
             return false; // __others__ has no sub-folders
         });
 
-        // Virtual 'Unclassified' Folder
-        if (targetId === '__all__') {
-            const unclassifiedCount = localPosts.filter((p: any) => {
-                const hasManualAlbum = p.albumIds && p.albumIds.length > 0;
-                const hasTags = p.tags && p.tags.length > 0;
-                return !hasManualAlbum && !hasTags;
-            }).length;
-
-            if (unclassifiedCount > 0) {
-                matchedFolders.push({
-                    id: '__others__',
-                    name: '미분류 보관함',
-                    tag: null,
-                    createdAt: 0,
-                    parentId: null
-                });
-            }
-        }
         matchedFolders.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
 
         // Sort
@@ -424,17 +480,18 @@ export const manageAlbumContentApi = async (
     albumId: string | number,
     action: 'ADD' | 'REMOVE' | 'MOVE',
     postId: string | number,
-    sourceAlbumId?: string | number // ✨ New param for MOVE
+    sourceAlbumId?: string | number
 ) => {
     try {
+        // ✨ Ensure camelCase and Number IDs
         const payload: any = {
             action,
-            contentId: postId,
+            contentId: Number(postId),
             type: 'POST'
         };
 
         if (action === 'MOVE' && sourceAlbumId) {
-            payload.sourceAlbumId = sourceAlbumId;
+            payload.sourceAlbumId = Number(sourceAlbumId);
         }
 
         const response = await fetch(`${API_ALBUM_URL}/${albumId}/manage`, {

@@ -1,3 +1,5 @@
+import type { AlbumCoverConfig } from './components/AlbumCover/constants';
+
 export type ViewMode = 'list' | 'editor' | 'read' | 'album' | 'folder';
 
 export interface Block {
@@ -53,6 +55,8 @@ export interface Album {
     description?: string;
     coverImage?: string;
     isFavorite?: boolean;
+    // ✨ Compatibility with CustomAlbum
+    coverConfig?: AlbumCoverConfig;
 }
 
 export interface Folder {
@@ -98,4 +102,6 @@ export interface CustomAlbum {
         description?: string;
         maxMembers?: number;
     };
+    // ✨ Backend Persistence for Cover
+    coverConfig?: AlbumCoverConfig;
 }

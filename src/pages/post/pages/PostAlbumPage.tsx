@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import type { PostData } from '../types';
+import type { PostData, CustomAlbum } from '../types';
 // ✨ Added GalleryHorizontal for All Posts icon
 import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles, Lock, Users } from 'lucide-react';
 import RenameAlbumModal from '../components/RenameAlbumModal';
@@ -7,68 +7,46 @@ import AlbumBook from '../components/AlbumCover/AlbumBook';
 import type { AlbumCoverConfig } from '../components/AlbumCover/constants';
 import CoverCustomizer from '../components/AlbumCover/CoverCustomizer';
 import RoomSettingsModal from '../components/RoomSettingsModal';
-import { countAlbumPosts, countUnclassifiedPosts } from '../utils/albumUtils';
+import { countAlbumPosts } from '../utils/albumUtils';
 
 interface Props {
     posts: PostData[];
-    customAlbums: any[]; // CustomAlbum type
+    customAlbums: CustomAlbum[];
     onAlbumClick: (id: string | null) => void;
     onCreateAlbum: () => void;
     onStartWriting: () => void;
-    onRenameAlbum: (id: string, newName: string) => void;
+    onUpdateAlbum: (id: string, updates: Partial<CustomAlbum>) => void;
     onDeleteAlbum: (id: string) => void;
     sortOption: 'name' | 'count' | 'newest' | 'favorites';
     setSortOption: (option: 'name' | 'count' | 'newest' | 'favorites') => void;
     onPostClick: (post: PostData) => void;
     onToggleFavorite: (id: number) => void;
-    handleToggleAlbumFavorite: (id: string) => void; // ✨ New
+    handleToggleAlbumFavorite: (id: string) => void;
 }
 
-const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onRenameAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite }) => {
+const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onUpdateAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite }) => {
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
-    const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ For Room Modal
-    const [coverConfigs, setCoverConfigs] = useState<Record<string, AlbumCoverConfig>>({});
+    const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null);
     const [editingCoverId, setEditingCoverId] = useState<string | null>(null);
-    // const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest'>('name'); // Lifted up
-
-    // Load covers logic remains similar but keys might need migration or just fallback
-    // We used to use composite key. Now we have IDs?
-    // Actually, covers are stored by "${name}::${tag}".
-    // If we switch to ID keys for covers, we lose old covers.
-    // Compromise: maintain composite key for COVER STORAGE Only?
-    // Or migrate covers?
-    // Let's stick to composite key for Cover Storage for now to avoid data loss.
-    // Helper to generate key for cover storage
-    const getCoverKey = (album: any) => `${album.name}::${album.tag || ''}`;
-
-    // Load covers
-    useEffect(() => {
-        const loadCovers = () => {
-            const stored = localStorage.getItem('album_covers_v1');
-            if (stored) {
-                try {
-                    setCoverConfigs(JSON.parse(stored));
-                } catch (e) { console.error(e); }
-            }
-        };
-        loadCovers();
-        window.addEventListener('album_cover_update', loadCovers);
-        return () => window.removeEventListener('album_cover_update', loadCovers);
-    }, []);
 
     const handleSaveCover = (config: AlbumCoverConfig) => {
         if (!editingCoverId) return;
-        const album = (editingCoverId === '__others__' || editingCoverId === '__all__') ? null : customAlbums.find(a => a.id === editingCoverId);
 
-        const key = album ? getCoverKey(album) : editingCoverId;
+        // Special albums (__all__, __others__) cannot save to backend in this simplified model 
+        // unless we have a specific API for them or User Preference API. 
+        // For now, ignoring Save for __all__ / __others__ as per 'Backend Only' instruction strictness (no LS).
+        // OR: If they are virtual, we can't save them. User asked to remove LS. So they won't persist.
+        if (editingCoverId === '__all__' || editingCoverId === '__others__') {
+            alert("기본 보관함 커버는 현재 저장되지 않습니다.");
+            return;
+        }
 
-        setCoverConfigs(prev => {
-            const next = { ...prev, [key]: config };
-            localStorage.setItem('album_covers_v1', JSON.stringify(next));
-            return next;
-        });
+        const album = customAlbums.find(a => a.id === editingCoverId);
+        if (album) {
+            onUpdateAlbum(album.id, { coverConfig: config });
+        }
         setEditingCoverId(null);
     };
 
@@ -89,71 +67,38 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
     // ✨ Compute Album Stats
     const albumStats = useMemo(() => {
-        const stats: Record<string, { count: number, folderCount: number, lastDate: number }> = {};
+        const stats: Record<string, { count: number, folderCount: number, totalCount: number, lastDate: number }> = {};
 
-        let othersCount = 0;
-
-        // Initialize
+        // Initialize stats
         customAlbums.forEach(a => {
-            stats[a.id] = { count: 0, folderCount: 0, lastDate: a.createdAt || 0 };
+            stats[a.id] = { count: 0, folderCount: 0, totalCount: 0, lastDate: a.createdAt || 0 };
         });
 
-        othersCount = countUnclassifiedPosts(posts);
-
-        // 1. Count Direct Posts (Unified Logic)
+        // 1. Calculate Direct Counts
         customAlbums.forEach(a => {
             if (stats[a.id]) {
                 stats[a.id].count = countAlbumPosts(a.id, a.tag, posts);
-
-                // Update lastDate (Expensive to re-filter, but needed for sort... optimize?)
-                // If we want exact lastDate, we need to iterate matches.
-                // Let's iterate matches once per album? Or iterate posts once and assign?
-                // Iterating posts once is O(N * M), iterating albums is O(M * N). Same.
-                // But simplified logic is safer. Let's stick to the utility for count, 
-                // but for lastDate we might need to look at the posts.
-                // Actually, let's just re-iterate for lastDate using the SAME condition inline to be safe?
-                // Or better: Utility returns matches? 
             }
         });
-
-        // Optimization: We could have `getAlbumPosts` return array, then we utilize .length and .max(date).
-        // But for now, let's trust the utility for COUNT.
-        // For lastDate, we can keep the inline sets logic IF we are sure it matches.
-        // But the user complained about count.
-
-        // Let's use the sets logic BUT verified against utility? 
-        // No, let's just use the loop logic I wrote earlier but double check it?
-        // The previous loop logic was:
-        // 1. Manual -> Set
-        // 2. Tags -> Set
-        // This IS the logic of countAlbumPosts (Man || Auto).
-        // Why did it fail?
-        // Maybe because `manageAlbumItem` was not updating Metadata, so `posts` was stale.
-        // Now `posts` is fresh.
-        // The inline logic I wrote previously IS correct for "A || B".
-        // Let's stick to the inline logic (Sets) for performance (O(N)) vs Utility (O(N*M)).
-        // Wait, O(N*M) where M is #albums. If M is small, it's fine.
-        // If we have 100 albums and 1000 posts, 100,000 checks. Fine.
-
-        // Let's use the utility to be 100% sure we match the requested "Strict Count Sync".
-        // Use `countAlbumPosts` inside the stats loop.
-
-        customAlbums.forEach(a => {
-            if (stats[a.id]) {
-                stats[a.id].count = countAlbumPosts(a.id, a.tag, posts);
-                // We won't update lastDate perfectly here if we just count, 
-                // but sorting by date might be slightly off if we don't.
-                // Let's assume lastDate update via generic loop is "good enough" or fix it later if needed.
-                // User specifically asked about COUNT.
-            }
-        });
-
-
 
         // 2. Count Direct Sub-folders
         customAlbums.forEach(a => {
             if (a.parentId && stats[a.parentId]) {
                 stats[a.parentId].folderCount++;
+            }
+        });
+
+        // 3. ✨ Calculate Recursive Counts (Total Records including subfolders)
+        const computeRecursive = (albumId: string): number => {
+            const myDirect = stats[albumId]?.count || 0;
+            const children = customAlbums.filter(a => a.parentId === albumId);
+            const childSum = children.reduce((sum, child) => sum + computeRecursive(child.id), 0);
+            return myDirect + childSum;
+        };
+
+        customAlbums.forEach(a => {
+            if (stats[a.id]) {
+                stats[a.id].totalCount = computeRecursive(a.id);
             }
         });
 
@@ -163,17 +108,16 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
         // Sort Albums
         const sortedAlbums = [...topLevelAlbums].sort((a, b) => {
             if (sortOption === 'name') return a.name.localeCompare(b.name);
-            if (sortOption === 'count') return (stats[b.id].count + stats[b.id].folderCount) - (stats[a.id].count + stats[a.id].folderCount);
+            if (sortOption === 'count') return (stats[b.id].totalCount) - (stats[a.id].totalCount);
             if (sortOption === 'newest') return stats[b.id].lastDate - stats[a.id].lastDate;
             if (sortOption === 'favorites') {
-                // Favorites first, then by name
                 if (a.isFavorite === b.isFavorite) return a.name.localeCompare(b.name);
                 return a.isFavorite ? -1 : 1;
             }
             return 0;
         });
 
-        return { sortedAlbums, stats, othersCount };
+        return { sortedAlbums, stats };
     }, [posts, customAlbums, sortOption]);
 
 
@@ -193,10 +137,10 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
         }
     };
 
-    const formatStats = (info: { count: number, folderCount: number }) => {
+    const formatStats = (info: { count: number, folderCount: number, totalCount: number }) => {
         const parts = [];
         if (info.folderCount > 0) parts.push(`폴더 ${info.folderCount}개`);
-        if (info.count > 0) parts.push(`기록 ${info.count}개`);
+        if (info.totalCount >= 0) parts.push(`기록 ${info.totalCount}개`);
         if (parts.length === 0) return "비어있음";
         return parts.join(' · ');
     };
@@ -236,7 +180,6 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 {/* ✨ All Records Album (Replaces Uncategorized) */}
                 {albumStats.sortedAlbums.map(album => {
                     const stats = albumStats.stats[album.id];
-                    const coverKey = getCoverKey(album);
 
                     return (
                         <div key={album.id} onClick={() => onAlbumClick(album.id)} className="relative group cursor-pointer">
@@ -244,7 +187,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                                 title={album.name}
                                 tag={album.tag || undefined}
                                 count={formatStats(stats)}
-                                config={coverConfigs[coverKey] || coverConfigs[album.name]}
+                                config={album.coverConfig}
                                 className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                             />
 
@@ -293,7 +236,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     <AlbumBook
                         title="모든 기록 보관함"
                         count={`기록 ${posts.length}개`}
-                        config={coverConfigs['__all__']}
+                        // config={coverConfigs['__all__']} // Removed LS
                         className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                         showFullTitle={true}
                     />
@@ -310,29 +253,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     </div>
                 </div>
 
-                {/* ✨ Unclassified Album (Auto-Created if items exist) */}
-                {albumStats.othersCount > 0 && (
-                    <div onClick={() => onAlbumClick('__others__')} className="relative group cursor-pointer">
-                        <AlbumBook
-                            title="미분류 보관함"
-                            count={`기록 ${albumStats.othersCount}개`}
-                            config={coverConfigs['__others__']}
-                            className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
-                            showFullTitle={true}
-                        />
-                        {/* Helper Menu for Cover Customization */}
-                        <div className="absolute top-2 right-2 z-30">
-                            <button onClick={(e) => handleMenuClick(e, '__others__')} className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
-                                <MoreVertical size={18} />
-                            </button>
-                            {activeDropdownId === '__others__' && (
-                                <div className="absolute top-8 right-0 bg-white border border-gray-200 shadow-xl rounded-xl w-48 py-2 z-50 animate-scale-up origin-top-right cursor-default" onClick={e => e.stopPropagation()}>
-                                    <button onClick={(e) => { e.stopPropagation(); setEditingCoverId('__others__'); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Sparkles size={16} /> 표지 꾸미기</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+
 
             </div>
 
@@ -344,27 +265,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 // We need to resolve Name/Tag from ID to pass to legacy handler
                 onSave={(newName) => {
                     if (renamingId) {
-                        // Also move cover config if key changes? 
-                        // Yes, if name changes, key (Name::Tag) changes.
-                        const album = customAlbums.find(a => a.id === renamingId);
-                        if (album) {
-                            const oldKey = getCoverKey(album);
-                            onRenameAlbum(renamingId, newName);
-                            // Update local cover config state immediately to reflect change?
-                            // But cover config key depends on Album Name.
-                            // If we rename, Album Name changes. The parent state (customAlbums) updates.
-                            // But coverConfigs uses KEYS.
-                            const newKey = `${newName}::${album.tag || ''}`;
-                            setCoverConfigs(prev => {
-                                const next = { ...prev };
-                                if (next[oldKey]) {
-                                    next[newKey] = next[oldKey];
-                                    delete next[oldKey];
-                                    localStorage.setItem('album_covers_v1', JSON.stringify(next));
-                                }
-                                return next;
-                            });
-                        }
+                        onUpdateAlbum(renamingId, { name: newName });
                         setRenamingId(null);
                     }
                 }}
@@ -374,7 +275,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 <CoverCustomizer
                     albumTitle={editingCoverId === '__all__' ? '모든 기록 보관함' : editingCoverId === '__others__' ? '미분류 보관함' : (customAlbums.find(a => a.id === editingCoverId)?.name || '')}
                     albumTag={(editingCoverId === '__all__' || editingCoverId === '__others__') ? undefined : (customAlbums.find(a => a.id === editingCoverId)?.tag || undefined)}
-                    initialConfig={(editingCoverId === '__all__' || editingCoverId === '__others__') ? (coverConfigs[editingCoverId] || undefined) : (coverConfigs[getCoverKey(customAlbums.find(a => a.id === editingCoverId))] || undefined)}
+                    initialConfig={(editingCoverId === '__all__' || editingCoverId === '__others__') ? undefined : (customAlbums.find(a => a.id === editingCoverId)?.coverConfig || undefined)}
                     onSave={handleSaveCover}
                     onClose={() => setEditingCoverId(null)}
                 />

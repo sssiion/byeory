@@ -56,7 +56,7 @@ const Post: React.FC = () => {
                         onAlbumClick={editor.handleAlbumClick}
                         onCreateAlbum={() => setIsAlbumModalOpen(true)}
                         onStartWriting={editor.handleStartWriting}
-                        onRenameAlbum={editor.handleRenameAlbum}
+                        onUpdateAlbum={editor.handleUpdateAlbum}
                         onDeleteAlbum={editor.handleDeleteAlbum}
                         sortOption={editor.sortOption}
                         setSortOption={editor.setSortOption}
@@ -112,28 +112,18 @@ const Post: React.FC = () => {
             </div>
 
             {/* 앨범 생성 모달 */}
+            {/* 앨범 생성 모달 */}
             <CreateAlbumModal
                 isOpen={isAlbumModalOpen}
                 onClose={() => setIsAlbumModalOpen(false)}
-                onSave={(name, tags, coverConfig, type, roomConfig) => {
-                    editor.handleCreateAlbum(name, tags, undefined, type, roomConfig);
+                albums={editor.customAlbums}
+                onSave={(name, tag, parentId, type, roomConfig, coverConfig) => {
+                    // Convert single tag to array for the hook
+                    const tags = tag ? [tag] : [];
+                    // Ensure parentId is string or undefined (modal gives string | null)
+                    const pId = parentId || undefined;
 
-                    if (coverConfig) {
-                        try {
-                            const stored = localStorage.getItem('album_covers_v1');
-                            const covers = stored ? JSON.parse(stored) : {};
-                            // ✨ Use composite key: name::tag
-                            const key = `${name}::${tags[0] || ''}`;
-                            covers[key] = coverConfig;
-                            localStorage.setItem('album_covers_v1', JSON.stringify(covers));
-
-                            // Notify PostAlbumPage
-                            window.dispatchEvent(new Event('album_cover_update'));
-                        } catch (e) {
-                            console.error("Failed to save album cover", e);
-                        }
-                    }
-
+                    editor.handleCreateAlbum(name, tags, pId, type, roomConfig, coverConfig);
                     setIsAlbumModalOpen(false);
                 }}
             />

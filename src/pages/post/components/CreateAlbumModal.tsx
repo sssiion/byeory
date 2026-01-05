@@ -5,13 +5,15 @@ import CoverCustomizer from './AlbumCover/CoverCustomizer';
 import type { AlbumCoverConfig } from './AlbumCover/constants';
 import { COVER_COLORS } from './AlbumCover/constants';
 
-interface Props {
+import type { CustomAlbum } from '../types';
+
+interface CreateAlbumModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (name: string, tags: string[], coverConfig?: AlbumCoverConfig, type?: 'album' | 'room', roomConfig?: any) => void;
+    onSave: (name: string, tag: string | null, parentId: string | null, type: 'album' | 'room', roomConfig?: any, coverConfig?: any) => void;
+    albums: CustomAlbum[];
 }
-
-const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
+const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, onSave }) => {
     const [name, setName] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [mode, setMode] = useState<'album' | 'room'>('album');
@@ -64,10 +66,10 @@ const CreateAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
 
             // Actual Save happens when closing/confirming the success screen? 
             // Or save immediately? Let's save immediately so data is secure.
-            onSave(name, selectedTag ? [selectedTag] : [], coverConfig, 'room', roomConfig);
+            onSave(name, selectedTag || null, null, 'room', roomConfig, coverConfig);
         } else {
             // Standard Album
-            onSave(name, selectedTag ? [selectedTag] : [], coverConfig, 'album');
+            onSave(name, selectedTag || null, null, 'album', undefined, coverConfig);
             handleClose();
         }
     };

@@ -45,13 +45,7 @@ export const usePostEditor = () => {
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
     const [visibility, setVisibility] = useState<'public' | 'private'>('public'); // ✨ Visibility State
     // ✨ Sort Option Persistence
-    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>(() => {
-        return (localStorage.getItem('post_sort_option') as any) || 'name';
-    });
-
-    useEffect(() => {
-        localStorage.setItem('post_sort_option', sortOption);
-    }, [sortOption]);
+    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>('name');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,11 +57,13 @@ export const usePostEditor = () => {
         }
     }, []);
 
-    // ✨ 앨범 목록 불러오기 (API)
+
+
+    // 2. Fetch Albums from API
     const fetchAlbums = async () => {
         const data = await fetchAlbumsFromApi();
         if (data) {
-            // ✨ Helper to flatten hierarchy if backend returns tree
+            // Helper to flatten hierarchy if backend returns tree
             const flatten = (list: any[]): any[] => {
                 return list.reduce((acc, item) => {
                     acc.push(item);
@@ -80,8 +76,6 @@ export const usePostEditor = () => {
 
             const flatData = flatten(Array.isArray(data) ? data : []);
 
-            // API returns array of Album (number ID), we need to adapt to CustomAlbum (string ID potentially, but let's try to unify)
-            // Frontend assumes string IDs heavily for logic. Let's cast to string.
             const adapted: CustomAlbum[] = flatData.map((a: any) => ({
                 id: String(a.id),
                 name: a.name,
@@ -89,13 +83,18 @@ export const usePostEditor = () => {
                 createdAt: new Date(a.createdAt || Date.now()).getTime(),
                 parentId: a.parentId ? String(a.parentId) : null,
                 isFavorite: a.isFavorite || false,
-                type: a.type || 'album'
+                type: a.type || 'album',
+                roomConfig: a.roomConfig,
+                coverConfig: a.coverConfig
             }));
+
+            // Strictly use backend data. No localStorage merge.
             setCustomAlbums(adapted);
         }
     };
     // 앨범 생성 핸들러 (API Integration)
-    const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any) => {
+    // 앨범 생성 핸들러 (API Integration)
+    const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any, coverConfig?: any) => {
         if (!name || name.trim() === "") return null;
 
         // Optimistic UI Update (Optional, skipping for simplicity & correctness)
@@ -105,7 +104,8 @@ export const usePostEditor = () => {
             tag: tags[0] || null,
             parentId: parentId || null,
             type,
-            roomConfig
+            roomConfig,
+            coverConfig
         };
 
         const created = await createAlbumApi(newAlbumData);
@@ -116,28 +116,27 @@ export const usePostEditor = () => {
         return null;
     };
 
-    // 앨범 이름 변경 핸들러 (API Integration)
-    const handleRenameAlbum = async (id: string, newName: string) => {
+    // 앨범 수정 핸들러 (API Integration) - Generic
+    const handleUpdateAlbum = async (id: string, updates: Partial<CustomAlbum>) => {
         const target = customAlbums.find(a => a.id === id);
         if (!target) return;
 
-        await updateAlbumApi(id, { ...target, name: newName });
-        await fetchAlbums();
+        // Optimistic UI
+        setCustomAlbums(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+
+        const success = await updateAlbumApi(id, { ...target, ...updates });
+        if (!success) {
+            // Revert
+            setCustomAlbums(prev => prev.map(a => a.id === id ? target : a));
+            await fetchAlbums();
+        }
     };
 
     // ✨ Toggle Album Favorite (API Integration)
     const handleToggleAlbumFavorite = async (id: string) => {
         const target = customAlbums.find(a => a.id === id);
         if (!target) return;
-
-        // Optimistic
-        setCustomAlbums(prev => prev.map(a => a.id === id ? { ...a, isFavorite: !a.isFavorite } : a));
-
-        const success = await updateAlbumApi(id, { ...target, isFavorite: !target.isFavorite });
-        if (!success) {
-            // Revert
-            setCustomAlbums(prev => prev.map(a => a.id === id ? target : a));
-        }
+        await handleUpdateAlbum(id, { isFavorite: !target.isFavorite });
     };
 
     // 앨범 삭제 핸들러 (API Integration)
@@ -150,10 +149,9 @@ export const usePostEditor = () => {
         const success = await deleteAlbumApi(id);
         if (success) {
             await fetchAlbums(); // Refresh to sync backend cascade state
-            await fetchAlbums(); // Refresh to sync backend cascade state
             // if (activeDropdownId === id) setActiveDropdownId(null); // Cleanup UI state if needed, though this hook doesn't hold it.
         } else {
-            alert("앨범 삭제 실패");
+            alert("삭제 실패: 내부에 게시글이나 하위 폴더가 남아있을 수 있습니다. (백엔드 정책 확인 필요)");
             await fetchAlbums(); // Revert
         }
     };
@@ -355,7 +353,11 @@ export const usePostEditor = () => {
             const uniqueTags = Array.from(new Set(safeTags));
 
             for (const tag of uniqueTags) {
-                const existing = customAlbums.find(a => a.tag === tag || a.name === tag);
+                // ✨ Refinement: Only auto-select ALBUMS, not Folders
+                const existing = customAlbums.find(a =>
+                    (a.tag === tag || a.name === tag) &&
+                    (a.type === 'album' || a.type === 'room') // Exclude 'folder'
+                );
                 if (existing) {
                     finalAlbumIds.add(existing.id);
                 } else {
@@ -629,7 +631,7 @@ export const usePostEditor = () => {
         currentPostId, // Expose currentPostId to distinguish Create vs Edit
         selectedAlbumId, handleAlbumClick, // ✨ 앨범 관련 추가
         customAlbums, handleCreateAlbum, // ✨ 커스텀 앨범 추가
-        handleRenameAlbum, handleDeleteAlbum, // ✨ 앨범 수정/삭제 추가
+        handleUpdateAlbum, handleDeleteAlbum, // ✨ 앨범 수정/삭제 추가
         currentTags, setTags: setCurrentTags, // ✨ 태그 상태 노출
         targetAlbumIds, setTargetAlbumIds, // ✨ 앨범 ID 선택 상태 노출
         sortOption, setSortOption, handleDeletePost, // ✨ 정렬 및 삭제 핸들러 노출

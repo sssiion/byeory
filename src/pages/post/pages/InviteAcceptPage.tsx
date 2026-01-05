@@ -9,77 +9,57 @@ const InviteAcceptPage: React.FC = () => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [targetRoom, setTargetRoom] = useState<CustomAlbum | null>(null);
-    const [isAlreadyMember, setIsAlreadyMember] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // ✨ Simulate fetching room info
+    // ✨ Fetch room info from API
     useEffect(() => {
         if (!code) return;
 
-        // 1. Check if already a member (Mock: Check all albums)
-        // Since we are mocking, we technically can't "fetch" a room we don't have unless we simulate a shared DB.
-        // But for the user who CREATED it, they have it.
-        // For a GUEST, they wouldn't have it in LocalStorage yet.
+        const loadRoom = async () => {
+            setIsLoading(true);
+            try {
+                // Determine if we can fetch the album.
+                // Note: If the backend requires membership to fetch details, this might fail for new users.
+                // However, usually 'invite code' implies some public access or we assume fetchAlbumApi handles it.
+                // Since this is 'InviteAccept', strictly speaking, we might not be able to see details until we join.
+                // But without a 'Join' API, we will attempt to fetch. 
+                const api = await import('../api');
+                const album = await api.fetchAlbumApi(code);
 
-        // Scenario A: Owner / Existing Member clicked link
-        const savedAlbums = localStorage.getItem('my_custom_albums_v2');
-        let myAlbums: CustomAlbum[] = savedAlbums ? JSON.parse(savedAlbums) : [];
-
-        const existing = myAlbums.find(a => a.id === code);
-
-        if (existing) {
-            setTargetRoom(existing);
-            setIsAlreadyMember(true);
-        } else {
-            // Scenario B: Guest (New User)
-            setTargetRoom({
-                id: code,
-                name: "초대받은 모임", // Fallback name since we can't fetch real one
-                type: 'room',
-                roomConfig: {
-                    description: "초대받은 모임입니다.",
-                    password: "required" // Require generic password
-                },
-                createdAt: Date.now(),
-                isFavorite: false,
-                tag: null,
-                parentId: null
-            });
-        }
+                if (album) {
+                    setTargetRoom(album);
+                } else {
+                    setError("유효하지 않은 모임이거나 접근할 수 없습니다.");
+                }
+            } catch (e) {
+                setError("오류가 발생했습니다.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadRoom();
     }, [code]);
 
-    const handleJoin = () => {
+    const handleJoin = async () => {
         if (!targetRoom) return;
 
-        // ✨ Validate Password (Mock)
-        if (targetRoom.roomConfig?.password && !password.trim()) {
-            setError("비밀번호를 입력해주세요.");
+        // ✨ Validate Password Client-Side (if roomConfig is visible) 
+        // OR try to access contents to verify.
+        // Since we don't have a 'join' endpoint, we simulate success if password matches config.
+        if (targetRoom.roomConfig?.password && targetRoom.roomConfig.password !== password) {
+            setError("비밀번호가 일치하지 않습니다.");
             return;
         }
 
-        // ✨ Add to My Albums
-        const savedAlbums = localStorage.getItem('my_custom_albums_v2');
-        let myAlbums: CustomAlbum[] = savedAlbums ? JSON.parse(savedAlbums) : [];
-
-        // Prevent dupes (should check ID)
-        if (!myAlbums.find(a => a.id === targetRoom.id)) {
-            myAlbums.push({
-                ...targetRoom,
-                name: targetRoom.name === "초대받은 모임" ? `모임 (${code?.substring(0, 4)})` : targetRoom.name, // Give unique name
-                createdAt: Date.now()
-            });
-            localStorage.setItem('my_custom_albums_v2', JSON.stringify(myAlbums));
-        }
-
-        // Redirect
+        // Just redirect. If backend supports 'access on view', this works.
+        // If it needs explicit join, we are limited by backend constraints but complying with 'no local storage'.
         navigate('/post#album/' + targetRoom.id);
     };
 
-    const handleGoToRoom = () => {
-        if (code) navigate('/post#album/' + code);
-        else navigate('/post');
-    };
+
 
     if (!code) return <div>Invalid Link</div>;
+    if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
     return (
         <div className="min-h-screen bg-transparent flex items-center justify-center p-4" style={{ fontFamily: 'var(--font-family)' }}>
@@ -90,29 +70,16 @@ const InviteAcceptPage: React.FC = () => {
                         <Users size={32} />
                     </div>
                     <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
-                        {isAlreadyMember ? "이미 참여 중인 모임입니다" : "모임에 초대되었습니다"}
+                        {targetRoom ? "모임에 초대되었습니다" : "모임을 찾을 수 없습니다"}
                     </h2>
                     <p className="text-[var(--text-secondary)] text-sm px-4">
-                        {targetRoom?.name || "알 수 없는 모임"}
+                        {targetRoom?.name || ""}
                     </p>
                 </div>
 
                 {/* Content */}
                 <div className="p-6 space-y-6">
-                    {isAlreadyMember ? (
-                        <div className="space-y-4">
-                            <p className="text-center text-[var(--text-secondary)] text-sm">
-                                이미 이 모임의 멤버입니다. <br />
-                                바로 모임으로 이동하시겠습니까?
-                            </p>
-                            <button
-                                onClick={handleGoToRoom}
-                                className="w-full py-3 bg-[var(--btn-bg)] hover:bg-[var(--btn-hover)] text-[var(--btn-text)] font-bold rounded-xl transition-colors shadow-lg"
-                            >
-                                모임으로 이동
-                            </button>
-                        </div>
-                    ) : (
+                    {targetRoom ? (
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-wider">
@@ -126,7 +93,7 @@ const InviteAcceptPage: React.FC = () => {
                                             setPassword(e.target.value);
                                             setError(null);
                                         }}
-                                        placeholder="모임 비밀번호를 입력하세요"
+                                        placeholder={targetRoom.roomConfig?.password ? "모임 비밀번호를 입력하세요" : "비밀번호 없음"}
                                         className="w-full bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 pl-10"
                                         style={{ fontFamily: 'inherit' }}
                                     />
@@ -139,8 +106,12 @@ const InviteAcceptPage: React.FC = () => {
                                 onClick={handleJoin}
                                 className="w-full py-3 bg-[var(--btn-bg)] hover:bg-[var(--btn-hover)] text-[var(--btn-text)] font-bold rounded-xl transition-colors shadow-lg"
                             >
-                                참여하기
+                                입장하기
                             </button>
+                        </div>
+                    ) : (
+                        <div className="text-center text-red-500">
+                            {error || "모임 정보를 불러올 수 없습니다."}
                         </div>
                     )}
 
