@@ -133,51 +133,11 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
         // Also refresh global posts to update album counts or tags if needed
     };
 
-    // ✨ Recursive Stats Calculation (Consistent with PostAlbumPage)
+    // ✨ Recursive Stats Calculation (Using trusted API counts)
     const getRecursiveStats = (targetId: string) => {
-        const targetIdNum = Number(targetId);
-
-        // 1. Direct Posts Count
-        const directPostsCount = allPosts.filter(p => {
-            // Check targetAlbumIds (number[])
-            if (p.targetAlbumIds && p.targetAlbumIds.includes(targetIdNum)) return true;
-            // Check legacy albumIds (string[])
-            if (p.albumIds && p.albumIds.includes(targetId)) return true;
-            return false;
-        }).length;
-
-        // 2. Recursive Count
-        let totalCount = directPostsCount;
-
-        // Helper for recursion to avoid double counting if cycles exist (though tree structure assumed)
-        const processed = new Set<string>();
-
-        const countChildren = (parentId: string) => {
-            if (processed.has(parentId)) return 0;
-            processed.add(parentId);
-
-            let sum = 0;
-            const subAlbums = customAlbums.filter(a => String(a.parentId) === parentId);
-
-            for (const sub of subAlbums) {
-                const subId = String(sub.id);
-                // Posts in this sub-album
-                const posts = allPosts.filter(p => {
-                    if (p.targetAlbumIds && p.targetAlbumIds.includes(Number(subId))) return true;
-                    if (p.albumIds && p.albumIds.includes(subId)) return true;
-                    return false;
-                });
-                sum += posts.length;
-
-                // Recurse
-                sum += countChildren(subId);
-            }
-            return sum;
-        };
-
-        totalCount += countChildren(targetId);
-
-        return { count: directPostsCount, totalCount };
+        const targetAlbum = customAlbums.find(a => String(a.id) === targetId);
+        const count = targetAlbum?.postCount ?? 0;
+        return { count, totalCount: count }; // User requested exact backend value
     };
 
     // ✨ Effect to handle deletion request from parent or other components if needed

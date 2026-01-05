@@ -104,4 +104,6 @@ export interface CustomAlbum {
     };
     // ✨ Backend Persistence for Cover
     coverConfig?: AlbumCoverConfig;
+    postCount?: number;
+    folderCount?: number;
 }

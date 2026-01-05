@@ -7,7 +7,7 @@ import AlbumBook from '../components/AlbumCover/AlbumBook';
 import type { AlbumCoverConfig } from '../components/AlbumCover/constants';
 import CoverCustomizer from '../components/AlbumCover/CoverCustomizer';
 import RoomSettingsModal from '../components/RoomSettingsModal';
-import { countAlbumPosts } from '../utils/albumUtils';
+
 
 interface Props {
     posts: PostData[];
@@ -69,37 +69,14 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     const albumStats = useMemo(() => {
         const stats: Record<string, { count: number, folderCount: number, totalCount: number, lastDate: number }> = {};
 
-        // Initialize stats
+        // Initialize stats from API data (No recursive calculation)
         customAlbums.forEach(a => {
-            stats[a.id] = { count: 0, folderCount: 0, totalCount: 0, lastDate: a.createdAt || 0 };
-        });
-
-        // 1. Calculate Direct Counts
-        customAlbums.forEach(a => {
-            if (stats[a.id]) {
-                stats[a.id].count = countAlbumPosts(a.id, a.tag, posts);
-            }
-        });
-
-        // 2. Count Direct Sub-folders
-        customAlbums.forEach(a => {
-            if (a.parentId && stats[a.parentId]) {
-                stats[a.parentId].folderCount++;
-            }
-        });
-
-        // 3. ✨ Calculate Recursive Counts (Total Records including subfolders)
-        const computeRecursive = (albumId: string): number => {
-            const myDirect = stats[albumId]?.count || 0;
-            const children = customAlbums.filter(a => a.parentId === albumId);
-            const childSum = children.reduce((sum, child) => sum + computeRecursive(child.id), 0);
-            return myDirect + childSum;
-        };
-
-        customAlbums.forEach(a => {
-            if (stats[a.id]) {
-                stats[a.id].totalCount = computeRecursive(a.id);
-            }
+            stats[a.id] = {
+                count: a.postCount || 0,
+                folderCount: a.folderCount || 0,
+                totalCount: a.postCount || 0, // User requested exact backend value
+                lastDate: a.createdAt || 0
+            };
         });
 
         // ✨ Filter Top Level Albums (No parentId)

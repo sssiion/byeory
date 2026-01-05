@@ -85,14 +85,15 @@ export const usePostEditor = () => {
                 isFavorite: a.isFavorite || false,
                 type: a.type || 'album',
                 roomConfig: a.roomConfig,
-                coverConfig: a.coverConfig
+                coverConfig: a.coverConfig,
+                postCount: a.postCount,
+                folderCount: a.folderCount
             }));
 
             // Strictly use backend data. No localStorage merge.
             setCustomAlbums(adapted);
         }
     };
-    // 앨범 생성 핸들러 (API Integration)
     // 앨범 생성 핸들러 (API Integration)
     const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any, coverConfig?: any) => {
         if (!name || name.trim() === "") return null;
@@ -141,7 +142,7 @@ export const usePostEditor = () => {
 
     // 앨범 삭제 핸들러 (API Integration)
     const handleDeleteAlbum = async (id: string) => {
-        if (!confirm('정말 이 앨범을 삭제하시겠습니까? 포함된 폴더와 내용은 유지되거나 삭제될 수 있습니다(백엔드 정책 따름).')) return;
+        if (!confirm('정말 이 앨범을 삭제하시겠습니까? 기록물을 제외한 모든 폴더가 삭제됩니다.')) return;
 
         // Optimistic UI
         setCustomAlbums(prev => prev.filter(a => a.id !== id));
@@ -151,7 +152,7 @@ export const usePostEditor = () => {
             await fetchAlbums(); // Refresh to sync backend cascade state
             // if (activeDropdownId === id) setActiveDropdownId(null); // Cleanup UI state if needed, though this hook doesn't hold it.
         } else {
-            alert("삭제 실패: 내부에 게시글이나 하위 폴더가 남아있을 수 있습니다. (백엔드 정책 확인 필요)");
+            alert("삭제 실패: 관리자 문의");
             await fetchAlbums(); // Revert
         }
     };

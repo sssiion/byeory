@@ -195,7 +195,9 @@ export const fetchAlbumsFromApi = async () => {
                 ...a,
                 id: String(a.id),
                 parentId: a.parentId ? String(a.parentId) : null,
-                tag: mappedTag || null
+                tag: mappedTag || null,
+                postCount: a.postCount || 0,
+                folderCount: a.folderCount || 0
             };
         });
     } catch (error) {
@@ -297,7 +299,9 @@ export const fetchAlbumApi = async (id: string | number) => {
             parentId: album.parentId ? String(album.parentId) : null,
             // Ensure strictly typed fields are passed if backend returns them
             roomConfig: album.roomConfig,
-            coverConfig: album.coverConfig
+            coverConfig: album.coverConfig,
+            postCount: album.postCount || 0,
+            folderCount: album.folderCount || 0
         };
     } catch (error) {
         console.error(error);
