@@ -113,11 +113,11 @@ function AnalysisPage() {
     const hasData = data && !isInsufficientData;
 
     return (
-        <div className="min-h-screen pb-20 animate-fade-in font-sans flex flex-col items-center relative">
-            {/* 네비게이션 */}
+        <div className="min-h-screen pb-10 animate-fade-in relative">
+            {/* 네비게이션: 상위 부모가 flex 상태가 아니어야 width: 100% 정상 작동 */}
             <Navigation />
 
-            <main className="w-full max-w-2xl px-4 py-8 pt-16 md:pt-20 space-y-8 flex-1 flex flex-col">
+            <main className="w-full max-w-2xl mx-auto px-4 py-8 pt-10 md:pt-20 space-y-8">
 
                 {/* 상단 컨트롤 바: 뒤로가기 + (데이터 있으면) 뱃지 */}
                 <div className="flex items-center justify-between">
@@ -134,8 +134,6 @@ function AnalysisPage() {
                             AI Insight
                         </span>
                     )}
-
-                    <span className='pr-30'></span>
                 </div>
 
                 {/* 에러 메시지 */}
@@ -193,7 +191,7 @@ function AnalysisPage() {
                     </>
                 ) : (
                     // 데이터가 없거나 부족할 때
-                    <section className="flex-1 flex flex-col items-center justify-center text-center space-y-6 py-20">
+                    <section className="flex flex-col items-center justify-center text-center space-y-6 py-20">
                         <div className="w-24 h-24 rounded-full theme-bg-card border theme-border flex items-center justify-center mb-4 shadow-inner">
                             <Sparkles className="w-10 h-10 theme-icon opacity-50" />
                         </div>
