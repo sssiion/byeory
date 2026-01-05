@@ -15,7 +15,7 @@ interface Props {
     // ✨ New Props
     selectedAlbumIds: string[];
     onAlbumIdsChange: (ids: string[]) => void;
-    onCreateAlbum: (name: string, tags: string[]) => string | null;
+    onCreateAlbum: (name: string, tags: string[]) => Promise<string | null>;
     onDeleteAlbum: (id: string) => void;
     posts: PostData[];
     mode: 'AUTO' | 'MANUAL';

@@ -48,7 +48,7 @@ interface Props {
     // onBack: () => void; // Unused
     onPostClick: (post: PostData) => void;
     onStartWriting: (initialAlbumId?: string) => void;
-    onCreateAlbum: (name: string, tags: string[], parentId?: string | null) => string | null; // Update signature
+    onCreateAlbum: (name: string, tags: string[], parentId?: string | null) => Promise<string | null>; // Update signature
     // ✨ New Prop for looking up sub-albums
     customAlbums: any[];
     onAlbumClick: (id: string | null) => void;

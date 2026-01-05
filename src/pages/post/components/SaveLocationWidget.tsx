@@ -15,7 +15,7 @@ interface Props {
     onTagsChange: (tags: string[]) => void;
     onAlbumIdsChange: (ids: string[]) => void;
     customAlbums: CustomAlbum[];
-    onCreateAlbum: (name: string, tags: string[]) => string | null;
+    onCreateAlbum: (name: string, tags: string[]) => Promise<string | null>;
     onDeleteAlbum: (id: string) => void;
     posts: PostData[];
     mode: 'AUTO' | 'MANUAL'; // ✨ New Prop
@@ -110,12 +110,12 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
         }
     };
 
-    const handleCreateAlbum = (tagName: string) => {
+    const handleCreateAlbum = async (tagName: string) => {
         const input = tagName.trim();
         if (!input) return;
         const newTag = input.replace(/^#/, ''); // Default tag from name
 
-        const newId = onCreateAlbum(newTag, [newTag]);
+        const newId = await onCreateAlbum(newTag, [newTag]);
         if (newId) {
             onAlbumIdsChange([...selectedAlbumIds, newId]);
             // If created from search, clear search

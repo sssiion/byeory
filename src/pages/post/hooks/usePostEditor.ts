@@ -95,7 +95,7 @@ export const usePostEditor = () => {
         }
     };
     // 앨범 생성 핸들러 (API Integration)
-    const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album') => {
+    const handleCreateAlbum = async (name: string, tags: string[], parentId?: string | null, type: 'album' | 'room' = 'album', roomConfig?: any) => {
         if (!name || name.trim() === "") return null;
 
         // Optimistic UI Update (Optional, skipping for simplicity & correctness)
@@ -104,7 +104,8 @@ export const usePostEditor = () => {
             name,
             tag: tags[0] || null,
             parentId: parentId || null,
-            type
+            type,
+            roomConfig
         };
 
         const created = await createAlbumApi(newAlbumData);

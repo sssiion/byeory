@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ContainerLocation, WidgetBlock } from '../../types.ts';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -124,9 +124,9 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                     className={`
                         relative group rounded-lg transition-all border-2 flex items-stretch h-full overflow-hidden
                         ${isSelected
-                        ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30'
-                        : 'border-transparent hover:border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] bg-transparent'
-                    }
+                            ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30'
+                            : 'border-transparent hover:border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] bg-transparent'
+                        }
                     `}
                 >
                     {/* 드래그 핸들 (Grip) */}
