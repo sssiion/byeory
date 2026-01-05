@@ -29,12 +29,27 @@ interface CreditContextType {
 const CreditContext = createContext<CreditContextType | undefined>(undefined);
 
 export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [credits, setCredits] = useState<number>(() => {
-        const saved = localStorage.getItem('user_credits');
-        return saved ? parseInt(saved, 10) : 0;
-    });
-
+    const [credits, setCredits] = useState<number>(0);
     const [resetTime, setResetTime] = useState<string>('');
+
+    // Define refreshCredits before it's used
+    const refreshCredits = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        try {
+            const response = await fetch('http://localhost:8080/api/user/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const profile = await response.json();
+                if (profile.credits !== undefined) {
+                    setCredits(profile.credits);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch credits", e);
+        }
+    };
 
     // Helper to get today's date string in KST
     const getKSTDateString = () => {
@@ -55,8 +70,6 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         ];
 
         if (savedQuests && lastQuestDate === todayKST) {
-            // Restore state but re-verify "isClaimable" for time quests on load? 
-            // Actually, we should merge saved completion state with default definitions in case defaults changed
             const parsed = JSON.parse(savedQuests);
             return defaultQuests.map(def => {
                 const saved = parsed.find((p: DailyQuest) => p.id === def.id);
@@ -66,9 +79,10 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return defaultQuests;
     });
 
+    // Remove localStorage sync for credits
     useEffect(() => {
-        localStorage.setItem('user_credits', credits.toString());
-    }, [credits]);
+        refreshCredits();
+    }, []);
 
     useEffect(() => {
         const todayKST = getKSTDateString();
@@ -134,15 +148,36 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return () => clearInterval(interval);
     }, []);
 
-    const addCredits = (amount: number, reason?: string) => {
-        setCredits(prev => prev + amount);
-        console.log(`Added ${amount} credits: ${reason}`);
+    const addCredits = async (amount: number, reason?: string) => {
+        // Call API
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        try {
+            await fetch('http://localhost:8080/api/credits/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ amount })
+            });
+            refreshCredits();
+            console.log(`Added ${amount} credits: ${reason}`);
+        } catch (e) {
+            console.error("Failed to add credits", e);
+        }
     };
 
     const spendCredits = (amount: number, reason?: string) => {
+        // Since spending is mostly handled by Market API transaction now,
+        // this method is for optimistic updates or legacy client-side checks.
+        // We will just optimistic check here.
         if (credits >= amount) {
-            setCredits(prev => prev - amount);
-            console.log(`Spent ${amount} credits: ${reason}`);
+            // Ideally we should call an API if this was a generic 'spend' action not covered by other APIs.
+            // But currently only Market uses it.
+            // We will let Market API handle the actual deduction.
+            // We return true to allow UI to proceed if needed, but we don't manually deduct from state
+            // because refreshCredits() should be called after the transaction.
             return true;
         }
         return false;

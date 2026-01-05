@@ -11,7 +11,7 @@ import type { WidgetPreset } from '../../types/preset';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
-    const { purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem } = useMarket();
+    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem } = useMarket(); // destructured marketItems
     const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOrder, setSortOrder] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular');
@@ -67,17 +67,18 @@ const Market: React.FC = () => {
     }, [activeTab]);
 
 
-    const handleBuy = (item: MarketItem) => {
+    const handleBuy = async (item: MarketItem) => {
         if (purchasedItems.includes(item.id)) return;
 
         // Dynamic price check
         const effectivePrice = getPackPrice(item.id, item.price);
 
         if (confirm(`'${item.title}'을(를) ${effectivePrice} 크레딧에 구매하시겠습니까?`)) {
-            if (buyItem(item.id, effectivePrice)) {
+            const success = await buyItem(item.id, effectivePrice);
+            if (success) {
                 alert(`'${item.title}' 구매 완료! 🎉`);
             } else {
-                alert('크레딧이 부족합니다.');
+                alert('크레딧이 부족하거나 오류가 발생했습니다.');
             }
         }
     };
@@ -98,18 +99,23 @@ const Market: React.FC = () => {
         }
     };
 
-    const filteredItems = MOCK_MARKET_ITEMS.filter(item => {
+    // MERGE MOCK ITEMS + BACKEND ITEMS
+    const allMarketItems = [...MOCK_MARKET_ITEMS, ...marketItems];
+
+    const filteredItems = allMarketItems.filter((item: any) => {
         if (activeTab === 'wishlist') {
             return isWishlisted(item.id);
         }
         if (activeTab === 'start_pack') {
-            return item.tags.includes('starter');
+            const tags = item.tags || [];
+            return tags.includes('starter');
         }
         const matchesTab = activeTab === 'all' || item.type === activeTab;
+        const tags = item.tags || [];
         const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+            tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
         return matchesTab && matchesSearch;
-    }).sort((a, b) => {
+    }).sort((a: any, b: any) => {
         switch (sortOrder) {
             case 'price_low':
                 return a.price - b.price;
