@@ -367,7 +367,7 @@ const MainPage: React.FC = () => {
     };
 
     const handleReset = () => {
-        setWidgets(DEFAULT_WIDGETS_V3);
+        setWidgets([]);
         setGridSize(DEFAULT_GRID_SIZE);
         setIsResetConfirmOpen(false);
     };

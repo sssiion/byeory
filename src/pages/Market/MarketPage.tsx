@@ -164,7 +164,7 @@ const Market: React.FC = () => {
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2
                                     ${activeTab === tab.id
-                                        ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] shadow-md transform scale-105'
+                                        ? 'bg-[var(--btn-bg)] text-white shadow-md transform scale-105'
                                         : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)]'
                                     }`}
                             >
@@ -203,7 +203,7 @@ const Market: React.FC = () => {
                                     key={opt.id}
                                     onClick={() => setSortOrder(opt.id as any)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sortOrder === opt.id
-                                        ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]'
+                                        ? 'bg-[var(--btn-bg)] text-white'
                                         : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
                                         }`}
                                 >
