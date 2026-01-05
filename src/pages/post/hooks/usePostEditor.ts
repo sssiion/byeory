@@ -216,10 +216,7 @@ export const usePostEditor = () => {
                 rawBlocks.forEach((b: Block) => {
                     // ✨ Robust Metadata Detection (Regex)
                     const cleanText = b.text ? b.text.trim() : "";
-                    // Debug Log to help user trace the issue
-                    if (cleanText.includes('METADATA')) {
-                        console.log('[Debug] Metadata Candidate:', b.id, cleanText);
-                    }
+
 
                     const metaRegex = /<!--METADATA:(.*?)-->/;
                     const match = cleanText.match(metaRegex);
@@ -235,7 +232,7 @@ export const usePostEditor = () => {
                             if (metadata.tags && Array.isArray(metadata.tags)) metadataTags = metadata.tags;
                             if (metadata.albumIds && Array.isArray(metadata.albumIds)) metadataAlbumIds = metadata.albumIds;
 
-                            console.log('[Debug] Metadata Parsed:', metadata);
+
                         } catch (e) {
                             console.error('Failed to parse metadata block', e);
                         }
