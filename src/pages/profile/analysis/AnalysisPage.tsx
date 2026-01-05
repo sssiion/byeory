@@ -1,249 +1,239 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Brain, Heart, PenTool, Share2 } from "lucide-react";
+import { ArrowLeft, Sparkles, RefreshCw, MessageSquare } from "lucide-react";
+import Navigation from '../../../components/Header/Navigation';
 
-// 백엔드 데이터 타입
-interface AnalysisData {
-    analysis: {
-        summary: string;
-        personality: string;
-        emotionalState: string;
-        writingStyle: string;
-    };
-    topWords: {
-        word: string;
-        type: string;
-        count: number;
-    }[];
+// 백엔드 데이터 타입 정의
+interface PersonaData {
+    analysisResult: string;
+    emotionKeywords: string;
 }
 
 function AnalysisPage() {
     const navigate = useNavigate();
-    const [data, setData] = useState<AnalysisData | null>(null);
+    const [data, setData] = useState<PersonaData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [analyzing, setAnalyzing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // 컴포넌트 내부에서만 사용할 애니메이션 스타일 (외부 CSS 파일 필요 없음)
-    const keyframeStyles = `
-        @keyframes spin-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+    // 1. 초기 데이터 로드 (GET)
+    const fetchPersona = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            navigate('/login');
+            return;
         }
-        @keyframes reverse-spin {
-            from { transform: rotate(360deg); }
-            to { transform: rotate(0deg); }
+
+        try {
+            const response = await fetch('http://localhost:8080/api/persona', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.ok) {
+                // 204 No Content 등 데이터가 없는 경우 처리
+                if (response.status === 204) {
+                    setData(null);
+                } else {
+                    const text = await response.text();
+                    if (text) {
+                        const jsonData = JSON.parse(text);
+                        // 분석 불가능한 경우도 데이터로 처리하지만 UI에서 구분
+                        setData(jsonData);
+                    } else {
+                        setData(null);
+                    }
+                }
+            } else if (response.status === 404) {
+                // 데이터 없음
+                setData(null);
+            } else {
+                console.warn("Failed to fetch persona");
+            }
+        } catch (e) {
+            console.error("API Error:", e);
+            setError("데이터를 불러오는 중 오류가 발생했습니다.");
+        } finally {
+            setLoading(false);
         }
-        .animate-spin-slow {
-            animation: spin-slow 20s linear infinite;
-        }
-        .animate-reverse-spin {
-            animation: reverse-spin 25s linear infinite;
-        }
-    `;
+    };
 
     useEffect(() => {
-        const fetchAnalysis = async () => {
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                alert("로그인 정보가 없습니다. 다시 로그인해주세요.");
-                navigate('/login');
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const response = await fetch('http://localhost:8080/api/posts/persona/analysis', { // 주소 변경
-                    method: 'GET', // GET으로 변경
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    }
-                });
-                if (response.ok) {
-                    const jsonData = await response.json();
-                    setData(jsonData);
-                } else if (response.status === 401) {
-                    alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                    navigate('/login');
-                } else {
-                    // 데이터가 없거나 분석 실패 시 (서버 응답 파싱)
-                    const errText = await response.text();
-                    console.error("Analysis Error:", errText);
-                    setError("데이터가 부족하거나 분석 중 오류가 발생했습니다.");
-                }
-            } catch (e) {
-                console.error("API Error:", e);
-                setError("서버와 연결할 수 없습니다.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchAnalysis();
+        fetchPersona();
     }, [navigate]);
+
+    // 2. 분석 요청 (POST)
+    const handleAnalyze = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        setAnalyzing(true);
+        setError(null);
+
+        try {
+            const response = await fetch('http://localhost:8080/api/persona/analyze', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (response.ok) {
+                // 분석 완료 후 다시 조회하여 최신 데이터 반영
+                await fetchPersona();
+            } else {
+                const errText = await response.text();
+                setError(errText || "분석 요청에 실패했습니다.");
+            }
+        } catch (e) {
+            console.error("Analyze Error:", e);
+            setError("분석 중 오류가 발생했습니다.");
+        } finally {
+            setAnalyzing(false);
+        }
+    };
 
     // 로딩 화면
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
-                <p className="text-sm text-gray-500 animate-pulse text-center">
-                    AI가 일기장을 분석하고 있어요...<br/>
-                    <span className="text-xs text-gray-400">(약 5~10초 정도 소요됩니다)</span>
-                </p>
+            <div className="min-h-screen flex flex-col items-center justify-center space-y-4 theme-bg-card">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 theme-border mb-4"></div>
+                <p className="theme-text-secondary animate-pulse">데이터를 불러오는 중...</p>
             </div>
         );
     }
 
-    // 에러 화면
-    if (error) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-gray-50 p-4 text-center">
-                <div className="text-4xl">😢</div>
-                <h2 className="text-lg font-bold text-gray-900">분석 실패</h2>
-                <p className="text-sm text-gray-600">{error}</p>
-                <button
-                    onClick={() => navigate(-1)}
-                    className="mt-4 px-6 py-2 bg-yellow-400 text-gray-900 rounded-lg font-medium shadow-sm hover:bg-yellow-500 transition-colors"
-                >
-                    돌아가기
-                </button>
-            </div>
-        );
-    }
-
-    if (!data) return null;
+    // 분석 불가 상태 체크
+    const isInsufficientData = data?.analysisResult === "게시물을 더 작성해주세요" || data?.emotionKeywords === "분석 불가";
+    const hasData = data && !isInsufficientData;
 
     return (
-        <div className="min-h-screen pb-20 bg-gray-50 animate-fade-in font-sans">
-            {/* 스타일 주입 (이 컴포넌트 안에서만 작동하는 애니메이션) */}
-            <style>{keyframeStyles}</style>
+        <div className="min-h-screen pb-20 animate-fade-in font-sans flex flex-col items-center relative">
+            {/* 네비게이션 */}
+            <Navigation />
 
-            {/* Header */}
-            <header className="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200 px-4 h-14 flex items-center justify-between">
-                <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-black/5 rounded-full transition-colors">
-                    <ArrowLeft className="w-6 h-6 text-gray-800" />
-                </button>
-                <h1 className="font-bold text-lg text-gray-900">분석 리포트</h1>
-                <div className="w-10" />
-            </header>
+            <main className="w-full max-w-2xl px-4 py-8 pt-16 md:pt-20 space-y-8 flex-1 flex flex-col">
 
-            <main className="max-w-2xl mx-auto p-4 space-y-8">
+                {/* 상단 컨트롤 바: 뒤로가기 + (데이터 있으면) 뱃지 */}
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/5 transition-colors theme-text-secondary"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span className="text-sm font-medium">돌아가기</span>
+                    </button>
 
-                {/* 1. 페르소나 요약 섹션 */}
-                <section className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 blur-3xl opacity-30 rounded-full" />
-                    <div className="relative text-center space-y-2 py-6">
-                        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-yellow-400 text-gray-900 shadow-sm">
+                    {hasData && (
+                        <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-yellow-400 text-yellow-900 shadow-sm animate-pulse">
                             AI Insight
                         </span>
-                        {/* 폰트가 Jua가 없어도 기본 폰트로 예쁘게 나오도록 sans-serif 설정 */}
-                        <h2 className="text-3xl font-bold text-gray-900 leading-tight">
-                            "{data.analysis.summary}"
-                        </h2>
-                        <p className="text-sm text-gray-500">
-                            최근 기록된 데이터를 기반으로 분석했습니다.
-                        </p>
-                    </div>
-                </section>
+                    )}
 
-                {/* 2. 워드 마인드맵 (Galaxy View) */}
-                <section className="relative h-[300px] md:h-[400px] w-full bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-inner">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        {/* 중앙 노드 (나) */}
-                        <div className="relative z-10 w-20 h-20 rounded-full bg-yellow-400 shadow-xl flex items-center justify-center animate-pulse">
-                            <span className="text-gray-900 font-bold text-lg">나</span>
-                            {/* 궤도 애니메이션 */}
-                            <div className="absolute w-40 h-40 border border-yellow-400/30 rounded-full animate-spin-slow" />
-                            <div className="absolute w-64 h-64 border border-yellow-400/15 rounded-full animate-reverse-spin" />
-                        </div>
-
-                        {/* 떠다니는 단어들 */}
-                        {data.topWords.map((item, index) => {
-                            const total = data.topWords.length;
-                            const angle = (index / total) * 2 * Math.PI;
-                            const radius = 70 + (index * (120 / total)) + (Math.random() * 20);
-
-                            const x = Math.cos(angle) * radius;
-                            const y = Math.sin(angle) * radius;
-                            const scale = 0.8 + (item.count / 10) * 0.5;
-
-                            return (
-                                <div
-                                    key={index}
-                                    className="absolute flex flex-col items-center justify-center transition-all duration-700 hover:scale-110 cursor-pointer group z-20"
-                                    style={{
-                                        transform: `translate(${x * 1.5}px, ${y * 1.5}px) scale(${scale})`,
-                                    }}
-                                >
-                                    <div
-                                        className={`px-4 py-2 rounded-full shadow-md text-sm font-medium backdrop-blur-sm border
-                                            ${item.type === '동사'
-                                            ? 'bg-blue-50/90 border-blue-200 text-blue-700'
-                                            : 'bg-rose-50/90 border-rose-200 text-rose-700'
-                                        }`}
-                                    >
-                                        {item.word}
-                                    </div>
-                                    <span className="opacity-0 group-hover:opacity-100 text-[10px] text-gray-500 transition-opacity absolute -bottom-5 bg-white/80 px-1 rounded shadow-sm">
-                                        {item.count}회
-                                    </span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <div className="absolute bottom-3 right-4 text-xs text-gray-400 bg-white/80 px-2 py-1 rounded backdrop-blur-sm z-30">
-                        * 중심에 가까울수록 자주 사용한 단어입니다.
-                    </div>
-                </section>
-
-                {/* 3. 상세 분석 카드 */}
-                <div className="grid gap-4">
-                    {/* 성격 */}
-                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
-                                <Brain className="w-5 h-5" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">성격 분석</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                            {data.analysis.personality}
-                        </p>
-                    </div>
-
-                    {/* 감정 */}
-                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 rounded-lg bg-rose-100 text-rose-600">
-                                <Heart className="w-5 h-5" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">감정 상태</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                            {data.analysis.emotionalState}
-                        </p>
-                    </div>
-
-                    {/* 문체 */}
-                    <div className="bg-white/60 backdrop-blur-md p-6 rounded-2xl border border-gray-100 shadow-sm">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
-                                <PenTool className="w-5 h-5" />
-                            </div>
-                            <h3 className="font-bold text-gray-900">글쓰기 스타일</h3>
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                            {data.analysis.writingStyle}
-                        </p>
-                    </div>
+                    <span className='pr-30'></span>
                 </div>
 
-                {/* 공유 버튼 */}
-                <button className="w-full py-4 bg-yellow-400 text-gray-900 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors">
-                    <Share2 className="w-5 h-5" />
-                    내 결과 공유하기
-                </button>
+                {/* 에러 메시지 */}
+                {error && (
+                    <div className="p-3 rounded-xl bg-red-100 text-red-600 text-sm break-keep">
+                        {error}
+                    </div>
+                )}
+
+                {/* 1. 분석 결과 섹션 (데이터가 있을 때) */}
+                {hasData ? (
+                    <>
+                        <section className="space-y-6">
+                            {/* 상단 타이틀 */}
+                            <div className="text-center space-y-2 pt-4">
+                                <h2 className="text-2xl font-bold theme-text-primary leading-tight break-keep">
+                                    "당신의 기록에서 발견한<br />특별한 패턴입니다"
+                                </h2>
+                            </div>
+
+                            {/* 분석 텍스트 카드 */}
+                            <div className="theme-bg-card p-6 rounded-2xl shadow-sm border theme-border relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--btn-bg)] to-transparent opacity-50"></div>
+                                <div className="flex items-start gap-4">
+                                    <div className="p-2 rounded-lg bg-[var(--bg-card-secondary)] shrink-0">
+                                        <MessageSquare className="w-6 h-6 theme-icon" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h3 className="font-bold theme-text-primary text-lg">AI 분석 결과</h3>
+                                        <p className="theme-text-secondary leading-relaxed whitespace-pre-line text-sm md:text-base">
+                                            {data!.analysisResult}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 조약돌 키워드 섹션 */}
+                            <div className="theme-bg-card p-6 rounded-2xl shadow-sm border theme-border">
+                                <h3 className="font-bold theme-text-primary mb-4 flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 theme-text-primary" />
+                                    감정 키워드
+                                </h3>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    {data!.emotionKeywords.split(',').map((keyword, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="px-4 py-2 rounded-full theme-bg-card-secondary border theme-border theme-text-primary font-medium text-sm shadow-sm transition-transform hover:scale-105 cursor-default select-none"
+                                        >
+                                            {keyword.trim()}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+                    </>
+                ) : (
+                    // 데이터가 없거나 부족할 때
+                    <section className="flex-1 flex flex-col items-center justify-center text-center space-y-6 py-20">
+                        <div className="w-24 h-24 rounded-full theme-bg-card border theme-border flex items-center justify-center mb-4 shadow-inner">
+                            <Sparkles className="w-10 h-10 theme-icon opacity-50" />
+                        </div>
+                        <div className="space-y-2 max-w-xs mx-auto">
+                            <h2 className="text-xl font-bold theme-text-primary">
+                                {isInsufficientData ? "데이터가 조금 더 필요해요" : "아직 분석 데이터가 없어요"}
+                            </h2>
+                            <p className="theme-text-secondary text-sm break-keep">
+                                {isInsufficientData
+                                    ? "더 정확한 분석을 위해 일기를 조금 더 작성해주세요. 기록이 쌓이면 당신만의 페르소나를 발견할 수 있습니다."
+                                    : "지금 바로 AI 분석을 통해 내면의 감정과 글쓰기 스타일을 확인해보세요."
+                                }
+                            </p>
+                        </div>
+                    </section>
+                )}
+
+                {/* 하단 액션 버튼 */}
+                <div className="pt-4 pb-8 flex justify-center">
+                    <button
+                        onClick={handleAnalyze}
+                        disabled={analyzing}
+                        className={`
+                            theme-btn px-8 py-4 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all w-full md:w-auto justify-center
+                            ${analyzing ? 'opacity-70 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
+                        `}
+                    >
+                        {analyzing ? (
+                            <>
+                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                <span>AI가 열심히 분석 중...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles className="w-5 h-5" />
+                                <span>{hasData ? '다시 분석하기' : 'AI 분석 시작하기'}</span>
+                            </>
+                        )}
+                    </button>
+                </div>
 
             </main>
         </div>
