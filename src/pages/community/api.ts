@@ -49,7 +49,7 @@ export const getCommunities = async (page: number, size: number = 10, userId?: n
     if (data && data.content) {
         data.content = data.content.map((item: any) => ({
             ...item,
-            tags: (item.hashtags || []).map((t: any) => {
+            tags: (item.tags || item.hashtags || []).map((t: any) => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tagName || "";
             }).filter((t: string) => t.length > 0)
@@ -72,7 +72,7 @@ export const getCommunityDetail = async (postId: number, userId?: number): Promi
     // Map hashtags if present
     const data = response.data;
     if (data) {
-        data.tags = (data.hashtags || []).map((t: any) => {
+        data.tags = (data.tags || data.hashtags || []).map((t: any) => {
             if (typeof t === 'string') return t;
             return t.name || t.tagName || "";
         }).filter((t: string) => t.length > 0);
@@ -124,7 +124,7 @@ export const getPostDetail = async (postId: number): Promise<any> => {
         return {
             ...p,
             id: Number(p.id),
-            tags: (p.hashtags || []).map((t: any) => {
+            tags: (p.tags || p.hashtags || []).map((t: any) => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
             }).filter(Boolean),

@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Lock, ArrowRight, Loader } from 'lucide-react';
 import { joinRoomApi } from '../api';
 
 const RoomJoinPage: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const [password, setPassword] = useState('');
+
+    // ✨ Check for Token on Mount
+    React.useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인이 필요한 서비스입니다.");
+            navigate('/login', { state: { from: location } });
+        }
+    }, [navigate, location]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 

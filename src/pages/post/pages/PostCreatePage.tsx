@@ -89,7 +89,6 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onAlbumIdsChange={editor.setTargetAlbumIds}
                 onCreateAlbum={editor.handleCreateAlbum}
                 onDeleteAlbum={editor.handleDeleteAlbum}
-                posts={editor.posts}
                 mode={editor.mode}
                 setMode={editor.setMode}
                 isFavorite={editor.isFavorite}

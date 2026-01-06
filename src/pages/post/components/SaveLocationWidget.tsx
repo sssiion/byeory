@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Check, Hash, FolderOpen, Sparkles, Trash2, X, Book, Folder } from 'lucide-react';
-import type { PostData } from '../types'; // Keep if reused or remove if totally unused. Lint says unused.
 // Actually, let's remove it if unused.
 
 interface CustomAlbum {

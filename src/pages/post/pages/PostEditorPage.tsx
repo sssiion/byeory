@@ -101,6 +101,8 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 setMode={editor.setMode}
                 isFavorite={editor.isFavorite}
                 setIsFavorite={editor.setIsFavorite}
+                isPublic={editor.isPublic}
+                setIsPublic={editor.setIsPublic}
             />
         </div>
     );

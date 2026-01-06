@@ -67,7 +67,7 @@ const CoverCustomizer: React.FC<Props> = ({ initialConfig, albumTitle, albumTag,
         posY: 0
     });
 
-    const [lastPreset, setLastPreset] = useState<AlbumCoverConfig>(config);
+    const [lastPreset] = useState<AlbumCoverConfig>(config);
 
     const handleTabChange = (tab: 'design' | 'my-design' | 'sticker') => {
         setMainTab(tab);
@@ -138,9 +138,7 @@ const CoverCustomizer: React.FC<Props> = ({ initialConfig, albumTitle, albumTag,
             type: 'illustration',
             value: illu.value,
             spineColor: illu.spineColor,
-            labelColor: illu.textColor || '#1f2937',
-            backgroundColor: illu.backgroundColor || undefined,
-            backgroundSize: illu.backgroundSize || 'cover'
+            labelColor: illu.textColor || '#1f2937'
         }));
     };
 

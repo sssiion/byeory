@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCredits } from '../../context/CreditContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -8,6 +8,7 @@ import NaverLoginButton from '../../components/auth/NaverLoginButton';
 
 function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { socialLogin, localLogin } = useAuth();
     const { refreshCredits } = useCredits(); // Using useCredits
     const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ function LoginPage() {
                 await refreshCredits(); // Refresh credits on login
                 // Check if profile setup is done
                 const isSetup = localStorage.getItem('isProfileSetupCompleted');
-                navigate(isSetup === 'true' ? '/' : '/setup-profile');
+                navigate(isSetup === 'true' ? (location.state?.from || '/') : '/setup-profile');
             }
         }
     };
@@ -119,7 +120,7 @@ function LoginPage() {
                                     await refreshCredits(); // Refresh credits
                                     // Check if profile setup is done
                                     const isSetup = localStorage.getItem('isProfileSetupCompleted');
-                                    navigate(isSetup === 'true' ? '/' : '/setup-profile');
+                                    navigate(isSetup === 'true' ? (location.state?.from || '/') : '/setup-profile');
                                 } else {
                                     alert("Social Login Failed");
                                 }
@@ -132,7 +133,7 @@ function LoginPage() {
                                 if (success) {
                                     await refreshCredits(); // Refresh credits
                                     const isSetup = localStorage.getItem('isProfileSetupCompleted');
-                                    navigate(isSetup === 'true' ? '/' : '/setup-profile');
+                                    navigate(isSetup === 'true' ? (location.state?.from || '/') : '/setup-profile');
                                 } else {
                                     alert("Naver Login Failed");
                                 }

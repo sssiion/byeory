@@ -436,11 +436,16 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                             </div>
 
                                             {/* Hashtags */}
-                                            <div className="flex flex-wrap gap-1.5 h-6 overflow-hidden">
+                                            <div className="flex flex-wrap gap-1.5 items-center">
                                                 {p.tags && p.tags.length > 0 ? (
-                                                    p.tags.map((t: string) => (
-                                                        <span key={t} className="text-[11px] font-medium text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-md truncate">#{t}</span>
-                                                    ))
+                                                    <>
+                                                        {p.tags.slice(0, 2).map((t: string) => (
+                                                            <span key={t} className="text-[11px] font-medium text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-md truncate max-w-[80px]">#{t}</span>
+                                                        ))}
+                                                        {p.tags.length > 2 && (
+                                                            <span className="text-[10px] text-[var(--text-secondary)] font-medium">+{p.tags.length - 2}</span>
+                                                        )}
+                                                    </>
                                                 ) : (
                                                     <span className="text-[11px] text-[var(--text-secondary)] opacity-50">태그 없음</span>
                                                 )}

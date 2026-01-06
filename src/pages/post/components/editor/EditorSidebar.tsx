@@ -133,10 +133,10 @@ const EditorSidebar: React.FC<Props> = ({
                                 <button
                                     key={sticker.id}
                                     title={isLocked ? `구매하기 (${sticker.price} C)` : '사용하기'}
-                                    onClick={() => {
+                                    onClick={async () => {
                                         if (isLocked) {
                                             if (confirm(`이 스티커를 ${sticker.price} 크레딧에 구매하시겠습니까?\n(마켓에서 팩으로 구매하면 더 저렴할 수 있습니다!)`)) {
-                                                if (buyItem(sticker.id, sticker.price || 100)) {
+                                                if (await buyItem(sticker.id, sticker.price || 100)) {
                                                     alert('구매가 완료되었습니다!');
                                                 } else {
                                                     alert('크레딧이 부족합니다.');

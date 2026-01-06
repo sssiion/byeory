@@ -152,7 +152,7 @@ export const fetchPostsFromApi = async () => {
             ...p,
             id: Number(p.id),
             // ✨ Robust Tag Mapping: Handle string[] or {name: string}[]
-            tags: (p.hashtags || []).map((t: any) => {
+            tags: (p.hashtags || p.tags || []).map((t: any) => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
             }).filter(Boolean),
@@ -241,7 +241,10 @@ export const fetchRoomsFromApi = async () => {
 // ✨ 모임방 입장 (POST)
 export const joinRoomApi = async (roomId: string, password?: string) => {
     try {
-        const response = await fetch(`${API_ROOM_URL}/${roomId}/join`, {
+        // ✨ Validate and clean ID (Backend expects pure Long)
+        const numericId = roomId.toString().replace(/^room-/, '');
+
+        const response = await fetch(`${API_ROOM_URL}/${numericId}/join`, {
             method: "POST",
             headers: getAuthHeaders(),
             body: JSON.stringify({ password })
@@ -354,7 +357,7 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             stickers: postData.stickers || [],
             floatingTexts: postData.floatingTexts || [],
             floatingImages: postData.floatingImages || [],
-            hashtags: postData.tags || [], // tags -> hashtags
+            tags: postData.tags || [], // hashtags -> tags
             mode: postData.mode || 'AUTO',
             targetAlbumIds: (postData.albumIds || []).map((id: any) => Number(id)).filter((n: number) => !isNaN(n)), // String[] -> Number[]
             isFavorite: postData.isFavorite || false,

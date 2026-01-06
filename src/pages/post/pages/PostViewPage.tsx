@@ -65,6 +65,15 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
                 </div>
             </div>
 
+            {/* Tags Display (Moved) */}
+            {editor.currentTags && editor.currentTags.length > 0 && (
+                <div className="w-full max-w-[800px] px-4 md:px-0 flex flex-wrap gap-2 justify-start">
+                    {editor.currentTags.map((tag: string, idx: number) => (
+                        <span key={idx} className="px-3 py-1.5 rounded-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium">#{tag}</span>
+                    ))}
+                </div>
+            )}
+
             <EditorCanvas
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
@@ -79,8 +88,9 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
                 onDelete={() => { }}
                 onBlockImageUpload={() => { }}
                 onBackgroundClick={() => { }}
-                visibility={editor.visibility}
             />
+
+
         </div>
     );
 };
