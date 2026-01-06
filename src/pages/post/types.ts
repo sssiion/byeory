@@ -97,6 +97,9 @@ export interface CustomAlbum {
     isFavorite?: boolean;
     // ✨ New Fields for Meeting Room
     type?: 'album' | 'room';
+    role?: 'OWNER' | 'MEMBER'; // ✨ Role in the room
+    ownerId?: string | number;
+    ownerEmail?: string; // ✨ Owner Email for robust check
     roomConfig?: {
         password?: string;
         description?: string;

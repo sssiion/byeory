@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, Check, Users, Settings, LogOut, Loader } from 'lucide-react';
 import type { CustomAlbum } from '../types';
-import { fetchRoomMembersApi, kickMemberApi, leaveRoomApi } from '../api';
+import { fetchRoomMembersApi, kickMemberApi, leaveRoomApi, deleteRoomApi } from '../api';
 
 interface Props {
     isOpen: boolean;
@@ -18,7 +18,7 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
     const [members, setMembers] = useState<any[]>([]);
     const [isLoadingMembers, setIsLoadingMembers] = useState(false);
     const [currentUserRole, setCurrentUserRole] = useState<'OWNER' | 'MEMBER' | null>(null);
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null); // To identify "Me"
+    const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null); // To identify "Me" via Email
 
     useEffect(() => {
         if (isOpen && activeTab === 'members') {
@@ -36,7 +36,13 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
                 const payload = JSON.parse(jsonPayload);
-                setCurrentUserId(payload.sub ? Number(payload.sub) : (payload.id ? Number(payload.id) : null));
+
+                // Prefer 'email' claim, fallback to 'sub' if it looks like an email
+                if (payload.email) {
+                    setCurrentUserEmail(payload.email);
+                } else if (payload.sub && payload.sub.includes('@')) {
+                    setCurrentUserEmail(payload.sub);
+                }
             } catch (e) {
                 // ignore
             }
@@ -55,17 +61,16 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
         }
     };
 
-    // Update role whenever members or currentUserId changes
+    // Update role whenever members or currentUserEmail changes
     useEffect(() => {
-        if (members.length > 0 && currentUserId) {
-            // Find "me" in the list
-            const me = members.find((m: any) => String(m.userId) === String(currentUserId));
-            console.log("[RoomSettings] My User ID:", currentUserId, "Found Member:", me);
+        if (members.length > 0 && currentUserEmail) {
+            // Find "me" in the list using Email
+            const me = members.find((m: any) => m.email === currentUserEmail);
             if (me) {
                 setCurrentUserRole(me.role);
             }
         }
-    }, [members, currentUserId]);
+    }, [members, currentUserEmail]);
 
     const handleKick = async (userId: string) => {
         if (!confirm("정말 이 멤버를 내보내시겠습니까?")) return;
@@ -87,6 +92,18 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
             window.location.reload(); // Simple reload to refresh list
         } else {
             alert("나가기 실패");
+        }
+    };
+
+    const handleDeleteRoom = async () => {
+        if (!confirm("정말 이 모임방을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없으며 모든 멤버가 쫓겨납니다.")) return;
+        const success = await deleteRoomApi(album.id);
+        if (success) {
+            alert("모임방이 삭제되었습니다.");
+            onClose();
+            window.location.reload();
+        } else {
+            alert("삭제 실패");
         }
     };
 
@@ -201,8 +218,8 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
                                                 <div>
                                                     <div className="font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
                                                         {member.nickname || "Unknown"}
-                                                        {/* Check matches for (나) indicator */}
-                                                        {String(member.userId) === String(currentUserId) && <span className="text-xs text-[var(--text-tertiary)]">(나)</span>}
+                                                        {/* Check matches for (나) indicator via Email */}
+                                                        {member.email === currentUserEmail && <span className="text-xs text-[var(--text-tertiary)]">(나)</span>}
                                                     </div>
                                                     <div className="text-xs text-[var(--text-secondary)]">{member.email}</div>
                                                 </div>
@@ -243,9 +260,18 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
                             )}
 
                             {currentUserRole === 'OWNER' && (
-                                <div className="pt-4 border-t border-[var(--border-color)] mt-4 text-center">
-                                    <p className="text-xs text-[var(--text-secondary)]">
-                                        방장은 나갈 수 없습니다. 방을 삭제해주세요.
+                                <div className="pt-4 border-t border-[var(--border-color)] mt-4">
+                                    <button
+                                        onClick={handleDeleteRoom}
+                                        className="w-full py-3 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition flex items-center justify-center gap-2 shadow-sm"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <LogOut size={16} className="rotate-180" /> {/* Rotate to imply 'delete/destroy' or use Trash */}
+                                            <span>모임방 삭제하기 (방장 전용)</span>
+                                        </div>
+                                    </button>
+                                    <p className="text-xs text-[var(--text-tertiary)] text-center mt-2">
+                                        방장은 나갈 수 없으며, 방을 삭제해야 합니다.
                                     </p>
                                 </div>
                             )}

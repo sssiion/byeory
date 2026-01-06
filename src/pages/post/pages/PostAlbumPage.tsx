@@ -30,6 +30,23 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null);
     const [editingCoverId, setEditingCoverId] = useState<string | null>(null);
+    const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+                if (payload.email) setCurrentUserEmail(payload.email);
+                else if (payload.sub && payload.sub.includes('@')) setCurrentUserEmail(payload.sub);
+            } catch (e) { /* ignore */ }
+        }
+    }, []);
 
     const handleSaveCover = (config: AlbumCoverConfig) => {
         if (!editingCoverId) return;
@@ -198,9 +215,17 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                                         {album.type === 'room' && (
                                             <button onClick={(e) => { e.stopPropagation(); setRoomSettingsId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-indigo-600 font-medium bg-indigo-50/50"><Users size={16} /> 모임 정보</button>
                                         )}
-                                        <button onClick={(e) => { e.stopPropagation(); setEditingCoverId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Sparkles size={16} /> 표지 꾸미기</button>
-                                        <button onClick={(e) => { e.stopPropagation(); setRenamingId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Edit size={16} /> 이름 변경</button>
-                                        <button onClick={(e) => handleDeleteClick(e, album.id)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 flex items-center gap-2 text-red-600"><Trash2 size={16} /> 앨범 삭제</button>
+                                        {/* Customize Cover: Show for Albums OR Room Owners only */}
+                                        {(album.type !== 'room' || album.role === 'OWNER' || (currentUserEmail && album.ownerEmail === currentUserEmail)) && (
+                                            <button onClick={(e) => { e.stopPropagation(); setEditingCoverId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Sparkles size={16} /> 표지 꾸미기</button>
+                                        )}
+                                        {/* Rename & Delete: Hide for Rooms (Managed in Room Info) */}
+                                        {album.type !== 'room' && (
+                                            <>
+                                                <button onClick={(e) => { e.stopPropagation(); setRenamingId(album.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"><Edit size={16} /> 이름 변경</button>
+                                                <button onClick={(e) => handleDeleteClick(e, album.id)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 flex items-center gap-2 text-red-600"><Trash2 size={16} /> 앨범 삭제</button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>

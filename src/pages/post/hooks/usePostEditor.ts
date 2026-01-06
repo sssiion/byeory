@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi, createRoomApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi, createRoomApi, updateRoomApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -153,7 +153,14 @@ export const usePostEditor = () => {
         // Optimistic UI
         setCustomAlbums(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
 
-        const success = await updateAlbumApi(id, { ...target, ...updates });
+        let success;
+        if (target.type === 'room') {
+            // ✨ Use Room API for Rooms
+            success = await updateRoomApi(id, { ...target, ...updates });
+        } else {
+            success = await updateAlbumApi(id, { ...target, ...updates });
+        }
+
         if (!success) {
             // Revert
             setCustomAlbums(prev => prev.map(a => a.id === id ? target : a));

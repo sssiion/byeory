@@ -198,6 +198,7 @@ export const fetchAlbumsFromApi = async () => {
                 parentId: a.parentId ? String(a.parentId) : null,
                 tag: mappedTag || null,
                 type: 'album', // Explicit type
+                coverConfig: a.coverConfig || a.cover_config, // ✨ Robust mapping
                 postCount: a.postCount || 0,
                 folderCount: a.folderCount || 0
             };
@@ -222,6 +223,10 @@ export const fetchRoomsFromApi = async () => {
             parentId: null, // Rooms are root level usually, or handle if nested
             tag: r.tag || (r.representativeHashtag ? (r.representativeHashtag.name || r.representativeHashtag.tag) : null),
             type: 'room',
+            role: r.role, // ✨ Map Role
+            ownerId: r.ownerId || (r.owner ? r.owner.id : null), // ✨ Map Owner ID
+            ownerEmail: r.ownerEmail || (r.owner ? r.owner.email : null), // ✨ Map Owner Email
+            coverConfig: r.coverConfig || r.cover_config, // ✨ Robust mapping
             // Map room specific counts if available
             postCount: r.postCount || 0,
             folderCount: r.folderCount || 0
@@ -319,6 +324,21 @@ export const fetchRoomMembersApi = async (roomId: string) => {
     }
 };
 
+// ✨ 모임방 삭제 (DELETE)
+export const deleteRoomApi = async (roomId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${roomId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("모임방 삭제 실패");
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+
 // 게시글 저장 (생성 POST / 수정 PUT)
 export const savePostToApi = async (postData: any, isUpdate: boolean = false) => {
     try {
@@ -412,7 +432,7 @@ export const fetchAlbumApi = async (id: string | number) => {
             parentId: album.parentId ? String(album.parentId) : null,
             // Ensure strictly typed fields are passed if backend returns them
             roomConfig: album.roomConfig,
-            coverConfig: album.coverConfig,
+            coverConfig: album.coverConfig || album.cover_config,
             postCount: album.postCount || 0,
             folderCount: album.folderCount || 0
         };
@@ -439,7 +459,10 @@ export const fetchRoomApi = async (id: string | number) => {
                 description: room.description,
                 password: room.password
             },
-            coverConfig: room.coverConfig,
+            coverConfig: room.coverConfig || room.cover_config,
+            role: room.role, // ✨ Map Role
+            ownerId: room.ownerId || (room.owner ? room.owner.id : null), // ✨ Map Owner ID
+            ownerEmail: room.ownerEmail || (room.owner ? room.owner.email : null), // ✨ Map Owner Email
             postCount: room.postCount || 0,
             folderCount: room.folderCount || 0,
             type: 'room'
@@ -475,6 +498,22 @@ export const createRoomApi = async (roomData: any) => {
             body: JSON.stringify(roomData),
         });
         if (!response.ok) throw new Error("모임방 생성 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+// ✨ 모임방 수정 (PUT)
+export const updateRoomApi = async (id: string | number, roomData: any) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${id}`, {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(roomData),
+        });
+        if (!response.ok) throw new Error("모임방 수정 실패");
         return await response.json();
     } catch (error) {
         console.error(error);
