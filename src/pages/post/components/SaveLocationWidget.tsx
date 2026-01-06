@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Check, Hash, FolderOpen, Sparkles, Trash2, X, Book, Folder } from 'lucide-react';
-import type { PostData } from '../types';
+import type { PostData } from '../types'; // Keep if reused or remove if totally unused. Lint says unused.
+// Actually, let's remove it if unused.
 
 interface CustomAlbum {
     id: string;
     name: string;
     tag: string | null;
     parentId?: string | null;
+    postCount?: number;
+    folderCount?: number;
 }
 
 interface Props {
@@ -17,11 +20,10 @@ interface Props {
     customAlbums: CustomAlbum[];
     onCreateAlbum: (name: string, tags: string[]) => Promise<string | null>;
     onDeleteAlbum: (id: string) => void;
-    posts: PostData[];
     mode: 'AUTO' | 'MANUAL'; // ✨ New Prop
 }
 
-const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [], onTagsChange, onAlbumIdsChange, customAlbums, onCreateAlbum, onDeleteAlbum, posts, mode }) => {
+const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [], onTagsChange, onAlbumIdsChange, customAlbums, onCreateAlbum, onDeleteAlbum, mode }) => {
     // State for Tag Input
     const [tagInput, setTagInput] = useState("");
     // State for Album Search
@@ -236,13 +238,9 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                             if (!album) return null;
                             const pathName = getAlbumPath(id);
 
-                            // Mock stats for hidden items
-                            const recordCount = posts.filter(p => {
-                                if (p.albumIds && p.albumIds.includes(album.id)) return true;
-                                if ((!p.albumIds || p.albumIds.length === 0) && p.tags && album.tag && p.tags.includes(album.tag)) return true;
-                                return false;
-                            }).length;
-                            const folderCount = customAlbums.filter(a => a.parentId === album.id).length;
+                            // Use server-provided counts
+                            const recordCount = album.postCount ?? 0;
+                            const folderCount = album.folderCount ?? 0;
 
                             return (
                                 <div
@@ -259,8 +257,13 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                                             </span>
                                             <span className="text-xs text-gray-400 flex items-center gap-1">
                                                 <span>#{album.tag || '태그없음'}</span>
-                                                <span>·</span>
-                                                <span>폴더 {folderCount}</span>
+                                                {/* ✨ Only show folder count for top-level albums */}
+                                                {!album.parentId && (
+                                                    <>
+                                                        <span>·</span>
+                                                        <span>폴더 {folderCount}</span>
+                                                    </>
+                                                )}
                                                 <span>·</span><span>기록 {recordCount}</span>
                                             </span>
                                         </div>
@@ -289,13 +292,9 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                         const isSelected = selectedAlbumIds.includes(album.id);
                         const pathName = getAlbumPath(album.id);
 
-                        // Stats Logic
-                        const recordCount = posts.filter(p => {
-                            if (p.albumIds && p.albumIds.includes(album.id)) return true;
-                            if ((!p.albumIds || p.albumIds.length === 0) && p.tags && album.tag && p.tags.includes(album.tag)) return true;
-                            return false;
-                        }).length;
-                        const folderCount = customAlbums.filter(a => a.parentId === album.id).length;
+                        // Stats Logic - Use server provided counts
+                        const recordCount = album.postCount ?? 0;
+                        const folderCount = album.folderCount ?? 0;
 
                         return (
                             <div
@@ -318,8 +317,13 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                                         </span>
                                         <span className="text-xs text-gray-400 flex items-center gap-1">
                                             <span>#{album.tag || '태그없음'}</span>
-                                            <span>·</span>
-                                            <span>폴더 {folderCount}</span>
+                                            {/* ✨ Only show folder count for top-level albums */}
+                                            {!album.parentId && (
+                                                <>
+                                                    <span>·</span>
+                                                    <span>폴더 {folderCount}</span>
+                                                </>
+                                            )}
                                             <span>·</span><span>기록 {recordCount}</span>
                                         </span>
                                     </div>

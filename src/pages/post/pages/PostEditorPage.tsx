@@ -97,13 +97,10 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onAlbumIdsChange={editor.setTargetAlbumIds}
                 onCreateAlbum={editor.handleCreateAlbum}
                 onDeleteAlbum={editor.handleDeleteAlbum}
-                posts={editor.posts}
                 mode={editor.mode}
                 setMode={editor.setMode}
                 isFavorite={editor.isFavorite}
                 setIsFavorite={editor.setIsFavorite}
-                isPublic={editor.isPublic}
-                setIsPublic={editor.setIsPublic}
             />
         </div>
     );

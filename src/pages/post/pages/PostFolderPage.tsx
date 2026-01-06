@@ -78,11 +78,15 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                 const api = await import('../api');
 
                 // 1. Determine Type from CustomAlbums
+                // albumId is potentially prefixed (e.g., 'room-1')
                 const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
                 const type = targetAlbum?.type || 'album';
 
+                // ✨ Fix: Strip prefix strictly for API calls
+                const realId = String(albumId).replace('room-', '');
+
                 // 2. Fetch Contents with Type
-                const data = await api.fetchAlbumContents(albumId, allPosts, customAlbums, type as 'album' | 'room');
+                const data = await api.fetchAlbumContents(realId, allPosts, customAlbums, type as 'album' | 'room');
                 setContents(data as any);
 
                 // 3. Fetch Current Album/Room Details (for Breadcrumbs & Root Path)
@@ -90,15 +94,15 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     let albumInfo;
                     if (type === 'room') {
                         // Use Room API
-                        albumInfo = await api.fetchRoomApi(albumId);
+                        albumInfo = await api.fetchRoomApi(realId);
                     } else {
                         // Use Album API
-                        albumInfo = await api.fetchAlbumApi(albumId);
+                        albumInfo = await api.fetchAlbumApi(realId);
                     }
 
                     if (albumInfo) {
                         setCurrentAlbum({
-                            id: String(albumInfo.id),
+                            id: String(albumId), // Keep prefixed ID for frontend consistency
                             name: albumInfo.name,
                             parentId: albumInfo.parentId ? String(albumInfo.parentId) : null,
                             type: albumInfo.type || type // Ensure type is set
@@ -139,7 +143,13 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     const handleManageItem = async (action: 'ADD' | 'REMOVE', type: 'POST' | 'FOLDER', id: string | number) => {
         if (!albumId) return;
         const api = await import('../api');
-        await api.manageAlbumItem(albumId, action, type, id);
+
+        const realAlbumId = String(albumId).replace('room-', '');
+        // Determine container type
+        const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
+        const containerType = (targetAlbum?.type === 'room' || String(albumId).startsWith('room-')) ? 'room' : 'album';
+
+        await api.manageAlbumItem(realAlbumId, action, type, id, undefined, containerType);
         loadContents(); // ✨ Trigger explicit refresh locally
         onRefresh?.();
         // Also refresh global posts to update album counts or tags if needed
@@ -175,24 +185,75 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
             targetFolderId = String(over.id);
         }
 
-        const api = await import('../api');
-        let success = false;
+        // Prevent moving to itself or same parent equivalent if logic exists (simplified here)
+        if (String(active.id) === String(targetFolderId)) return;
 
-        // Move Post to Folder
-        // ✨ Use Atomic MOVE Action if moving from a valid album
-        if (albumId && albumId !== '__all__' && albumId !== '__others__') {
-            success = await api.manageAlbumItem(targetFolderId || '__all__', 'MOVE', 'POST', active.id, albumId);
-        } else {
-            success = await api.manageAlbumItem(targetFolderId || '__all__', 'ADD', 'POST', active.id);
-        }
+        // ✨ 1. Optimistic UI Update (IMMEDIATE)
+        const previousContents = [...contents]; // Backup for rollback
+        setContents(prev => {
+            const newContents: typeof prev = [];
+            prev.forEach(item => {
+                // Remove moved post
+                if (item.type === 'POST' && String(item.data.id) === String(active.id)) {
+                    return;
+                }
+                // Update target folder count
+                if (item.type === 'FOLDER' && String(item.data.id) === String(targetFolderId)) {
+                    newContents.push({
+                        ...item,
+                        data: {
+                            ...item.data,
+                            postCount: (item.data.postCount || 0) + 1
+                        }
+                    });
+                    return;
+                }
+                newContents.push(item);
+            });
+            return newContents;
+        });
 
-        // ✨ Optimistic UI Update: Remove from view immediately
-        if (success) {
-            setContents(prev => prev.filter(item => {
-                // Keep if not the moved post
-                if (item.type === 'POST' && String(item.data.id) === String(active.id)) return false;
-                return true;
-            }));
+        // ✨ 2. API Call (Background)
+        try {
+            const api = await import('../api');
+            let success = false;
+
+            // Determine params
+            const targetIsRoom = targetFolderId ? String(targetFolderId).startsWith('room-') : false;
+            const realTargetId = targetFolderId ? String(targetFolderId).replace('room-', '') : '__all__';
+
+            if (albumId && albumId !== '__all__' && albumId !== '__others__') {
+                const realAlbumId = String(albumId).replace('room-', '');
+                success = await api.manageAlbumItem(
+                    realTargetId,
+                    'MOVE',
+                    'POST',
+                    active.id,
+                    realAlbumId,
+                    targetIsRoom ? 'room' : 'album'
+                );
+            } else {
+                success = await api.manageAlbumItem(
+                    realTargetId,
+                    'ADD',
+                    'POST',
+                    active.id,
+                    undefined,
+                    targetIsRoom ? 'room' : 'album'
+                );
+            }
+
+            if (success) {
+                // ✨ 3. Sync Global State eventually
+                onRefresh?.();
+            } else {
+                throw new Error("API Failed");
+            }
+        } catch (e) {
+            console.error("Move failed, rolling back", e);
+            // ✨ Rollback on Failure
+            setContents(previousContents);
+            alert("이동에 실패했습니다.");
         }
     };
 
@@ -315,12 +376,22 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                         )}
 
                                         <Folder size={40} className={`transition-colors ${album.type === 'room' ? 'text-indigo-400' : 'text-indigo-200 group-hover:text-indigo-400'}`} />
+
+                                        {/* ✨ Parent Name Context */}
+                                        {album.parentName && (
+                                            <span className="text-[10px] text-indigo-500 font-medium bg-indigo-50 px-1.5 py-0.5 rounded-md truncate max-w-full">
+                                                {album.parentName}
+                                            </span>
+                                        )}
+
                                         <span className="font-bold text-[var(--text-primary)] truncate max-w-full text-center">{album.name}</span>
                                         {/* Stats approximation */}
                                         <span className="text-[10px] text-[var(--text-secondary)]">
-                                            {album.type === 'room' ? '모임방' : '폴더'}
+                                            {album.type === 'room' ? '모임방' : (album.id === '__others__' ? '자동 분류' : '폴더')}
                                             <span className="mx-1">·</span>
                                             {(() => {
+                                                // ✨ Prefer explicit count if available (for system folders like __others__)
+                                                if (album.postCount !== undefined) return `${album.postCount}개`;
                                                 const stats = getRecursiveStats(String(album.id));
                                                 return `${stats.totalCount}개`;
                                             })()}

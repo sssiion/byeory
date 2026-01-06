@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi, createRoomApi, updateRoomApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi, createRoomApi, updateRoomApi, deleteRoomApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -85,19 +85,27 @@ export const usePostEditor = () => {
 
             const flatData = flatten(combinedData);
 
-            const adapted: CustomAlbum[] = flatData.map((a: any) => ({
-                id: String(a.id),
-                name: a.name,
-                tag: a.tag,
-                createdAt: new Date(a.createdAt || Date.now()).getTime(),
-                parentId: a.parentId ? String(a.parentId) : null,
-                isFavorite: a.isFavorite || false,
-                type: a.type || 'album', // 'room' type will come from fetchRoomsFromApi result
-                roomConfig: a.roomConfig,
-                coverConfig: a.coverConfig,
-                postCount: a.postCount,
-                folderCount: a.folderCount
-            }));
+            const adapted: CustomAlbum[] = flatData.map((a: any) => {
+                // ✨ ID Collision Fix: Prefix Room IDs
+                const isRoom = a.type === 'room' || (a.role !== undefined); // Heuristic or explicit type
+                const rawId = String(a.id);
+                // Ensure we don't double prefix if data already has it (unlikely from API but good safety)
+                const safeId = isRoom && !rawId.startsWith('room-') ? `room-${rawId}` : rawId;
+
+                return {
+                    id: safeId,
+                    name: a.name,
+                    tag: a.tag,
+                    createdAt: new Date(a.createdAt || Date.now()).getTime(),
+                    parentId: a.parentId ? String(a.parentId) : null,
+                    isFavorite: a.isFavorite || false,
+                    type: isRoom ? 'room' : 'album',
+                    roomConfig: a.roomConfig,
+                    coverConfig: a.coverConfig,
+                    postCount: a.postCount,
+                    folderCount: a.folderCount
+                };
+            });
 
             // Strictly use backend data. No localStorage merge.
             setCustomAlbums(adapted);
@@ -122,7 +130,7 @@ export const usePostEditor = () => {
             const created = await createRoomApi(newRoomData);
             if (created) {
                 await fetchAlbums(); // Refresh list (Assuming rooms are fetched together or separate fetch needed?)
-                return String(created.id);
+                return `room-${created.id}`;
             }
             return null;
         }
@@ -156,7 +164,9 @@ export const usePostEditor = () => {
         let success;
         if (target.type === 'room') {
             // ✨ Use Room API for Rooms
-            success = await updateRoomApi(id, { ...target, ...updates });
+            // Strip 'room-' prefix
+            const realId = id.replace('room-', '');
+            success = await updateRoomApi(realId, { ...target, ...updates });
         } else {
             success = await updateAlbumApi(id, { ...target, ...updates });
         }
@@ -182,7 +192,12 @@ export const usePostEditor = () => {
         // Optimistic UI
         setCustomAlbums(prev => prev.filter(a => a.id !== id));
 
-        const success = await deleteAlbumApi(id);
+        const isRoom = id.startsWith('room-');
+        const realId = id.replace('room-', '');
+
+        const success = isRoom
+            ? await deleteRoomApi(realId) // You need to import/use deleteRoomApi if it exists in API, checking imports... it was imported in line 2
+            : await deleteAlbumApi(realId);
         if (success) {
             await fetchAlbums(); // Refresh to sync backend cascade state
             // if (activeDropdownId === id) setActiveDropdownId(null); // Cleanup UI state if needed, though this hook doesn't hold it.
@@ -429,9 +444,28 @@ export const usePostEditor = () => {
             triggerPostCreation();
 
             alert("저장 완료!");
-            fetchPosts();
-            fetchPosts();
-            setViewMode('album');
+
+            // ✨ Ensure Real-time Update: Fetch BOTH Posts and Albums
+            await Promise.all([
+                fetchPosts(),    // Update global posts list (for counts and immediate display)
+                fetchAlbums()    // Update album counts (for album list)
+            ]);
+
+            // Note: If we are in 'MANUAL' mode and have target albums, where should we go?
+            // If user started from a folder (handleStartWriting passed ID), they probably want to go back there.
+            // But handleStartWriting clears history or doesn't track it explicitly other than targetAlbumIds.
+
+            // Heuristic: If there is exactly one target album, go to it. Otherwise go to root.
+            if (targetAlbumIds.length === 1) {
+                // If it's a room, update logic handles it in PostFolderPage via ID
+                setSelectedAlbumId(targetAlbumIds[0]);
+                // We don't explicit setViewMode('folder') because PostPage usually reacts to selectedAlbumId??
+                // Wait, PostPage logic: if selectedAlbumId is set -> PostFolderPage.
+                // But setViewMode is manual override.
+                setViewMode('folder');
+            } else {
+                setViewMode('album');
+            }
         } catch (e) {
             alert("저장 실패: 서버 오류가 발생했습니다.");
             console.error(e);
@@ -635,6 +669,7 @@ export const usePostEditor = () => {
             if (targetAlbumId) {
                 if (!newIds.includes(targetAlbumId)) newIds = [...newIds, targetAlbumId];
                 // Remove from current context if applicable
+                // Note: selectedAlbumId and targetAlbumId might be prefixed
                 if (selectedAlbumId && selectedAlbumId !== '__all__' && selectedAlbumId !== '__others__') {
                     newIds = newIds.filter(id => id !== selectedAlbumId);
                 }
@@ -644,9 +679,16 @@ export const usePostEditor = () => {
 
         const { manageAlbumItem } = await import('../api'); // lazy load to avoid circular deps if any
         if (targetAlbumId) {
-            await manageAlbumItem(targetAlbumId, 'ADD', 'POST', postId);
+            const realTargetId = String(targetAlbumId).replace('room-', '');
+            const targetType = String(targetAlbumId).startsWith('room-') ? 'room' : 'album';
+
+            await manageAlbumItem(realTargetId, 'ADD', 'POST', postId, undefined, targetType);
+
             if (selectedAlbumId && selectedAlbumId !== '__all__' && selectedAlbumId !== '__others__') {
-                await manageAlbumItem(selectedAlbumId, 'REMOVE', 'POST', postId);
+                const realSourceId = String(selectedAlbumId).replace('room-', '');
+                const sourceType = String(selectedAlbumId).startsWith('room-') ? 'room' : 'album';
+
+                await manageAlbumItem(realSourceId, 'REMOVE', 'POST', postId, undefined, sourceType);
             }
         }
 

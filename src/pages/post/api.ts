@@ -166,7 +166,8 @@ export const fetchPostsFromApi = async () => {
             }),
             isFavorite: p.isFavorite || false,
             mode: p.mode || 'AUTO',
-            isPublic: p.isPublic ?? true
+            isPublic: p.isPublic ?? true,
+            visibility: (p.isPublic === false) ? 'private' : 'public' // ✨ Map visibility
         }));
     } catch (error) {
         console.error(error);
@@ -199,8 +200,8 @@ export const fetchAlbumsFromApi = async () => {
                 tag: mappedTag || null,
                 type: 'album', // Explicit type
                 coverConfig: a.coverConfig || a.cover_config, // ✨ Robust mapping
-                postCount: a.postCount || 0,
-                folderCount: a.folderCount || 0
+                postCount: a.postCount !== undefined ? a.postCount : 0, // ✨ Explicit map
+                folderCount: a.folderCount !== undefined ? a.folderCount : 0 // ✨ Explicit map
             };
         });
     } catch (error) {
@@ -228,8 +229,8 @@ export const fetchRoomsFromApi = async () => {
             ownerEmail: r.ownerEmail || (r.owner ? r.owner.email : null), // ✨ Map Owner Email
             coverConfig: r.coverConfig || r.cover_config, // ✨ Robust mapping
             // Map room specific counts if available
-            postCount: r.postCount || 0,
-            folderCount: r.folderCount || 0
+            postCount: r.postCount !== undefined ? r.postCount : 0, // ✨ Explicit map
+            folderCount: r.folderCount !== undefined ? r.folderCount : 0 // ✨ Explicit map
         }));
     } catch (error) {
         console.error(error);
@@ -395,7 +396,8 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             }),
             isFavorite: savedPost.isFavorite || false,
             mode: savedPost.mode || 'AUTO',
-            isPublic: savedPost.isPublic ?? true
+            isPublic: savedPost.isPublic ?? true,
+            visibility: (savedPost.isPublic === false) ? 'private' : 'public' // ✨ Map visibility
         };
     } catch (error) {
         console.error(error);
@@ -439,8 +441,8 @@ export const fetchAlbumApi = async (id: string | number) => {
             // Ensure strictly typed fields are passed if backend returns them
             roomConfig: album.roomConfig,
             coverConfig: album.coverConfig || album.cover_config,
-            postCount: album.postCount || 0,
-            folderCount: album.folderCount || 0
+            postCount: album.postCount !== undefined ? album.postCount : 0, // ✨ Explicit map
+            folderCount: album.folderCount !== undefined ? album.folderCount : 0 // ✨ Explicit map
         };
     } catch (error) {
         console.error(error);
@@ -469,8 +471,8 @@ export const fetchRoomApi = async (id: string | number) => {
             role: room.role, // ✨ Map Role
             ownerId: room.ownerId || (room.owner ? room.owner.id : null), // ✨ Map Owner ID
             ownerEmail: room.ownerEmail || (room.owner ? room.owner.email : null), // ✨ Map Owner Email
-            postCount: room.postCount || 0,
-            folderCount: room.folderCount || 0,
+            postCount: room.postCount !== undefined ? room.postCount : 0, // ✨ Explicit map
+            folderCount: room.folderCount !== undefined ? room.folderCount : 0, // ✨ Explicit map
             type: 'room'
         };
     } catch (error) {
@@ -584,25 +586,52 @@ export const fetchAlbumContents = async (
         if (targetId === '__all__') {
             matchedPosts = localPosts;
         } else {
-            // __others__ : Unclassified
+            // __others__ : Unclassified (No Tags)
             matchedPosts = localPosts.filter((p: any) => {
-                const hasManualAlbum = p.albumIds && p.albumIds.length > 0;
                 const hasTags = p.tags && p.tags.length > 0;
-                return !hasManualAlbum && !hasTags;
+                return !hasTags;
             });
         }
         matchedPosts.forEach((p: any) => contents.push({ type: 'POST', data: p }));
 
         // Folders
+        // Folders: Show Sub-folders (items WITH parentId) + Attach Parent Name
         const matchedFolders = localAlbums.filter((a: any) => {
-            if (targetId === '__all__') return !a.parentId;
-            return false; // __others__ has no sub-folders
+            if (targetId === '__all__') return a.parentId; // Show sub-folders only
+            return false;
+        }).map((a: any) => {
+            // Find parent name
+            const parent = localAlbums.find((p: any) => String(p.id) === String(a.parentId));
+            return {
+                ...a,
+                parentName: parent ? parent.name : null
+            };
         });
+
+        // ✨ Add "Unclassified" (미분류) Folder if in All View
+        if (targetId === '__all__') {
+            const untaggedCount = localPosts.filter((p: any) => !p.tags || p.tags.length === 0).length;
+            if (untaggedCount > 0) {
+                matchedFolders.unshift({
+                    id: '__others__',
+                    name: '미분류',
+                    type: 'FOLDER',
+                    parentId: null,
+                    isSystem: true, // Marker for styling if needed
+                    postCount: untaggedCount
+                });
+            }
+        }
 
         matchedFolders.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
 
         // Sort
-        const sortedFolders = matchedFolders.sort((a: any, b: any) => a.name.localeCompare(b.name));
+        const sortedFolders = matchedFolders.sort((a: any, b: any) => {
+            // System folders first
+            if (a.id === '__others__') return -1;
+            if (b.id === '__others__') return 1;
+            return a.name.localeCompare(b.name);
+        });
         const sortedPosts = matchedPosts.sort((a: any, b: any) => {
             if (a.isFavorite && !b.isFavorite) return -1;
             if (!a.isFavorite && b.isFavorite) return 1;
@@ -637,7 +666,14 @@ export const fetchAlbumContents = async (
             data.albums.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
         }
         if (data.posts && Array.isArray(data.posts)) {
-            data.posts.forEach((p: any) => contents.push({ type: 'POST', data: { ...p, tags: p.hashtags || p.tags || [] } }));
+            data.posts.forEach((p: any) => contents.push({
+                type: 'POST',
+                data: {
+                    ...p,
+                    tags: p.hashtags || p.tags || [],
+                    visibility: (p.isPublic === false) ? 'private' : 'public'
+                }
+            }));
         }
 
         // If returned as a flat list with 'type' or just mixed properties
@@ -650,7 +686,8 @@ export const fetchAlbumContents = async (
                             type: 'POST',
                             data: {
                                 ...item.content,
-                                tags: item.content.hashtags || item.content.tags || []
+                                tags: item.content.hashtags || item.content.tags || [],
+                                visibility: (item.content.isPublic === false) ? 'private' : 'public'
                             }
                         });
                     } else if (item.type === 'FOLDER' || item.type === 'ALBUM') {
@@ -667,15 +704,25 @@ export const fetchAlbumContents = async (
                 }
 
                 // Heuristic to distinguish: Album has 'name', Post has 'title'
-                if (item.name && !item.title) contents.push({
-                    type: 'FOLDER',
-                    data: {
-                        ...item,
-                        id: String(item.id),
-                        parentId: item.parentId ? String(item.parentId) : null
-                    }
-                });
-                else if (item.title) contents.push({ type: 'POST', data: { ...item, tags: item.hashtags || item.tags || [] } });
+                if (item.name && !item.title) {
+                    contents.push({
+                        type: 'FOLDER',
+                        data: {
+                            ...item,
+                            id: String(item.id),
+                            parentId: item.parentId ? String(item.parentId) : null
+                        }
+                    });
+                } else if (item.title) {
+                    contents.push({
+                        type: 'POST',
+                        data: {
+                            ...item,
+                            tags: item.hashtags || item.tags || [],
+                            visibility: (item.isPublic === false) ? 'private' : 'public'
+                        }
+                    });
+                }
             });
         }
 
@@ -692,7 +739,8 @@ export const manageAlbumContentApi = async (
     albumId: string | number,
     action: 'ADD' | 'REMOVE' | 'MOVE',
     postId: string | number,
-    sourceAlbumId?: string | number
+    sourceAlbumId?: string | number,
+    containerType: 'album' | 'room' = 'album' // ✨ Add containerType
 ) => {
     try {
         // ✨ Ensure camelCase and Number IDs
@@ -706,7 +754,12 @@ export const manageAlbumContentApi = async (
             payload.sourceAlbumId = Number(sourceAlbumId);
         }
 
-        const response = await fetch(`${API_ALBUM_URL}/${albumId}/manage`, {
+        let url = `${API_ALBUM_URL}/${albumId}/manage`;
+        if (containerType === 'room') {
+            url = `${API_ROOM_URL}/${albumId}/manage`; // ✨ Use Room API
+        }
+
+        const response = await fetch(url, {
             method: "POST",
             headers: getAuthHeaders(),
             body: JSON.stringify(payload),
@@ -724,13 +777,14 @@ export const manageAlbumItem = async (
     action: 'ADD' | 'REMOVE' | 'MOVE',
     type: 'POST' | 'FOLDER',
     contentId: string | number,
-    sourceAlbumId?: string | number // ✨ New param passed through
+    sourceAlbumId?: string | number,
+    containerType: 'album' | 'room' = 'album' // ✨ Add containerType
 ) => {
 
     // Post Management: Use Optimized Endpoint
     if (type === 'POST') {
         // ✨ Pass sourceAlbumId if present
-        const success = await manageAlbumContentApi(albumId, action, contentId, sourceAlbumId);
+        const success = await manageAlbumContentApi(albumId, action, contentId, sourceAlbumId, containerType);
         if (success) {
             return true;
         }

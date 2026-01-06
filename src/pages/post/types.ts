@@ -78,6 +78,7 @@ export interface PostData {
 
     isFavorite?: boolean; // ✨ 즐겨찾기 여부
     isPublic?: boolean; // ✨ 커뮤니티 공개 여부
+    visibility?: 'public' | 'private'; // ✨ 가시성 상태 (UI용)
 
     // Legacy or internal fields
     albumIds?: string[];
