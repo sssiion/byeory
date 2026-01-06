@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CommunityResponse } from '../types';
 import { getCommunities, getCommunityDetail } from '../api';
 import CommunityCard from './CommunityCard';
@@ -30,12 +31,13 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
     }, [loading, hasMore]);
 
     const fetchPosts = async () => {
+        if (!hasMore && page > 0) return; // ✨ Prevent fetching if no more data
+
         setLoading(true);
         try {
-            const response = await getCommunities(page, 10, currentUserId);
+            const response = await getCommunities(page, 12, currentUserId); // ✨ Increased page size for grid
 
             setPosts(prev => {
-                // Determine uniqueness by communityId to prevent dupes if StrictMode double-invokes
                 const existingIds = new Set(prev.map(p => p.communityId));
                 const newPosts = response.content.filter(p => !existingIds.has(p.communityId));
                 return [...prev, ...newPosts];
@@ -52,26 +54,19 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
     useEffect(() => {
         fetchPosts();
     }, [page, currentUserId]);
-    // Note: Dependent on currentUserId to refetch with correct like status if user logs in late, 
-    // but typically user ID is stable. If it changes, we might want to reset the list? 
-    // For now simple append logic is safer, but let's reset if ID changes essentially.
 
     useEffect(() => {
-        // If user ID changes (login/logout), reset list
         setPosts([]);
         setPage(0);
         setHasMore(true);
-        // fetchPosts will run due to dependency
     }, [currentUserId]);
 
     const handleCardClick = async (post: CommunityResponse) => {
         try {
-            // Fetch fresh details (incl view count increment)
             const detail = await getCommunityDetail(post.communityId, currentUserId);
             setSelectedPost(detail);
             setIsModalOpen(true);
 
-            // Update local view count immediately
             setPosts(prev => prev.map(p =>
                 p.communityId === post.communityId
                     ? { ...p, viewCount: detail.viewCount }
@@ -84,8 +79,6 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
 
     const handleLikeToggle = (newStatus: boolean) => {
         if (!selectedPost) return;
-
-        // Update the list view to reflect the change made in modal
         setPosts(prev => prev.map(p => {
             if (p.communityId === selectedPost.communityId) {
                 return {
@@ -99,36 +92,46 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4">
-                {posts.map((post, index) => {
-                    const isLast = index === posts.length - 1;
-                    return (
-                        <div ref={isLast ? lastElementRef : null} key={`${post.communityId}-${index}`}>
-                            <CommunityCard
-                                data={post}
-                                onClick={() => handleCardClick(post)}
-                            />
-                        </div>
-                    );
-                })}
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max">
+                <AnimatePresence>
+                    {posts.map((post, index) => {
+                        return (
+                            <motion.div
+                                key={`${post.communityId}-${index}`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: index % 12 * 0.05 }}
+                                layout // ✨ Smooth layout changes
+                            >
+                                <CommunityCard
+                                    data={post}
+                                    onClick={() => handleCardClick(post)}
+                                />
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
             </div>
+
+            {/* ✨ Sentinel for Infinite Scroll (Separate from Card) */}
+            <div ref={lastElementRef} className="h-4" />
 
             {loading && (
                 <div className="flex justify-center py-8">
-                    <Loader2 className="animate-spin theme-text-primary" size={32} />
+                    <Loader2 className="animate-spin text-indigo-500" size={32} />
                 </div>
             )}
 
             {!loading && !hasMore && posts.length > 0 && (
-                <div className="text-center py-8 theme-text-secondary opacity-60">
-                    모든 게시글을 불러왔습니다.
+                <div className="text-center py-8 text-gray-400 opacity-80 text-sm">
+                    ✨ 모든 게시글을 확인했습니다
                 </div>
             )}
 
             {!loading && posts.length === 0 && (
-                <div className="text-center py-12 theme-text-secondary">
-                    <p className="text-lg">등록된 게시글이 없습니다.</p>
+                <div className="text-center py-20 text-gray-400">
+                    <p className="text-xl font-light">아직 등록된 게시글이 없습니다. 첫 글을 작성해보세요!</p>
                 </div>
             )}
 

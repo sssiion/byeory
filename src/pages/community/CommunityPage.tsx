@@ -20,7 +20,7 @@ const Community: React.FC = () => {
         <div className="min-h-screen">
             <Navigation />
 
-            <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-24 pb-32">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 pb-32">
                 <div className="mb-8 text-center space-y-2">
                     <h1 className="text-4xl font-bold theme-text-primary tracking-tight">Community</h1>
                     <p className="theme-text-secondary text-lg">

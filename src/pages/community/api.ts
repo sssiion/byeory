@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CommunityResponse, PageResponse, UserProfileBasic } from './types';
+import type { CommunityResponse, PageResponse, UserProfileBasic, CommunityMessage } from './types';
 
 const BASE_URL = 'http://localhost:8080/api';
 
@@ -52,6 +52,29 @@ export const getCommunityDetail = async (communityId: number, userId?: number): 
 export const toggleCommunityLike = async (communityId: number, userId: number): Promise<void> => {
     await axios.post(`${BASE_URL}/communities/${communityId}/like`, null, {
         params: { userId },
+        headers: getAuthHeader(),
+    });
+};
+
+// --- Message (Comment) APIs ---
+
+export const getCommunityMessages = async (communityId: number): Promise<CommunityMessage[]> => {
+    const response = await axios.get(`${BASE_URL}/communities/${communityId}/messages`, {
+        headers: getAuthHeader(),
+    });
+    return response.data;
+};
+
+export const createCommunityMessage = async (communityId: number, content: string, userId: number): Promise<CommunityMessage> => {
+    const response = await axios.post(`${BASE_URL}/communities/${communityId}/messages`, { content }, {
+        params: { userId },
+        headers: getAuthHeader(),
+    });
+    return response.data;
+};
+
+export const deleteCommunityMessage = async (messageId: number): Promise<void> => {
+    await axios.delete(`${BASE_URL}/communities/messages/${messageId}`, {
         headers: getAuthHeader(),
     });
 };

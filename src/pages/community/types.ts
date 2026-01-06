@@ -44,3 +44,11 @@ export interface UserProfileBasic {
     nickname: string;
     // Add other fields if necessary for profile fetching
 }
+
+export interface CommunityMessage {
+    id: number;
+    content: string;
+    writerNickname: string;
+    createdAt: string;
+    isOwner: boolean; // Computed on frontend or returned from backend if user context is aware
+}
