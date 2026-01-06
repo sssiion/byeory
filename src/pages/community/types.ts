@@ -1,5 +1,5 @@
 export interface CommunityResponse {
-    communityId: number;
+    communityId: number; // Same as postId, kept for compatibility if needed, but postId is primary
     postId: number;
     title: string;
     writerNickname: string;
@@ -8,6 +8,13 @@ export interface CommunityResponse {
     isPublic: boolean;
     isLiked: boolean;
     createdAt: string;
+    commentCount?: number;
+    blocks?: any[];
+    stickers?: any[];
+    floatingTexts?: any[];
+    floatingImages?: any[];
+    titleStyles?: Record<string, any>;
+    tags?: string[];
 }
 
 export interface PageResponse<T> {
@@ -46,9 +53,12 @@ export interface UserProfileBasic {
 }
 
 export interface CommunityMessage {
-    id: number;
+    messageId: number;
+    postId: number;
+    userId: number;
+    nickname: string;
     content: string;
-    writerNickname: string;
     createdAt: string;
-    isOwner: boolean; // Computed on frontend or returned from backend if user context is aware
+    // Derived or specific to frontend usage
+    isOwner?: boolean;
 }

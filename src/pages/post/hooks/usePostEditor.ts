@@ -334,6 +334,9 @@ export const usePostEditor = () => {
 
     // ✨ 글쓰기 시작 (Context-aware)
     const handleStartWriting = (initialAlbumId?: string) => {
+        // ✨ Defensive Check: Ensure initialAlbumId is a string
+        const validAlbumId = (typeof initialAlbumId === 'string' || typeof initialAlbumId === 'number') ? String(initialAlbumId) : undefined;
+
         setCurrentPostId(null); // 새 글
         setTitle('');
         setRawInput('');
@@ -354,8 +357,8 @@ export const usePostEditor = () => {
         setCurrentTags([]); // ✨ 태그 초기화
 
         // ✨ 앨범 문맥이 있으면 해당 앨범 자동 선택
-        if (initialAlbumId) {
-            setTargetAlbumIds([initialAlbumId]);
+        if (validAlbumId) {
+            setTargetAlbumIds([validAlbumId]);
             setMode('MANUAL');
         } else {
             setTargetAlbumIds([]);

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Heart, Eye, User } from 'lucide-react';
+import { Heart, Eye, MessageCircle } from 'lucide-react';
 import type { CommunityResponse } from '../types';
 
 interface CommunityCardProps {
@@ -7,70 +7,85 @@ interface CommunityCardProps {
     onClick: () => void;
 }
 
-// ✨ Generate random gradient based on ID
 const getGradient = (id: number) => {
     const gradients = [
-        'from-pink-500 via-rose-400 to-orange-400',
-        'from-violet-500 via-purple-400 to-indigo-400',
-        'from-cyan-400 via-blue-400 to-indigo-500',
-        'from-emerald-400 via-teal-400 to-cyan-500',
-        'from-orange-400 via-amber-400 to-yellow-400',
-        'from-fuchsia-400 via-purple-400 to-pink-500'
+        'bg-gradient-to-br from-pink-500/20 via-rose-400/20 to-orange-400/20',
+        'bg-gradient-to-br from-violet-500/20 via-purple-400/20 to-indigo-400/20',
+        'bg-gradient-to-br from-cyan-400/20 via-blue-400/20 to-indigo-500/20',
+        'bg-gradient-to-br from-emerald-400/20 via-teal-400/20 to-cyan-500/20',
+        'bg-gradient-to-br from-orange-400/20 via-amber-400/20 to-yellow-400/20',
+        'bg-gradient-to-br from-fuchsia-400/20 via-purple-400/20 to-pink-500/20'
     ];
     return gradients[id % gradients.length];
 };
 
 const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
-    const gradient = useMemo(() => getGradient(data.communityId), [data.communityId]);
+    const gradientClass = useMemo(() => getGradient(data.postId), [data.postId]);
+    const tags = data.tags || [];
 
     return (
         <div
             onClick={onClick}
-            className="group relative bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 flex flex-col h-full min-h-[280px]"
+            className="group break-inside-avoid bg-[var(--bg-card)] rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 mb-6 border border-[var(--border-color)]/60"
         >
-            {/* ✨ Decorative Gradient Header/Background */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-[0.08] group-hover:opacity-[0.15] transition-opacity duration-500`} />
+            {/* Image / Thumbnail Area */}
+            <div className={`w-full aspect-[4/3] relative overflow-hidden ${gradientClass}`}>
+                <div className="absolute inset-0 opacity-30" style={{
+                    backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(0,0,0,0.1) 1px, transparent 0)',
+                    backgroundSize: '24px 24px'
+                }} />
 
-            {/* ✨ Top Gradient Line */}
-            <div className={`h-2 w-full bg-gradient-to-r ${gradient} opacity-80`} />
+                {/* Center Content Placeholder */}
+                <div className="absolute inset-0 flex items-center justify-center p-6">
+                    <h3 className="text-xl font-bold text-black/10 mix-blend-overlay text-center line-clamp-3 select-none">
+                        {data.title}
+                    </h3>
+                </div>
+            </div>
 
-            <div className="relative p-6 flex-1 flex flex-col">
-                {/* Header: User & Date */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-black/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                        <User size={12} />
-                        <span>{data.writerNickname}</span>
+            {/* Info Area */}
+            <div className="p-4 space-y-3">
+                {/* Title & User */}
+                <div>
+                    <h4 className="font-bold text-[var(--text-primary)] text-lg leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors mb-1">
+                        {data.title}
+                    </h4>
+                    <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                        <span className="font-medium hover:text-[var(--text-primary)] transition-colors">{data.writerNickname}</span>
+                        <span>{new Date(data.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <span className="text-xs text-gray-400">{new Date(data.createdAt).toLocaleDateString()}</span>
                 </div>
 
-                {/* Title */}
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3 line-clamp-3 leading-relaxed group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                    {data.title}
-                </h3>
+                {/* Tags */}
+                {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                        {tags.slice(0, 4).map((tag, idx) => (
+                            <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-xs font-medium hover:text-indigo-500 transition-colors">
+                                #{tag}
+                            </span>
+                        ))}
+                        {tags.length > 4 && (
+                            <span className="text-xs text-[var(--text-secondary)] self-center">+{tags.length - 4}</span>
+                        )}
+                    </div>
+                )}
 
-                {/* Spacer to push footer down */}
-                <div className="flex-1" />
-
-                {/* Footer: Stats */}
-                <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100/50 dark:border-white/5">
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${data.isLiked ? 'bg-red-50 text-red-500' : 'bg-gray-100/50 text-gray-500 group-hover:bg-white/80'}`}>
-                        <Heart
-                            size={16}
-                            className={`transition-transform duration-300 ${data.isLiked ? 'fill-red-500' : 'group-hover:scale-110'}`}
-                        />
+                {/* Stats Footer */}
+                <div className="flex items-center justify-end gap-3 pt-2 mt-1 border-t border-[var(--border-color)]/30 text-[var(--text-secondary)] text-sm font-medium">
+                    <div className={`flex items-center gap-1 transition-colors ${data.isLiked ? 'text-pink-500' : 'hover:text-pink-500'}`}>
+                        <Heart size={16} className={data.isLiked ? 'fill-pink-500' : ''} />
                         <span>{data.likeCount}</span>
                     </div>
-
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100/50 text-gray-500 text-sm font-medium group-hover:bg-white/80 transition-all">
+                    <div className="flex items-center gap-1 hover:text-indigo-500 transition-colors">
+                        <MessageCircle size={16} />
+                        <span>{data.commentCount || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1 hover:text-blue-500 transition-colors">
                         <Eye size={16} />
                         <span>{data.viewCount}</span>
                     </div>
                 </div>
             </div>
-
-            {/* Hover Glow Effect */}
-            <div className="absolute inset-0 border-2 border-transparent group-hover:border-indigo-500/20 rounded-3xl transition-all duration-500 pointer-events-none" />
         </div>
     );
 };

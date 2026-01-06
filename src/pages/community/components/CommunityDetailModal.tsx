@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Heart, Eye, Send, Trash2 } from 'lucide-react';
 import type { CommunityResponse, CommunityMessage } from '../types';
-import { toggleCommunityLike, getCommunityMessages, createCommunityMessage, deleteCommunityMessage } from '../api';
+import { toggleCommunityLike, getCommunityMessages, createCommunityMessage, deleteCommunityMessage, getCommunityDetail } from '../api';
+import EditorCanvas from '../../post/components/editor/EditorCanvas';
 
 interface CommunityDetailModalProps {
     data: CommunityResponse;
@@ -18,6 +19,9 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     currentUserId,
     onLikeToggle
 }) => {
+    // Detailed Post Data
+    const [postDetail, setPostDetail] = useState<CommunityResponse | null>(null);
+
     const [likeState, setLikeState] = useState({
         isLiked: data.isLiked,
         count: data.likeCount
@@ -35,14 +39,27 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             isLiked: data.isLiked,
             count: data.likeCount
         });
+        setPostDetail(null); // Reset detail to trigger loading state
         if (isOpen) {
             fetchMessages();
+            fetchDetail();
         }
     }, [data, isOpen]);
 
+    const fetchDetail = async () => {
+        try {
+            // Fetch full details (including blocks) from public community endpoint
+            const detail = await getCommunityDetail(data.postId, currentUserId);
+            console.log("Fetched Community Detail:", detail);
+            if (detail) setPostDetail(detail);
+        } catch (error) {
+            console.error("Failed to fetch community detail:", error);
+        }
+    };
+
     const fetchMessages = async () => {
         try {
-            const msgs = await getCommunityMessages(data.communityId);
+            const msgs = await getCommunityMessages(data.postId);
             setMessages(msgs);
             // Scroll to bottom on load not ideal, maybe keep at top? 
             // Standard is bottom for chat, but list for comments. Let's stick to list order.
@@ -57,7 +74,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
 
         setIsSubmitting(true);
         try {
-            const created = await createCommunityMessage(data.communityId, newMessage, currentUserId);
+            const created = await createCommunityMessage(data.postId, newMessage, currentUserId);
             console.log("Created Message Response:", created);
             setMessages(prev => [...prev, created]);
             setNewMessage('');
@@ -75,7 +92,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
 
         // Optimistic Delete
         const backup = [...messages];
-        setMessages(prev => prev.filter(m => m.id !== messageId));
+        setMessages(prev => prev.filter(m => m.messageId !== messageId));
 
         try {
             await deleteCommunityMessage(messageId);
@@ -102,7 +119,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         onLikeToggle(newIsLiked); // Notify parent for sync
 
         try {
-            await toggleCommunityLike(data.communityId, currentUserId);
+            await toggleCommunityLike(data.postId, currentUserId);
         } catch (error) {
             // Revert on error
             setLikeState({ isLiked: !newIsLiked, count: likeState.count });
@@ -151,15 +168,48 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Content Area */}
-                    <div className="min-h-[100px] theme-text-primary whitespace-pre-wrap leading-relaxed opacity-90 p-4 theme-bg-card-secondary rounded-xl">
-                        {/* Placeholder for actual content */}
-                        <p className="text-lg font-medium">{data.title}</p>
-                        {/* Notice about missing body content suppressed as per redesign request for cleaner look */}
+                    {/* Content Area - Detailed View */}
+                    <div className="flex-1 min-h-[400px] relative rounded-xl overflow-hidden flex flex-col items-center">
+                        {postDetail ? (
+                            <div className="w-full h-full transform scale-95 origin-top">
+                                <EditorCanvas
+                                    title={postDetail.title || data.title}
+                                    setTitle={() => { }}
+                                    titleStyles={postDetail.titleStyles || data.titleStyles || {}}
+                                    viewMode="read"
+                                    blocks={postDetail.blocks || []}
+                                    setBlocks={() => { }}
+                                    stickers={postDetail.stickers || []}
+                                    floatingTexts={postDetail.floatingTexts || []}
+                                    floatingImages={postDetail.floatingImages || []}
+                                    selectedId={null}
+                                    onSelect={() => { }}
+                                    onUpdate={() => { }}
+                                    onDelete={() => { }}
+                                    onBlockImageUpload={() => { }}
+                                    onBackgroundClick={() => { }}
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center w-full h-64 text-gray-400">
+                                <div className="animate-pulse">게시글 불러오는 중...</div>
+                            </div>
+                        )}
                     </div>
 
+                    {/* Tags */}
+                    {(postDetail?.tags || data.tags) && (postDetail?.tags || data.tags)!.length > 0 && (
+                        <div className="w-full flex flex-wrap gap-2 px-1 mt-4">
+                            {(postDetail?.tags || data.tags)!.map((tag, idx) => (
+                                <span key={idx} className="px-3 py-1 rounded-full bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-sm font-medium hover:text-indigo-500 transition-colors cursor-default">
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Actions */}
-                    <div className="flex items-center gap-4 py-4 border-t theme-border">
+                    <div className="flex items-center gap-4 py-4 border-t theme-border mt-4">
                         <button
                             onClick={handleLikeClick}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 font-medium ${likeState.isLiked
@@ -191,13 +241,13 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                                 <p className="text-center text-gray-400 py-8 text-sm">첫 댓글을 남겨보세요!</p>
                             ) : (
                                 messages.map((msg) => (
-                                    <div key={msg.id} className="group flex gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                                    <div key={msg.messageId} className="group flex gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300">
-                                            {(msg.writerNickname || "?").charAt(0)}
+                                            {(msg.nickname || "?").charAt(0)}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-baseline justify-between mb-1">
-                                                <span className="font-bold text-sm theme-text-primary">{msg.writerNickname || "알 수 없음"}</span>
+                                                <span className="font-bold text-sm theme-text-primary">{msg.nickname || "알 수 없음"}</span>
                                                 <span className="text-xs text-gray-400">
                                                     {new Date(msg.createdAt).toLocaleDateString()}
                                                 </span>
@@ -209,7 +259,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                                         {/* Delete Button (Owner check needed) */}
                                         {msg.isOwner && (
                                             <button
-                                                onClick={() => handleDeleteMessage(msg.id)}
+                                                onClick={() => handleDeleteMessage(msg.messageId)}
                                                 className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 transition-all"
                                                 title="삭제"
                                             >
@@ -248,8 +298,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                         </button>
                     </form>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

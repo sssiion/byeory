@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import type { CommunityResponse } from '../types';
 import { getCommunities, getCommunityDetail } from '../api';
 import CommunityCard from './CommunityCard';
@@ -8,9 +6,10 @@ import CommunityDetailModal from './CommunityDetailModal';
 
 interface CommunityFeedProps {
     currentUserId?: number;
+    selectedTag?: string | null;
 }
 
-const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
+const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTag }) => {
     const [posts, setPosts] = useState<CommunityResponse[]>([]);
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -35,11 +34,12 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
 
         setLoading(true);
         try {
-            const response = await getCommunities(page, 12, currentUserId); // ✨ Increased page size for grid
+            const response = await getCommunities(page, 12, currentUserId, selectedTag || undefined); // ✨ Increased page size for grid
 
             setPosts(prev => {
-                const existingIds = new Set(prev.map(p => p.communityId));
-                const newPosts = response.content.filter(p => !existingIds.has(p.communityId));
+                if (page === 0) return response.content;
+                const existingIds = new Set(prev.map(p => p.postId));
+                const newPosts = response.content.filter(p => !existingIds.has(p.postId));
                 return [...prev, ...newPosts];
             });
 
@@ -53,22 +53,22 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
 
     useEffect(() => {
         fetchPosts();
-    }, [page, currentUserId]);
+    }, [page, currentUserId, selectedTag]);
 
     useEffect(() => {
         setPosts([]);
         setPage(0);
         setHasMore(true);
-    }, [currentUserId]);
+    }, [currentUserId, selectedTag]);
 
     const handleCardClick = async (post: CommunityResponse) => {
         try {
-            const detail = await getCommunityDetail(post.communityId, currentUserId);
+            const detail = await getCommunityDetail(post.postId, currentUserId);
             setSelectedPost(detail);
             setIsModalOpen(true);
 
             setPosts(prev => prev.map(p =>
-                p.communityId === post.communityId
+                p.postId === post.postId
                     ? { ...p, viewCount: detail.viewCount }
                     : p
             ));
@@ -80,7 +80,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
     const handleLikeToggle = (newStatus: boolean) => {
         if (!selectedPost) return;
         setPosts(prev => prev.map(p => {
-            if (p.communityId === selectedPost.communityId) {
+            if (p.postId === selectedPost.postId) {
                 return {
                     ...p,
                     isLiked: newStatus,
@@ -93,35 +93,30 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId }) => {
 
     return (
         <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max">
-                <AnimatePresence>
-                    {posts.map((post, index) => {
-                        return (
-                            <motion.div
-                                key={`${post.communityId}-${index}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: index % 12 * 0.05 }}
-                                layout // ✨ Smooth layout changes
-                            >
-                                <CommunityCard
-                                    data={post}
-                                    onClick={() => handleCardClick(post)}
-                                />
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
+            {/* Posts Display */}
+            {/* Posts Display */}
+            <div className="flex items-center justify-between mb-6 px-2">
+                <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                    탐색 ({posts.length})
+                </h3>
+            </div>
+
+            <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-5">
+                {posts.map((post, index) => (
+                    <div key={`${post.postId}-${index}`} className="break-inside-avoid mb-5 inline-block w-full">
+                        <CommunityCard
+                            data={post}
+                            onClick={() => handleCardClick(post)}
+                        />
+                    </div>
+                ))}
             </div>
 
             {/* ✨ Sentinel for Infinite Scroll (Separate from Card) */}
             <div ref={lastElementRef} className="h-4" />
 
-            {loading && (
-                <div className="flex justify-center py-8">
-                    <Loader2 className="animate-spin text-indigo-500" size={32} />
-                </div>
-            )}
+            {/* Loading Spinner Removed as per User Request */}
+            {/* {loading && ( ... )} */}
 
             {!loading && !hasMore && posts.length > 0 && (
                 <div className="text-center py-8 text-gray-400 opacity-80 text-sm">
