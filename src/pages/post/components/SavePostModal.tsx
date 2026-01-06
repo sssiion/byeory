@@ -22,6 +22,8 @@ interface Props {
     setMode: (mode: 'AUTO' | 'MANUAL') => void;
     isFavorite: boolean;
     setIsFavorite: (val: boolean) => void;
+    isPublic: boolean; // ✨ Added
+    setIsPublic: (val: boolean) => void; // ✨ Added
 }
 
 const SavePostModal: React.FC<Props> = ({
@@ -29,7 +31,8 @@ const SavePostModal: React.FC<Props> = ({
     currentTags, onTagsChange, customAlbums, isSaving,
     selectedAlbumIds, onAlbumIdsChange, onCreateAlbum,
     onDeleteAlbum, posts,
-    mode, setMode, isFavorite, setIsFavorite
+    mode, setMode, isFavorite, setIsFavorite,
+    isPublic, setIsPublic // ✨ Added
 }) => {
     if (!isOpen) return null;
 
@@ -83,6 +86,17 @@ const SavePostModal: React.FC<Props> = ({
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" className="sr-only peer" checked={isFavorite} onChange={(e) => setIsFavorite(e.target.checked)} />
                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-400"></div>
+                                </label>
+                            </div>
+
+                            {/* ✨ Public Toggle */}
+                            <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                                <span className="font-bold text-gray-800 flex items-center gap-2">
+                                    <span>🌐</span> 커뮤니티 공개
+                                </span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </label>
                             </div>
                         </div>
@@ -142,8 +156,8 @@ const SavePostModal: React.FC<Props> = ({
                         </button>
                     </div>
                 </motion.div>
-            </div>
-        </AnimatePresence>
+            </div >
+        </AnimatePresence >
     );
 };
 

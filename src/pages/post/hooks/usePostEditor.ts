@@ -43,7 +43,7 @@ export const usePostEditor = () => {
 
     const [currentTags, setCurrentTags] = useState<string[]>([]); // ✨ 현재 작성 중인 포스트의 태그들
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
-    const [visibility, setVisibility] = useState<'public' | 'private'>('public'); // ✨ Visibility State
+    const [isPublic, setIsPublic] = useState(true); // ✨ 커뮤니티 공개 여부
     // ✨ Sort Option Persistence
     const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>('name');
 
@@ -347,7 +347,7 @@ export const usePostEditor = () => {
             setMode('AUTO');
         }
         setIsFavorite(false);
-        setVisibility('public');
+        setIsPublic(true);
         setViewMode('editor');
     };
 
@@ -367,7 +367,7 @@ export const usePostEditor = () => {
         setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
         setMode(post.mode || 'AUTO'); // ✨ Load mode
         setIsFavorite(post.isFavorite || false); // ✨ Load favorite
-        setVisibility(post.visibility || 'public'); // ✨ Load visibility
+        setIsPublic(post.isPublic ?? true); // ✨ Load public status
         setViewMode('read');
     };
 
@@ -418,7 +418,7 @@ export const usePostEditor = () => {
             albumIds: mergedAlbumIds,
             mode,
             isFavorite,
-            visibility
+            isPublic
         };
 
         setIsSaving(true);
@@ -676,7 +676,7 @@ export const usePostEditor = () => {
         handleMovePost, // ✨ DnD Handler Exposed
         mode, setMode, // ✨ Expose mode
         isFavorite, setIsFavorite, // ✨ Expose isFavorite
-        visibility, setVisibility, // ✨ Expose visibility
+        isPublic, setIsPublic, // ✨ Expose isPublic
         refreshPosts: fetchPosts // ✨ Expose data refresh trigger
     };
 };

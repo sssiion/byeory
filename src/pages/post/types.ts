@@ -77,7 +77,7 @@ export interface PostData {
     targetAlbumIds?: number[]; // MANUAL 모드일 때만 전송
 
     isFavorite?: boolean; // ✨ 즐겨찾기 여부
-    visibility?: 'public' | 'private'; // ✨ 모임방 내 공유 여부 (public=공유, private=나만보기)
+    isPublic?: boolean; // ✨ 커뮤니티 공개 여부
 
     // Legacy or internal fields
     albumIds?: string[];

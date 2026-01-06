@@ -166,7 +166,7 @@ export const fetchPostsFromApi = async () => {
             }),
             isFavorite: p.isFavorite || false,
             mode: p.mode || 'AUTO',
-            visibility: p.visibility || 'public'
+            isPublic: p.isPublic ?? true
         }));
     } catch (error) {
         console.error(error);
@@ -358,8 +358,10 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             targetAlbumIds: (postData.albumIds || []).map((id: any) => Number(id)).filter((n: number) => !isNaN(n)), // String[] -> Number[]
             isFavorite: postData.isFavorite || false,
             // Ensure visibility is included if backend supports it (even if not in guide, safe to send)
-            visibility: postData.visibility
+            isPublic: postData.isPublic ?? true
         };
+
+        console.log("Saving Post Payload:", JSON.stringify(payload, null, 2));
 
         const response = await fetch(url, {
             method: method,
@@ -367,7 +369,11 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             body: JSON.stringify(payload),
         });
 
-        if (!response.ok) throw new Error("저장 실패");
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Save failed with status:", response.status, "Body:", errorText);
+            throw new Error(`저장 실패: ${response.status} ${errorText}`);
+        }
         const savedPost = await response.json();
 
         // ✨ Map response to frontend PostData structure immediately
@@ -389,7 +395,7 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             }),
             isFavorite: savedPost.isFavorite || false,
             mode: savedPost.mode || 'AUTO',
-            visibility: savedPost.visibility || 'public'
+            isPublic: savedPost.isPublic ?? true
         };
     } catch (error) {
         console.error(error);
