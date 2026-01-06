@@ -142,15 +142,15 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                         e.stopPropagation();
                         onBuy(item);
                     }}
-                    disabled={isOwned || (!canAfford && !isOwned)}
+                    disabled={isOwned}
                     className={`mt-4 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all 
                         ${isOwned
                             ? 'bg-green-500/10 text-green-600 border border-green-500/20 cursor-default'
                             : Number(currentPrice) === 0
-                                ? 'bg-[var(--btn-bg)] text-white hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg' // Free style (same as affordable)
+                                ? 'bg-[var(--btn-bg)] text-white hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
                                 : canAfford
                                     ? 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
-                                    : 'bg-[var(--bg-card-secondary)] text-[var(--text-disabled)] cursor-not-allowed'
+                                    : 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
                         }`}
                 >
                     {isOwned ? (

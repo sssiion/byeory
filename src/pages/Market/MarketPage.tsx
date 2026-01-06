@@ -4,14 +4,19 @@ import MarketLayout from '../../components/market/MarketLayout';
 import MerchCard from '../../components/market/MerchCard';
 import ItemDetailModal from '../../components/market/ItemDetailModal';
 import SellModal from '../../components/market/SellModal';
-import { type MarketItem } from '../../data/mockMarketItems';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useCredits } from '../../context/CreditContext';
+import { useNavigate } from 'react-router-dom';
+import { type MarketItem } from '../../data/mockMarketItems';
+
 import { useMarket } from '../../hooks/useMarket';
 import { ShoppingBag, Search, Plus, Heart, FolderOpen, X, Check } from 'lucide-react';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
+    const navigate = useNavigate();
+
     const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort, filterBySeller, sellerId, filterByTag, selectedTags, updateItem, refreshMarket } = useMarket(); // destructured
     const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history' | 'free'>('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -19,16 +24,11 @@ const Market: React.FC = () => {
     const shouldSkipSearch = React.useRef(false); // Ref to skip search effect when clearing programmatically
 
     useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on tab change
         if (activeTab === 'free') {
             refreshMarket({ isFree: true, page: 0 });
         } else if (activeTab === 'myshop' || activeTab === 'history' || activeTab === 'wishlist') {
-            // These tabs likely handle their own data fetching or rely on existing state
-            // But if we switch back from 'free' to others, we might need to reset isFree?
-            // Actually, refreshMarket defaulting to isFree undefined (which is falsey or ignored) helps.
-            // But if we want to ensure we fetch "All paid+free" we should probably reset.
-            // However, myshop/history use different API endpoints separate from marketItems usually?
-            // Let's check useMarket. MarketItems is "OnSaleItems".
-            // So if I go 'all', I want everything.
+            // No specific fetch needed for these tabs yet or handled elsewhere
         } else {
             // For 'all', 'sticker', etc.
             refreshMarket({ isFree: false, page: 0 });
@@ -90,24 +90,74 @@ const Market: React.FC = () => {
     }, [activeTab, loadMySellableItems]);
 
 
-    const handleBuy = async (item: MarketItem) => {
-        if (isOwned(item.id)) return; // Use isOwned helper
+
+
+    const [sellModalItem, setSellModalItem] = useState<any>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
+    const handleBuy = (item: MarketItem) => {
+        if (isOwned(item.id)) return;
 
         // Dynamic price check
         const effectivePrice = getPackPrice(item.id, item.price);
 
-        if (confirm(`'${item.title}'을(를) ${effectivePrice} 크레딧에 구매하시겠습니까?`)) {
-            const success = await buyItem(item.id, effectivePrice);
-            if (success) {
-                alert(`'${item.title}' 구매 완료! 🎉`);
-            } else {
-                alert('크레딧이 부족하거나 오류가 발생했습니다.');
-            }
+        if (credits < effectivePrice) {
+            setConfirmation({
+                isOpen: true,
+                title: '크레딧 부족 😢',
+                message: `보유 크레딧이 부족합니다.\n(보유: ${credits.toLocaleString()} C / 필요: ${effectivePrice.toLocaleString()} C)\n\n충전 페이지로 이동하시겠습니까?`,
+                type: 'danger',
+                singleButton: false,
+                onConfirm: () => {
+                    setConfirmation(prev => ({ ...prev, isOpen: false }));
+                    navigate('/charge');
+                }
+            });
+            return;
         }
-    };
 
-    const [sellModalItem, setSellModalItem] = useState<any>(null);
-    const [isEditMode, setIsEditMode] = useState(false);
+        setConfirmation({
+            isOpen: true,
+            title: '아이템 구매',
+            message: `'${item.title}'을(를) ${effectivePrice.toLocaleString()} 크레딧에 \n구매하시겠습니까?`,
+            type: 'info',
+            singleButton: false,
+            onConfirm: async () => {
+                setConfirmation(prev => ({ ...prev, isOpen: false }));
+                const success = await buyItem(item.id, effectivePrice);
+
+                setTimeout(() => {
+                    if (success) {
+                        setConfirmation({
+                            isOpen: true,
+                            title: '구매 완료! 🎉',
+                            message: `'${item.title}' 구매가 완료되었습니다.`,
+                            type: 'success',
+                            singleButton: true,
+                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                        });
+                    } else {
+                        setConfirmation({
+                            isOpen: true,
+                            title: '구매 실패',
+                            message: '크레딧이 부족하거나 오류가 발생했습니다.',
+                            type: 'danger',
+                            singleButton: true,
+                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                        });
+                    }
+                }, 200);
+            }
+        });
+    };
 
     const handleSell = (item: any, isEdit: boolean = false) => {
         setSellModalItem(item);
@@ -194,19 +244,12 @@ const Market: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-[var(--bg-card)] p-2 rounded-2xl border border-[var(--border-color)] shadow-sm">
-                        <div className="px-4 py-2 bg-[var(--bg-card-secondary)] rounded-xl">
-                            <span className="text-xs text-[var(--text-secondary)] font-bold block">보유 크레딧</span>
-                            <span className="text-xl font-black text-yellow-500 font-mono flex items-center gap-2">
-                                {credits.toLocaleString()} C
-                            </span>
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Tabs & Search */}
-                <div className="flex flex-col md:flex-row gap-4 sticky top-16 z-50 bg-transparent py-4 -mx-2 px-2 transition-all mt-4">
-                    <div className="flex overflow-x-auto py-2 gap-3 flex-1 scrollbar-hide px-2">
+                <div className="flex flex-col md:flex-row gap-4 sticky top-16 md:top-20 z-40 py-4 -mx-4 px-4 transition-all mt-4 bg-white/70 dark:bg-[#1e293b]/70 backdrop-blur-xl md:items-center">
+                    <div className="flex overflow-x-auto py-2 gap-3 flex-1 scrollbar-hide px-1">
                         {[
                             { id: 'all', label: '전체' },
                             { id: 'free', label: '무료' },
@@ -223,7 +266,7 @@ const Market: React.FC = () => {
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2
                                     ${activeTab === tab.id
-                                        ? 'bg-[var(--btn-bg)] text-white shadow-md transform scale-105'
+                                        ? 'bg-[var(--btn-bg)] text-white shadow-md transform scale-105 ml-1'
                                         : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)]'
                                     }`}
                             >
@@ -240,7 +283,7 @@ const Market: React.FC = () => {
                             placeholder="아이템 검색..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] transition-all"
+                            className="w-full bg-gray-100 dark:bg-slate-800 border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] transition-all"
                         />
                     </div>
                 </div>
@@ -289,14 +332,14 @@ const Market: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="flex justify-between items-center mt-2">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-2 gap-3 md:gap-0">
                             <span className="text-sm font-bold text-[var(--text-secondary)]">
                                 총 {filteredItems.length}개의 아이템
                             </span>
 
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
                                 {/* Hide Owned Toggle */}
-                                <label className="flex items-center gap-2 cursor-pointer select-none group">
+                                <label className="flex items-center gap-2 cursor-pointer select-none group shrink-0">
                                     <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${hideOwned ? 'bg-[var(--btn-bg)] border-[var(--btn-bg)]' : 'border-[var(--text-secondary)] group-hover:border-[var(--text-primary)]'}`}>
                                         {hideOwned && <Check size={12} className="text-white" />}
                                     </div>
@@ -309,9 +352,9 @@ const Market: React.FC = () => {
                                     <span className={`text-xs font-bold ${hideOwned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>보유 상품 숨기기</span>
                                 </label>
 
-                                <div className="h-4 w-[1px] bg-[var(--border-color)]"></div>
+                                <div className="hidden sm:block h-4 w-[1px] bg-[var(--border-color)]"></div>
 
-                                <div className="flex gap-2">
+                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                                     {[
                                         { id: 'popular', label: '인기순' },
                                         { id: 'latest', label: '최신순' },
@@ -321,9 +364,9 @@ const Market: React.FC = () => {
                                         <button
                                             key={opt.id}
                                             onClick={() => changeSort(opt.id as any)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sort === opt.id
+                                            className={`flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${sort === opt.id
                                                 ? 'bg-[var(--btn-bg)] text-white'
-                                                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
+                                                : 'text-[var(--text-secondary)] bg-[var(--bg-card)] sm:bg-transparent border sm:border-0 border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)]'
                                                 }`}
                                         >
                                             {opt.label}
@@ -337,7 +380,7 @@ const Market: React.FC = () => {
 
                 {/* Content Grid */}
                 {activeTab === 'history' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4">
                         {purchasedItems.length === 0 ? (
                             <div className="col-span-full py-20 text-center text-[var(--text-secondary)] flex flex-col items-center">
                                 <ShoppingBag className="w-12 h-12 mb-4 opacity-20" />
@@ -390,7 +433,7 @@ const Market: React.FC = () => {
                             {sellingItems.length === 0 ? (
                                 <p className="text-sm text-[var(--text-secondary)] px-1">판매 내역이 없습니다.</p>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                                     {[...sellingItems]
                                         .filter(item => item.status !== 'CANCELLED')
                                         .sort((a, b) => {
@@ -471,7 +514,7 @@ const Market: React.FC = () => {
                                     <p className="text-sm">판매할 수 있는 아이템이 없습니다.</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                                     {mySellableCandidates.map((item, idx) => (
                                         <div key={`${item.source}-${item.id}-${idx}`} className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 group hover:border-[var(--btn-bg)] transition-colors relative">
                                             <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
@@ -503,7 +546,7 @@ const Market: React.FC = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4">
                         {filteredItems.length === 0 ? (
                             <div className="col-span-full py-20 text-center text-[var(--text-secondary)] flex flex-col items-center">
                                 <Search className="w-12 h-12 mb-4 opacity-20" />
@@ -575,6 +618,17 @@ const Market: React.FC = () => {
                     onSubmit={handleRegisterSubmit}
                 />
             )}
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmation.isOpen}
+                title={confirmation.title}
+                message={confirmation.message}
+                onConfirm={confirmation.onConfirm}
+                onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                type={confirmation.type || 'info'}
+                singleButton={confirmation.singleButton}
+                confirmText={confirmation.singleButton ? "확인" : "구매하기"}
+            />
         </MarketLayout>
     );
 };

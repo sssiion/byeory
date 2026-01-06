@@ -17,6 +17,7 @@ import ProfileEditScreen from './pages/profile/ProfileEditScreen';
 import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
 import GetOutPage from './pages/profile/GetOutPage';
 import InitialProfileSetup from './pages/auth/InitialProfileSetup';
+import ChargePage from './pages/payment/ChargePage';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -170,6 +171,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route path="/profile/delete" element={<GetOutPage />} />
                       <Route path="/setup-profile" element={<InitialProfileSetup />} />
                       <Route path="/profile/analysis" element={<AnalysisPage />} />
+                      <Route path="/charge" element={<ChargePage />} />
                     </Route>
                   </Routes>
                 </BrowserRouter>

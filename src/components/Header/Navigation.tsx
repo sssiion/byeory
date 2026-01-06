@@ -176,7 +176,7 @@ const Navigation: React.FC = () => {
     return (
         <>
             {/* Top Header */}
-            <header className={`sticky top-0 z-50 flex md:grid md:grid-cols-3 justify-between md:items-center px-4 md:px-6 py-3 md:py-4 theme-bg-header shadow-sm border-b theme-border transition-colors duration-300`}>
+            <header className={`sticky top-0 z-50 flex h-16 md:h-20 md:grid md:grid-cols-3 justify-between items-center px-4 md:px-6 py-0 theme-bg-header shadow-sm border-b theme-border transition-colors duration-300`}>
                 {/* Logo */}
                 <div
                     className={`flex items-center justify-self-start ${isEditMode ? 'cursor-default opacity-50' : 'cursor-pointer'}`}

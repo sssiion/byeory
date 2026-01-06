@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Coins, Check, Clock, PlayCircle, ShoppingBag, PenTool } from 'lucide-react';
+import { X, Coins, Check, Clock, PlayCircle, ShoppingBag, PenTool, Wallet } from 'lucide-react';
 import { useCredits, type DailyQuest } from '../../context/CreditContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -144,35 +144,58 @@ const DailyQuestModal: React.FC<DailyQuestModalProps> = ({ isOpen, onClose }) =>
 
                             <div className="border-t theme-border pt-4">
                                 <h3 className="text-sm font-bold theme-text-secondary mb-3 uppercase tracking-wider">크레딧 충전</h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {[
-                                        { amount: 100, price: '₩1,000', color: 'bg-blue-500' },
-                                        { amount: 550, price: '₩5,000', color: 'bg-purple-500' },
-                                        { amount: 1200, price: '₩10,000', color: 'bg-pink-500', best: true },
-                                        { amount: 3000, price: '₩25,000', color: 'bg-yellow-500' },
-                                    ].map((item, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => {
-                                                if (confirm(`${item.price}으로 ${item.amount} 크레딧을 충전하시겠습니까? (테스트 결제)`)) {
-                                                    addCredits(item.amount, 'Credit Charge (Test)');
-                                                    alert(`${item.amount} 크레딧이 충전되었습니다!`);
-                                                }
-                                            }}
-                                            className="relative group p-3 rounded-xl border theme-border bg-[var(--bg-card)] hover:border-primary/50 transition-all flex flex-col items-center gap-2 text-center"
-                                        >
-                                            {item.best && (
-                                                <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">BEST</span>
-                                            )}
-                                            <div className={`w-10 h-10 rounded-full ${item.color}/10 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                                                <Coins className={`w-5 h-5 ${item.color.replace('bg-', 'text-')}`} />
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={() => {
+                                            onClose();
+                                            navigate('/charge');
+                                        }}
+                                        className="w-full flex items-center justify-between p-4 rounded-xl bg-[var(--bg-card)] border theme-border hover:border-primary/50 transition-all hover:shadow-md group mb-4"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <Wallet className="w-6 h-6 text-yellow-500" />
                                             </div>
-                                            <div>
-                                                <div className="font-bold theme-text-primary font-mono">{item.amount} C</div>
-                                                <div className="text-xs theme-text-secondary">{item.price}</div>
+                                            <div className="text-left">
+                                                <div className="font-bold theme-text-primary">크레딧 충전소</div>
+                                                <div className="text-xs theme-text-secondary">전체 상품 보기</div>
                                             </div>
-                                        </button>
-                                    ))}
+                                        </div>
+                                        <div className="px-3 py-1.5 rounded-lg bg-[var(--btn-bg)] text-white text-xs font-bold shadow-sm group-hover:brightness-110 transition-all">
+                                            이동
+                                        </div>
+                                    </button>
+
+                                    <h3 className="text-xs font-bold theme-text-secondary mb-2 uppercase tracking-wider flex items-center gap-1">
+                                        <Clock className="w-3 h-3" /> 빠른 충전 (Test)
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { amount: 1000, price: '₩1,000', color: 'bg-blue-500' },
+                                            { amount: 5000, price: '₩5,000', color: 'bg-purple-500' },
+                                            { amount: 10000, price: '₩10,000', color: 'bg-pink-500', popular: true },
+                                            { amount: 30000, price: '₩30,000', color: 'bg-yellow-500' },
+                                        ].map((item, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => {
+                                                    if (confirm(`[테스트 결제] 💳\n${item.price}으로 ${item.amount} 크레딧을 충전하시겠습니까?`)) {
+                                                        addCredits(item.amount, 'Quick Charge (Test)');
+                                                        alert(`${item.amount} 크레딧이 충전되었습니다!`);
+                                                    }
+                                                }}
+                                                className="relative group p-3 rounded-xl border theme-border bg-[var(--bg-card)] hover:border-primary/50 transition-all flex items-center gap-3 text-left"
+                                            >
+                                                <div className={`w-8 h-8 rounded-full ${item.color}/10 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0`}>
+                                                    <Coins className={`w-4 h-4 ${item.color.replace('bg-', 'text-')}`} />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold theme-text-primary text-sm font-mono">{item.amount} C</div>
+                                                    <div className="text-[10px] theme-text-secondary">{item.price}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>

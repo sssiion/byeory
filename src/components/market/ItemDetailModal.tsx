@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Heart, ShoppingBag, Star, User } from 'lucide-react';
+import { X, Heart, ShoppingBag, Star, User, Trash2 } from 'lucide-react';
 import { useCredits } from '../../context/CreditContext';
 import type { MarketItem } from '../../data/mockMarketItems';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 interface ItemDetailModalProps {
     item: MarketItem;
@@ -25,12 +26,57 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     const [newRating, setNewRating] = useState(5);
     const [newReviewContent, setNewReviewContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const tabsRef = React.useRef<HTMLDivElement>(null);
+
+    // Confirmation Modal State
+    const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'info' | 'danger' | 'success';
+        singleButton: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info',
+        singleButton: true,
+        onConfirm: () => { }
+    });
+
+    const showAlert = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info') => {
+        setConfirmation({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+        });
+    };
+
+    const scrollToTabs = () => {
+        // Only scroll on mobile where the main container scrolls
+        if (window.innerWidth < 768 && tabsRef.current) {
+            // Use block: 'start' to snap it to the top
+            tabsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
 
     React.useEffect(() => {
         if (item) {
             fetchReviews();
         }
     }, [item]);
+
+    // Prevent background scrolling
+    React.useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     const fetchReviews = async () => {
         const token = localStorage.getItem('accessToken');
@@ -64,12 +110,12 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     const handlePostReview = async () => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            alert("로그인이 필요합니다.");
+            showAlert('로그인 필요', "로그인이 필요합니다.", 'danger');
             return;
         }
 
         if (!newReviewContent.trim()) {
-            alert("리뷰 내용을 입력해주세요.");
+            showAlert('내용 부족', "리뷰 내용을 입력해주세요.", 'danger');
             return;
         }
 
@@ -92,39 +138,83 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 await fetchReviews();
                 setNewReviewContent('');
                 setNewRating(5);
-                alert("리뷰가 등록되었습니다.");
+                showAlert('리뷰 등록 완료', "소중한 리뷰가 등록되었습니다!", 'success');
             } else {
                 const errorText = await res.text();
                 if (res.status === 400 || res.status === 409) {
-                    alert(`리뷰 등록 실패: ${errorText || "이미 등록했거나 오류가 발생했습니다."}`);
+                    showAlert('리뷰 등록 실패', `${errorText || "이미 등록했거나 오류가 발생했습니다."}`, 'danger');
                 } else {
-                    alert("리뷰 등록 실패: 잠시 후 다시 시도해주세요.");
+                    showAlert('리뷰 등록 실패', "잠시 후 다시 시도해주세요.", 'danger');
                 }
             }
         } catch (e) {
             console.error("Failed to post review", e);
-            alert("오류가 발생했습니다.");
+            showAlert('오류 발생', "서버 통신 중 오류가 발생했습니다.", 'danger');
         } finally {
             setIsSubmitting(false);
         }
     };
 
+    const handleDeleteReview = (reviewId: number) => {
+        setConfirmation({
+            isOpen: true,
+            title: '리뷰 삭제',
+            message: '정말로 이 리뷰를 삭제하시겠습니까?',
+            type: 'danger',
+            singleButton: false,
+            onConfirm: async () => {
+                const token = localStorage.getItem('accessToken');
+                if (!token) return;
+
+                try {
+                    const res = await fetch(`http://localhost:8080/api/market/reviews/${reviewId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (res.ok) {
+                        setConfirmation(prev => ({ ...prev, isOpen: false }));
+                        await fetchReviews();
+                        // Just show a small toast or non-blocking alert? 
+                        // Or reuse showAlert (which opens another modal, might be jarring but fine).
+                        // Let's just refresh. Or show success alert.
+                        // setTimeout to prevent modal collision or just show success.
+                        setTimeout(() => showAlert('삭제 완료', '리뷰가 삭제되었습니다.', 'success'), 300);
+                    } else {
+                        showAlert('삭제 실패', '리뷰 삭제에 실패했습니다.', 'danger');
+                    }
+                } catch (e) {
+                    console.error("Failed to delete review", e);
+                    showAlert('오류', '오류가 발생했습니다.', 'danger');
+                }
+            }
+        });
+    };
+
     if (!item) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[var(--bg-card)] w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-color)] flex flex-col md:flex-row relative animate-in zoom-in-95 duration-200">
+        <div
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={onClose}
+        >
+            <div
+                className="bg-[var(--bg-card)] w-full max-w-4xl h-[85vh] md:h-auto md:max-h-[90vh] rounded-t-3xl rounded-b-none md:rounded-3xl overflow-y-auto md:overflow-hidden shadow-2xl border-t md:border border-[var(--border-color)] flex flex-col md:flex-row relative animate-in slide-in-from-bottom duration-300 md:zoom-in-95"
+                onClick={(e) => e.stopPropagation()}
+            >
 
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-10 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
+                    className="absolute top-4 right-4 z-50 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors"
                 >
                     <X size={20} />
                 </button>
 
                 {/* Left: Image Section */}
-                <div className="w-full md:w-1/2 bg-[var(--bg-card-secondary)] flex items-center justify-center p-8 relative">
+                <div className="w-full md:w-1/2 h-56 md:h-auto shrink-0 bg-[var(--bg-card-secondary)] flex items-center justify-center p-8 relative">
                     {item.imageUrl ? (
                         <img
                             src={item.imageUrl}
@@ -157,9 +247,9 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 </div>
 
                 {/* Right: Info Section */}
-                <div className="w-full md:w-1/2 flex flex-col h-full bg-[var(--bg-card)]">
+                <div className="w-full md:w-1/2 flex flex-col flex-1 md:overflow-hidden md:h-full bg-[var(--bg-card)]">
                     {/* Header */}
-                    <div className="p-8 border-b border-[var(--border-color)]">
+                    <div className="p-6 md:p-8 border-b border-[var(--border-color)]">
                         <div className="flex justify-between items-start mb-2">
                             <span className="px-2 py-1 bg-[var(--bg-card-secondary)] rounded-md text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                                 {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
@@ -170,7 +260,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             </span>
                             {/* Dynamic Header Stats */}
                             <div
-                                onClick={() => setActiveTab('reviews')}
+                                onClick={() => { scrollToTabs(); setActiveTab('reviews'); }}
                                 className="flex items-center gap-1 text-yellow-500 font-bold text-sm cursor-pointer hover:bg-[var(--bg-card-secondary)] rounded-lg px-2 -ml-2 transition-colors py-1"
                             >
                                 <Star className="w-4 h-4 fill-yellow-500" />
@@ -184,7 +274,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                 </span>
                             </div>
                         </div>
-                        <h2 className="text-3xl font-black text-[var(--text-primary)] mb-2 leading-tight">{item.title}</h2>
+                        <h2 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] mb-2 leading-tight">{item.title}</h2>
                         <div
                             onClick={() => {
                                 if (onFilterBySeller) {
@@ -201,15 +291,16 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex border-b border-[var(--border-color)] sticky top-0 bg-[var(--bg-card)] z-10">
+                    <div ref={tabsRef} className="flex border-b border-[var(--border-color)] md:sticky md:top-0 bg-[var(--bg-card)] z-10">
                         <button
-                            onClick={() => setActiveTab('details')}
+                            onClick={() => { scrollToTabs(); setActiveTab('details'); }}
                             className={`flex-1 py-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'details' ? 'border-[var(--btn-bg)] text-[var(--text-primary)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                         >
                             상세 정보
                         </button>
                         <button
                             onClick={() => {
+                                scrollToTabs();
                                 setActiveTab('reviews');
                                 if (reviews.length === 0) fetchReviews();
                             }}
@@ -220,7 +311,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-8 min-h-[200px]">
+                    <div className="md:flex-1 md:overflow-y-auto p-5 md:p-8">
                         {activeTab === 'details' ? (
                             <div className="space-y-6">
                                 <div>
@@ -286,11 +377,11 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="font-bold text-sm text-[var(--text-primary)]">{review.userNickname}</span>
                                                     {String(review.userId) === String(userId) && (
-                                                        <span className="px-1.5 py-0.5 bg-[var(--btn-bg)] text-white text-[10px] font-bold rounded-md">
+                                                        <span className="px-1.5 py-0.5 bg-[var(--btn-bg)] text-white text-[10px] font-bold rounded-md ml-2">
                                                             내 리뷰
                                                         </span>
                                                     )}
-                                                    <div className="flex text-yellow-500 gap-0.5">
+                                                    <div className="flex text-yellow-500 gap-0.5 ml-auto md:ml-2">
                                                         {[...Array(5)].map((_, j) => (
                                                             <Star
                                                                 key={j}
@@ -298,6 +389,15 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                                             />
                                                         ))}
                                                     </div>
+                                                    {String(review.userId) === String(userId) && (
+                                                        <button
+                                                            onClick={() => handleDeleteReview(review.id)}
+                                                            className="p-1 text-[var(--text-secondary)] hover:text-red-500 transition-colors ml-1"
+                                                            title="리뷰 삭제"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">
                                                     {review.content}
@@ -314,7 +414,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center gap-4">
+                    <div className="p-4 md:p-6 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center gap-4 sticky bottom-0 z-20">
                         <div className="flex flex-col">
                             {effectivePrice < item.price && (
                                 <span className="text-xs text-red-500 line-through decoration-red-500/50">
@@ -350,8 +450,20 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         </div>
                     </div>
                 </div >
-            </div >
-        </div >
+            </div>
+
+            {/* Confirmation Alert */}
+            <ConfirmationModal
+                isOpen={confirmation.isOpen}
+                title={confirmation.title}
+                message={confirmation.message}
+                type={confirmation.type}
+                onConfirm={confirmation.onConfirm}
+                onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                singleButton={confirmation.singleButton}
+                confirmText="확인"
+            />
+        </div>
     );
 };
 
