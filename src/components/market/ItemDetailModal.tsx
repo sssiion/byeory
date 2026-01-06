@@ -12,10 +12,12 @@ interface ItemDetailModalProps {
     isWishlisted: boolean;
     effectivePrice: number;
     initialTab?: 'details' | 'reviews';
+    onFilterBySeller?: (sellerId: string) => void;
+    onSearchTag?: (tag: string) => void;
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
-    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details'
+    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag
 }) => {
     const { userId } = useCredits();
     const [activeTab, setActiveTab] = useState<'details' | 'reviews'>(initialTab);
@@ -136,11 +138,20 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             <span className="text-xl font-bold opacity-50">No Image</span>
                         </div>
                     )}
-                    <div className="absolute bottom-6 left-6 flex gap-2">
+                    <div className="absolute bottom-6 left-6 flex gap-2 flex-wrap">
                         {item.tags?.map((tag: string) => (
-                            <span key={tag} className="px-3 py-1 bg-black/10 backdrop-blur-md rounded-full text-xs font-bold text-[var(--text-secondary)]">
+                            <button
+                                key={tag}
+                                onClick={() => {
+                                    if (onSearchTag) {
+                                        onSearchTag(tag);
+                                        onClose();
+                                    }
+                                }}
+                                className="px-3 py-1 bg-black/10 backdrop-blur-md rounded-full text-xs font-bold text-[var(--text-secondary)] hover:bg-black/20 hover:text-white transition-colors"
+                            >
                                 #{tag}
-                            </span>
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -151,7 +162,11 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     <div className="p-8 border-b border-[var(--border-color)]">
                         <div className="flex justify-between items-start mb-2">
                             <span className="px-2 py-1 bg-[var(--bg-card-secondary)] rounded-md text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                                {item.type?.replace('_', ' ')}
+                                {(item.type as string) === 'template_widget' ? '위젯 템플릿' :
+                                    (item.type as string) === 'template_post' ? '게시물 템플릿' :
+                                        (item.type as string) === 'sticker' ? '스티커' :
+                                            (item.type as string) === 'start_pack' ? '스타터 팩' :
+                                                (item.type as string)?.replace('_', ' ')}
                             </span>
                             {/* Dynamic Header Stats */}
                             <div
@@ -170,9 +185,18 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             </div>
                         </div>
                         <h2 className="text-3xl font-black text-[var(--text-primary)] mb-2 leading-tight">{item.title}</h2>
-                        <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm font-medium">
+                        <div
+                            onClick={() => {
+                                if (onFilterBySeller) {
+                                    const targetId = item.sellerId ? String(item.sellerId) : '0';
+                                    onFilterBySeller(targetId);
+                                    onClose();
+                                }
+                            }}
+                            className={`flex items-center gap-2 text-[var(--text-secondary)] text-sm font-medium cursor-pointer hover:text-[var(--text-primary)] hover:underline`}
+                        >
                             <User className="w-4 h-4" />
-                            <span>{item.author || 'Unknown Seller'}</span>
+                            <span>{item.author || 'System'}</span>
                         </div>
                     </div>
 

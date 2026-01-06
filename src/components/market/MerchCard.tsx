@@ -49,9 +49,8 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                     <div className="text-[var(--text-secondary)]">No Image</div>
                 )}
 
-                {/* Overlay Badge */}
                 {onToggleWishlist && (
-                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className={`absolute top-3 right-3 transition-opacity z-10 ${isWishlisted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -67,7 +66,11 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                 {/* Type Badge */}
                 <div className="absolute top-3 left-3">
                     <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 text-[var(--text-secondary)] backdrop-blur-sm">
-                        {item.type.replace('_', ' ')}
+                        {item.type === 'template_widget' ? '위젯 템플릿' :
+                            item.type === 'template_post' ? '게시물 템플릿' :
+                                item.type === 'sticker' ? '스티커' :
+                                    item.type === 'start_pack' ? '스타터 팩' :
+                                        (item.type as string).replace('_', ' ')}
                     </span>
                 </div>
             </div>

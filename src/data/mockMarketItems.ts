@@ -11,6 +11,7 @@ export interface MarketItem {
     averageRating?: number;
     reviewCount?: number;
     createdAt?: string;
+    sellerId?: string | number;
 }
 
 export const MOCK_MARKET_ITEMS: MarketItem[] = [
@@ -21,7 +22,7 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         description: '다이어리 꾸미기의 기본! 필수 스티커 10종 모음.',
         price: 500, // Bundle deal (Individual sum is ~1300)
         author: 'Byeory Official',
-        tags: ['basic', 'starter', 'essential'],
+        tags: ['기본', '스타터', '필수'],
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/169/169367.png'
     },
     {
@@ -31,7 +32,7 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         description: '다이어리에 쓰기 좋은 귀여운 고양이 스티커 모음입니다.',
         price: 1500,
         author: 'S_JSon',
-        tags: ['cute', 'cat', 'animal'],
+        tags: ['귀여움', '고양이', '동물'],
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/616/616408.png'
     },
     {
@@ -41,7 +42,7 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         description: '감성적인 다꾸를 위한 빈티지 라벨 스티커입니다.',
         price: 1200,
         author: 'DesignLab',
-        tags: ['vintage', 'label', 'brown'],
+        tags: ['빈티지', '라벨', '브라운'],
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/2361/2361730.png'
     },
     {
@@ -51,7 +52,7 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         description: '책상 위를 깔끔하게 정리해주는 미니멀 위젯 세트입니다.',
         price: 3000,
         author: 'Minimalist',
-        tags: ['minimal', 'widget', 'productivity'],
+        tags: ['미니멀', '위젯', '생산성'],
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/12117/12117188.png'
     },
     {
@@ -61,7 +62,7 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         description: '오늘의 공부 시간을 기록하고 회고할 수 있는 템플릿입니다.',
         price: 2000,
         author: 'StudyWithMe',
-        tags: ['study', 'diary', 'template'],
+        tags: ['공부', '다이어리', '템플릿'],
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/4021/4021693.png'
     },
     {
@@ -71,7 +72,7 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         description: '레트로 게임 감성의 픽셀 아트 이모지 팩!',
         price: 1800,
         author: 'PixelArt',
-        tags: ['pixel', 'retro', 'emoji'],
+        tags: ['픽셀', '레트로', '이모지'],
         imageUrl: 'https://cdn-icons-png.flaticon.com/512/10603/10603762.png'
     }
 ];

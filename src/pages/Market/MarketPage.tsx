@@ -3,21 +3,27 @@ import Navigation from '../../components/Header/Navigation';
 import MarketLayout from '../../components/market/MarketLayout';
 import MerchCard from '../../components/market/MerchCard';
 import ItemDetailModal from '../../components/market/ItemDetailModal';
+import SellModal from '../../components/market/SellModal';
 import { type MarketItem } from '../../data/mockMarketItems';
 import { useCredits } from '../../context/CreditContext';
 import { useMarket } from '../../hooks/useMarket';
-import { Search, Plus, FolderOpen, Heart, ShoppingBag } from 'lucide-react';
+import { Search, Plus, FolderOpen, Heart, ShoppingBag, X } from 'lucide-react';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
-    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort } = useMarket(); // destructured marketItems, sort, changeSort
+    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort, filterBySeller, sellerId, filterByTag, selectedTags } = useMarket(); // destructured
     const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history'>('all');
     const [searchTerm, setSearchTerm] = useState('');
-    // const [sortOrder, setSortOrder] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular'); // Removed in favor of hook state
+    const shouldSkipSearch = React.useRef(false); // Ref to skip search effect when clearing programmatically
 
     // Debounce Search
     useEffect(() => {
+        if (shouldSkipSearch.current) {
+            shouldSkipSearch.current = false;
+            return;
+        }
+
         const timer = setTimeout(() => {
             search(searchTerm);
         }, 500);
@@ -82,20 +88,24 @@ const Market: React.FC = () => {
         }
     };
 
+    const [sellModalItem, setSellModalItem] = useState<any>(null);
+
     const handleSell = (item: any) => {
-        const confirmPrice = prompt(`'${item.title}'을(를) 마켓에 등록하시겠습니까?\n판매 가격을 입력하세요 (Credit):`, "1000");
-        if (confirmPrice) {
-            const price = parseInt(confirmPrice, 10);
-            if (!isNaN(price)) {
-                registerItem({
-                    ...item,
-                    id: `selling_${Date.now()}_${item.id}`, // New unique ID for listing
-                    originalId: item.id,
-                    price: price
-                });
-                alert(`'${item.title}'이(가) ${price} 크레딧에 마켓에 등록되었습니다!`);
-            }
-        }
+        setSellModalItem(item);
+    };
+
+    const handleRegisterSubmit = async (data: { price: number; description: string; tags: string[] }) => {
+        if (!sellModalItem) return;
+
+        await registerItem({
+            ...sellModalItem,
+            price: data.price,
+            description: data.description, // Will be put into contentJson in useMarket/backend logic if updated
+            tags: data.tags
+        });
+
+        setSellModalItem(null);
+        alert(`'${sellModalItem.title}'이(가) 등록되었습니다!`);
     };
 
     // MERGE MOCK ITEMS + BACKEND ITEMS
@@ -152,7 +162,7 @@ const Market: React.FC = () => {
                 </div>
 
                 {/* Tabs & Search */}
-                <div className="flex flex-col md:flex-row gap-4 sticky top-16 z-10 bg-transparent py-4 -mx-2 px-2 transition-all mt-4">
+                <div className="flex flex-col md:flex-row gap-4 sticky top-16 z-50 bg-transparent py-4 -mx-2 px-2 transition-all mt-4">
                     <div className="flex overflow-x-auto pb-2 md:pb-0 gap-3 flex-1 scrollbar-hide px-2">
                         {[
                             { id: 'all', label: '전체' },
@@ -193,28 +203,68 @@ const Market: React.FC = () => {
 
                 {/* Sort & Filter Bar */}
                 {activeTab !== 'myshop' && activeTab !== 'history' && (
-                    <div className="flex justify-between items-center -mb-4 px-2">
-                        <span className="text-sm font-bold text-[var(--text-secondary)]">
-                            총 {filteredItems.length}개의 아이템
-                        </span>
-                        <div className="flex gap-2">
-                            {[
-                                { id: 'popular', label: '인기순' },
-                                { id: 'latest', label: '최신순' },
-                                { id: 'price_low', label: '낮은가격순' },
-                                { id: 'price_high', label: '높은가격순' }
-                            ].map(opt => (
+                    <div className="flex flex-col gap-2 -mb-4 px-2">
+                        {sellerId && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-[var(--text-secondary)]">판매자 필터 적용 중</span>
                                 <button
-                                    key={opt.id}
-                                    onClick={() => changeSort(opt.id as any)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sort === opt.id
-                                        ? 'bg-[var(--btn-bg)] text-white'
-                                        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
-                                        }`}
+                                    onClick={() => filterBySeller(null)}
+                                    className="flex items-center gap-1 px-2 py-1 bg-[var(--btn-bg)] text-white text-xs font-bold rounded-full hover:brightness-110"
                                 >
-                                    {opt.label}
+                                    <span>필터 해제</span>
+                                    <X size={12} />
                                 </button>
-                            ))}
+                            </div>
+                        )}
+                        {selectedTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 items-center">
+                                <span className="text-xs font-bold text-[var(--text-secondary)] mr-1">태그:</span>
+                                {selectedTags.map(tag => (
+                                    <div key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm font-medium animate-in fade-in zoom-in duration-200">
+                                        <span>#{tag}</span>
+                                        <button
+                                            onClick={() => filterByTag(tag)}
+                                            className="hover:bg-purple-200 rounded-full p-0.5 transition-colors"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => {
+                                        shouldSkipSearch.current = true;
+                                        setSearchTerm('');
+                                        filterByTag(null); // Clear all
+                                    }}
+                                    className="text-xs text-gray-500 hover:text-gray-700 underline ml-1"
+                                >
+                                    전체 해제
+                                </button>
+                            </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-[var(--text-secondary)]">
+                                총 {filteredItems.length}개의 아이템
+                            </span>
+                            <div className="flex gap-2">
+                                {[
+                                    { id: 'popular', label: '인기순' },
+                                    { id: 'latest', label: '최신순' },
+                                    { id: 'price_low', label: '낮은가격순' },
+                                    { id: 'price_high', label: '높은가격순' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.id}
+                                        onClick={() => changeSort(opt.id as any)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sort === opt.id
+                                            ? 'bg-[var(--btn-bg)] text-white'
+                                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
+                                            }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -345,7 +395,7 @@ const Market: React.FC = () => {
                                     {mySellableCandidates.map((item, idx) => (
                                         <div key={`${item.source}-${item.id}-${idx}`} className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 group hover:border-[var(--btn-bg)] transition-colors relative">
                                             <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                                                {item.source === 'local' ? '로컬 레이아웃' : '커스텀 위젯'}
+                                                {item.type === 'template_widget' ? '위젯 템플릿' : '로컬 아이템'}
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-[var(--text-primary)]">{item.title}</h3>
@@ -425,10 +475,23 @@ const Market: React.FC = () => {
                     isWishlisted={isWishlisted(selectedItem.id)}
                     effectivePrice={getPackPrice(selectedItem.id, selectedItem.price)}
                     initialTab={selectedItem.initialTab}
+                    onFilterBySeller={filterBySeller}
+                    onSearchTag={(tag) => {
+                        shouldSkipSearch.current = true; // Skip the search('') effect
+                        setSearchTerm('');
+                        filterByTag(tag);
+                    }}
                 />
             )
             }
-        </MarketLayout >
+            {sellModalItem && (
+                <SellModal
+                    item={sellModalItem}
+                    onClose={() => setSellModalItem(null)}
+                    onSubmit={handleRegisterSubmit}
+                />
+            )}
+        </MarketLayout>
     );
 };
 

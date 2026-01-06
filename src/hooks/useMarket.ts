@@ -4,32 +4,36 @@ import { STICKERS } from '../pages/post/constants';
 
 
 export const useMarket = () => {
-    const { credits, refreshCredits, userId } = useCredits(); // Using refreshCredits, userId
-    const [purchasedItems, setPurchasedItems] = useState<any[]>([]); // Store full objects now
+    const { credits, refreshCredits, userId } = useCredits();
+    const [purchasedItems, setPurchasedItems] = useState<any[]>([]);
     const [sellingItems, setSellingItems] = useState<any[]>([]);
-    const [marketItems, setMarketItems] = useState<any[]>([]); // All items on sale (from backend)
+    const [marketItems, setMarketItems] = useState<any[]>([]);
     const [wishlistItems, setWishlistItems] = useState<string[]>([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [sort, setSort] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular');
 
+    const [sellerId, setSellerId] = useState<string | null>(null);
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
     // Function to fetch data from backend
-    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high' } = {}) => {
+    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high', sellerId?: string | null } = {}) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
         const targetPage = options.page !== undefined ? options.page : 0;
         const targetKeyword = options.keyword !== undefined ? options.keyword : keyword;
-        const targetSort = options.newSort !== undefined ? options.newSort : sort; // Use passed sort or state
+        const targetSort = options.newSort !== undefined ? options.newSort : sort;
+        const targetSellerId = options.sellerId !== undefined ? options.sellerId : sellerId;
         const isLoadMore = options.isLoadMore || false;
 
         if (!isLoadMore) {
-            setPage(0); // Reset page on fresh load
+            setPage(0);
         }
 
         try {
-            // 1. Fetch Purchased Items (Only on initial load or if needed? Keep simpler for now, always fetch)
+            // 1. Fetch Purchased Items
             let backendPurchased: any[] = [];
             const purchasedRes = await fetch('http://localhost:8080/api/market/purchased', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -49,7 +53,6 @@ export const useMarket = () => {
                     status: i.status,
                     createdAt: i.createdAt,
                     salesCount: i.salesCount || 0,
-
                     averageRating: i.averageRating,
                     reviewCount: i.reviewCount,
                     isBackend: true
@@ -77,7 +80,6 @@ export const useMarket = () => {
                     createdAt: i.createdAt,
                     salesCount: i.salesCount || 0,
                     referenceId: i.referenceId,
-
                     averageRating: i.averageRating,
                     reviewCount: i.reviewCount,
                     isBackend: true
@@ -85,10 +87,10 @@ export const useMarket = () => {
                 setSellingItems(backendSelling);
             }
 
-            // 3. Fetch All Market Items (For browsing)
+            // 3. Fetch All Market Items
             let sortParam = 'createdAt,desc';
             switch (targetSort) {
-                case 'popular': sortParam = 'salesCount,desc'; break; // Now supported by @Formula
+                case 'popular': sortParam = 'salesCount,desc'; break;
                 case 'latest': sortParam = 'createdAt,desc'; break;
                 case 'price_low': sortParam = 'price,asc'; break;
                 case 'price_high': sortParam = 'price,desc'; break;
@@ -99,14 +101,31 @@ export const useMarket = () => {
                 size: '12',
                 sort: sortParam
             });
-            if (targetKeyword) query.append('keyword', targetKeyword);
+
+            if (targetKeyword) {
+                query.append('keyword', targetKeyword);
+            }
+
+            if (selectedTags.length > 0) {
+                selectedTags.forEach(t => query.append('tags', t));
+            }
+
+            console.log("DEBUG: refreshMarket", {
+                targetKeyword,
+                selectedTags,
+                query: query.toString()
+            });
+
+            if (targetSellerId) {
+                query.append('sellerId', targetSellerId);
+            }
 
             const marketRes = await fetch(`http://localhost:8080/api/market/items?${query.toString()}`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (marketRes.ok) {
                 const data = await marketRes.json();
-                const items = data.content; // Page response
+                const items = data.content;
                 const backendItems = items.map((i: any) => ({
                     id: String(i.id),
                     title: i.name,
@@ -121,56 +140,79 @@ export const useMarket = () => {
                     createdAt: i.createdAt,
                     salesCount: i.salesCount || 0,
                     referenceId: i.referenceId,
-
                     averageRating: i.averageRating,
                     reviewCount: i.reviewCount,
                     isBackend: true
                 }));
 
-                // Filter out own items
-                const filteredItems = userId
+                // Filter out own items logic (optional, but requested behavior is view by seller)
+                let finalItems = userId
                     ? backendItems.filter((i: any) => String(i.sellerId) !== String(userId))
                     : backendItems;
 
+                if (targetSellerId && String(targetSellerId) === String(userId)) {
+                    // Allow seeing own items if explicitly filtering by self
+                    finalItems = backendItems.filter((i: any) => String(i.sellerId) === String(userId));
+                }
+
                 if (isLoadMore) {
                     setMarketItems(prev => {
-                        // Avoid duplicates
                         const existingIds = new Set(prev.map(p => p.id));
-                        const newUnique = filteredItems.filter((i: any) => !existingIds.has(i.id));
+                        const newUnique = finalItems.filter((i: any) => !existingIds.has(i.id));
                         return [...prev, ...newUnique];
                     });
                 } else {
-                    setMarketItems(filteredItems);
+                    setMarketItems(finalItems);
                 }
                 setHasMore(!data.last);
                 if (isLoadMore) {
                     setPage(targetPage);
                 }
             }
-
         } catch (e) {
             console.error("Failed to fetch market data", e);
         }
-    }, [userId, keyword, sort]);
+    }, [userId, keyword, sort, sellerId, selectedTags]);
 
     const loadMore = useCallback(() => {
         if (!hasMore) return;
         refreshMarket({ page: page + 1, isLoadMore: true });
     }, [hasMore, page, refreshMarket]);
 
+    const filterBySeller = useCallback((newSellerId: string | null) => {
+        setSellerId(newSellerId);
+        setKeyword(''); // Reset keyword when filtering by seller
+    }, []);
+
+    const filterByTag = useCallback((tag: string | null) => {
+        if (tag === null) {
+            setSelectedTags([]);
+        } else {
+            setSelectedTags(prev => {
+                const newTags = prev.includes(tag)
+                    ? prev.filter(t => t !== tag)
+                    : [...prev, tag];
+                return newTags;
+            });
+        }
+        setKeyword('');
+    }, []);
+
     const search = useCallback((kw: string) => {
         setKeyword(kw);
-        refreshMarket({ page: 0, keyword: kw, isLoadMore: false });
-    }, [refreshMarket]);
+        setSellerId(null);
+        setSelectedTags([]);
+    }, []);
 
     const changeSort = useCallback((newSort: 'popular' | 'latest' | 'price_low' | 'price_high') => {
         setSort(newSort);
-        refreshMarket({ page: 0, newSort: newSort, isLoadMore: false });
-    }, [refreshMarket]);
+    }, []);
 
     useEffect(() => {
         refreshMarket();
+    }, [refreshMarket]);
 
+    useEffect(() => {
         // Fetch Wishlist IDs
         const fetchWishlist = async () => {
             const token = localStorage.getItem('accessToken');
@@ -188,7 +230,7 @@ export const useMarket = () => {
             }
         };
         fetchWishlist();
-    }, []); // Initial load only, then controlled by refreshMarket dependencies
+    }, []);
 
     const isOwned = useCallback((itemId: string) => {
         return purchasedItems.some(item => item.id === String(itemId));
@@ -262,7 +304,6 @@ export const useMarket = () => {
     }, [refreshMarket, refreshCredits]);
 
     const cancelItem = useCallback(async (itemId: string) => {
-        // check if it's a backend item (numeric ID)
         if (!isNaN(Number(itemId))) {
             const token = localStorage.getItem('accessToken');
             if (!token) return;
@@ -296,7 +337,7 @@ export const useMarket = () => {
 
             if (response.ok) {
                 await refreshMarket();
-                await refreshCredits(); // Force refresh credits
+                await refreshCredits();
                 return true;
             } else {
                 alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
@@ -307,7 +348,6 @@ export const useMarket = () => {
             return false;
         }
     }, [credits, refreshMarket, refreshCredits]);
-
 
     const getPackPrice = useCallback((packId: string, originalPrice: number) => {
         const packStickers = STICKERS.filter(s => s.packId === packId);
@@ -333,8 +373,11 @@ export const useMarket = () => {
         search,
         changeSort,
         sort,
+        filterBySeller,
+        sellerId,
+        filterByTag,
+        selectedTags,
         hasMore,
         isSearching: !!keyword
     };
 };
-
