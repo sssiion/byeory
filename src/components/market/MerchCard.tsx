@@ -46,7 +46,7 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                         className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-sm select-none"
                     />
                 ) : (
-                    <div className="text-[var(--text-secondary)]">No Image</div>
+                    <div className="text-[var(--text-secondary)] font-medium text-xs">이미지 없음</div>
                 )}
 
                 {onToggleWishlist && (
@@ -66,10 +66,10 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                 {/* Type Badge */}
                 <div className="absolute top-3 left-3">
                     <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 text-[var(--text-secondary)] backdrop-blur-sm">
-                        {item.type === 'template_widget' ? '위젯 템플릿' :
-                            item.type === 'template_post' ? '게시물 템플릿' :
-                                item.type === 'sticker' ? '스티커' :
-                                    item.type === 'start_pack' ? '스타터 팩' :
+                        {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
+                            (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
+                                (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
+                                    (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
                                         (item.type as string).replace('_', ' ')}
                     </span>
                 </div>
@@ -124,10 +124,16 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                                 {item.price.toLocaleString()} C
                             </span>
                         )}
-                        <div className={`flex items-center gap-1.5 font-bold ${isDiscounted && !isOwned ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
-                            <Coins className={`w-4 h-4 ${isDiscounted && !isOwned ? 'text-red-500' : 'text-yellow-500'}`} />
-                            {currentPrice.toLocaleString()}
-                        </div>
+                        {Number(currentPrice) === 0 ? (
+                            <div className={`font-bold ${isOwned ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
+                                무료
+                            </div>
+                        ) : (
+                            <div className={`flex items-center gap-1.5 font-bold ${isDiscounted && !isOwned ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
+                                <Coins className={`w-4 h-4 ${isDiscounted && !isOwned ? 'text-red-500' : 'text-yellow-500'}`} />
+                                {Number(currentPrice).toLocaleString()}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -140,9 +146,11 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                     className={`mt-4 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all 
                         ${isOwned
                             ? 'bg-green-500/10 text-green-600 border border-green-500/20 cursor-default'
-                            : canAfford
-                                ? 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
-                                : 'bg-[var(--bg-card-secondary)] text-[var(--text-disabled)] cursor-not-allowed'
+                            : Number(currentPrice) === 0
+                                ? 'bg-[var(--btn-bg)] text-white hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg' // Free style (same as affordable)
+                                : canAfford
+                                    ? 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
+                                    : 'bg-[var(--bg-card-secondary)] text-[var(--text-disabled)] cursor-not-allowed'
                         }`}
                 >
                     {isOwned ? (
@@ -150,7 +158,7 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                     ) : (
                         <>
                             <ShoppingBag className="w-4 h-4" />
-                            {canAfford ? '구매하기' : '크레딧 부족'}
+                            {Number(currentPrice) === 0 ? '무료로 받기' : (canAfford ? '구매하기' : '크레딧 부족')}
                         </>
                     )}
                 </button>

@@ -135,7 +135,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     ) : (
                         <div className="text-[var(--text-secondary)] flex flex-col items-center gap-4">
                             <ShoppingBag className="w-20 h-20 opacity-20" />
-                            <span className="text-xl font-bold opacity-50">No Image</span>
+                            <span className="text-xl font-bold opacity-50">이미지 없음</span>
                         </div>
                     )}
                     <div className="absolute bottom-6 left-6 flex gap-2 flex-wrap">
@@ -162,10 +162,10 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     <div className="p-8 border-b border-[var(--border-color)]">
                         <div className="flex justify-between items-start mb-2">
                             <span className="px-2 py-1 bg-[var(--bg-card-secondary)] rounded-md text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                                {(item.type as string) === 'template_widget' ? '위젯 템플릿' :
-                                    (item.type as string) === 'template_post' ? '게시물 템플릿' :
-                                        (item.type as string) === 'sticker' ? '스티커' :
-                                            (item.type as string) === 'start_pack' ? '스타터 팩' :
+                                {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
+                                    (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
+                                        (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
+                                            (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
                                                 (item.type as string)?.replace('_', ' ')}
                             </span>
                             {/* Dynamic Header Stats */}
@@ -318,11 +318,11 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         <div className="flex flex-col">
                             {effectivePrice < item.price && (
                                 <span className="text-xs text-red-500 line-through decoration-red-500/50">
-                                    {item.price.toLocaleString()} C
+                                    {Number(item.price).toLocaleString()} C
                                 </span>
                             )}
-                            <span className={`text-2xl font-black ${effectivePrice < item.price ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
-                                {effectivePrice.toLocaleString()} C
+                            <span className={`text-2xl font-black ${Number(effectivePrice) < Number(item.price) || Number(effectivePrice) === 0 ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
+                                {Number(effectivePrice) === 0 ? '무료' : `${Number(effectivePrice).toLocaleString()} C`}
                             </span>
                         </div>
 
@@ -345,7 +345,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                         : 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110'
                                     }`}
                             >
-                                {isOwned ? '보유중' : '구매하기'}
+                                {isOwned ? '보유중' : (Number(effectivePrice) === 0 ? '무료로 받기' : '구매하기')}
                             </button>
                         </div>
                     </div>

@@ -18,7 +18,7 @@ export const useMarket = () => {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Function to fetch data from backend
-    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high', sellerId?: string | null } = {}) => {
+    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high', sellerId?: string | null, isFree?: boolean } = {}) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
@@ -303,6 +303,68 @@ export const useMarket = () => {
         }
     }, [refreshMarket, refreshCredits]);
 
+    const updateItem = useCallback(async (itemId: string, itemData: any) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert('로그인이 필요합니다.');
+            return false;
+        }
+
+        try {
+            const body = {
+                name: itemData.title,
+                price: itemData.price,
+                category: itemData.type,
+                // referenceId: itemData.referenceId, // Usually not updated
+                contentJson: JSON.stringify({
+                    description: itemData.description,
+                    tags: itemData.tags,
+                    imageUrl: itemData.imageUrl || ''
+                })
+            };
+
+            const response = await fetch(`http://localhost:8080/api/market/items/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (response.ok) {
+                // Reload selling items
+                const res = await fetch('http://localhost:8080/api/market/my-items', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const items = await res.json();
+                    const selling = items.map((i: any) => ({
+                        id: String(i.id),
+                        title: i.name,
+                        price: i.price,
+                        description: i.contentJson ? JSON.parse(i.contentJson).description : '',
+                        tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
+                        type: i.category,
+                        salesCount: i.salesCount,
+                        status: i.status,
+                        referenceId: i.referenceId
+                    }));
+                    setSellingItems(selling);
+                }
+                return true;
+            } else {
+                const errorText = await response.text();
+                alert(`수정 실패: ${errorText}`);
+                return false;
+            }
+        } catch (error) {
+            console.error("Failed to update item", error);
+            alert('수정 중 오류가 발생했습니다.');
+            return false;
+        }
+    }, []);
+
     const cancelItem = useCallback(async (itemId: string) => {
         if (!isNaN(Number(itemId))) {
             const token = localStorage.getItem('accessToken');
@@ -378,6 +440,8 @@ export const useMarket = () => {
         filterByTag,
         selectedTags,
         hasMore,
-        isSearching: !!keyword
+        isSearching: !!keyword,
+        updateItem,
+        refreshMarket
     };
 };

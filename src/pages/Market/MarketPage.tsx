@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import MarketLayout from '../../components/market/MarketLayout';
 import MerchCard from '../../components/market/MerchCard';
@@ -7,15 +7,33 @@ import SellModal from '../../components/market/SellModal';
 import { type MarketItem } from '../../data/mockMarketItems';
 import { useCredits } from '../../context/CreditContext';
 import { useMarket } from '../../hooks/useMarket';
-import { Search, Plus, FolderOpen, Heart, ShoppingBag, X } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Heart, FolderOpen, X, Check } from 'lucide-react';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
-    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort, filterBySeller, sellerId, filterByTag, selectedTags } = useMarket(); // destructured
-    const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history'>('all');
+    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort, filterBySeller, sellerId, filterByTag, selectedTags, updateItem, refreshMarket } = useMarket(); // destructured
+    const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history' | 'free'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [hideOwned, setHideOwned] = useState(false); // New State
     const shouldSkipSearch = React.useRef(false); // Ref to skip search effect when clearing programmatically
+
+    useEffect(() => {
+        if (activeTab === 'free') {
+            refreshMarket({ isFree: true, page: 0 });
+        } else if (activeTab === 'myshop' || activeTab === 'history' || activeTab === 'wishlist') {
+            // These tabs likely handle their own data fetching or rely on existing state
+            // But if we switch back from 'free' to others, we might need to reset isFree?
+            // Actually, refreshMarket defaulting to isFree undefined (which is falsey or ignored) helps.
+            // But if we want to ensure we fetch "All paid+free" we should probably reset.
+            // However, myshop/history use different API endpoints separate from marketItems usually?
+            // Let's check useMarket. MarketItems is "OnSaleItems".
+            // So if I go 'all', I want everything.
+        } else {
+            // For 'all', 'sticker', etc.
+            refreshMarket({ isFree: false, page: 0 });
+        }
+    }, [activeTab, refreshMarket]);
 
     // Debounce Search
     useEffect(() => {
@@ -46,7 +64,7 @@ const Market: React.FC = () => {
             id: w.id || w._id,
             title: w.name,
             type: 'template_widget', // or custom type
-            description: 'Custom Widget Component',
+            description: '사용자가 직접 생성한 커스텀 위젯입니다.',
             price: 0,
             source: 'api'
         }));
@@ -89,55 +107,80 @@ const Market: React.FC = () => {
     };
 
     const [sellModalItem, setSellModalItem] = useState<any>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
 
-    const handleSell = (item: any) => {
+    const handleSell = (item: any, isEdit: boolean = false) => {
         setSellModalItem(item);
+        setIsEditMode(isEdit);
     };
 
     const handleRegisterSubmit = async (data: { price: number; description: string; tags: string[] }) => {
         if (!sellModalItem) return;
 
-        await registerItem({
-            ...sellModalItem,
-            price: data.price,
-            description: data.description, // Will be put into contentJson in useMarket/backend logic if updated
-            tags: data.tags
-        });
+        if (isEditMode) {
+            // Update Item
+            const success = await updateItem(sellModalItem.id, {
+                ...sellModalItem,
+                price: data.price,
+                description: data.description,
+                tags: data.tags
+            });
+
+            if (success) {
+                alert(`'${sellModalItem.title}' 수정 완료!`);
+            }
+        } else {
+            // Register New Item
+            await registerItem({
+                ...sellModalItem,
+                price: data.price,
+                description: data.description,
+                tags: data.tags
+            });
+            alert(`'${sellModalItem.title}'이(가) 등록되었습니다!`);
+        }
 
         setSellModalItem(null);
-        alert(`'${sellModalItem.title}'이(가) 등록되었습니다!`);
+        setIsEditMode(false);
     };
 
     // MERGE MOCK ITEMS + BACKEND ITEMS
     // Since we migrated mock data to DB, we should only use backend items to prevent duplicates and ID mismatches.
     const allMarketItems = [...marketItems];
 
-    const filteredItems = allMarketItems.filter((item: any) => {
-        // 1. Tab Filtering
-        let matchesTab = false;
-        if (activeTab === 'wishlist') {
-            matchesTab = isWishlisted(item.id);
-        } else if (activeTab === 'start_pack') {
-            matchesTab = (item.tags || []).includes('starter');
-        } else if (activeTab === 'history' || activeTab === 'myshop') {
-            return false;
-        } else if (activeTab === 'all') {
-            matchesTab = true;
-        } else {
-            matchesTab = item.type === activeTab;
-        }
+    const filteredItems = useMemo(() => {
+        return allMarketItems.filter((item: any) => {
+            // 0. Hide Owned filtering
+            if (hideOwned && isOwned(item.id)) return false;
 
-        if (!matchesTab) return false;
+            // 1. Tab Filtering
+            let matchesTab = false;
+            if (activeTab === 'wishlist') {
+                matchesTab = isWishlisted(item.id);
+            } else if (activeTab === 'start_pack') {
+                matchesTab = (item.tags || []).includes('starter');
+            } else if (activeTab === 'history' || activeTab === 'myshop') {
+                return false;
+            } else if (activeTab === 'all') {
+                matchesTab = true;
+            } else if (activeTab === 'free') {
+                matchesTab = Number(item.price) === 0;
+            } else {
+                matchesTab = item.type === activeTab;
+            }
 
-        // 2. Search Filtering (Essential for Mock items and local verification)
-        if (!searchTerm) return true;
+            if (!matchesTab) return false;
 
-        const tags = item.tags || [];
-        const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+            // 2. Search Filtering (Essential for Mock items and local verification)
+            if (!searchTerm) return true;
 
-        return matchesSearch;
-    });
+            const tags = item.tags || [];
+            const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
+            return matchesSearch;
+        });
+    }, [allMarketItems, activeTab, isWishlisted, searchTerm, hideOwned, isOwned]);
 
     return (
         <MarketLayout header={<Navigation />}>
@@ -163,9 +206,10 @@ const Market: React.FC = () => {
 
                 {/* Tabs & Search */}
                 <div className="flex flex-col md:flex-row gap-4 sticky top-16 z-50 bg-transparent py-4 -mx-2 px-2 transition-all mt-4">
-                    <div className="flex overflow-x-auto pb-2 md:pb-0 gap-3 flex-1 scrollbar-hide px-2">
+                    <div className="flex overflow-x-auto py-2 gap-3 flex-1 scrollbar-hide px-2">
                         {[
                             { id: 'all', label: '전체' },
+                            { id: 'free', label: '무료' },
                             { id: 'start_pack', label: '⭐ 스타터 팩' },
                             { id: 'sticker', label: '스티커' },
                             { id: 'template_widget', label: '위젯 템플릿' },
@@ -201,7 +245,9 @@ const Market: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sort & Filter Bar */}
+
+
+                {/* Sort & Filter Bar (Active) */}
                 {activeTab !== 'myshop' && activeTab !== 'history' && (
                     <div className="flex flex-col gap-2 -mb-4 px-2">
                         {sellerId && (
@@ -242,28 +288,48 @@ const Market: React.FC = () => {
                                 </button>
                             </div>
                         )}
-                        <div className="flex justify-between items-center">
+
+                        <div className="flex justify-between items-center mt-2">
                             <span className="text-sm font-bold text-[var(--text-secondary)]">
                                 총 {filteredItems.length}개의 아이템
                             </span>
-                            <div className="flex gap-2">
-                                {[
-                                    { id: 'popular', label: '인기순' },
-                                    { id: 'latest', label: '최신순' },
-                                    { id: 'price_low', label: '낮은가격순' },
-                                    { id: 'price_high', label: '높은가격순' }
-                                ].map(opt => (
-                                    <button
-                                        key={opt.id}
-                                        onClick={() => changeSort(opt.id as any)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sort === opt.id
-                                            ? 'bg-[var(--btn-bg)] text-white'
-                                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
-                                            }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
+
+                            <div className="flex items-center gap-4">
+                                {/* Hide Owned Toggle */}
+                                <label className="flex items-center gap-2 cursor-pointer select-none group">
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${hideOwned ? 'bg-[var(--btn-bg)] border-[var(--btn-bg)]' : 'border-[var(--text-secondary)] group-hover:border-[var(--text-primary)]'}`}>
+                                        {hideOwned && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={hideOwned}
+                                        onChange={(e) => setHideOwned(e.target.checked)}
+                                        className="hidden"
+                                    />
+                                    <span className={`text-xs font-bold ${hideOwned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>보유 상품 숨기기</span>
+                                </label>
+
+                                <div className="h-4 w-[1px] bg-[var(--border-color)]"></div>
+
+                                <div className="flex gap-2">
+                                    {[
+                                        { id: 'popular', label: '인기순' },
+                                        { id: 'latest', label: '최신순' },
+                                        { id: 'price_low', label: '낮은가격순' },
+                                        { id: 'price_high', label: '높은가격순' }
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.id}
+                                            onClick={() => changeSort(opt.id as any)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${sort === opt.id
+                                                ? 'bg-[var(--btn-bg)] text-white'
+                                                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
+                                                }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -346,27 +412,41 @@ const Market: React.FC = () => {
                                                         {statusText}
                                                     </div>
                                                     <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                                                        {item.type}
+                                                        {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
+                                                            (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
+                                                                (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
+                                                                    (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
+                                                                        item.type}
                                                     </div>
                                                     <div>
                                                         <h3 className="font-bold text-[var(--text-primary)]">{item.title}</h3>
                                                         <p className="text-xs text-[var(--text-secondary)] font-mono mt-1">{item.price} C</p>
                                                     </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (confirm(`'${item.title}' 판매를 중지하시겠습니까?`)) {
-                                                                cancelItem(item.id);
-                                                            }
-                                                        }}
-                                                        disabled={isCanceled}
-                                                        className={`mt-auto w-full py-2 rounded-lg border text-xs font-bold transition-colors
+                                                    <div className="flex gap-2 w-full mt-auto">
+                                                        <button
+                                                            onClick={() => {
+                                                                if (confirm(`'${item.title}' 판매를 중지하시겠습니까?`)) {
+                                                                    cancelItem(item.id);
+                                                                }
+                                                            }}
+                                                            disabled={isCanceled}
+                                                            className={`flex-1 py-2 rounded-lg border text-xs font-bold transition-colors
                                                     ${isCanceled
-                                                                ? 'border-transparent text-[var(--text-disabled)] cursor-not-allowed bg-[var(--bg-card-secondary)]'
-                                                                : 'border-red-200 dark:border-red-900/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                                            }`}
-                                                    >
-                                                        {isCanceled ? '판매 중지됨' : '판매 중지'}
-                                                    </button>
+                                                                    ? 'border-transparent text-[var(--text-disabled)] cursor-not-allowed bg-[var(--bg-card-secondary)]'
+                                                                    : 'border-red-200 dark:border-red-900/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                                }`}
+                                                        >
+                                                            {isCanceled ? '판매 중지됨' : '판매 중지'}
+                                                        </button>
+                                                        {!isCanceled && (
+                                                            <button
+                                                                onClick={() => handleSell(item, true)}
+                                                                className="flex-1 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] text-xs font-bold transition-colors"
+                                                            >
+                                                                수정
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )
                                         })}
@@ -395,7 +475,11 @@ const Market: React.FC = () => {
                                     {mySellableCandidates.map((item, idx) => (
                                         <div key={`${item.source}-${item.id}-${idx}`} className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 group hover:border-[var(--btn-bg)] transition-colors relative">
                                             <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                                                {item.type === 'template_widget' ? '위젯 템플릿' : '로컬 아이템'}
+                                                {item.type === 'template_widget' ? '위젯 템플릿' :
+                                                    item.type === 'sticker' ? '스티커' :
+                                                        item.type === 'template_post' ? '게시물 템플릿' :
+                                                            item.type === 'start_pack' ? '스타터 팩' :
+                                                                '로컬 아이템'}
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-[var(--text-primary)]">{item.title}</h3>
@@ -428,7 +512,7 @@ const Market: React.FC = () => {
                             </div>
                         ) : (
                             <>
-                                {filteredItems.map(item => {
+                                {filteredItems.map((item: any) => {
                                     const effectivePrice = getPackPrice(item.id, item.price);
                                     return (
                                         <MerchCard

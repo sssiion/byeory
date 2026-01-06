@@ -8,9 +8,9 @@ interface SellModalProps {
 }
 
 const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
-    const [price, setPrice] = useState('1000');
-    const [description, setDescription] = useState('');
-    const [tags, setTags] = useState<string[]>([]);
+    const [price, setPrice] = useState(item.price ? String(item.price) : '1000');
+    const [description, setDescription] = useState(item.description || '');
+    const [tags, setTags] = useState<string[]>(item.tags || []);
     const [tagInput, setTagInput] = useState('');
 
     const handleAddTag = () => {
