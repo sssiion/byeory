@@ -15,6 +15,13 @@ const Post: React.FC = () => {
     const editor = usePostEditor();
     const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false); // 앨범 생성 모달 상태
 
+    // ✨ View Changed -> Auto Refresh Data (Counts, Post Lists)
+    React.useEffect(() => {
+        if (editor.viewMode === 'album' || editor.viewMode === 'folder') {
+            editor.refreshPosts();
+        }
+    }, [editor.viewMode]);
+
     // 이미지 업로드 핸들러 (Hook -> Component 전달용)
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 import SaveLocationWidget from './SaveLocationWidget';
 import { motion, AnimatePresence } from 'framer-motion';

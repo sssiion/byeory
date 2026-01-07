@@ -383,7 +383,18 @@ export const usePostEditor = () => {
         setFloatingImages(post.floatingImages || []);
         setCurrentTags(post.tags || []); // ✨ 태그 로드
         setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
-        setMode(post.mode || 'AUTO'); // ✨ Load mode
+        setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
+        // ✨ Mode Fallback Logic fix
+        if (post.mode) {
+            setMode(post.mode);
+        } else {
+            // Heuristic: If tags exist, assume AUTO probably. If manual album IDs exist but no tags? MANUAL?
+            // Safest is default to AUTO unless explicit. But user said "If I edit, it starts as MANUAL".
+            // If we really want to respect saved state, we need post.mode from DB.
+            // If DB doesn't have it, we can default based on content.
+            const hasTags = post.tags && post.tags.length > 0;
+            setMode(hasTags ? 'AUTO' : 'MANUAL');
+        }
         setIsFavorite(post.isFavorite || false); // ✨ Load favorite
         setIsPublic(post.isPublic ?? true); // ✨ Load public status
         setViewMode('read');
@@ -399,7 +410,7 @@ export const usePostEditor = () => {
         const safeTags = Array.isArray(currentTags) ? currentTags.filter(t => typeof t === 'string') : [];
         const safeAlbumIds = Array.isArray(targetAlbumIds) ? targetAlbumIds.filter(id => typeof id === 'string') : [];
 
-        // ✨ Auto-Link Logic: Resolve IDs for Tags (AUTO Mode)
+        // ✨ Auto-Link Logic: Resolve IDs for Tags (AUTO Mode ONLY)
         const finalAlbumIds = new Set(safeAlbumIds); // Start with manually selected IDs
 
         if (mode === 'AUTO' && safeTags.length > 0) {
@@ -416,12 +427,28 @@ export const usePostEditor = () => {
                     finalAlbumIds.add(existing.id);
                 } else {
                     // Auto-create and get ID
-                    // Note: We await sequentially
+                    // in AUTO mode, we might auto-create.
+                    // But wait, if user switched to MANUAL, we should NOT do this loop at all.
+                    // The 'if (mode === 'AUTO')' check above handles it.
+                    // So why did it move?
+
+                    // ANSWER: It implies that `mode` might be 'AUTO' at this point,
+                    // OR that `finalAlbumIds` is being constructed wrong.
+
+                    // If mode is MANUAL, we skip this block, so `finalAlbumIds` == `safeAlbumIds`.
+                    // So if it moved to '나' (tag based), that means EITHER:
+                    // 1. `mode` was effectively 'AUTO'.
+                    // 2. The backend is doing it on its own despite our 'MANUAL'.
+
                     const newId = await handleCreateAlbum(tag, [tag]);
                     if (newId) finalAlbumIds.add(newId);
                 }
             }
         }
+
+        // Double check: if MANUAL, ensure we ONLY send selected IDs
+        // (The logic above already does this, but let's be explicit in debugging if needed)
+
         const mergedAlbumIds = Array.from(finalAlbumIds);
 
         const postData = {
@@ -433,11 +460,24 @@ export const usePostEditor = () => {
             floatingImages,
             titleStyles,
             tags: safeTags,
+            // ✨ Key Logic Change: For MANUAL mode, we want to SET the albums, not just add.
+            // But the backend `savePostToApi` (POST/PUT /api/posts) typically REPLACES the album list in the DB if we send it.
+            // So simply sending `mergedAlbumIds` (which is just `safeAlbumIds` in MANUAL mode) is correct for "replacing" the list.
             albumIds: mergedAlbumIds,
             mode,
             isFavorite,
             isPublic
         };
+
+        // 🔍 DEBUG: Verify what we are strictly sending
+        if (mode === 'MANUAL') {
+            console.log("🚀 [MANUAL SAVE DEBUG]", {
+                sentAlbumIds: mergedAlbumIds,
+                tags: safeTags
+            });
+            // Uncomment this if you want visible confirmation
+            // alert(`[DEBUG] 수동 저장 전송:\n모드: ${mode}\n전송할 앨범ID: ${JSON.stringify(mergedAlbumIds)}\n태그: ${JSON.stringify(safeTags)}`);
+        }
 
         setIsSaving(true);
         try {

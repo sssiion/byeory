@@ -103,11 +103,24 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
         filteredAlbums = customAlbums;
     }
 
+    // ✨ Sort: Selected albums first, then alphabetical (or by creation)
+    filteredAlbums = [...filteredAlbums].sort((a, b) => {
+        // ✨ Loose comparison (String() conversion) to handle number vs string mismatch
+        const aSelected = selectedAlbumIds.some(id => String(id) === String(a.id));
+        const bSelected = selectedAlbumIds.some(id => String(id) === String(b.id));
+        if (aSelected === bSelected) return 0;
+        return aSelected ? -1 : 1;
+    });
+
     const toggleAlbum = (id: string) => {
-        if (selectedAlbumIds.includes(id)) {
-            onAlbumIdsChange(selectedAlbumIds.filter(i => i !== id));
+        // ✨ Normalize ID to string for comparison and storage
+        const strId = String(id);
+        const exists = selectedAlbumIds.some(existingId => String(existingId) === strId);
+
+        if (exists) {
+            onAlbumIdsChange(selectedAlbumIds.filter(i => String(i) !== strId));
         } else {
-            onAlbumIdsChange([...selectedAlbumIds, id]);
+            onAlbumIdsChange([...selectedAlbumIds, strId]);
         }
     };
 
@@ -288,7 +301,7 @@ const SaveLocationWidget: React.FC<Props> = ({ currentTags, selectedAlbumIds = [
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {/* 1. Filtered or Tag-Matched Albums */}
                     {filteredAlbums.map((album) => {
-                        const isSelected = selectedAlbumIds.includes(album.id);
+                        const isSelected = selectedAlbumIds.some(id => String(id) === String(album.id));
                         const pathName = getAlbumPath(album.id);
 
                         // Stats Logic - Use server provided counts
