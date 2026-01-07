@@ -1,17 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import type { RoomCycle } from '../roomCycleApi';
-import { Lock, Sun, Cloud, CloudRain, Snowflake, Check, Clock } from 'lucide-react';
+import { type RoomCycle, fetchCycleContentApi } from '../roomCycleApi';
+import { Lock, Sun, Cloud, CloudRain, Snowflake, Check, Clock, Smile, Frown, Angry, Meh } from 'lucide-react';
 
 interface Props {
     cycle: RoomCycle;
     onPassTurn: (content: string) => Promise<void>;
 }
 
+// --- Helper Components ---
+const WeatherIcon = ({ type, selected, onClick }: { type: string; selected: boolean; onClick: () => void }) => {
+    const icons = { SUNNY: Sun, CLOUDY: Cloud, RAINY: CloudRain, SNOWY: Snowflake } as const;
+    const Icon = icons[type as keyof typeof icons] || Sun;
+    return (
+        <button
+            onClick={onClick}
+            className={`p-1.5 rounded-full transition-all ${selected ? 'bg-orange-100 text-orange-500 ring-2 ring-orange-200' : 'text-gray-400 hover:bg-gray-100'}`}
+        >
+            <Icon size={18} />
+        </button>
+    );
+};
+
+const FeelingIcon = ({ type, selected, onClick }: { type: string; selected: boolean; onClick: () => void }) => {
+    const icons = { HAPPY: Smile, SAD: Meh, ANGRY: Angry, CRYING: Frown } as const;
+    const Icon = icons[type as keyof typeof icons] || Smile;
+    return (
+        <button
+            onClick={onClick}
+            className={`p-1.5 rounded-full transition-all ${selected ? 'bg-indigo-100 text-indigo-500 ring-2 ring-indigo-200' : 'text-gray-400 hover:bg-gray-100'}`}
+        >
+            <Icon size={18} />
+        </button>
+    );
+};
+
+const WeatherIconDisplay = ({ type }: { type: string }) => {
+    const icons = { SUNNY: Sun, CLOUDY: Cloud, RAINY: CloudRain, SNOWY: Snowflake } as const;
+    const Icon = icons[type as keyof typeof icons] || Sun;
+    return <Icon size={16} className="text-gray-400" />;
+};
+
+const FeelingIconDisplay = ({ type }: { type: string }) => {
+    const icons = { HAPPY: Smile, SAD: Meh, ANGRY: Angry, CRYING: Frown } as const;
+    const Icon = icons[type as keyof typeof icons] || Smile;
+    return <Icon size={16} className="text-gray-400" />;
+};
+
 const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
     const [feeling, setFeeling] = useState('HAPPY');
     const [weather, setWeather] = useState('SUNNY');
     const [content, setContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [myEmail, setMyEmail] = useState<string | null>(null);
+
+    // Accumulated content from server
+    const [sharedContent, setSharedContent] = useState<any>(null);
+
+    // Date Logic
+    const [displayDate, setDisplayDate] = useState('');
+
+    useEffect(() => {
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        setDisplayDate(`${yy}-${mm}-${dd} / ${hh}:${min}`);
+    }, []);
+
+    // 1. Get identity and Fetch Content
+    useEffect(() => {
+        const init = async () => {
+            // Get Identity
+            try {
+                const token = localStorage.getItem('accessToken');
+                if (token) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    setMyEmail(payload.sub || payload.email);
+                }
+            } catch (e) {
+                console.warn("Token parse failed", e);
+            }
+
+            // Fetch Content if Completed or My Turn
+            if (cycle.status === 'COMPLETED' || cycle.isMyTurn) {
+                try {
+                    const data = await fetchCycleContentApi(cycle.id);
+                    if (data) setSharedContent(data);
+                } catch (e) {
+                    console.error("Failed to load diary content", e);
+                }
+            }
+        };
+        init();
+    }, [cycle.id, cycle.status, cycle.isMyTurn]);
 
     // Timer Logic
     const [timeLeft, setTimeLeft] = useState<string>('');
@@ -47,11 +130,20 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
 
         setIsSubmitting(true);
         try {
+            // Previous blocks + my new block
+            const previousBlocks = sharedContent?.blocks || [];
             const payload = JSON.stringify({
-                date: new Date().toISOString().split('T')[0],
-                feeling,
-                weather,
-                text: content
+                title: cycle.title,
+                blocks: [
+                    ...previousBlocks,
+                    {
+                        type: "paragraph",
+                        text: content,
+                        date: displayDate,
+                        feeling,
+                        weather
+                    }
+                ]
             });
             await onPassTurn(payload);
         } catch (e) {
@@ -60,20 +152,6 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
         } finally {
             setIsSubmitting(false);
         }
-    };
-
-    // --- Helper Components ---
-    const WeatherIcon = ({ type, selected, onClick }: any) => {
-        const icons = { SUNNY: Sun, CLOUDY: Cloud, RAINY: CloudRain, SNOWY: Snowflake };
-        const Icon = icons[type as keyof typeof icons] || Sun;
-        return (
-            <button
-                onClick={onClick}
-                className={`p-2 rounded-full transition-all ${selected ? 'bg-orange-100 text-orange-500 ring-2 ring-orange-200' : 'text-gray-400 hover:bg-gray-100'}`}
-            >
-                <Icon size={20} />
-            </button>
-        );
     };
 
     // --- RENDER ---
@@ -85,7 +163,7 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                     <h2 className="text-2xl font-bold font-serif text-[var(--text-primary)]">{cycle.title}</h2>
                     <p className="text-sm text-[var(--text-secondary)] font-serif italic">Shared Exchange Diary</p>
                 </div>
-                {cycle.status === 'IN_PROGRESS' && (
+                {cycle.status === 'IN_PROGRESS' && cycle.nextTurnTime && (
                     <div className="flex items-center gap-2 px-4 py-2 bg-black/5 rounded-full font-mono text-sm font-bold text-[var(--text-secondary)]">
                         <Clock size={16} />
                         {timeLeft || "--:--:--"}
@@ -95,52 +173,64 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
 
             {/* Grid Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[url('https://www.transparenttextures.com/patterns/notebook.png')] bg-[#fdfbf7] p-8 rounded-xl shadow-lg border border-[#e5e0d8]">
-                {cycle.members?.map((member) => {
+                {cycle.members?.map((member, index) => {
                     const memberOrder = member.order ?? member.turnOrder;
-                    const isMe = memberOrder === cycle.myTurnOrder;
                     const isCurrent = memberOrder === cycle.currentTurnOrder;
-                    // Removed unused isPast
 
-                    // State Logic
+                    // Dual verification: Backend says isMyTurn OR Token Email matches current turn member email
+                    const isMeMatchingCurrentTurn = isCurrent && myEmail && member.email === myEmail;
+                    const canIWrite = (cycle.isMyTurn && isCurrent && (member.userId === (cycle.myTurnOrder ?? -1) || member.email === myEmail)) || isMeMatchingCurrentTurn;
+
+                    const itemKey = member.userId || member.id || `member-${index}`;
+
+                    // Content for this specific card
+                    const memberEntry = sharedContent?.blocks?.[index];
+
                     // 1. Completed & Public (Cycle Finished) -> Show Content
-                    if (cycle.status === 'COMPLETED') {
+                    if (cycle.status === 'COMPLETED' || (member.isCompleted && sharedContent)) {
                         return (
-                            <div key={member.id} className="aspect-[4/3] border-b-2 border-r-2 border-gray-100 bg-white p-4 shadow-sm rotate-1">
-                                {/* Render Completed Content */}
-                                <div className="h-full flex flex-col">
-                                    <div className="border-b pb-2 mb-2 flex justify-between text-xs text-gray-500 font-serif">
-                                        <span>{member.nickname}</span>
+                            <div key={itemKey} className="aspect-[4/3] bg-white p-5 border-b-2 border-r-2 border-gray-100 shadow-sm flex flex-col rotate-1 hover:rotate-0 transition-transform cursor-pointer">
+                                <div className="border-b pb-2 mb-3 flex flex-col gap-1">
+                                    <div className="flex justify-between items-center text-xs text-gray-400 font-serif">
+                                        <span className="font-bold text-gray-600">{member.nickname}</span>
+                                        <div className="flex gap-2 items-center">
+                                            {memberEntry && (
+                                                <>
+                                                    <FeelingIconDisplay type={memberEntry.feeling} />
+                                                    <WeatherIconDisplay type={memberEntry.weather} />
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex-1 font-serif text-sm leading-loose">
-                                        일기 내용이 여기에 표시됩니다 (백엔드 구현 대기 중)
-                                    </div>
+                                    <span className="text-[10px] text-gray-300 font-mono">{memberEntry?.date || ""}</span>
+                                </div>
+                                <div className="flex-1 font-serif text-sm leading-loose overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                                    {memberEntry ? memberEntry.text : "작성된 내용이 없습니다."}
                                 </div>
                             </div>
                         );
                     }
 
-                    // 2. My Turn (Active Input)
-                    if (isCurrent && cycle.isMyTurn && isMe) { // Redundant check isMe if isMyTurn is mostly sufficient
+                    // 2. My Turn (Active Input) - Using Dual Verification
+                    if (cycle.status === 'IN_PROGRESS' && canIWrite) {
                         return (
-                            <div key={member.id} className="aspect-[4/3] bg-white shadow-xl ring-4 ring-indigo-100 rounded-lg p-5 flex flex-col relative z-10 scale-105 transition-transform">
-                                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                                    <span className="font-bold text-sm text-indigo-900">{member.nickname}'s Turn</span>
-                                    <div className="flex gap-1 items-center">
-                                        {/* Feeling Selector */}
-                                        <select
-                                            value={feeling}
-                                            onChange={(e) => setFeeling(e.target.value)}
-                                            className="text-xs border rounded p-1 mr-2 outline-none"
-                                        >
-                                            <option value="HAPPY">😄 Happy</option>
-                                            <option value="SAD">😢 Sad</option>
-                                            <option value="ANGRY">😡 Angry</option>
-                                            <option value="TIRED">😴 Tired</option>
-                                        </select>
-
-                                        {['SUNNY', 'CLOUDY', 'RAINY', 'SNOWY'].map(w => (
-                                            <WeatherIcon key={w} type={w} selected={weather === w} onClick={() => setWeather(w)} />
-                                        ))}
+                            <div key={itemKey} className="aspect-[4/3] bg-white shadow-xl ring-4 ring-indigo-100 rounded-lg p-5 flex flex-col relative z-10 scale-105 transition-transform">
+                                <div className="flex flex-col border-b pb-3 mb-4 gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-sm text-indigo-900 shrink-0">{member.nickname} 님</span>
+                                        <div className="flex gap-1">
+                                            {['HAPPY', 'SAD', 'ANGRY', 'CRYING'].map(f => (
+                                                <FeelingIcon key={f} type={f} selected={feeling === f} onClick={() => setFeeling(f)} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-mono text-gray-400 font-bold">{displayDate}</span>
+                                        <div className="flex gap-1 items-center">
+                                            {['SUNNY', 'CLOUDY', 'RAINY', 'SNOWY'].map(w => (
+                                                <WeatherIcon key={w} type={w} selected={weather === w} onClick={() => setWeather(w)} />
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -157,7 +247,7 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                                     disabled={isSubmitting}
                                     className="mt-3 w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700 transition"
                                 >
-                                    {isSubmitting ? '저장 중...' : '일기장 덮기 (제출)'}
+                                    {isSubmitting ? '저장 중...' : '교환일기 작성완료'}
                                 </button>
                             </div>
                         );
@@ -165,7 +255,7 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
 
                     // 3. Locked / Future / Other's Turn
                     return (
-                        <div key={member.id} className="aspect-[4/3] border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center bg-gray-50/50 opacity-70">
+                        <div key={itemKey} className="aspect-[4/3] border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center bg-gray-50/50 opacity-70">
                             {isCurrent ? (
                                 <div className="text-center animate-pulse">
                                     <span className="text-2xl mb-2 block">✍️</span>
