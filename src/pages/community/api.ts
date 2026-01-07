@@ -2,7 +2,13 @@ import axios from 'axios';
 import type { CommunityResponse, PageResponse, UserProfileBasic, CommunityMessage } from './types';
 
 const BASE_URL = 'http://localhost:8080/api';
-
+const normalizeTags = (tags: any[]) => {
+    if (!tags) return [];
+    return tags.map((t: any) => {
+        if (typeof t === 'string') return t;
+        return t.name || t.tagName || "";
+    }).filter((t: string) => t.length > 0);
+};
 const getAuthHeader = () => {
     let token = localStorage.getItem('accessToken');
     if (token) {
@@ -140,3 +146,36 @@ export const getPostDetail = async (postId: number): Promise<any> => {
         return null;
     }
 };
+// 카드 조회용 (조회수 증가 X)
+// 1. 카드 상세 조회 (단순 데이터 조회, 조회수 증가 X)
+export const getCommunitycardDetail = async (postId: number, userId?: number) => {
+    try {
+        const params = userId ? { userId } : {};
+        const response = await axios.get(`${BASE_URL}/communities/card/${postId}`, {
+            params,
+            headers: getAuthHeader()
+        });
+
+        const data = response.data;
+        if (data) {
+            data.tags = normalizeTags(data.tags || data.hashtags);
+        }
+        return data;
+    } catch (error) {
+        console.error("게시글 상세 조회 실패:", error);
+        throw error;
+    }
+};
+
+// 스크롤 조회수 증가
+export const increaseViewCount = async (postId: number) => {
+    try {
+        await axios.get(`${BASE_URL}/communities/scroll/${postId}`, {
+            headers: getAuthHeader()
+        });
+    } catch (error) {
+        console.error("조회수 증가 요청 실패:", error);
+    }
+};
+
+

@@ -44,7 +44,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
     return (
         <div
-            className="origin-top-left bg-white shadow-sm relative overflow-hidden select-none"
+            // ✨ overflow-hidden 제거: 부모(CommunityCard)에서 스크롤 처리
+            className="origin-top-left bg-white shadow-sm relative select-none"
             style={{
                 width: `${ORIGINAL_WIDTH}px`,
                 minHeight: minHeight,
@@ -52,7 +53,6 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 zoom: scale,
             }}
         >
-            {/* ✨ 스타일 태그 추가: 제목 흐르기 애니메이션 */}
             <style>{`
                 @keyframes post-marquee {
                     0% { transform: translateX(100%); }
@@ -60,19 +60,18 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 }
                 .title-marquee {
                     display: inline-block;
-                    white-space: nowrap !important; /* 강제로 한 줄 표시 */
+                    white-space: nowrap !important;
                     animation: post-marquee 12s linear infinite;
                     will-change: transform;
-                    padding-right: 50px; /* 끝부분 여백 */
+                    padding-right: 50px;
                 }
             `}</style>
 
-            {/* 1. 제목 영역 (overflow-hidden 추가) */}
+            {/* 제목 영역은 글자가 흐르므로 overflow-hidden 유지 */}
             <div
                 className="p-8 pb-4 border-b border-gray-100 mb-8 overflow-hidden whitespace-nowrap"
                 style={{ backgroundColor: titleStyles.backgroundColor || 'transparent' }}
             >
-                {/* h1에 animate 클래스 적용 */}
                 <h1 className="title-marquee" style={{
                     fontSize: titleStyles.fontSize || '36px',
                     fontWeight: titleStyles.fontWeight || 'bold',
@@ -80,13 +79,12 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                     fontFamily: titleStyles.fontFamily || 'sans-serif',
                     textAlign: titleStyles.textAlign || 'left',
                     lineHeight: 1.4,
-                    // wordBreak: 'keep-all' // 흐르는 효과를 위해 제거하거나 무시됨
                 }}>
                     {title || "제목 없음"}
                 </h1>
             </div>
 
-            {/* 2. 본문 블록 (Flow Layout) */}
+            {/* 본문 블록 */}
             <div className="px-12 pb-20 space-y-6 relative z-0">
                 {blocks.map((block) => {
                     const textStyle = {
@@ -143,7 +141,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 })}
             </div>
 
-            {/* 3. 자유 배치 요소들 */}
+            {/* 자유 배치 요소들 */}
             {stickers.map(stk => (
                 <img
                     key={stk.id}

@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Heart, Eye, Send, Trash2 } from 'lucide-react';
 import type { CommunityResponse, CommunityMessage } from '../types';
-import { toggleCommunityLike, getCommunityMessages, createCommunityMessage, deleteCommunityMessage, getCommunityDetail } from '../api';
+import {
+    toggleCommunityLike,
+    getCommunityMessages,
+    createCommunityMessage,
+    deleteCommunityMessage,
+    getCommunityDetail
+} from '../api';
 import EditorCanvas from '../../post/components/editor/EditorCanvas';
 
 interface CommunityDetailModalProps {

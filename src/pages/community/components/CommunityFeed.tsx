@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { CommunityResponse } from '../types';
-import { getCommunities, getCommunityDetail } from '../api';
+import {getCommunities, getCommunitycardDetail} from '../api';
 import CommunityCard from './CommunityCard';
 import CommunityDetailModal from './CommunityDetailModal';
 
@@ -63,7 +63,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
 
     const handleCardClick = async (post: CommunityResponse) => {
         try {
-            const detail = await getCommunityDetail(post.postId, currentUserId);
+            const detail = await getCommunitycardDetail(post.postId, currentUserId);
             setSelectedPost(detail);
             setIsModalOpen(true);
 
