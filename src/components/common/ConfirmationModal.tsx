@@ -9,6 +9,7 @@ interface ConfirmationModalProps {
     cancelText?: string;
     onConfirm: () => void;
     onCancel: () => void;
+    onClose?: () => void;
     type?: 'info' | 'danger' | 'success';
     singleButton?: boolean;
 }
@@ -21,6 +22,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     cancelText = '취소',
     onConfirm,
     onCancel,
+    onClose,
     type = 'info',
     singleButton = false
 }) => {
@@ -42,7 +44,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     return (
         <div
             className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-200 ${isOpen ? 'bg-black/60 backdrop-blur-sm opacity-100' : 'bg-transparent opacity-0 pointer-events-none'}`}
-            onClick={singleButton ? onConfirm : onCancel}
+            onClick={onClose || (singleButton ? onConfirm : onCancel)}
         >
             <div
                 className={`bg-[var(--bg-card)] w-[90vw] max-w-sm rounded-2xl shadow-2xl border border-[var(--border-color)] overflow-hidden transform transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}

@@ -18,7 +18,7 @@ export const useMarket = () => {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Function to fetch data from backend
-    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high', sellerId?: string | null, isFree?: boolean } = {}) => {
+    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high', sellerId?: string | null, isFree?: boolean, category?: string } = {}) => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
@@ -26,6 +26,7 @@ export const useMarket = () => {
         const targetKeyword = options.keyword !== undefined ? options.keyword : keyword;
         const targetSort = options.newSort !== undefined ? options.newSort : sort;
         const targetSellerId = options.sellerId !== undefined ? options.sellerId : sellerId;
+        const targetCategory = options.category;
         const isLoadMore = options.isLoadMore || false;
 
         if (!isLoadMore) {
@@ -40,26 +41,67 @@ export const useMarket = () => {
             });
             if (purchasedRes.ok) {
                 const items = await purchasedRes.json();
-                backendPurchased = items.map((i: any) => ({
-                    id: String(i.id),
-                    title: i.name,
-                    price: i.price,
-                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                    type: i.category,
-                    author: i.sellerName,
-                    purchasedAt: i.transactionDate,
-                    status: i.status,
-                    createdAt: i.createdAt,
-                    salesCount: i.salesCount || 0,
-                    averageRating: i.averageRating,
-                    reviewCount: i.reviewCount,
-                    isBackend: true
-                }));
-            }
 
-            setPurchasedItems(backendPurchased);
+                // Process items and expand packs immediately to keep them grouped
+                backendPurchased = items.flatMap((i: any) => {
+                    const mainItem = {
+                        id: String(i.id),
+                        title: i.name,
+                        price: i.price,
+                        description: i.contentJson ? JSON.parse(i.contentJson).description : '',
+                        tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
+                        imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
+                        type: i.category,
+                        author: i.sellerName,
+                        purchasedAt: i.transactionDate,
+                        status: i.status,
+                        createdAt: i.createdAt,
+                        salesCount: i.salesCount || 0,
+                        averageRating: i.averageRating,
+                        reviewCount: i.reviewCount,
+                        referenceId: i.referenceId,
+                        isBackend: true
+                    };
+
+                    const virtualItems: any[] = [];
+                    if (mainItem.referenceId) {
+                        const packContents = STICKERS.filter(s => s.packId === mainItem.referenceId);
+                        packContents.forEach(sticker => {
+                            virtualItems.push({
+                                id: sticker.id, // Virtual ID
+                                title: sticker.name || '포함된 스티커',
+                                imageUrl: sticker.url,
+                                price: 0,
+                                type: 'sticker', // Distinct type?
+                                author: mainItem.author,
+                                purchasedAt: mainItem.purchasedAt,
+                                status: 'OWNED',
+                                referenceId: sticker.id,
+                                isVirtual: true,
+                                description: `${mainItem.title}에 포함됨`,
+                                tags: ['Pack Content'],
+                                // Inherit Pack Rating so "New" badge disappears and ratings show up in History
+                                averageRating: mainItem.averageRating,
+                                reviewCount: mainItem.reviewCount
+                            });
+                        });
+                    }
+
+                    return [mainItem, ...virtualItems];
+                });
+
+                // Deduplicate: If an item exists as both "Real Purchase" and "Virtual Pack Content",
+                // prefer the Virtual one because it has the correct grouping and rating inheritance.
+                const uniqueItems = backendPurchased.filter((item, _, self) => {
+                    if (!item.isVirtual && item.referenceId) {
+                        const hasVirtualVersion = self.some(other => other.isVirtual && other.referenceId === item.referenceId);
+                        if (hasVirtualVersion) return false;
+                    }
+                    return true;
+                });
+
+                setPurchasedItems(uniqueItems);
+            }
 
             // 2. Fetch My Selling Items
             const sellingRes = await fetch('http://localhost:8080/api/market/my-items', {
@@ -110,7 +152,13 @@ export const useMarket = () => {
                 selectedTags.forEach(t => query.append('tags', t));
             }
 
+            if (options.isFree) {
+                query.append('isFree', 'true');
+            }
 
+            if (targetCategory && targetCategory !== 'all') {
+                query.append('category', targetCategory);
+            }
 
             if (targetSellerId) {
                 query.append('sellerId', targetSellerId);
@@ -229,8 +277,29 @@ export const useMarket = () => {
     }, []);
 
     const isOwned = useCallback((itemId: string) => {
-        return purchasedItems.some(item => item.id === String(itemId));
-    }, [purchasedItems]);
+        let checkId = String(itemId);
+
+        // If ID is numeric (DB ID), try to resolve to Reference ID from market items
+        if (!isNaN(Number(checkId))) {
+            const item = marketItems.find(m => String(m.id) === checkId);
+            if (item && item.referenceId) {
+                checkId = item.referenceId;
+            }
+        }
+
+        // 1. Direct ownership
+        if (purchasedItems.some(item => item.id === checkId || item.referenceId === checkId)) {
+            return true;
+        }
+
+        // 2. Pack ownership (Check if this item is part of a pack I own)
+        const stickerDef = STICKERS.find(s => s.id === checkId);
+        if (stickerDef && stickerDef.packId) {
+            return purchasedItems.some(item => item.id === String(stickerDef.packId) || item.referenceId === String(stickerDef.packId));
+        }
+
+        return false;
+    }, [purchasedItems, marketItems]);
 
     const isWishlisted = useCallback((itemId: string) => {
         return wishlistItems.includes(itemId);
@@ -388,7 +457,12 @@ export const useMarket = () => {
         if (!token) return false;
 
         try {
-            const response = await fetch(`http://localhost:8080/api/market/buy/${itemId}`, {
+            let url = `http://localhost:8080/api/market/buy/${itemId}`;
+            if (isNaN(Number(itemId))) {
+                url = `http://localhost:8080/api/market/buy/ref/${itemId}`;
+            }
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -415,6 +489,44 @@ export const useMarket = () => {
         return Math.max(0, originalPrice - ownedValue);
     }, [isOwned]);
 
+    const getMarketItem = useCallback(async (itemId: string) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return null;
+        try {
+            const res = await fetch(`http://localhost:8080/api/market/items/${itemId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const i = await res.json();
+                return {
+                    id: String(i.id),
+                    title: i.name,
+                    price: i.price,
+                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
+                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
+                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
+                    type: i.category,
+                    author: i.sellerName,
+                    status: i.status,
+                    createdAt: i.createdAt,
+                    salesCount: i.salesCount || 0,
+                    referenceId: i.referenceId,
+                    averageRating: i.averageRating,
+                    reviewCount: i.reviewCount
+                };
+            }
+            return null;
+        } catch (e) {
+            console.error("Failed to fetch market item", e);
+            return null;
+        }
+    }, []);
+
+    // This block is placed here based on the instruction's context for deduplication and selling items.
+    // The actual refreshMarket function would likely be a useCallback at the top level of the component.
+
+
+
     return {
         marketItems,
         purchasedItems,
@@ -427,6 +539,7 @@ export const useMarket = () => {
         registerItem,
         cancelItem,
         getPackPrice,
+        getMarketItem,
         loadMore,
         search,
         changeSort,

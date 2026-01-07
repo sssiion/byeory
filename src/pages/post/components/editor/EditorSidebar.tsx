@@ -1,11 +1,8 @@
-import React, { useRef } from 'react';
-import { STICKERS, LAYOUT_PRESETS } from '../../constants';
+import React, { useRef, useState } from 'react';
+import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { useMarket } from '../../../../hooks/useMarket';
-// Note: STICKERS is now an array of objects, not strings. The import is correct but usage changed.
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot } from 'lucide-react';
-
-
-
+import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 
 interface Props {
     isSaving: boolean;
@@ -37,7 +34,26 @@ const EditorSidebar: React.FC<Props> = ({
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
     currentTags, onTagsChange
 }) => {
-    const { isOwned, buyItem } = useMarket();
+    const { isOwned, buyItem, getMarketItem, getPackPrice } = useMarket();
+
+    // Confirmation Modal State
+    const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'info' | 'success' | 'danger';
+        onConfirm: () => void;
+        onSecondary?: () => void; // for Dual Option
+        secondaryLabel?: string;
+        confirmLabel?: string;
+        singleButton?: boolean;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: () => { },
+    });
 
     const triggerFileClick = () => fileInputRef.current?.click();
 
@@ -48,6 +64,117 @@ const EditorSidebar: React.FC<Props> = ({
             onAddFloatingImage(e.target.files[0]);
             e.target.value = ''; // 초기화
         }
+    };
+
+    const handleStickerClick = async (sticker: StickerItemDef) => {
+        // Check ownership
+        const owned = !sticker.isPremium || isOwned(sticker.id) || (sticker.packId && isOwned(sticker.packId));
+        if (owned) {
+            onAddSticker(sticker.url);
+            return;
+        }
+
+        // It is locked. Check if it belongs to a pack.
+        if (sticker.packId) {
+            const packItem = await getMarketItem(sticker.packId);
+            if (packItem) {
+                // Calculate Dynamic Price
+                const packPrice = packItem.price;
+                const dynamicPrice = getPackPrice(sticker.packId, packPrice);
+                const discount = packPrice - dynamicPrice;
+
+                setConfirmation({
+                    isOpen: true,
+                    title: '구매 옵션 선택',
+                    message: `이 스티커는 '${packItem.title}'에 포함되어 있습니다.\n${discount > 0 ? `(기존 구매분 ${discount} C 할인됨!)\n` : ''}어떻게 구매하시겠습니까?`,
+                    type: 'info',
+                    singleButton: false,
+                    confirmLabel: `이 팩 구매하기 (${dynamicPrice} C)`,
+                    secondaryLabel: `이 스티커만 구매 (${sticker.price || 100} C)`,
+                    onConfirm: async () => {
+                        // Buy Pack
+                        setConfirmation(prev => ({ ...prev, isOpen: false }));
+                        if (await buyItem(packItem.id, dynamicPrice)) {
+                            // alert('팩 구매가 완료되었습니다!'); // Using modal instead? or just silent refresh?
+                            // Let's use a success modal
+                            setTimeout(() => setConfirmation({
+                                isOpen: true,
+                                title: '구매 완료',
+                                message: `'${packItem.title}' 구매가 완료되었습니다!`,
+                                type: 'success',
+                                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false })),
+                                singleButton: true
+                            }), 300);
+                        } else {
+                            setTimeout(() => setConfirmation({
+                                isOpen: true,
+                                title: '구매 실패',
+                                message: '크레딧이 부족하거나 오류가 발생했습니다.',
+                                type: 'danger',
+                                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false })),
+                                singleButton: true
+                            }), 300);
+                        }
+                    },
+                    onSecondary: async () => {
+                        // Buy Individual
+                        setConfirmation(prev => ({ ...prev, isOpen: false }));
+                        if (await buyItem(sticker.id, sticker.price || 100)) {
+                            setTimeout(() => setConfirmation({
+                                isOpen: true,
+                                title: '구매 완료',
+                                message: '스티커 구매가 완료되었습니다!',
+                                type: 'success',
+                                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false })),
+                                singleButton: true
+                            }), 300);
+                        } else {
+                            setTimeout(() => setConfirmation({
+                                isOpen: true,
+                                title: '구매 실패',
+                                message: '크레딧이 부족하거나 오류가 발생했습니다.',
+                                type: 'danger',
+                                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false })),
+                                singleButton: true
+                            }), 300);
+                        }
+                    }
+                });
+                return;
+            }
+        }
+
+        // No pack or fetch failed, fallback to individual purchase
+        setConfirmation({
+            isOpen: true,
+            title: '스티커 구매',
+            message: `이 스티커를 ${sticker.price || 100} 크레딧에 구매하시겠습니까?`,
+            type: 'info',
+            singleButton: false,
+            confirmLabel: '구매하기',
+            onConfirm: async () => {
+                setConfirmation(prev => ({ ...prev, isOpen: false }));
+                if (await buyItem(sticker.id, sticker.price || 100)) {
+                    setTimeout(() => setConfirmation({
+                        isOpen: true,
+                        title: '구매 완료',
+                        message: '스티커 구매가 완료되었습니다!',
+                        type: 'success',
+                        onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false })),
+                        singleButton: true
+                    }), 300);
+                } else {
+                    setTimeout(() => setConfirmation({
+                        isOpen: true,
+                        title: '구매 실패',
+                        message: '크레딧이 부족합니다.',
+                        type: 'danger',
+                        onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false })),
+                        singleButton: true
+                    }), 300);
+                }
+            }
+        });
     };
 
     return (
@@ -133,19 +260,7 @@ const EditorSidebar: React.FC<Props> = ({
                                 <button
                                     key={sticker.id}
                                     title={isLocked ? `구매하기 (${sticker.price} C)` : '사용하기'}
-                                    onClick={async () => {
-                                        if (isLocked) {
-                                            if (confirm(`이 스티커를 ${sticker.price} 크레딧에 구매하시겠습니까?\n(마켓에서 팩으로 구매하면 더 저렴할 수 있습니다!)`)) {
-                                                if (await buyItem(sticker.id, sticker.price || 100)) {
-                                                    alert('구매가 완료되었습니다!');
-                                                } else {
-                                                    alert('크레딧이 부족합니다.');
-                                                }
-                                            }
-                                            return;
-                                        }
-                                        onAddSticker(sticker.url);
-                                    }}
+                                    onClick={() => handleStickerClick(sticker)}
                                     className={`relative aspect-square hover:bg-[var(--bg-card-secondary)] p-1.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all active:scale-95 ${isLocked ? 'grayscale opacity-70' : ''}`}
                                 >
                                     <img src={sticker.url} className="w-full h-full object-contain filter drop-shadow-sm" alt="sticker" />
@@ -257,6 +372,19 @@ const EditorSidebar: React.FC<Props> = ({
                     <input type="file" hidden ref={fileInputRef} onChange={handleImagesUpload} multiple accept="image/*" />
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={confirmation.isOpen}
+                onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmation.onConfirm}
+                onCancel={confirmation.onSecondary || (() => setConfirmation(prev => ({ ...prev, isOpen: false })))}
+                title={confirmation.title}
+                message={confirmation.message}
+                type={confirmation.type}
+                singleButton={confirmation.singleButton}
+                confirmText={confirmation.confirmLabel}
+                cancelText={confirmation.secondaryLabel}
+            />
         </div>
     );
 };

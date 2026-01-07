@@ -15,10 +15,11 @@ interface ItemDetailModalProps {
     initialTab?: 'details' | 'reviews';
     onFilterBySeller?: (sellerId: string) => void;
     onSearchTag?: (tag: string) => void;
+    reviewTargetId?: string; // New prop for redirected reviews
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
-    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag
+    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag, reviewTargetId
 }) => {
     const { userId } = useCredits();
     const [activeTab, setActiveTab] = useState<'details' | 'reviews'>(initialTab);
@@ -68,7 +69,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         if (item) {
             fetchReviews();
         }
-    }, [item]);
+    }, [item, reviewTargetId]); // Add reviewTargetId to dependency
 
     // Prevent background scrolling
     React.useEffect(() => {
@@ -80,13 +81,15 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
     const fetchReviews = async () => {
         const token = localStorage.getItem('accessToken');
+        const targetId = reviewTargetId || item.id; // Use redirected ID if available
+
         try {
             const headers: HeadersInit = {};
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const res = await fetch(`http://localhost:8080/api/market/reviews/${item.id}`, {
+            const res = await fetch(`http://localhost:8080/api/market/reviews/${targetId}`, {
                 headers
             });
             if (res.ok) {
@@ -109,6 +112,8 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
     const handlePostReview = async () => {
         const token = localStorage.getItem('accessToken');
+        const targetId = reviewTargetId || item.id;
+
         if (!token) {
             showAlert('로그인 필요', "로그인이 필요합니다.", 'danger');
             return;
@@ -128,7 +133,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    marketItemId: item.id,
+                    marketItemId: targetId,
                     content: newReviewContent,
                     rating: newRating
                 })

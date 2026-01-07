@@ -4,31 +4,32 @@ export interface StickerItemDef {
     isPremium: boolean;
     price?: number;
     packId?: string; // Links to MarketItem.id
+    name: string; // Display name for history/UI
 }
 
 export const STICKERS: StickerItemDef[] = [
     // Free Stickers (Default)
-    { id: 'free_1', url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png', isPremium: false },
-    { id: 'free_2', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png', isPremium: false },
-    { id: 'free_3', url: 'https://cdn-icons-png.flaticon.com/512/785/785116.png', isPremium: false },
-    { id: 'free_4', url: 'https://cdn-icons-png.flaticon.com/512/346/346167.png', isPremium: false },
-    { id: 'free_5', url: 'https://cdn-icons-png.flaticon.com/512/742/742751.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Smile
-    { id: 'free_6', url: 'https://cdn-icons-png.flaticon.com/512/169/169367.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Sun
-    { id: 'free_7', url: 'https://cdn-icons-png.flaticon.com/512/414/414825.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Cloud
-    { id: 'free_8', url: 'https://cdn-icons-png.flaticon.com/512/651/651717.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Music
-    { id: 'free_9', url: 'https://cdn-icons-png.flaticon.com/512/190/190411.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Check
-    { id: 'free_10', url: 'https://cdn-icons-png.flaticon.com/512/126/126473.png', isPremium: true, price: 150, packId: 'pack_basic' }, // Thumbs up
+    { id: 'free_1', url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png', isPremium: false, name: '기본 1' },
+    { id: 'free_2', url: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png', isPremium: false, name: '기본 2' },
+    { id: 'free_3', url: 'https://cdn-icons-png.flaticon.com/512/785/785116.png', isPremium: false, name: '기본 3' },
+    { id: 'free_4', url: 'https://cdn-icons-png.flaticon.com/512/346/346167.png', isPremium: false, name: '기본 4' },
+    { id: 'free_5', url: 'https://cdn-icons-png.flaticon.com/512/742/742751.png', isPremium: true, price: 150, packId: 'pack_basic', name: '스마일' },
+    { id: 'free_6', url: 'https://cdn-icons-png.flaticon.com/512/169/169367.png', isPremium: true, price: 150, packId: 'pack_basic', name: '해' },
+    { id: 'free_7', url: 'https://cdn-icons-png.flaticon.com/512/414/414825.png', isPremium: true, price: 150, packId: 'pack_basic', name: '구름' },
+    { id: 'free_8', url: 'https://cdn-icons-png.flaticon.com/512/651/651717.png', isPremium: true, price: 150, packId: 'pack_basic', name: '음표' },
+    { id: 'free_9', url: 'https://cdn-icons-png.flaticon.com/512/190/190411.png', isPremium: true, price: 150, packId: 'pack_basic', name: '체크' },
+    { id: 'free_10', url: 'https://cdn-icons-png.flaticon.com/512/126/126473.png', isPremium: true, price: 150, packId: 'pack_basic', name: '엄지척' },
 
     // Premium Stickers (From Mock Market)
     // Pack 001: Cute Cat
-    { id: 'cat_1', url: 'https://cdn-icons-png.flaticon.com/512/616/616408.png', isPremium: true, price: 200, packId: 'sticker_pack_001' },
-    { id: 'cat_2', url: 'https://cdn-icons-png.flaticon.com/512/616/616430.png', isPremium: true, price: 200, packId: 'sticker_pack_001' },
+    { id: 'cat_1', url: 'https://cdn-icons-png.flaticon.com/512/616/616408.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '고양이 1' },
+    { id: 'cat_2', url: 'https://cdn-icons-png.flaticon.com/512/616/616430.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '고양이 2' },
 
     // Pack 002: Vintage Label
-    { id: 'vintage_1', url: 'https://cdn-icons-png.flaticon.com/512/2361/2361730.png', isPremium: true, price: 300, packId: 'sticker_pack_002' },
+    { id: 'vintage_1', url: 'https://cdn-icons-png.flaticon.com/512/2361/2361730.png', isPremium: true, price: 300, packId: 'sticker_pack_002', name: '빈티지 라벨 1' },
 
     // Pack 003: Pixel Art
-    { id: 'pixel_1', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603762.png', isPremium: true, price: 250, packId: 'sticker_pack_003' },
+    { id: 'pixel_1', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603762.png', isPremium: true, price: 250, packId: 'sticker_pack_003', name: '픽셀 이모지 1' },
 ];
 
 // 사용 가능한 폰트 목록 (Google Fonts)

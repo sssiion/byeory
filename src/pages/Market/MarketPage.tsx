@@ -8,6 +8,7 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 import { useCredits } from '../../context/CreditContext';
 import { useNavigate } from 'react-router-dom';
 import { type MarketItem } from '../../data/mockMarketItems';
+import { STICKERS } from '../post/constants';
 
 import { useMarket } from '../../hooks/useMarket';
 import { ShoppingBag, Search, Plus, Heart, FolderOpen, X, Check } from 'lucide-react';
@@ -25,13 +26,22 @@ const Market: React.FC = () => {
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on tab change
-        if (activeTab === 'free') {
-            refreshMarket({ isFree: true, page: 0 });
-        } else if (activeTab === 'myshop' || activeTab === 'history' || activeTab === 'wishlist') {
+
+        const isFree = activeTab === 'free';
+        let category: string | undefined = undefined;
+
+        if (['sticker', 'template_widget', 'template_post', 'start_pack'].includes(activeTab)) {
+            category = activeTab;
+        }
+
+        if (activeTab === 'myshop' || activeTab === 'history') {
             // No specific fetch needed for these tabs yet or handled elsewhere
-        } else {
-            // For 'all', 'sticker', etc.
+        } else if (activeTab === 'wishlist') {
+            // Fetch all for wishlist filtering
             refreshMarket({ isFree: false, page: 0 });
+        } else {
+            // For 'all', 'sticker', 'free', 'start_pack' etc.
+            refreshMarket({ isFree, category, page: 0 });
         }
     }, [activeTab, refreshMarket]);
 
@@ -207,8 +217,6 @@ const Market: React.FC = () => {
             let matchesTab = false;
             if (activeTab === 'wishlist') {
                 matchesTab = isWishlisted(item.id);
-            } else if (activeTab === 'start_pack') {
-                matchesTab = (item.tags || []).includes('starter');
             } else if (activeTab === 'history' || activeTab === 'myshop') {
                 return false;
             } else if (activeTab === 'all') {
@@ -557,10 +565,30 @@ const Market: React.FC = () => {
                             <>
                                 {filteredItems.map((item: any) => {
                                     const effectivePrice = getPackPrice(item.id, item.price);
+
+                                    // Check if this item inherits ratings from a Pack
+                                    let displayItem = item;
+                                    const stickerDef = STICKERS.find(s => s.id === item.referenceId);
+                                    if (stickerDef && stickerDef.packId) {
+                                        let packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
+                                        // Fallback to purchased items if not in current list (e.g. filtered)
+                                        if (!packItem) {
+                                            packItem = purchasedItems.find(p => p.referenceId === stickerDef.packId);
+                                        }
+
+                                        if (packItem && (packItem.reviewCount || 0) > 0) {
+                                            displayItem = {
+                                                ...item,
+                                                averageRating: packItem.averageRating,
+                                                reviewCount: packItem.reviewCount
+                                            };
+                                        }
+                                    }
+
                                     return (
                                         <MerchCard
                                             key={item.id}
-                                            item={item}
+                                            item={displayItem}
                                             onBuy={handleBuy}
                                             onToggleWishlist={() => toggleWishlist(item.id)}
                                             isOwned={isOwned(item.id)}
@@ -592,25 +620,32 @@ const Market: React.FC = () => {
                 <ItemDetailModal
                     item={selectedItem}
                     onClose={() => setSelectedItem(null)}
-                    onBuy={(item) => {
-                        handleBuy(item);
-                        // Update selected item status if needed or close
-                        setSelectedItem(null); // Close after action for now
-                    }}
-                    onToggleWishlist={(item) => toggleWishlist(item.id)}
+                    onBuy={handleBuy}
+                    onToggleWishlist={() => toggleWishlist(selectedItem.id)}
                     isOwned={isOwned(selectedItem.id)}
                     isWishlisted={isWishlisted(selectedItem.id)}
                     effectivePrice={getPackPrice(selectedItem.id, selectedItem.price)}
                     initialTab={selectedItem.initialTab}
-                    onFilterBySeller={filterBySeller}
-                    onSearchTag={(tag) => {
-                        shouldSkipSearch.current = true; // Skip the search('') effect
-                        setSearchTerm('');
-                        filterByTag(tag);
-                    }}
+                    onFilterBySeller={(id) => filterBySeller(id)}
+                    onSearchTag={(tag) => filterByTag(tag)}
+                    reviewTargetId={(() => {
+                        // Check if this item is part of a pack
+                        const stickerDef = STICKERS.find(s => s.id === selectedItem.referenceId);
+                        if (stickerDef && stickerDef.packId) {
+                            // 1. Try to find in current market list (filtered)
+                            let packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
+
+                            // 2. If not found (e.g. filtered out), check purchased items (if I bought the pack)
+                            if (!packItem) {
+                                packItem = purchasedItems.find(p => p.referenceId === stickerDef.packId);
+                            }
+
+                            if (packItem) return packItem.id;
+                        }
+                        return undefined;
+                    })()}
                 />
-            )
-            }
+            )}
             {sellModalItem && (
                 <SellModal
                     item={sellModalItem}
