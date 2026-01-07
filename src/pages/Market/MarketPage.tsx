@@ -404,6 +404,7 @@ const Market: React.FC = () => {
                                     // Hide wishlist/price in history? Or just show as owned.
                                     effectivePrice={item.price}
                                     onClick={() => setSelectedItem(item)}
+                                    onClickRating={() => setSelectedItem({ ...item, initialTab: 'reviews' })} // Enable review click
                                 />
                             ))
                         )}
