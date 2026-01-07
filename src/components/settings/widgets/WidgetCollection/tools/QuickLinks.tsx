@@ -36,7 +36,7 @@ export const QuickLinks = React.memo(function QuickLinks({ gridSize }: QuickLink
     const gridRows = isSmall ? 'grid-rows-2' : 'grid-rows-2'; // 2 rows always sufficient for 4 or 8
 
     return (
-        <WidgetWrapper className="bg-gray-100 dark:bg-zinc-800">
+        <WidgetWrapper className="theme-bg-card">
             <div className={`grid ${gridCols} ${gridRows} w-full h-full gap-2 p-2`}>
                 {items.map((item, idx) => (
                     <button

@@ -95,16 +95,16 @@ const Community: React.FC = () => {
                                 key={tag}
                                 onClick={() => handleTagClick(tag)}
                                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 group border ${selectedTag === tag
-                                        ? 'bg-indigo-500 border-indigo-500 text-white shadow-md transform scale-105'
-                                        : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-indigo-300 hover:text-indigo-500'
+                                    ? 'bg-indigo-500 border-indigo-500 text-white shadow-md transform scale-105'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-indigo-300 hover:text-indigo-500'
                                     }`}
                             >
                                 <span className="opacity-70">#</span>{tag}
                                 <div
                                     onClick={(e) => handleRemoveTag(tag, e)}
                                     className={`rounded-full p-0.5 transition-colors ${selectedTag === tag
-                                            ? 'hover:bg-indigo-600'
-                                            : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        ? 'hover:bg-indigo-600'
+                                        : 'hover:bg-[var(--bg-card-secondary)]'
                                         }`}
                                 >
                                     <X size={12} className={selectedTag === tag ? "opacity-100" : "opacity-0 group-hover:opacity-60"} />

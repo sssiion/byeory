@@ -65,7 +65,7 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
 
                 {/* Type Badge */}
                 <div className="absolute top-3 left-3">
-                    <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 text-[var(--text-secondary)] backdrop-blur-sm">
+                    <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider theme-bg-card-secondary text-[var(--text-secondary)] backdrop-blur-sm">
                         {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
                             (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
                                 (item.type as string).toLowerCase() === 'sticker' ? '스티커' :

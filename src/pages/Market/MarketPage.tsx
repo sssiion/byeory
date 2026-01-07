@@ -256,7 +256,7 @@ const Market: React.FC = () => {
                 </div>
 
                 {/* Tabs & Search */}
-                <div className="flex flex-col md:flex-row gap-4 sticky top-16 md:top-20 z-40 py-4 -mx-4 px-4 transition-all mt-4 bg-white/70 dark:bg-[#1e293b]/70 backdrop-blur-xl md:items-center">
+                <div className="flex flex-col md:flex-row gap-4 sticky top-16 md:top-20 z-40 py-4 -mx-4 px-4 transition-all mt-4 theme-bg-header backdrop-blur-xl md:items-center">
                     <div className="flex overflow-x-auto py-2 gap-3 flex-1 scrollbar-hide px-1">
                         {[
                             { id: 'all', label: '전체' },
@@ -291,7 +291,7 @@ const Market: React.FC = () => {
                             placeholder="아이템 검색..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-gray-100 dark:bg-slate-800 border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] transition-all"
+                            className="w-full theme-bg-card-secondary border border-[var(--border-color)] rounded-xl py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] transition-all"
                         />
                     </div>
                 </div>

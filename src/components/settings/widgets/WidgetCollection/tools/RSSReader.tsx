@@ -133,7 +133,7 @@ export function RSSReader({ gridSize }: { gridSize?: { w: number; h: number } })
                 )}
 
                 {feed.map((item, idx) => (
-                    <div key={idx} className="p-2 rounded-lg theme-bg-card-secondary hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group">
+                    <div key={idx} className="p-2 rounded-lg theme-bg-card-secondary hover:bg-[var(--bg-card-secondary)] transition-colors group">
                         <a href={item.link} target="_blank" rel="noopener noreferrer" className="block">
                             <h4 className="text-xs font-bold theme-text-primary mb-1 line-clamp-2 group-hover:text-[var(--btn-bg)] transition-colors">
                                 {item.title}

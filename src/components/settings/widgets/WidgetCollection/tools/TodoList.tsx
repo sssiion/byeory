@@ -103,7 +103,7 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
             <div className="flex flex-col h-full overflow-hidden">
                 {/* Progress Bar (Linear) */}
                 <div className="px-3 pt-2 pb-1">
-                    <div className="w-full h-1.5 bg-gray-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 theme-bg-card-secondary rounded-full overflow-hidden">
                         <div
                             className={`h-full ${progressColor} transition-all duration-500 ease-out`}
                             style={{ width: `${progress}%` }}

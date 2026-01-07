@@ -19,6 +19,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Basic Theme Attribute
         document.documentElement.setAttribute('data-theme', mode);
 
+        // Tailwind Dark Mode Sync
+        if (mode === 'dark' || mode === 'dracula') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         // Helper to get from storage if config is missing
         const getVal = (key: string, defaultVal: string) => localStorage.getItem(key) || defaultVal;
 
@@ -211,6 +218,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTheme(newTheme);
         localStorage.setItem('theme', newTheme);
         applyStyles(newTheme);
+
+        // Tailwind Dark Mode Sync
+        if (newTheme === 'dark' || newTheme === 'dracula') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
         window.dispatchEvent(new Event('themeChange'));
     };
 
