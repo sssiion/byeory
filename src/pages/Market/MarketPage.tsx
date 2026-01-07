@@ -18,7 +18,30 @@ const Market: React.FC = () => {
     const { credits } = useCredits();
     const navigate = useNavigate();
 
-    const { marketItems, purchasedItems, buyItem, getPackPrice, sellingItems, isWishlisted, toggleWishlist, registerItem, cancelItem, isOwned, loadMore, search, hasMore, sort, changeSort, filterBySeller, sellerId, filterByTag, selectedTags, updateItem, refreshMarket } = useMarket(); // destructured
+    const {
+        marketItems,
+        purchasedItems,
+        buyItem,
+        getPackPrice,
+        sellingItems,
+        isWishlisted,
+        toggleWishlist,
+        registerItem,
+        cancelItem,
+        isOwned,
+        loadMore,
+        search,
+        hasMore,
+        sort,
+        filterBySeller,
+        sellerId,
+        filterByTag,
+        selectedTags,
+        updateItem,
+        refreshMarket,
+        totalCount,
+        changeSort
+    } = useMarket(); // destructured
     const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history' | 'free'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [hideOwned, setHideOwned] = useState(false); // New State
@@ -303,7 +326,9 @@ const Market: React.FC = () => {
                     <div className="flex flex-col gap-2 -mb-4 px-2">
                         {sellerId && (
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-[var(--text-secondary)]">판매자 필터 적용 중</span>
+                                <p className="text-[var(--text-secondary)]">
+                                    나만의 디지털 아이템을 거래해보세요 <span className="text-sm font-semibold opacity-70 ml-2">(Total {totalCount})</span>
+                                </p>
                                 <button
                                     onClick={() => filterBySeller(null)}
                                     className="flex items-center gap-1 px-2 py-1 bg-[var(--btn-bg)] text-white text-xs font-bold rounded-full hover:brightness-110"
@@ -342,7 +367,7 @@ const Market: React.FC = () => {
 
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-2 gap-3 md:gap-0">
                             <span className="text-sm font-bold text-[var(--text-secondary)]">
-                                총 {filteredItems.length}개의 아이템
+                                총 {totalCount}개의 아이템
                             </span>
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
@@ -617,43 +642,47 @@ const Market: React.FC = () => {
                     </div>
                 )}
             </div>
-            {selectedItem && (
-                <ItemDetailModal
-                    item={selectedItem}
-                    onClose={() => setSelectedItem(null)}
-                    onBuy={handleBuy}
-                    onToggleWishlist={() => toggleWishlist(selectedItem.id)}
-                    isOwned={isOwned(selectedItem.id)}
-                    isWishlisted={isWishlisted(selectedItem.id)}
-                    effectivePrice={getPackPrice(selectedItem.id, selectedItem.price)}
-                    initialTab={selectedItem.initialTab}
-                    onFilterBySeller={(id) => filterBySeller(id)}
-                    onSearchTag={(tag) => filterByTag(tag)}
-                    reviewTargetId={(() => {
-                        // Check if this item is part of a pack
-                        const stickerDef = STICKERS.find(s => s.id === selectedItem.referenceId);
-                        if (stickerDef && stickerDef.packId) {
-                            // 1. Try to find in current market list (filtered)
-                            let packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
+            {
+                selectedItem && (
+                    <ItemDetailModal
+                        item={selectedItem}
+                        onClose={() => setSelectedItem(null)}
+                        onBuy={handleBuy}
+                        onToggleWishlist={() => toggleWishlist(selectedItem.id)}
+                        isOwned={isOwned(selectedItem.id)}
+                        isWishlisted={isWishlisted(selectedItem.id)}
+                        effectivePrice={getPackPrice(selectedItem.id, selectedItem.price)}
+                        initialTab={selectedItem.initialTab}
+                        onFilterBySeller={(id) => filterBySeller(id)}
+                        onSearchTag={(tag) => filterByTag(tag)}
+                        reviewTargetId={(() => {
+                            // Check if this item is part of a pack
+                            const stickerDef = STICKERS.find(s => s.id === selectedItem.referenceId);
+                            if (stickerDef && stickerDef.packId) {
+                                // 1. Try to find in current market list (filtered)
+                                let packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
 
-                            // 2. If not found (e.g. filtered out), check purchased items (if I bought the pack)
-                            if (!packItem) {
-                                packItem = purchasedItems.find(p => p.referenceId === stickerDef.packId);
+                                // 2. If not found (e.g. filtered out), check purchased items (if I bought the pack)
+                                if (!packItem) {
+                                    packItem = purchasedItems.find(p => p.referenceId === stickerDef.packId);
+                                }
+
+                                if (packItem) return packItem.id;
                             }
-
-                            if (packItem) return packItem.id;
-                        }
-                        return undefined;
-                    })()}
-                />
-            )}
-            {sellModalItem && (
-                <SellModal
-                    item={sellModalItem}
-                    onClose={() => setSellModalItem(null)}
-                    onSubmit={handleRegisterSubmit}
-                />
-            )}
+                            return undefined;
+                        })()}
+                    />
+                )
+            }
+            {
+                sellModalItem && (
+                    <SellModal
+                        item={sellModalItem}
+                        onClose={() => setSellModalItem(null)}
+                        onSubmit={handleRegisterSubmit}
+                    />
+                )
+            }
             {/* Confirmation Modal */}
             <ConfirmationModal
                 isOpen={confirmation.isOpen}
@@ -665,7 +694,7 @@ const Market: React.FC = () => {
                 singleButton={confirmation.singleButton}
                 confirmText={confirmation.singleButton ? "확인" : "구매하기"}
             />
-        </MarketLayout>
+        </MarketLayout >
     );
 };
 

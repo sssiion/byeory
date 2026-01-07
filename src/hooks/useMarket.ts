@@ -13,6 +13,7 @@ export const useMarket = () => {
     const [hasMore, setHasMore] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [sort, setSort] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular');
+    const [totalCount, setTotalCount] = useState(0);
 
     const [sellerId, setSellerId] = useState<string | null>(null);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -169,6 +170,9 @@ export const useMarket = () => {
             });
             if (marketRes.ok) {
                 const data = await marketRes.json();
+                // Check for nested page object (PagingAndSortingRepository format) or flat format
+                const total = data.page?.totalElements ?? data.totalElements ?? 0;
+                setTotalCount(total);
                 const items = data.content;
                 const backendItems = items.map((i: any) => ({
                     id: String(i.id),
@@ -551,6 +555,7 @@ export const useMarket = () => {
         hasMore,
         isSearching: !!keyword,
         updateItem,
-        refreshMarket
+        refreshMarket,
+        totalCount
     };
 };

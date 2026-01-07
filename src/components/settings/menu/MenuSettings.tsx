@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Home, FileText, CheckSquare, Users, Save, XCircle, MousePointerClick } from 'lucide-react';
+import { Home, FileText, ShoppingBag, Users, Save, XCircle, MousePointerClick } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-
 
 /* -------------------------------------------------------------------------------------------------
  * Menu Context & Provider Logic
@@ -20,7 +19,7 @@ const DEFAULT_ITEMS: MenuItem[] = [
     { name: 'Home', path: '/home', icon: Home, id: '/home' },
     { name: 'Post', path: '/post', icon: FileText, id: '/post' },
     { name: 'Community', path: '/community', icon: Users, id: '/community' },
-    { name: 'Market', path: '/market', icon: CheckSquare, id: '/market' },
+    { name: 'Market', path: '/market', icon: ShoppingBag, id: '/market' },
 ];
 
 interface MenuContextType {

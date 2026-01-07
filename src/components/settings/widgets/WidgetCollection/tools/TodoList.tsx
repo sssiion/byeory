@@ -17,7 +17,7 @@ interface TodoListWidgetProps {
 // 6. Todo List Widget (할 일 목록)
 export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
     const navigate = useNavigate();
-    const { getTodayTodos, addTodo, toggleTodo, updateTodo } = useSharedTodo();
+    const { getTodayTodos, addTodo, toggleTodo } = useSharedTodo();
     const [newTodoTitle, setNewTodoTitle] = useState('');
     const [isAdding, setIsAdding] = useState(false);
 
