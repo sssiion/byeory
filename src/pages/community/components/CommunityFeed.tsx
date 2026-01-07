@@ -103,7 +103,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
 
             <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-5">
                 {posts.map((post, index) => (
-                    <div key={`${post.postId}-${index}`} className="break-inside-avoid mb-5 inline-block w-full">
+                    <div key={`post-${post.postId || 'none'}-${index}`} className="break-inside-avoid mb-5 inline-block w-full">
                         <CommunityCard
                             data={post}
                             onClick={() => handleCardClick(post)}

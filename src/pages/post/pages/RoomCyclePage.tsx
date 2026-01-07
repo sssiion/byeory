@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchCycleDetailApi, passTurnApi, type RoomCycle } from '../roomCycleApi';
+import { fetchCycleDetailApi, passTurnApi, saveCycleContentApi, type RoomCycle } from '../roomCycleApi';
 import RollingPaperView from '../components/RollingPaperView';
 import ExchangeDiaryView from '../components/ExchangeDiaryView';
 import { ArrowLeft, Loader } from 'lucide-react';
@@ -52,18 +52,22 @@ const RoomCyclePage: React.FC = () => {
         loadCycle();
     }, [cycleId]);
 
-    const handlePassTurn = async () => {
+    const handlePassTurn = async (content?: string) => {
         if (!cycleId) return;
         try {
-            // Optimistic Update can be tricky here, so we just await and reload
-            const updatedCycle = await passTurnApi(cycleId); // No content arg
+            // If content is provided (e.g. from Exchange Diary), save it first
+            if (content) {
+                // For Exchange Diary, we store it as raw content for now or structured JSON
+                // The API expects 'data: any'
+                await saveCycleContentApi(cycleId, typeof content === 'string' ? JSON.parse(content) : content);
+            }
 
+            const updatedCycle = await passTurnApi(cycleId);
             setCycle(updatedCycle);
-
             alert("작성이 완료되었습니다!");
         } catch (e) {
             console.error(e);
-            throw e; // Propagate to Child Component to handle state (e.g. stop loading spinner)
+            alert("제출 중 오류가 발생했습니다.");
         }
     };
 
