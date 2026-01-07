@@ -240,8 +240,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                             {messages.length === 0 ? (
                                 <p className="text-center text-gray-400 py-8 text-sm">첫 댓글을 남겨보세요!</p>
                             ) : (
-                                messages.map((msg) => (
-                                    <div key={msg.messageId} className="group flex gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                                messages.map((msg, index) => (
+                                    <div key={`comment-${msg.messageId || 'none'}-${index}`} className="group flex gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300">
                                             {(msg.nickname || "?").charAt(0)}
                                         </div>

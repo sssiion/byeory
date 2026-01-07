@@ -1,5 +1,5 @@
 import React from 'react';
-import type {Block, FloatingImage, FloatingText, Sticker} from "../../post/types.ts";
+import type { Block, FloatingImage, FloatingText, Sticker } from "../../post/types.ts";
 
 interface MiniPostViewerProps {
     title: string;
@@ -13,15 +13,15 @@ interface MiniPostViewerProps {
 }
 
 const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
-                                                           title,
-                                                           titleStyles = {},
-                                                           blocks = [],
-                                                           stickers = [],
-                                                           floatingTexts = [],
-                                                           floatingImages = [],
-                                                           scale = 0.4,
-                                                           minHeight = 'auto'
-                                                       }) => {
+    title,
+    titleStyles = {},
+    blocks = [],
+    stickers = [],
+    floatingTexts = [],
+    floatingImages = [],
+    scale = 0.4,
+    minHeight = 'auto'
+}) => {
     const ORIGINAL_WIDTH = 800; // 에디터 기준 너비
 
     const getSafeStyle = (item: any, defaultSize = 150) => {
@@ -88,7 +88,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
             {/* 2. 본문 블록 (Flow Layout) */}
             <div className="px-12 pb-20 space-y-6 relative z-0">
-                {blocks.map((block) => {
+                {blocks.map((block, index) => {
                     const textStyle = {
                         fontFamily: block.styles?.fontFamily || 'sans-serif',
                         fontSize: block.styles?.fontSize || '18px',
@@ -104,7 +104,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                     const imgFit = block.imageFit || 'cover';
 
                     return (
-                        <div key={block.id} className="relative">
+                        <div key={`block-${block.id || 'none'}-${index}`} className="relative">
                             {block.type === 'image-full' && (
                                 <div className="space-y-3">
                                     {block.imageUrl && (
@@ -134,7 +134,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                             )}
 
                             {block.type === 'paragraph' && (
-                                <div style={{...textStyle, padding: block.styles?.backgroundColor ? '12px' : '0', borderRadius: '4px'}}>
+                                <div style={{ ...textStyle, padding: block.styles?.backgroundColor ? '12px' : '0', borderRadius: '4px' }}>
                                     {block.text || <span className="opacity-0">Empty</span>}
                                 </div>
                             )}
@@ -144,9 +144,9 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
             </div>
 
             {/* 3. 자유 배치 요소들 */}
-            {stickers.map(stk => (
+            {stickers.map((stk, index) => (
                 <img
-                    key={stk.id}
+                    key={`stk-${stk.id || 'none'}-${index}`}
                     src={stk.url}
                     style={{
                         ...getSafeStyle(stk, 120),
@@ -156,9 +156,9 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 />
             ))}
 
-            {floatingImages.map(img => (
+            {floatingImages.map((img, index) => (
                 <img
-                    key={img.id}
+                    key={`img-${img.id || 'none'}-${index}`}
                     src={img.url}
                     style={{
                         ...getSafeStyle(img, 200),
@@ -170,9 +170,9 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 />
             ))}
 
-            {floatingTexts.map(txt => (
+            {floatingTexts.map((txt, index) => (
                 <div
-                    key={txt.id}
+                    key={`txt-${txt.id || 'none'}-${index}`}
                     style={{
                         ...getSafeStyle(txt, 200),
                         padding: '8px',

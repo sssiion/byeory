@@ -90,9 +90,9 @@ const Community: React.FC = () => {
                 {(recentTags.length > 0 || selectedTag) && (
                     <div className="flex flex-wrap items-center gap-2 mb-8 animate-fade-in-up">
                         <span className="text-xs text-[var(--text-secondary)] mr-2">최근 검색:</span>
-                        {recentTags.map(tag => (
+                        {recentTags.map((tag, index) => (
                             <button
-                                key={tag}
+                                key={`tag-${tag}-${index}`}
                                 onClick={() => handleTagClick(tag)}
                                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 group border ${selectedTag === tag
                                     ? 'bg-indigo-500 border-indigo-500 text-white shadow-md transform scale-105'

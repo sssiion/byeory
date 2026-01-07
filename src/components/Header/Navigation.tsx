@@ -190,7 +190,7 @@ const Navigation: React.FC = () => {
                     {menuItems.map((item, index) => {
                         return (
                             <DraggableMenuItem
-                                key={item.id}
+                                key={`nav-item-${item.id || 'none'}-${index}`}
                                 index={index}
                                 id={item.id}
                                 moveMenuItem={moveMenuItem}
@@ -264,7 +264,7 @@ const Navigation: React.FC = () => {
                         const Icon = item.icon;
                         return (
                             <DraggableMenuItem
-                                key={item.id}
+                                key={`nav-mobile-${item.id || 'none'}-${index}`}
                                 index={index}
                                 id={item.id}
                                 moveMenuItem={moveMenuItem}
