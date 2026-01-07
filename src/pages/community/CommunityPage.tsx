@@ -60,7 +60,7 @@ const Community: React.FC = () => {
         <div className="min-h-screen">
             <Navigation />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 pb-32">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-9 pb-32">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row items-center justify-between mb-8 pb-4 border-b border-[var(--border-color)]">
                     <div>
