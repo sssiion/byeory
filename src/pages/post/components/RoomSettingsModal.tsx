@@ -109,7 +109,7 @@ const RoomSettingsModal: React.FC<Props> = ({ isOpen, onClose, album }) => {
 
     if (!isOpen) return null;
 
-    const inviteLink = `${window.location.origin}/rooms/${album.id}/join`;
+    const inviteLink = `${window.location.origin}/rooms/${String(album.id).replace(/^room-/, '')}/join`;
 
     const copyToClipboard = async (text: string, type: 'link' | 'pw') => {
         try {

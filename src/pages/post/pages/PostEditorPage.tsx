@@ -19,7 +19,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     };
 
     return (
-        <div className="flex h-auto min-h-[85vh] gap-6 relative">
+        <div className="flex flex-col xl:flex-row h-auto min-h-[85vh] gap-6 relative">
             {/* 메인 캔버스 */}
             <EditorCanvas
                 title={editor.title} setTitle={editor.setTitle}

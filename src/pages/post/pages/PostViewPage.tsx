@@ -22,10 +22,10 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
     };
 
     return (
-        <div className="flex flex-col h-auto min-h-[85vh] gap-6 relative items-center">
+        <div className="flex flex-col h-auto min-h-[85vh] gap-6 relative items-center pb-32">
             {/* ✨ Breadcrumbs & Actions Header */}
-            <div className="w-full max-w-[800px] flex justify-between items-center py-2 px-4 md:px-1 mb-0 box-border">
-                <div className="flex items-center gap-3">
+            <div className="w-full max-w-[800px] flex flex-col md:flex-row justify-between items-start md:items-center py-4 px-5 md:px-0 box-border gap-2 md:gap-0">
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-hidden">
                     <button
                         onClick={() => {
                             // Smart Back Logic: Go up one level in breadcrumbs if possible?
@@ -39,15 +39,17 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
                                 editor.setViewMode('album');
                             }
                         }}
-                        className="p-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] rounded-full transition-colors"
+                        className="p-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] rounded-full transition-colors shrink-0"
                         title="뒤로 가기"
                     >
                         <ChevronRight className="rotate-180" size={20} />
                     </button>
-                    <PostBreadcrumb items={[...breadcrumbs, { label: editor.title || '제목 없음' }]} />
+                    <div className="overflow-x-auto no-scrollbar">
+                        <PostBreadcrumb items={[...breadcrumbs, { label: editor.title || '제목 없음' }]} />
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end md:self-auto">
                     <button
                         onClick={() => editor.setViewMode('editor')}
                         className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] rounded-lg transition-all"
@@ -64,15 +66,6 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
                     </button>
                 </div>
             </div>
-
-            {/* Tags Display (Moved) */}
-            {editor.currentTags && editor.currentTags.length > 0 && (
-                <div className="w-full max-w-[800px] px-4 md:px-0 flex flex-wrap gap-2 justify-start">
-                    {editor.currentTags.map((tag: string, idx: number) => (
-                        <span key={idx} className="px-3 py-1.5 rounded-full bg-[var(--bg-secondary)] text-[var(--text-primary)] text-sm font-medium">#{tag}</span>
-                    ))}
-                </div>
-            )}
 
             <EditorCanvas
                 title={editor.title} setTitle={editor.setTitle}

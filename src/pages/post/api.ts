@@ -9,7 +9,12 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 const BASE_URL = 'http://localhost:8080';
 const API_BASE_URL = `${BASE_URL}/api/posts`;
 const API_ALBUM_URL = `${BASE_URL}/api/albums`;
-const API_ROOM_URL = `${BASE_URL}/api/rooms`; // ✨ Add Room API URL
+const API_ROOM_URL = `${BASE_URL}/api/rooms`;
+
+// ✨ Helper to clean ID (remove 'room-' prefix)
+const cleanId = (id: string | number): string => {
+    return String(id).replace(/^room-/, '');
+};
 
 // ✨ Singleton Pattern for Supabase Client
 const getSupabaseClient = () => {
@@ -151,7 +156,6 @@ export const fetchPostsFromApi = async () => {
         return posts.map((p: any) => ({
             ...p,
             id: Number(p.id),
-            // ✨ Robust Tag Mapping: Handle string[] or {name: string}[]
             tags: (p.hashtags || p.tags || []).map((t: any) => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
@@ -159,7 +163,6 @@ export const fetchPostsFromApi = async () => {
             floatingTexts: p.floatingTexts || [],
             floatingImages: p.floatingImages || [],
             titleStyles: p.titleStyles || {},
-            // ✨ Robust Album ID Mapping: Handle number[] or {id: number}[]
             albumIds: (p.targetAlbumIds || []).map((t: any) => {
                 if (typeof t === 'object' && t !== null) return String(t.id);
                 return String(t);
@@ -167,179 +170,11 @@ export const fetchPostsFromApi = async () => {
             isFavorite: p.isFavorite || false,
             mode: p.mode || 'AUTO',
             isPublic: p.isPublic ?? true,
-            visibility: (p.isPublic === false) ? 'private' : 'public' // ✨ Map visibility
+            visibility: (p.isPublic === false) ? 'private' : 'public'
         }));
     } catch (error) {
         console.error(error);
         return [];
-    }
-};
-
-// ... (skip savePostToApi edits as they are similar logic but outgoing)
-
-// 앨범 목록 조회 (GET)
-export const fetchAlbumsFromApi = async () => {
-    try {
-        const response = await fetch(`${API_ALBUM_URL}`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) throw new Error("앨범 불러오기 실패");
-        const albums = await response.json();
-        // ✨ Map IDs to Strings for consistency
-        return albums.map((a: any) => {
-            // ✨ Ensure 'tag' is populated if backend sends representativeHashtag object
-            let mappedTag = a.tag;
-            if (!mappedTag && a.representativeHashtag) {
-                mappedTag = a.representativeHashtag.name || a.representativeHashtag.tag;
-            }
-
-            return {
-                ...a,
-                id: String(a.id),
-                parentId: a.parentId ? String(a.parentId) : null,
-                tag: mappedTag || null,
-                type: 'album', // Explicit type
-                coverConfig: a.coverConfig || a.cover_config, // ✨ Robust mapping
-                postCount: a.postCount !== undefined ? a.postCount : 0, // ✨ Explicit map
-                folderCount: a.folderCount !== undefined ? a.folderCount : 0 // ✨ Explicit map
-            };
-        });
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-};
-
-// ✨ 참여한 모임방 목록 조회 (GET) - 내 리스트
-export const fetchRoomsFromApi = async () => {
-    try {
-        const response = await fetch(`${API_ROOM_URL}/my`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) throw new Error("모임방 불러오기 실패");
-        const rooms = await response.json();
-        return rooms.map((r: any) => ({
-            ...r,
-            id: String(r.id),
-            parentId: null, // Rooms are root level usually, or handle if nested
-            tag: r.tag || (r.representativeHashtag ? (r.representativeHashtag.name || r.representativeHashtag.tag) : null),
-            type: 'room',
-            role: r.role, // ✨ Map Role
-            ownerId: r.ownerId || (r.owner ? r.owner.id : null), // ✨ Map Owner ID
-            ownerEmail: r.ownerEmail || (r.owner ? r.owner.email : null), // ✨ Map Owner Email
-            coverConfig: r.coverConfig || r.cover_config, // ✨ Robust mapping
-            // Map room specific counts if available
-            postCount: r.postCount !== undefined ? r.postCount : 0, // ✨ Explicit map
-            folderCount: r.folderCount !== undefined ? r.folderCount : 0 // ✨ Explicit map
-        }));
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-};
-
-// ✨ 모임방 입장 (POST)
-export const joinRoomApi = async (roomId: string, password?: string) => {
-    try {
-        // ✨ Validate and clean ID (Backend expects pure Long)
-        const numericId = roomId.toString().replace(/^room-/, '');
-
-        const response = await fetch(`${API_ROOM_URL}/${numericId}/join`, {
-            method: "POST",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ password })
-        });
-
-        if (!response.ok) {
-            let errorMessage = "모임방 입장에 실패했습니다.";
-            try {
-                const text = await response.text();
-                if (text) {
-                    try {
-                        const err = JSON.parse(text);
-                        errorMessage = err.message || errorMessage;
-                    } catch (jsonError) {
-                        if (text.length < 200) {
-                            errorMessage = text;
-                        }
-                    }
-                }
-            } catch (e) {
-                // Ignore read error
-            }
-            throw new Error(errorMessage);
-        }
-
-        // Handle success response (body might be empty)
-        const text = await response.text();
-        return text ? JSON.parse(text) : {};
-    } catch (error: any) {
-        console.error(error);
-        throw error; // Let caller handle error message
-    }
-};
-
-// ✨ 모임방 나가기 (DELETE) - 일반 멤버용
-export const leaveRoomApi = async (roomId: string) => {
-    try {
-        const response = await fetch(`${API_ROOM_URL}/${roomId}/leave`, {
-            method: "DELETE",
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(err || "모임방 나가기 실패");
-        }
-        return true;
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
-};
-
-// ✨ 멤버 강퇴 (DELETE) - 방장용
-export const kickMemberApi = async (roomId: string, userId: string) => {
-    try {
-        const response = await fetch(`${API_ROOM_URL}/${roomId}/members/${userId}`, {
-            method: "DELETE",
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            throw new Error("멤버 강퇴 실패");
-        }
-        return true;
-    } catch (error) {
-        console.error(error);
-        return false;
-    }
-};
-
-// ✨ 멤버 목록 조회 (GET)
-export const fetchRoomMembersApi = async (roomId: string) => {
-    try {
-        const response = await fetch(`${API_ROOM_URL}/${roomId}/members`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) throw new Error("멤버 목록 불러오기 실패");
-        return await response.json();
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-};
-
-// ✨ 모임방 삭제 (DELETE)
-export const deleteRoomApi = async (roomId: string) => {
-    try {
-        const response = await fetch(`${API_ROOM_URL}/${roomId}`, {
-            method: "DELETE",
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) throw new Error("모임방 삭제 실패");
-        return true;
-    } catch (error) {
-        console.error(error);
-        return false;
     }
 };
 
@@ -349,7 +184,6 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
         const url = isUpdate ? `${API_BASE_URL}/${postData.id}` : API_BASE_URL;
         const method = isUpdate ? "PUT" : "POST";
 
-        // ✨ PREPARE PAYLOAD EXACTLY AS PER GUIDE
         const payload = {
             title: postData.title,
             titleStyles: postData.titleStyles || {},
@@ -357,15 +191,12 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             stickers: postData.stickers || [],
             floatingTexts: postData.floatingTexts || [],
             floatingImages: postData.floatingImages || [],
-            tags: postData.tags || [], // hashtags -> tags
+            tags: postData.tags || [],
             mode: postData.mode || 'AUTO',
-            targetAlbumIds: (postData.albumIds || []).map((id: any) => Number(id)).filter((n: number) => !isNaN(n)), // String[] -> Number[]
+            targetAlbumIds: (postData.albumIds || []).map((id: any) => Number(id)).filter((n: number) => !isNaN(n)),
             isFavorite: postData.isFavorite || false,
-            // Ensure visibility is included if backend supports it (even if not in guide, safe to send)
             isPublic: postData.isPublic ?? true
         };
-
-        console.log("Saving Post Payload:", JSON.stringify(payload, null, 2));
 
         const response = await fetch(url, {
             method: method,
@@ -380,11 +211,9 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
         }
         const savedPost = await response.json();
 
-        // ✨ Map response to frontend PostData structure immediately
         return {
             ...savedPost,
             id: Number(savedPost.id),
-            // ✨ Robust Tag Mapping
             tags: (savedPost.hashtags || []).map((t: any) => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
@@ -392,7 +221,6 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             floatingTexts: savedPost.floatingTexts || [],
             floatingImages: savedPost.floatingImages || [],
             titleStyles: savedPost.titleStyles || {},
-            // ✨ Robust Album ID Mapping
             albumIds: (savedPost.targetAlbumIds || []).map((t: any) => {
                 if (typeof t === 'object' && t !== null) return String(t.id);
                 return String(t);
@@ -400,7 +228,7 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             isFavorite: savedPost.isFavorite || false,
             mode: savedPost.mode || 'AUTO',
             isPublic: savedPost.isPublic ?? true,
-            visibility: (savedPost.isPublic === false) ? 'private' : 'public' // ✨ Map visibility
+            visibility: (savedPost.isPublic === false) ? 'private' : 'public'
         };
     } catch (error) {
         console.error(error);
@@ -425,9 +253,164 @@ export const deletePostApi = async (id: string | number) => {
     }
 };
 
-// ... (Rest of the file)
 // 앨범 목록 조회 (GET)
+export const fetchAlbumsFromApi = async () => {
+    try {
+        const response = await fetch(`${API_ALBUM_URL}`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("앨범 불러오기 실패");
+        const albums = await response.json();
+        return albums.map((a: any) => {
+            let mappedTag = a.tag;
+            if (!mappedTag && a.representativeHashtag) {
+                mappedTag = a.representativeHashtag.name || a.representativeHashtag.tag;
+            }
 
+            return {
+                ...a,
+                id: String(a.id),
+                parentId: a.parentId ? String(a.parentId) : null,
+                tag: mappedTag || null,
+                type: 'album',
+                coverConfig: a.coverConfig || a.cover_config,
+                postCount: a.postCount !== undefined ? a.postCount : 0,
+                folderCount: a.folderCount !== undefined ? a.folderCount : 0
+            };
+        });
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ✨ 참여한 모임방 목록 조회 (GET) - 내 리스트
+export const fetchRoomsFromApi = async () => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/my`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("모임방 불러오기 실패");
+        const rooms = await response.json();
+        return rooms.map((r: any) => ({
+            ...r,
+            id: String(r.id),
+            parentId: null,
+            tag: r.tag || (r.representativeHashtag ? (r.representativeHashtag.name || r.representativeHashtag.tag) : null),
+            type: 'room',
+            role: r.role,
+            ownerId: r.ownerId || (r.owner ? r.owner.id : null),
+            ownerEmail: r.ownerEmail || (r.owner ? r.owner.email : null),
+            coverConfig: r.coverConfig || r.cover_config,
+            postCount: r.postCount !== undefined ? r.postCount : 0,
+            folderCount: r.folderCount !== undefined ? r.folderCount : 0
+        }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ✨ 모임방 입장 (POST)
+export const joinRoomApi = async (roomId: string, password?: string) => {
+    try {
+        const numericId = cleanId(roomId);
+        const response = await fetch(`${API_ROOM_URL}/${numericId}/join`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ password })
+        });
+
+        if (!response.ok) {
+            let errorMessage = "모임방 입장에 실패했습니다.";
+            try {
+                const text = await response.text();
+                if (text) {
+                    try {
+                        const err = JSON.parse(text);
+                        errorMessage = err.message || errorMessage;
+                    } catch (jsonError) {
+                        if (text.length < 200) {
+                            errorMessage = text;
+                        }
+                    }
+                }
+            } catch (e) {
+            }
+            throw new Error(errorMessage);
+        }
+
+        const text = await response.text();
+        return text ? JSON.parse(text) : {};
+    } catch (error: any) {
+        console.error(error);
+        throw error;
+    }
+};
+
+// ✨ 모임방 나가기 (DELETE) - 일반 멤버용
+export const leaveRoomApi = async (roomId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}/leave`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(err || "모임방 나가기 실패");
+        }
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+
+// ✨ 멤버 강퇴 (DELETE) - 방장용
+export const kickMemberApi = async (roomId: string, userId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}/members/${userId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            throw new Error("멤버 강퇴 실패");
+        }
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
+
+// ✨ 멤버 목록 조회 (GET)
+export const fetchRoomMembersApi = async (roomId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}/members`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("멤버 목록 불러오기 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ✨ 모임방 삭제 (DELETE)
+export const deleteRoomApi = async (roomId: string) => {
+    try {
+        const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("모임방 삭제 실패");
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+};
 
 // 앨범 단건 조회 (GET)
 export const fetchAlbumApi = async (id: string | number) => {
@@ -441,11 +424,10 @@ export const fetchAlbumApi = async (id: string | number) => {
             ...album,
             id: String(album.id),
             parentId: album.parentId ? String(album.parentId) : null,
-            // Ensure strictly typed fields are passed if backend returns them
             roomConfig: album.roomConfig,
             coverConfig: album.coverConfig || album.cover_config,
-            postCount: album.postCount !== undefined ? album.postCount : 0, // ✨ Explicit map
-            folderCount: album.folderCount !== undefined ? album.folderCount : 0 // ✨ Explicit map
+            postCount: album.postCount !== undefined ? album.postCount : 0,
+            folderCount: album.folderCount !== undefined ? album.folderCount : 0
         };
     } catch (error) {
         console.error(error);
@@ -456,7 +438,7 @@ export const fetchAlbumApi = async (id: string | number) => {
 // ✨ 모임방 단건 조회 (GET)
 export const fetchRoomApi = async (id: string | number) => {
     try {
-        const response = await fetch(`${API_ROOM_URL}/${id}`, {
+        const response = await fetch(`${API_ROOM_URL}/${cleanId(id)}`, {
             headers: getAuthHeaders()
         });
         if (!response.ok) throw new Error("모임방 정보 불러오기 실패");
@@ -465,17 +447,16 @@ export const fetchRoomApi = async (id: string | number) => {
             ...room,
             id: String(room.id),
             parentId: null,
-            // Ensure strictly typed fields are passed if backend returns them
             roomConfig: {
                 description: room.description,
                 password: room.password
             },
             coverConfig: room.coverConfig || room.cover_config,
-            role: room.role, // ✨ Map Role
-            ownerId: room.ownerId || (room.owner ? room.owner.id : null), // ✨ Map Owner ID
-            ownerEmail: room.ownerEmail || (room.owner ? room.owner.email : null), // ✨ Map Owner Email
-            postCount: room.postCount !== undefined ? room.postCount : 0, // ✨ Explicit map
-            folderCount: room.folderCount !== undefined ? room.folderCount : 0, // ✨ Explicit map
+            role: room.role,
+            ownerId: room.ownerId || (room.owner ? room.owner.id : null),
+            ownerEmail: room.ownerEmail || (room.owner ? room.owner.email : null),
+            postCount: room.postCount !== undefined ? room.postCount : 0,
+            folderCount: room.folderCount !== undefined ? room.folderCount : 0,
             type: 'room'
         };
     } catch (error) {
@@ -503,7 +484,7 @@ export const createAlbumApi = async (albumData: any) => {
 // ✨ 모임방 생성 (POST)
 export const createRoomApi = async (roomData: any) => {
     try {
-        const response = await fetch(`${API_ROOM_URL}`, { // Use API_ROOM_URL
+        const response = await fetch(`${API_ROOM_URL}`, {
             method: "POST",
             headers: getAuthHeaders(),
             body: JSON.stringify(roomData),
@@ -519,7 +500,7 @@ export const createRoomApi = async (roomData: any) => {
 // ✨ 모임방 수정 (PUT)
 export const updateRoomApi = async (id: string | number, roomData: any) => {
     try {
-        const response = await fetch(`${API_ROOM_URL}/${id}`, {
+        const response = await fetch(`${API_ROOM_URL}/${cleanId(id)}`, {
             method: "PUT",
             headers: getAuthHeaders(),
             body: JSON.stringify(roomData),
@@ -568,7 +549,7 @@ export const fetchAlbumContents = async (
     albumId: string | number,
     providedPosts?: any[],
     providedAlbums?: any[],
-    type: 'album' | 'room' = 'album' // ✨ Add type parameter
+    type: 'album' | 'room' = 'album'
 ) => {
     const targetId = String(albumId);
 
@@ -598,12 +579,10 @@ export const fetchAlbumContents = async (
         matchedPosts.forEach((p: any) => contents.push({ type: 'POST', data: p }));
 
         // Folders
-        // Folders: Show Sub-folders (items WITH parentId) + Attach Parent Name
         const matchedFolders = localAlbums.filter((a: any) => {
-            if (targetId === '__all__') return a.parentId; // Show sub-folders only
+            if (targetId === '__all__') return a.parentId;
             return false;
         }).map((a: any) => {
-            // Find parent name
             const parent = localAlbums.find((p: any) => String(p.id) === String(a.parentId));
             return {
                 ...a,
@@ -620,7 +599,7 @@ export const fetchAlbumContents = async (
                     name: '미분류',
                     type: 'FOLDER',
                     parentId: null,
-                    isSystem: true, // Marker for styling if needed
+                    isSystem: true,
                     postCount: untaggedCount
                 });
             }
@@ -630,7 +609,6 @@ export const fetchAlbumContents = async (
 
         // Sort
         const sortedFolders = matchedFolders.sort((a: any, b: any) => {
-            // System folders first
             if (a.id === '__others__') return -1;
             if (b.id === '__others__') return 1;
             return a.name.localeCompare(b.name);
@@ -648,11 +626,10 @@ export const fetchAlbumContents = async (
     }
 
     // 2. Specific Album or Room: Use Optimized Backend Endpoint
-    // GET /api/albums/{id}/contents OR /api/rooms/{id}/content
     try {
         let url = `${API_ALBUM_URL}/${targetId}/contents`;
         if (type === 'room') {
-            url = `${API_ROOM_URL}/${targetId}/posts`;
+            url = `${API_ROOM_URL}/${cleanId(targetId)}/posts`;
         }
 
         const response = await fetch(url, {
@@ -664,7 +641,6 @@ export const fetchAlbumContents = async (
         const data = await response.json();
         const contents: any[] = [];
 
-        // Handle various backend response formats (checking properties or dedicated keys)
         if (data.albums && Array.isArray(data.albums)) {
             data.albums.forEach((a: any) => contents.push({ type: 'FOLDER', data: a }));
         }
@@ -679,10 +655,8 @@ export const fetchAlbumContents = async (
             }));
         }
 
-        // If returned as a flat list with 'type' or just mixed properties
         if (Array.isArray(data)) {
             data.forEach((item: any) => {
-                // ✨ Fix for Wrapper Format (Backend V2 Response)
                 if (item.type && item.content) {
                     if (item.type === 'POST') {
                         contents.push({
@@ -706,7 +680,6 @@ export const fetchAlbumContents = async (
                     return;
                 }
 
-                // Heuristic to distinguish: Album has 'name', Post has 'title'
                 if (item.name && !item.title) {
                     contents.push({
                         type: 'FOLDER',
@@ -743,10 +716,9 @@ export const manageAlbumContentApi = async (
     action: 'ADD' | 'REMOVE' | 'MOVE',
     postId: string | number,
     sourceAlbumId?: string | number,
-    containerType: 'album' | 'room' = 'album' // ✨ Add containerType
+    containerType: 'album' | 'room' = 'album'
 ) => {
     try {
-        // ✨ Ensure camelCase and Number IDs
         const payload: any = {
             action,
             contentId: Number(postId),
@@ -759,7 +731,7 @@ export const manageAlbumContentApi = async (
 
         let url = `${API_ALBUM_URL}/${albumId}/manage`;
         if (containerType === 'room') {
-            url = `${API_ROOM_URL}/${albumId}/manage`; // ✨ Use Room API
+            url = `${API_ROOM_URL}/${cleanId(albumId)}/manage`;
         }
 
         const response = await fetch(url, {
@@ -781,12 +753,11 @@ export const manageAlbumItem = async (
     type: 'POST' | 'FOLDER',
     contentId: string | number,
     sourceAlbumId?: string | number,
-    containerType: 'album' | 'room' = 'album' // ✨ Add containerType
+    containerType: 'album' | 'room' = 'album'
 ) => {
 
     // Post Management: Use Optimized Endpoint
     if (type === 'POST') {
-        // ✨ Pass sourceAlbumId if present
         const success = await manageAlbumContentApi(albumId, action, contentId, sourceAlbumId, containerType);
         if (success) {
             return true;
@@ -801,19 +772,15 @@ export const manageAlbumItem = async (
 
         if (!targetAlbum) return false;
 
-        let newParentId = targetAlbum.parentId;
+        // Note: Room logic usually doesn't involve moving folders INTO rooms in this strict sense yet,
+        // unless rooms are folders. If room, ensure standard album update logic applies or ignore.
+        if (containerType === 'room') return false; // Folders inside rooms not yet fully supported via this generic method?
 
-        if (action === 'ADD' || action === 'MOVE') { // Treat MOVE same as ADD for folders (re-parenting)
-            newParentId = String(albumId);
-        } else if (action === 'REMOVE') {
-            if (String(newParentId) === String(albumId)) {
-                newParentId = null;
-            }
-        }
-
-        const updatedAlbum = { ...targetAlbum, parentId: newParentId };
-        await updateAlbumApi(contentId, updatedAlbum);
-        return true;
+        const updated = await updateAlbumApi(contentId, {
+            ...targetAlbum,
+            parentId: action === 'MOVE' ? (albumId === '__all__' ? null : Number(albumId)) : targetAlbum.parentId
+        });
+        return !!updated;
     }
 
     return false;

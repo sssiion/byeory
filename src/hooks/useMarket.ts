@@ -110,11 +110,7 @@ export const useMarket = () => {
                 selectedTags.forEach(t => query.append('tags', t));
             }
 
-            console.log("DEBUG: refreshMarket", {
-                targetKeyword,
-                selectedTags,
-                query: query.toString()
-            });
+
 
             if (targetSellerId) {
                 query.append('sellerId', targetSellerId);

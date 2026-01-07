@@ -51,7 +51,7 @@ const EditorSidebar: React.FC<Props> = ({
     };
 
     return (
-        <div className="w-80 flex flex-col gap-5 h-full overflow-y-auto pr-1 pb-10">
+        <div className="w-full xl:w-80 flex flex-col gap-5 h-full overflow-y-auto pr-1 pb-10">
             {/* 상단 액션 버튼 */}
             <div className="flex gap-3">
                 <button
