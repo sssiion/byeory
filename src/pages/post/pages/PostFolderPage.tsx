@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import CreateFolderModal from '../components/CreateFolderModal';
 import RoomSettingsModal from '../components/RoomSettingsModal';
+import NewCycleModal from '../components/NewCycleModal';
+import RoomCycleList from '../components/RoomCycleList';
 import type { PostData } from '../types';
 import { ArrowLeft, Folder, PenLine, Trash2, X, Lock, Users } from 'lucide-react';
 import PostBreadcrumb from '../components/PostBreadcrumb';
@@ -62,12 +64,16 @@ interface Props {
 const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
+    const [isCycleModalOpen, setIsCycleModalOpen] = useState(false); // ✨ New Cycle Modal State
 
     // ✨ Local State for API Data
     const [contents, setContents] = useState<{ type: 'POST' | 'FOLDER', data: any }[]>([]);
     const [currentAlbum, setCurrentAlbum] = useState<any | null>(null); // ✨ Current Album Info
     const [isLoading, setIsLoading] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false); // For "Add Existing"
+
+    // ✨ Local State for Refreshing RoomCycleList
+    const [refreshKey, setRefreshKey] = useState(0);
 
     // ✨ Fetch Contents
     const loadContents = async () => {
@@ -305,39 +311,73 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-3 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
-                        {/* ✨ Add Existing Item Button */}
-                        {albumId && albumId !== '__all__' && albumId !== '__others__' && (
-                            <button
-                                onClick={() => setIsAddModalOpen(true)}
-                                className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors whitespace-nowrap flex-shrink-0"
-                            >
-                                <Folder size={18} />
-                                항목 추가
-                            </button>
-                        )}
+                        {(() => {
+                            const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
+                            const isRoom = targetAlbum?.type === 'room' || String(albumId).startsWith('room-');
 
-                        {albumId !== '__all__' && !augmentedAlbums.find(a => String(a.id) === String(albumId))?.parentId && (
-                            <button
-                                onClick={() => setIsCreateFolderOpen(true)}
-                                className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-transparent hover:border-indigo-200 whitespace-nowrap flex-shrink-0"
-                            >
-                                <Folder size={18} />
-                                폴더 추가
-                            </button>
-                        )}
+                            if (isRoom) {
+                                // ✨ Room View: Show only "New RoomCycle" button
+                                // Ideally check for Owner permission, but for now show to all or check role if available
+                                return (
+                                    <button
+                                        onClick={() => setIsCycleModalOpen(true)}
+                                        className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0"
+                                    >
+                                        <PenLine size={20} />
+                                        새 활동 시작
+                                    </button>
+                                );
+                            }
 
-                        {albumId && albumId !== '__all__' && (
-                            <button
-                                onClick={() => onStartWriting(albumId)}
-                                className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0"
-                            >
-                                <PenLine size={20} />
-                                기록 남기기
-                            </button>
-                        )}
+                            // ✨ Normal Album View: Show standard buttons
+                            return (
+                                <>
+                                    {/* ✨ Add Existing Item Button */}
+                                    {albumId && albumId !== '__all__' && albumId !== '__others__' && (
+                                        <button
+                                            onClick={() => setIsAddModalOpen(true)}
+                                            className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-[var(--text-secondary)] bg-[var(--bg-card)] border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] rounded-xl transition-colors whitespace-nowrap flex-shrink-0"
+                                        >
+                                            <Folder size={18} />
+                                            항목 추가
+                                        </button>
+                                    )}
+
+                                    {albumId !== '__all__' && !augmentedAlbums.find(a => String(a.id) === String(albumId))?.parentId && (
+                                        <button
+                                            onClick={() => setIsCreateFolderOpen(true)}
+                                            className="flex items-center gap-2 px-4 h-10 md:h-12 text-sm md:text-base font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors border border-transparent hover:border-indigo-200 whitespace-nowrap flex-shrink-0"
+                                        >
+                                            <Folder size={18} />
+                                            폴더 추가
+                                        </button>
+                                    )}
+
+                                    {albumId && albumId !== '__all__' && (
+                                        <button
+                                            onClick={() => onStartWriting(albumId)}
+                                            className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0"
+                                        >
+                                            <PenLine size={20} />
+                                            기록 남기기
+                                        </button>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
 
+
+                {/* ✨ Room Cycle List (Only for Rooms) */}
+                {(() => {
+                    const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
+                    const isRoom = targetAlbum?.type === 'room' || String(albumId).startsWith('room-');
+                    if (isRoom) {
+                        return <RoomCycleList roomId={String(albumId).replace('room-', '')} refreshTrigger={refreshKey} />;
+                    }
+                    return null;
+                })()}
 
                 {/* Folders Display */}
                 {folders.length > 0 && (
@@ -569,8 +609,20 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         album={augmentedAlbums.find(a => a.id === roomSettingsId)!}
                     />
                 )}
+
+                {/* ✨ New Cycle Modal */}
+                <NewCycleModal
+                    isOpen={isCycleModalOpen}
+                    onClose={() => setIsCycleModalOpen(false)}
+                    roomId={String(albumId).replace('room-', '')}
+                    onSuccess={() => {
+                        loadContents();
+                        onRefresh?.();
+                        setRefreshKey(prev => prev + 1);
+                    }}
+                />
             </div>
-        </DndContext>
+        </DndContext >
     );
 };
 

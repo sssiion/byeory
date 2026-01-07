@@ -12,7 +12,7 @@ const API_ALBUM_URL = `${BASE_URL}/api/albums`;
 const API_ROOM_URL = `${BASE_URL}/api/rooms`;
 
 // ✨ Helper to clean ID (remove 'room-' prefix)
-const cleanId = (id: string | number): string => {
+export const cleanId = (id: string | number): string => {
     return String(id).replace(/^room-/, '');
 };
 

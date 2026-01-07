@@ -129,6 +129,7 @@ if (savedManualBtnTextColor) {
 
 import WelcomePage from './pages/WelcomePage';
 import AnalysisPage from "./pages/profile/analysis/AnalysisPage.tsx";
+import RoomCyclePage from './pages/post/pages/RoomCyclePage';
 
 const RootRouting = () => {
   const token = localStorage.getItem('accessToken');
@@ -162,6 +163,7 @@ createRoot(document.getElementById('root')!).render(
                     <Route element={<ProtectedRoute />}>
                       <Route path="/home" element={<MainPage />} />
                       <Route path="/post" element={<PostPage />} />
+                      <Route path="/cycles/:cycleId" element={<RoomCyclePage />} />
                       <Route path="/todo" element={<TodoPage />} />
                       <Route path="/community" element={<CommunityPage />} />
                       <Route path="/market" element={<MarketPage />} />

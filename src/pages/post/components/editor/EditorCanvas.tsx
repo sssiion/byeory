@@ -231,7 +231,7 @@ const EditorCanvas: React.FC<Props> = ({
                                                         key={block.id}
                                                         draggableId={block.id}
                                                         index={index}
-                                                        isDragDisabled={viewMode === 'read'}
+                                                        isDragDisabled={viewMode === 'read' || !!block.locked}
                                                     >
                                                         {(provided, snapshot) => (
                                                             <div
@@ -252,11 +252,11 @@ const EditorCanvas: React.FC<Props> = ({
                                                                     onImageUpload={onBlockImageUpload}
                                                                     isSelected={isFocused}
                                                                     onSelect={() => onSelect(block.id, 'block')}
-                                                                    readOnly={viewMode === 'read'}
+                                                                    readOnly={viewMode === 'read' || !!block.locked}
                                                                     dragHandleProps={provided.dragHandleProps}
                                                                 />
 
-                                                                {viewMode === 'editor' && isFocused && (
+                                                                {viewMode === 'editor' && isFocused && !block.locked && (
                                                                     <div className="absolute -right-14 top-[-10px] h-full flex flex-col justify-start pt-2 gap-2 z-30">
                                                                         <div className="flex flex-col gap-1 bg-white/80 backdrop-blur rounded-lg shadow-sm p-1 border">
                                                                             <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'up'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowUp size={16} /></button>
@@ -284,7 +284,7 @@ const EditorCanvas: React.FC<Props> = ({
                                     key={stk.id}
                                     {...stk}
                                     isSelected={selectedId === stk.id}
-                                    readOnly={viewMode === 'read'}
+                                    readOnly={viewMode === 'read' || !!stk.locked}
                                     onSelect={() => onSelect(stk.id, 'sticker')}
                                     onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
                                 >
@@ -297,7 +297,7 @@ const EditorCanvas: React.FC<Props> = ({
                                     key={txt.id}
                                     {...txt}
                                     isSelected={selectedId === txt.id}
-                                    readOnly={viewMode === 'read'}
+                                    readOnly={viewMode === 'read' || !!txt.locked}
                                     onSelect={() => onSelect(txt.id, 'floating')}
                                     onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                                 >
@@ -315,7 +315,7 @@ const EditorCanvas: React.FC<Props> = ({
                                             fontStyle: txt.styles?.fontStyle || 'normal',
                                             textDecoration: txt.styles?.textDecoration || 'none',
                                         }}
-                                        readOnly={viewMode === 'read'}
+                                        readOnly={viewMode === 'read' || !!txt.locked}
                                     />
                                 </ResizableItem>
                             ))}
@@ -325,8 +325,9 @@ const EditorCanvas: React.FC<Props> = ({
                                     key={img.id}
                                     {...img}
                                     isSelected={selectedId === img.id}
-                                    readOnly={viewMode === 'read'}
+                                    readOnly={viewMode === 'read' || !!img.locked}
                                     onSelect={() => onSelect(img.id, 'floatingImage')}
+
                                     onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
                                 >
                                     <img src={img.url} className="w-full h-full object-cover pointer-events-none rounded-lg select-none" style={{ opacity: img.opacity }} />

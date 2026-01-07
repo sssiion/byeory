@@ -11,6 +11,7 @@ export interface Block {
     imageRotation?: number;
     imageFit?: 'cover' | 'contain';
     styles?: Record<string, any>;
+    locked?: boolean;
 }
 
 // 좌표와 크기를 number(픽셀 단위)로 변경
@@ -23,6 +24,7 @@ export interface BaseFloatingItem {
     rotation: number;
     opacity?: number;
     zIndex: number;
+    locked?: boolean;
 }
 
 export interface Sticker extends BaseFloatingItem {

@@ -722,6 +722,7 @@ export const usePostEditor = () => {
         mode, setMode, // ✨ Expose mode
         isFavorite, setIsFavorite, // ✨ Expose isFavorite
         isPublic, setIsPublic, // ✨ Expose isPublic
-        refreshPosts: fetchPosts // ✨ Expose data refresh trigger
+        refreshPosts: fetchPosts, // ✨ Expose data refresh trigger
+        setStickers, setFloatingTexts, setFloatingImages // ✨ Expose setters for Rolling Paper
     };
 };
