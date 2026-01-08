@@ -10,6 +10,9 @@ const BASE_URL = 'http://localhost:8080';
 const API_BASE_URL = `${BASE_URL}/api/posts`;
 const API_ALBUM_URL = `${BASE_URL}/api/albums`;
 const API_ROOM_URL = `${BASE_URL}/api/rooms`;
+export const API_TEMPLATE_URL = `${BASE_URL}/api/templates`; // ✨ Fixed URL matching Controller
+
+// ... existing code ...
 
 // ✨ Helper to clean ID (remove 'room-' prefix)
 export const cleanId = (id: string | number): string => {
@@ -144,6 +147,19 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
     }
 };
 
+// Helper to sanitize coordinates
+const sanitizeCoordinate = (val: any): number | string => {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+        // Valid percentage (strictly numbers followed by %)
+        if (/^-?\d+(\.\d+)?%$/.test(val)) return val;
+        // Otherwise try to parse number (handles "50px", "123.4", etc.)
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+};
+
 // 게시글 목록 조회 (GET)
 export const fetchPostsFromApi = async () => {
     try {
@@ -160,8 +176,30 @@ export const fetchPostsFromApi = async () => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
             }).filter(Boolean),
-            floatingTexts: p.floatingTexts || [],
-            floatingImages: p.floatingImages || [],
+            stickers: (p.stickers || []).map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h),
+                opacity: s.opacity || 1 // ✨ Fix invisible items
+            })),
+            floatingTexts: (p.floatingTexts || []).map((t: any) => ({
+                ...t,
+                x: sanitizeCoordinate(t.x),
+                y: sanitizeCoordinate(t.y),
+                w: sanitizeCoordinate(t.w),
+                h: sanitizeCoordinate(t.h),
+                opacity: t.opacity || 1 // ✨ Fix invisible items
+            })),
+            floatingImages: (p.floatingImages || []).map((i: any) => ({
+                ...i,
+                x: sanitizeCoordinate(i.x),
+                y: sanitizeCoordinate(i.y),
+                w: sanitizeCoordinate(i.w),
+                h: sanitizeCoordinate(i.h),
+                opacity: i.opacity || 1 // ✨ Fix invisible items
+            })),
             titleStyles: p.titleStyles || {},
             albumIds: (p.targetAlbumIds || []).map((t: any) => {
                 if (typeof t === 'object' && t !== null) return String(t.id);
@@ -170,6 +208,7 @@ export const fetchPostsFromApi = async () => {
             isFavorite: p.isFavorite || false,
             mode: p.mode || 'AUTO',
             isPublic: p.isPublic ?? true,
+            styles: p.styles || {}, // ✨ Paper Styles
             visibility: (p.isPublic === false) ? 'private' : 'public'
         }));
     } catch (error) {
@@ -195,7 +234,8 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             mode: postData.mode || 'AUTO',
             targetAlbumIds: (postData.albumIds || []).map((id: any) => Number(id)).filter((n: number) => !isNaN(n)),
             isFavorite: postData.isFavorite || false,
-            isPublic: postData.isPublic ?? true
+            isPublic: postData.isPublic ?? true,
+            styles: postData.styles // ✨ Paper Styles
         };
 
         const response = await fetch(url, {
@@ -218,8 +258,29 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
             }).filter(Boolean),
-            floatingTexts: savedPost.floatingTexts || [],
-            floatingImages: savedPost.floatingImages || [],
+            stickers: (savedPost.stickers || []).map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h),
+                opacity: s.opacity || 1 // ✨ Fix invisible items
+            })),
+            floatingTexts: (savedPost.floatingTexts || []).map((t: any) => ({
+                ...t,
+                x: sanitizeCoordinate(t.x),
+                y: sanitizeCoordinate(t.y),
+                w: sanitizeCoordinate(t.w),
+                h: sanitizeCoordinate(t.h)
+            })),
+            floatingImages: (savedPost.floatingImages || []).map((i: any) => ({
+                ...i,
+                x: sanitizeCoordinate(i.x),
+                y: sanitizeCoordinate(i.y),
+                w: sanitizeCoordinate(i.w),
+                h: sanitizeCoordinate(i.h),
+                opacity: i.opacity || 1 // ✨ Fix invisible items
+            })),
             titleStyles: savedPost.titleStyles || {},
             albumIds: (savedPost.targetAlbumIds || []).map((t: any) => {
                 if (typeof t === 'object' && t !== null) return String(t.id);
@@ -228,6 +289,7 @@ export const savePostToApi = async (postData: any, isUpdate: boolean = false) =>
             isFavorite: savedPost.isFavorite || false,
             mode: savedPost.mode || 'AUTO',
             isPublic: savedPost.isPublic ?? true,
+            styles: savedPost.styles || {}, // ✨ Paper Styles
             visibility: (savedPost.isPublic === false) ? 'private' : 'public'
         };
     } catch (error) {
@@ -784,4 +846,74 @@ export const manageAlbumItem = async (
     }
 
     return false;
+};
+
+// ✨ 나만의 템플릿 생성 (POST)
+export const createPostTemplateApi = async (templateData: any) => {
+    try {
+        const response = await fetch(`${API_TEMPLATE_URL}`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(templateData),
+        });
+        if (!response.ok) throw new Error("템플릿 생성 실패");
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+// ✨ 내 템플릿 목록 조회 (GET)
+export const fetchMyPostTemplatesApi = async () => {
+    try {
+        const response = await fetch(`${API_TEMPLATE_URL}/my`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("템플릿 목록 불러오기 실패");
+        const templates = await response.json();
+        return templates.map((t: any) => ({
+            ...t,
+            stickers: (t.stickers || []).map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h),
+                opacity: s.opacity || 1 // ✨ Fix invisible items
+            })),
+            floatingTexts: (t.floatingTexts || []).map((text: any) => ({
+                ...text,
+                x: sanitizeCoordinate(text.x),
+                y: sanitizeCoordinate(text.y),
+                w: sanitizeCoordinate(text.w),
+                h: sanitizeCoordinate(text.h)
+            })),
+            floatingImages: (t.floatingImages || []).map((img: any) => ({
+                ...img,
+                x: sanitizeCoordinate(img.x),
+                y: sanitizeCoordinate(img.y),
+                w: sanitizeCoordinate(img.w),
+                h: sanitizeCoordinate(img.h)
+            }))
+        }));
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
+
+// ✨ 템플릿 삭제 (DELETE)
+export const deletePostTemplateApi = async (id: number) => {
+    try {
+        const response = await fetch(`${API_TEMPLATE_URL}/${id}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("템플릿 삭제 실패");
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
 };

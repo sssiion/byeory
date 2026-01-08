@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
+import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks/useMarket';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
@@ -24,8 +25,15 @@ interface Props {
     onAiGenerate: () => void;
     isAiProcessing: boolean;
     // New Props for Save Location
+    // New Props for Save Location
     currentTags: string[];
     onTagsChange: (tags: string[]) => void;
+    // ✨ Paper Props
+    applyPaperPreset: (preset: any) => void;
+    defaultFontColor?: string;
+    onSaveAsTemplate: () => void;
+    myTemplates?: any[];
+    applyTemplate?: (template: any) => void;
 }
 
 const EditorSidebar: React.FC<Props> = ({
@@ -33,8 +41,12 @@ const EditorSidebar: React.FC<Props> = ({
     onAddBlock, onAddFloatingText, onAddSticker, onAddFloatingImage,
     rawInput, setRawInput, selectedLayoutId, setSelectedLayoutId,
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
-    currentTags, onTagsChange
+    currentTags, onTagsChange, applyPaperPreset, onSaveAsTemplate,
+    myTemplates = [], applyTemplate
 }) => {
+    // ... existing ...
+
+    // ... existing ...
     const { isOwned, buyItem, getMarketItem, getPackPrice } = useMarket();
 
     // ✨ 음성 인식 관련 Hook
@@ -239,6 +251,70 @@ const EditorSidebar: React.FC<Props> = ({
             </div>
 
             {/* SaveLocationWidget Removed - Moved to Modal */}
+
+            {/* ✨ 종이 디자인 섹션 */}
+            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <Layout size={18} className="text-[var(--text-secondary)]" />
+                        종이 디자인
+                    </h3>
+                </div>
+                <div className="p-4 grid grid-cols-2 gap-2">
+                    {Object.values(PAPER_PRESETS).map((preset: any) => (
+                        <button
+                            key={preset.id}
+                            onClick={() => applyPaperPreset(preset)}
+                            className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1"
+                            style={{
+                                backgroundColor: preset.styles.backgroundColor || '#fff',
+                                color: preset.defaultFontColor || '#000'
+                            }}
+                        >
+                            {preset.name}
+                        </button>
+                    ))}
+
+                    <button
+                        onClick={onSaveAsTemplate}
+                        className="p-2 border border-[var(--border-color)] border-dashed rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-400 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 justify-center bg-transparent"
+                    >
+                        <Save size={14} />
+                        템플릿 저장
+                    </button>
+                </div>
+            </div>
+
+            {/* ✨ 나의 템플릿 섹션 */}
+            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <Save size={18} className="text-[var(--text-secondary)]" />
+                        나의 템플릿
+                    </h3>
+                </div>
+                <div className="p-4 grid grid-cols-2 gap-2">
+                    {myTemplates.length > 0 ? (
+                        myTemplates.map((template: any) => (
+                            <button
+                                key={template.id}
+                                onClick={() => applyTemplate && applyTemplate(template)}
+                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1"
+                                style={{
+                                    backgroundColor: template.styles?.backgroundColor || '#fff',
+                                    color: template.defaultFontColor || '#000'
+                                }}
+                            >
+                                <span className="truncate w-full text-center">{template.name}</span>
+                            </button>
+                        ))
+                    ) : (
+                        <div className="col-span-2 text-center text-xs text-gray-400 py-2">
+                            저장된 템플릿이 없습니다.
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* 꾸미기 도구 섹션 */}
             <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">

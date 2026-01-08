@@ -64,6 +64,19 @@ export const getCommunities = async (page: number, size: number = 10, userId?: n
     return data;
 };
 
+// Helper to sanitize coordinates
+const sanitizeCoordinate = (val: any): number | string => {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+        // Valid percentage (strictly numbers followed by %)
+        if (/^-?\d+(\.\d+)?%$/.test(val)) return val;
+        // Otherwise try to parse number
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+};
+
 export const getCommunityDetail = async (postId: number, userId?: number): Promise<CommunityResponse> => {
     const params: any = {};
     if (userId) {
@@ -75,13 +88,41 @@ export const getCommunityDetail = async (postId: number, userId?: number): Promi
         headers: getAuthHeader(),
     });
 
-    // Map hashtags if present
+    // Map hashtags and sanitize stickers
     const data = response.data;
     if (data) {
         data.tags = (data.tags || data.hashtags || []).map((t: any) => {
             if (typeof t === 'string') return t;
             return t.name || t.tagName || "";
         }).filter((t: string) => t.length > 0);
+
+        if (data.stickers) {
+            data.stickers = data.stickers.map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h)
+            }));
+        }
+        if (data.floatingTexts) {
+            data.floatingTexts = data.floatingTexts.map((t: any) => ({
+                ...t,
+                x: sanitizeCoordinate(t.x),
+                y: sanitizeCoordinate(t.y),
+                w: sanitizeCoordinate(t.w),
+                h: sanitizeCoordinate(t.h)
+            }));
+        }
+        if (data.floatingImages) {
+            data.floatingImages = data.floatingImages.map((i: any) => ({
+                ...i,
+                x: sanitizeCoordinate(i.x),
+                y: sanitizeCoordinate(i.y),
+                w: sanitizeCoordinate(i.w),
+                h: sanitizeCoordinate(i.h)
+            }));
+        }
     }
     return data;
 };
@@ -134,10 +175,28 @@ export const getPostDetail = async (postId: number): Promise<any> => {
                 if (typeof t === 'string') return t;
                 return t.name || t.tag || t.tagName || "";
             }).filter(Boolean),
-            floatingTexts: p.floatingTexts || [],
-            floatingImages: p.floatingImages || [],
+            floatingTexts: (p.floatingTexts || []).map((t: any) => ({
+                ...t,
+                x: sanitizeCoordinate(t.x),
+                y: sanitizeCoordinate(t.y),
+                w: sanitizeCoordinate(t.w),
+                h: sanitizeCoordinate(t.h)
+            })),
+            floatingImages: (p.floatingImages || []).map((i: any) => ({
+                ...i,
+                x: sanitizeCoordinate(i.x),
+                y: sanitizeCoordinate(i.y),
+                w: sanitizeCoordinate(i.w),
+                h: sanitizeCoordinate(i.h)
+            })),
             blocks: p.blocks || [],
-            stickers: p.stickers || [],
+            stickers: (p.stickers || []).map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h)
+            })),
             titleStyles: p.titleStyles || {},
             isFavorite: p.isFavorite || false,
         };

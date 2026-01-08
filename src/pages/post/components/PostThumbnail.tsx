@@ -57,6 +57,7 @@ const PostThumbnail: React.FC<Props> = ({ post, width = 300, height = 300 }) => 
                         color: '#000000',
                         textAlign: 'left'
                     }}
+                    paperStyles={post.styles || {}} // ✨ Apply paper styles
                     viewMode="read"
                     blocks={post.blocks || []}
                     setBlocks={noop}

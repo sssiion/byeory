@@ -183,6 +183,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                                     setTitle={() => { }}
                                     titleStyles={postDetail.titleStyles || data.titleStyles || {}}
                                     viewMode="read"
+                                    paperStyles={postDetail.styles || data.styles || {}}
                                     blocks={postDetail.blocks || []}
                                     setBlocks={() => { }}
                                     stickers={postDetail.stickers || []}

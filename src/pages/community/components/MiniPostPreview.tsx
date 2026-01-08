@@ -4,6 +4,7 @@ import type { Block, FloatingImage, FloatingText, Sticker } from "../../post/typ
 interface MiniPostViewerProps {
     title: string;
     titleStyles: Record<string, any>;
+    styles?: Record<string, any>; // ✨ Add paper styles prop
     blocks?: Block[];
     stickers?: Sticker[];
     floatingTexts?: FloatingText[];
@@ -15,6 +16,7 @@ interface MiniPostViewerProps {
 const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     title,
     titleStyles = {},
+    styles = {}, // ✨ Default empty styles
     blocks = [],
     stickers = [],
     floatingTexts = [],
@@ -32,8 +34,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
         return {
             position: 'absolute' as const,
-            left: `${x}px`,
-            top: `${y}px`,
+            left: typeof x === 'number' ? `${x}px` : x,
+            top: typeof y === 'number' ? `${y}px` : y,
             width: typeof width === 'number' ? `${width}px` : width,
             height: typeof height === 'number' ? `${height}px` : height,
             transform: `rotate(${item.rotation || 0}deg)`,
@@ -51,6 +53,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 minHeight: minHeight,
                 height: 'auto',
                 zoom: scale,
+                ...styles, // ✨ Apply paper styles (background, etc.)
+                position: 'relative', // Ensure relative positioning for absolute children
             }}
         >
             {/* ✨ 스타일 태그 추가: 제목 흐르기 애니메이션 */}

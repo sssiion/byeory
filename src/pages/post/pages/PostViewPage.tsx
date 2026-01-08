@@ -12,7 +12,7 @@ interface Props {
 
 const PostViewPage: React.FC<Props> = ({ editor }) => {
     // ✨ Breadcrumb Logic
-    const breadcrumbs = useBreadcrumbs(editor.selectedAlbumId, editor.customAlbums, editor.handleAlbumClick, '내 앨범', false);
+    const breadcrumbs = useBreadcrumbs(editor.selectedAlbumId, editor.customAlbums, (id) => id && editor.handleAlbumClick(id), '내 앨범', false);
 
     const handleDelete = async () => {
         if (!editor.currentPostId) return;
@@ -71,6 +71,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
                 viewMode={'read'}
+                paperStyles={editor.paperStyles}
                 blocks={editor.blocks} setBlocks={editor.setBlocks}
                 stickers={editor.stickers} floatingTexts={editor.floatingTexts}
                 floatingImages={editor.floatingImages}

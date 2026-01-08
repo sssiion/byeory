@@ -52,6 +52,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
                             <MiniPostViewer
                                 title={data.title}
                                 titleStyles={data.titleStyles || {}}
+                                styles={data.styles || {}} // ✨ Pass paper styles
                                 blocks={data.blocks || []}
                                 stickers={data.stickers || []}
                                 floatingTexts={data.floatingTexts || []}

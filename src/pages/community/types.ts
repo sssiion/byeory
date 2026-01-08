@@ -14,6 +14,7 @@ export interface CommunityResponse {
     floatingTexts?: any[];
     floatingImages?: any[];
     titleStyles?: Record<string, any>;
+    styles?: Record<string, any>; // ✨ Paper Styles
     tags?: string[];
 }
 

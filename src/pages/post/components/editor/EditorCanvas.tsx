@@ -25,11 +25,12 @@ interface Props {
     onDelete: () => void;
     onBlockImageUpload: (id: string, file: File, idx?: number) => void;
     onBackgroundClick: () => void;
+    paperStyles?: Record<string, any>; // ✨ New Prop
 }
 
 const EditorCanvas: React.FC<Props> = ({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
-    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick
+    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick, paperStyles
 }) => {
 
     // ✨ Responsive Scaling Logic
@@ -181,7 +182,12 @@ const EditorCanvas: React.FC<Props> = ({
                 >
                     <div
                         ref={contentRef}
-                        className="w-[800px] bg-white rounded-xl shadow-xl min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden"
+                        className="w-[800px] min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden"
+                        style={{
+                            borderRadius: '0.75rem', // rounded-xl equivalent
+                            backgroundColor: '#ffffff', // default
+                            ...paperStyles // ✨ Apply Paper Styles
+                        }}
                     >
                         {/* 헤더 */}
                         <div

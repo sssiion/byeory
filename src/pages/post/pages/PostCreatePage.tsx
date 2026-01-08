@@ -34,13 +34,16 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     editor.setSelectedId(id);
                     editor.setSelectedType(type);
                 }}
-                onUpdate={editor.handleUpdate}
-                onDelete={editor.handleDelete}
-                onBlockImageUpload={editor.handleBlockImageUpload}
+                onUpdate={(id, _, changes) => editor.handleUpdate(id, changes)}
+                onDelete={() => {
+                    if (editor.selectedId) editor.handleDelete(editor.selectedId);
+                }}
+                onBlockImageUpload={(id, file) => editor.handleBlockImageUpload(file, id)}
                 onBackgroundClick={() => {
                     editor.setSelectedId(null);
                     editor.setSelectedType(null);
                 }}
+                paperStyles={editor.paperStyles}
             />
 
             {/* 오른쪽 사이드바 */}
@@ -74,6 +77,10 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
                 currentTags={editor.currentTags}
                 onTagsChange={editor.setTags}
+                applyPaperPreset={editor.applyPaperPreset}
+                onSaveAsTemplate={editor.handleSaveAsTemplate}
+                myTemplates={editor.myTemplates}
+                applyTemplate={editor.applyTemplate}
             />
 
             {/* ✨ 저장 위치 선택 모달 */}

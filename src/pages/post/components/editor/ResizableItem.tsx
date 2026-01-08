@@ -2,10 +2,10 @@ import React, { useRef, useState, useEffect } from 'react';
 
 interface Props {
     id: string;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
+    x: number | string;
+    y: number | string;
+    w: number | string;
+    h: number | string;
     rotation: number;
     zIndex: number;
     isSelected: boolean;
@@ -21,6 +21,7 @@ const ResizableItem: React.FC<Props> = ({
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [isRotating, setIsRotating] = useState(false);
+    const elementRef = useRef<HTMLDivElement>(null); // ✨ Ref for current element
 
     // 드래그 시작 시점의 상태 저장
     const startPos = useRef({
@@ -36,12 +37,17 @@ const ResizableItem: React.FC<Props> = ({
         e.stopPropagation(); // 드래그 시작 시 배경 선택 방지
         onSelect();
         setIsDragging(true);
+
+        // ✨ Get current pixel values (converts % to px automatically)
+        const currentX = elementRef.current?.offsetLeft || 0;
+        const currentY = elementRef.current?.offsetTop || 0;
+
         startPos.current = {
             ...startPos.current,
             startX: e.clientX,
             startY: e.clientY,
-            initialX: x,
-            initialY: y
+            initialX: currentX, // Use pixels
+            initialY: currentY
         };
     };
 
@@ -49,12 +55,17 @@ const ResizableItem: React.FC<Props> = ({
         e.stopPropagation();
         e.preventDefault(); // 텍스트 선택 등 기본 동작 방지
         setIsResizing(true);
+
+        // ✨ Get current pixel dimensions
+        const currentW = elementRef.current?.offsetWidth || 0;
+        const currentH = elementRef.current?.offsetHeight || 0;
+
         startPos.current = {
             ...startPos.current,
             startX: e.clientX,
             startY: e.clientY,
-            initialW: w,
-            initialH: h
+            initialW: currentW,
+            initialH: currentH
         };
     };
 
@@ -64,7 +75,7 @@ const ResizableItem: React.FC<Props> = ({
         setIsRotating(true);
 
         // 아이템의 중심점 계산 (회전 각도 계산용)
-        const rect = (e.target as HTMLElement).closest('.group')?.getBoundingClientRect();
+        const rect = elementRef.current?.getBoundingClientRect(); // ✨ Use ref
         if (rect) {
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
@@ -123,12 +134,13 @@ const ResizableItem: React.FC<Props> = ({
 
     return (
         <div
+            ref={elementRef}
             className={`absolute select-none group `}
             style={{
-                left: `${x}px`,
-                top: `${y}px`,
-                width: `${w}px`,
-                height: `${h}px`, // 높이 값 적용
+                left: typeof x === 'number' ? `${x}px` : x,
+                top: typeof y === 'number' ? `${y}px` : y,
+                width: typeof w === 'number' ? `${w}px` : w,
+                height: typeof h === 'number' ? `${h}px` : h, // 높이 값 적용
                 transform: `rotate(${rotation}deg)`,
                 zIndex: zIndex,
                 cursor: readOnly ? 'default' : (isDragging ? 'grabbing' : 'grab'),

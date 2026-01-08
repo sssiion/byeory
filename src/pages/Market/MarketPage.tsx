@@ -13,6 +13,7 @@ import { STICKERS } from '../post/constants';
 import { useMarket } from '../../hooks/useMarket';
 import { ShoppingBag, Search, Plus, Heart, FolderOpen, X, Check } from 'lucide-react';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
+import { fetchMyPostTemplatesApi } from '../post/api';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
@@ -85,24 +86,42 @@ const Market: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
     const loadMySellableItems = React.useCallback(async () => {
-        // 1. Custom Widgets from API (Only source now)
+        // 1. Custom Widgets from API
         let apiWidgets: any[] = [];
+        let apiTemplates: any[] = [];
+
         try {
-            apiWidgets = await getMyWidgets();
+            const [widgets, templates] = await Promise.all([
+                getMyWidgets(),
+                fetchMyPostTemplatesApi()
+            ]);
+            apiWidgets = widgets;
+            apiTemplates = templates;
         } catch (e) {
-            console.error("Failed to load custom widgets for market", e);
+            console.error("Failed to load sellable items", e);
         }
 
         const formattedWidgets = apiWidgets.map(w => ({
             id: w.id || w._id,
             title: w.name,
-            type: 'template_widget', // or custom type
+            type: 'template_widget',
             description: '사용자가 직접 생성한 커스텀 위젯입니다.',
             price: 0,
             source: 'api'
         }));
 
-        const allCandidates = [...formattedWidgets];
+        const formattedTemplates = apiTemplates.map(t => ({
+            id: t.id,
+            title: t.name,
+            type: 'template_post',
+            description: '사용자가 직접 생성한 게시물 템플릿입니다.',
+            price: 0,
+            source: 'api',
+            // Store necessary data to replicate the template if needed, though usually referenceId logic handles it
+            originalId: t.id
+        }));
+
+        const allCandidates = [...formattedWidgets, ...formattedTemplates];
         const sellable = allCandidates.filter(candidate => !isOwned(candidate.id))
             .map(candidate => {
                 const isAlreadySelling = sellingItems.some(s =>

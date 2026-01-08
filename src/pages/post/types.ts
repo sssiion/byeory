@@ -17,10 +17,10 @@ export interface Block {
 // 좌표와 크기를 number(픽셀 단위)로 변경
 export interface BaseFloatingItem {
     id: string;
-    x: number; // px 단위
-    y: number; // px 단위
-    w: number; // px 단위
-    h: number; // px 단위 (비율 유지를 위해 자동 계산될 수 있음)
+    x: number | string; // px or %
+    y: number | string;
+    w: number | string;
+    h: number | string;
     rotation: number;
     opacity?: number;
     zIndex: number;
@@ -68,6 +68,17 @@ export interface Folder {
     isFavorite?: boolean;
 }
 
+export interface PostTemplate {
+    id: number;
+    name: string;
+    styles: Record<string, any>;
+    stickers: Sticker[];
+    floatingTexts: FloatingText[];
+    floatingImages: FloatingImage[];
+    defaultFontColor?: string;
+    sourceMarketItemId?: number;
+}
+
 export interface PostData {
     id: number;
     title: string;
@@ -89,6 +100,7 @@ export interface PostData {
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
     titleStyles?: Record<string, any>;
+    styles?: Record<string, any>; // ✨ Paper Styles Snapshot
 }
 
 export interface CustomAlbum {
