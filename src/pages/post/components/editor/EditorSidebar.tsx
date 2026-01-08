@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks/useMarket';
@@ -34,6 +34,8 @@ interface Props {
     onSaveAsTemplate: () => void;
     myTemplates?: any[];
     applyTemplate?: (template: any) => void;
+    containerClassName?: string;
+    showActionButtons?: boolean;
 }
 
 const EditorSidebar: React.FC<Props> = ({
@@ -42,7 +44,7 @@ const EditorSidebar: React.FC<Props> = ({
     rawInput, setRawInput, selectedLayoutId, setSelectedLayoutId,
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
     currentTags, onTagsChange, applyPaperPreset, onSaveAsTemplate,
-    myTemplates = [], applyTemplate
+    myTemplates = [], applyTemplate, containerClassName = "xl:w-80", showActionButtons = true
 }) => {
     // ... existing ...
 
@@ -230,25 +232,27 @@ const EditorSidebar: React.FC<Props> = ({
     };
 
     return (
-        <div className="w-full xl:w-80 flex flex-col gap-5 h-full overflow-y-auto pr-1 pb-10">
+        <div className={`w-full ${containerClassName} flex flex-col gap-5 h-full overflow-y-auto pr-1 pb-10`}>
             {/* 상단 액션 버튼 */}
-            <div className="flex gap-3">
-                <button
-                    onClick={onCancel}
-                    className="flex-1 py-3 px-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] transition-all flex items-center justify-center gap-2"
-                >
-                    <X size={18} />
-                    취소
-                </button>
-                <button
-                    onClick={onSave}
-                    disabled={isSaving}
-                    className="flex-1 py-3 px-4 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                    <Save size={18} />
-                    {isSaving ? "저장 중..." : "저장"}
-                </button>
-            </div>
+            {showActionButtons && (
+                <div className="flex gap-3">
+                    <button
+                        onClick={onCancel}
+                        className="flex-1 py-3 px-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] transition-all flex items-center justify-center gap-2"
+                    >
+                        <X size={18} />
+                        취소
+                    </button>
+                    <button
+                        onClick={onSave}
+                        disabled={isSaving}
+                        className="flex-1 py-3 px-4 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        <Save size={18} />
+                        {isSaving ? "저장 중..." : "저장"}
+                    </button>
+                </div>
+            )}
 
             {/* SaveLocationWidget Removed - Moved to Modal */}
 
@@ -459,9 +463,9 @@ const EditorSidebar: React.FC<Props> = ({
                             onClick={toggleRecording}
                             className={`absolute bottom-2 right-2 p-1.5 rounded-full transition-all duration-200
                                 ${listening && isRecordingSidebar
-                                ? 'text-red-500 bg-red-50 animate-pulse'
-                                : 'text-gray-400 hover:text-indigo-600 hover:bg-gray-200/50'
-                            }
+                                    ? 'text-red-500 bg-red-50 animate-pulse'
+                                    : 'text-gray-400 hover:text-indigo-600 hover:bg-gray-200/50'
+                                }
                             `}
                             title={listening ? "음성 인식 중지" : "음성으로 말하기"}
                         >

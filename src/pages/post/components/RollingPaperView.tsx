@@ -131,7 +131,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
     // 2. MY TURN (EDITOR VIEW)
     if (cycle.status === 'IN_PROGRESS' && cycle.isMyTurn) {
         return (
-            <div className="flex flex-col h-screen max-h-[90vh] overflow-hidden bg-gray-50 rounded-2xl relative">
+            <div className="flex flex-col h-full overflow-hidden bg-gray-50 relative">
                 {/* Header */}
                 <div className="shrink-0 h-16 bg-white border-b flex items-center justify-between px-6 z-50">
                     <span className="font-bold text-lg">✏️ 나의 차례</span>
@@ -150,6 +150,8 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                     <div className="w-80 border-r bg-white shrink-0 overflow-y-auto hidden md:block">
                         <div className="p-4">
                             <EditorSidebar
+                                containerClassName=""
+                                showActionButtons={false}
                                 isSaving={editor.isSaving}
                                 onSave={() => { }} // Disabled in RollingPaper
                                 onCancel={() => { }} // Disabled
@@ -164,6 +166,11 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                                 onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
                                 currentTags={editor.currentTags}
                                 onTagsChange={editor.setTags}
+                                // ✨ Fix: Enable Design & Templates
+                                applyPaperPreset={editor.applyPaperPreset}
+                                onSaveAsTemplate={editor.handleSaveAsTemplate}
+                                myTemplates={editor.myTemplates}
+                                applyTemplate={editor.applyTemplate}
                             />
                         </div>
                     </div>
@@ -184,12 +191,19 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                                 editor.setSelectedType(type);
                             }}
                             onUpdate={editor.handleUpdate}
-                            onDelete={editor.handleDelete}
-                            onBlockImageUpload={editor.handleBlockImageUpload}
+                            onDelete={() => {
+                                if (editor.selectedId) {
+                                    editor.handleDelete(editor.selectedId);
+                                }
+                            }}
+                            onBlockImageUpload={(id, file) => {
+                                editor.handleBlockImageUpload(file, id);
+                            }}
                             onBackgroundClick={() => {
                                 editor.setSelectedId(null);
                                 editor.setSelectedType(null);
                             }}
+                            paperStyles={editor.paperStyles} // ✨ Fix: Apply Paper Styles
                         />
                     </div>
                 </div>
@@ -200,7 +214,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
     // 3. COMPLETED VIEW (READ ONLY)
     // Display the final rolling paper as a single canvas
     return (
-        <div className="flex flex-col h-screen max-h-[90vh] overflow-hidden bg-gray-50 rounded-2xl relative">
+        <div className="flex flex-col h-full overflow-hidden bg-gray-50 relative">
             <div className="shrink-0 h-16 bg-white border-b flex items-center justify-center px-6 z-50">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                     <CheckCheck className="text-green-500" />

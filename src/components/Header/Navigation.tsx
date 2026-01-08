@@ -198,7 +198,17 @@ const Navigation: React.FC = () => {
                             >
                                 <Link
                                     to={item.path}
-                                    onClick={(e) => isEditMode && e.preventDefault()}
+                                    onClick={(e) => {
+                                        if (isEditMode) {
+                                            e.preventDefault();
+                                            return;
+                                        }
+                                        // ✨ Custom logic for Post tab: Dispatch event if already on /post
+                                        if (item.path === '/post' && isActive('/post')) {
+                                            e.preventDefault();
+                                            window.dispatchEvent(new CustomEvent('post-tab-click'));
+                                        }
+                                    }}
                                     className={`text-lg font-medium transition-colors duration-200 block ${isActive(item.path)
                                         ? 'theme-text-primary font-bold'
                                         : 'theme-text-secondary hover:theme-text-primary'
@@ -273,7 +283,16 @@ const Navigation: React.FC = () => {
                                 <div className={`flex flex-col items-center justify-center w-full h-full space-y-1 p-2 ${active ? 'theme-text-primary' : 'theme-text-secondary'}`}>
                                     <Link
                                         to={item.path}
-                                        onClick={(e) => isEditMode && e.preventDefault()}
+                                        onClick={(e) => {
+                                            if (isEditMode) {
+                                                e.preventDefault();
+                                                return;
+                                            }
+                                            if (item.path === '/post' && isActive('/post')) {
+                                                e.preventDefault();
+                                                window.dispatchEvent(new CustomEvent('post-tab-click'));
+                                            }
+                                        }}
                                         className="flex flex-col items-center"
                                     >
                                         <Icon className="w-6 h-6" />

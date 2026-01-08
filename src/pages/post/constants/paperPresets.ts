@@ -90,17 +90,17 @@ export const PAPER_PRESETS: Record<string, PaperPreset> = {
         },
         defaultFontColor: '#333333',
     },
-    CARDBOARD: {
-        id: 'cardboard',
-        name: '골판지 (Cardboard)',
+    WOOD: {
+        id: 'wood',
+        name: '나무 보드 (Wood)',
         styles: {
-            backgroundColor: '#d7c4a1',
-            backgroundImage: 'url("https://www.transparenttextures.com/patterns/cardboard-flat.png")',
-            boxShadow: 'inset 0 0 10px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.1)',
+            backgroundColor: '#d8b98b', // MDF color matching the image
+            backgroundImage: 'url("https://www.transparenttextures.com/patterns/dust.png")', // Subtle grain/noise
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)', // Soft shadow, no heavy frame
             padding: '3rem',
-            border: '1px dashed #a18e6e'
+            border: 'none', // Removed separate frame
         },
-        defaultFontColor: '#5d4037',
+        defaultFontColor: '#4e342e',
     },
     LETTER: {
         id: 'letter',

@@ -4,6 +4,7 @@ import { fetchCycleDetailApi, passTurnApi, saveCycleContentApi, type RoomCycle }
 import RollingPaperView from '../components/RollingPaperView';
 import ExchangeDiaryView from '../components/ExchangeDiaryView';
 import { ArrowLeft, Loader } from 'lucide-react';
+import Navigation from '../../../components/Header/Navigation';
 
 const RoomCyclePage: React.FC = () => {
     const { cycleId } = useParams<{ cycleId: string }>();
@@ -98,6 +99,7 @@ const RoomCyclePage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[var(--bg-main)] flex flex-col">
+            <Navigation />
             {/* Nav (Only visible if not in full-screen editor mode which might want to hide it, but for now safe to show) */}
             <div className="p-4 flex items-center gap-4">
                 <button onClick={handleBack} className="p-2 hover:bg-[var(--bg-card-secondary)] rounded-full transition-colors">

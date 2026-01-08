@@ -22,6 +22,22 @@ const Post: React.FC = () => {
         }
     }, [editor.viewMode]);
 
+    // ✨ Listen for Post Tab Click (Navigation)
+    React.useEffect(() => {
+        const handlePostTabClick = () => {
+            if (editor.viewMode === 'editor') {
+                if (window.confirm("작성 중인 내용이 저장되지 않을 수 있습니다. 포스트 홈으로 이동하시겠습니까?")) {
+                    editor.setViewMode('album');
+                }
+            } else if (editor.viewMode !== 'album') {
+                editor.setViewMode('album');
+            }
+        };
+
+        window.addEventListener('post-tab-click', handlePostTabClick);
+        return () => window.removeEventListener('post-tab-click', handlePostTabClick);
+    }, [editor.viewMode, editor.setViewMode]);
+
     // 이미지 업로드 핸들러 (Hook -> Component 전달용)
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -67,9 +83,15 @@ const Post: React.FC = () => {
                         onDeleteAlbum={editor.handleDeleteAlbum}
                         sortOption={editor.sortOption}
                         setSortOption={editor.setSortOption}
-                        onPostClick={editor.handlePostClick} // ✨ Added
-                        onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
-                        handleToggleAlbumFavorite={editor.handleToggleAlbumFavorite} // ✨ Added
+                        onPostClick={editor.handlePostClick}
+                        onToggleFavorite={(id) => {
+                            const post = editor.posts.find(p => p.id === id);
+                            if (post) editor.handleToggleFavorite(post);
+                        }}
+                        handleToggleAlbumFavorite={(id) => {
+                            const album = editor.customAlbums.find(a => a.id === id);
+                            if (album) editor.handleToggleAlbumFavorite(album);
+                        }}
                     />
                 )}
 
@@ -79,17 +101,19 @@ const Post: React.FC = () => {
                         albumId={editor.selectedAlbumId}
                         posts={filteredPosts}
                         allPosts={editor.posts}
-                        // onBack prop removed
                         onPostClick={editor.handlePostClick}
                         onStartWriting={editor.handleStartWriting}
-                        onCreateAlbum={editor.handleCreateAlbum}
+                        onCreateAlbum={(name, tags, parentId) => editor.handleCreateAlbum(name, tags, parentId)}
                         customAlbums={editor.customAlbums}
                         onAlbumClick={editor.handleAlbumClick}
-                        onDeletePost={editor.handleDeletePost}
+                        onDeletePost={(id) => editor.handleDeletePost(Number(id))}
                         onDeleteAlbum={editor.handleDeleteAlbum}
-                        onToggleFavorite={editor.handleToggleFavorite} // ✨ Added
-                        onMovePost={editor.handleMovePost} // ✨ DnD Added
-                        onRefresh={editor.refreshPosts} // ✨ Added
+                        onToggleFavorite={(id) => {
+                            const post = editor.posts.find(p => p.id === id);
+                            if (post) editor.handleToggleFavorite(post);
+                        }}
+                        onMovePost={undefined} // Disabled for now as hook doesn't support it
+                        onRefresh={editor.refreshPosts}
                     />
                 )}
 

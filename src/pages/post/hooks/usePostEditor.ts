@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, updateAlbumApi, deleteAlbumApi, createPostTemplateApi, fetchMyPostTemplatesApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, createRoomApi, updateAlbumApi, deleteAlbumApi, createPostTemplateApi, fetchMyPostTemplatesApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -63,6 +63,14 @@ export const usePostEditor = () => {
             fetchPosts();
             fetchAlbums();
             fetchMyTemplates();
+        }
+
+        // ✨ Parse URL Query Params for Deep Linking (e.g., ?albumId=...)
+        const params = new URLSearchParams(window.location.search);
+        const albumIdParam = params.get('albumId');
+        if (albumIdParam) {
+            setSelectedAlbumId(albumIdParam);
+            setViewMode('folder');
         }
     }, []);
 
@@ -303,8 +311,14 @@ export const usePostEditor = () => {
         }
     };
 
-    const handleCreateAlbum = async (name: string, tags: string[]) => {
-        const res = await createAlbumApi({ name, tags, type: 'album' });
+    const handleCreateAlbum = async (name: string, tags: string[], parentId?: string, type: 'album' | 'room' = 'album', roomConfig?: any, coverConfig?: any) => {
+        let res;
+        if (type === 'room') {
+            res = await createRoomApi({ name, description: roomConfig?.description, password: roomConfig?.password, coverConfig });
+        } else {
+            res = await createAlbumApi({ name, tags, type, parentId, coverConfig });
+        }
+
         if (res) { fetchAlbums(); return res.id; }
         return null;
     };
@@ -359,43 +373,50 @@ export const usePostEditor = () => {
     };
 
     const applyTemplate = (template: any) => {
-        // Apply Paper Styles
-        if (template.styles) {
-            setPaperStyles(template.styles);
-        }
+        // Apply Paper Styles (Reset if missing)
+        setPaperStyles(template.styles || {
+            backgroundColor: '#ffffff',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            padding: '3rem',
+        });
 
-        // Apply Font Color
-        if (template.defaultFontColor) {
-            setTitleStyles(prev => ({ ...prev, color: template.defaultFontColor }));
-        }
-
-        // Apply Stickers
-        // Clean existing stickers? Maybe we want to replace decorative stickers but keep content ones?
-        // For "Template" application, typically we replace the design aspects.
-        // Let's replace completely for now or maybe prompt?
-        // Let's append to existing for a better UX, or replace?
-        // Decision: Replace only if empty, otherwise merge?
-        // Simple approach: Merge
-        const newStickers = (template.stickers || []).map((s: any) => ({
-            ...s,
-            id: `sticker-${Date.now()}-${Math.random()}` // regenerate IDs
+        // Apply Font Color (Reset if missing)
+        setTitleStyles(prev => ({
+            ...prev,
+            color: template.defaultFontColor || '#000000'
         }));
-        setStickers(prev => [...prev, ...newStickers]);
 
-        // Apply Floating Texts (often used for decoration in templates)
-        const newTexts = (template.floatingTexts || []).map((t: any) => ({
-            ...t,
-            id: `text-${Date.now()}-${Math.random()}`
-        }));
-        setFloatingTexts(prev => [...prev, ...newTexts]);
+        // 1. Filter out existing decorative/template items, keeping only user content
+        // User content is identified by 'sticker-' prefix (created by addSticker)
+        // We exclude 'tmpl-' items which we are about to create
+        setStickers(prev => {
+            const userStickers = prev.filter(s => s.id.startsWith('sticker-'));
+            const newStickers = (template.stickers || []).map((s: any) => ({
+                ...s,
+                id: `tmpl-sticker-${Date.now()}-${Math.random()}` // Distinct prefix
+            }));
+            return [...userStickers, ...newStickers];
+        });
 
-        // Apply Floating Images
-        const newImages = (template.floatingImages || []).map((i: any) => ({
-            ...i,
-            id: `fimg-${Date.now()}-${Math.random()}`
-        }));
-        setFloatingImages(prev => [...prev, ...newImages]);
+        setFloatingTexts(prev => {
+            const userTexts = prev.filter(t => t.id.startsWith('text-'));
+            const newTexts = (template.floatingTexts || []).map((t: any) => ({
+                ...t,
+                id: `tmpl-text-${Date.now()}-${Math.random()}`
+            }));
+            return [...userTexts, ...newTexts];
+        });
+
+        setFloatingImages(prev => {
+            const userImages = prev.filter(i => i.id.startsWith('fimg-'));
+            const newImages = (template.floatingImages || []).map((i: any) => ({
+                ...i,
+                id: `tmpl-fimg-${Date.now()}-${Math.random()}`
+            }));
+            return [...userImages, ...newImages];
+        });
     };
+
 
     const handleStartWriting = (initialAlbumId?: string) => {
         const validAlbumId = (typeof initialAlbumId === 'string' || typeof initialAlbumId === 'number') ? String(initialAlbumId) : undefined;
