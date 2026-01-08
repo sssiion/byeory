@@ -38,6 +38,20 @@ const Post: React.FC = () => {
         return () => window.removeEventListener('post-tab-click', handlePostTabClick);
     }, [editor.viewMode, editor.setViewMode]);
 
+    // ✨ Prevent Accidental Refresh / Close in Editor Mode
+    React.useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (editor.viewMode === 'editor') {
+                // Prevent default behavior to trigger browser dialog
+                e.preventDefault();
+                e.returnValue = ''; // Required for Chrome
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [editor.viewMode]);
+
     // 이미지 업로드 핸들러 (Hook -> Component 전달용)
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -103,7 +117,7 @@ const Post: React.FC = () => {
                         allPosts={editor.posts}
                         onPostClick={editor.handlePostClick}
                         onStartWriting={editor.handleStartWriting}
-                        onCreateAlbum={(name, tags, parentId) => editor.handleCreateAlbum(name, tags, parentId)}
+                        onCreateAlbum={(name, tags, parentId) => editor.handleCreateAlbum(name, tags, parentId || undefined)}
                         customAlbums={editor.customAlbums}
                         onAlbumClick={editor.handleAlbumClick}
                         onDeletePost={(id) => editor.handleDeletePost(Number(id))}
@@ -112,7 +126,7 @@ const Post: React.FC = () => {
                             const post = editor.posts.find(p => p.id === id);
                             if (post) editor.handleToggleFavorite(post);
                         }}
-                        onMovePost={undefined} // Disabled for now as hook doesn't support it
+                        onMovePost={() => { }} // Disabled for now
                         onRefresh={editor.refreshPosts}
                     />
                 )}
