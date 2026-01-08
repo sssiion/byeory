@@ -16,9 +16,7 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
 
     const handleDelete = async () => {
         if (!editor.currentPostId) return;
-        if (confirm('정말 이 기록을 삭제하시겠습니까?')) {
-            await editor.handleDeletePost(editor.currentPostId);
-        }
+        await editor.handleDeletePost(editor.currentPostId);
     };
 
     return (

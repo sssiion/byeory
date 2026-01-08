@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { CommunityResponse } from '../types';
-import {getCommunities, getCommunitycardDetail} from '../api';
+import { getCommunities, getCommunitycardDetail } from '../api';
 import CommunityCard from './CommunityCard';
 import CommunityDetailModal from './CommunityDetailModal';
 
@@ -34,12 +34,15 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
 
         setLoading(true);
         try {
-            const response = await getCommunities(page, 12, currentUserId, selectedTag || undefined); // ✨ Increased page size for grid
+            const response = await getCommunities(page, 12, currentUserId, selectedTag || undefined);
+
+            // ✨ Filter out private/draft posts
+            const publicPosts = response.content.filter(p => p.isPublic);
 
             setPosts(prev => {
-                if (page === 0) return response.content;
+                if (page === 0) return publicPosts;
                 const existingIds = new Set(prev.map(p => p.postId));
-                const newPosts = response.content.filter(p => !existingIds.has(p.postId));
+                const newPosts = publicPosts.filter(p => !existingIds.has(p.postId));
                 return [...prev, ...newPosts];
             });
 

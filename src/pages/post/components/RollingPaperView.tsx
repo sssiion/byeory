@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { type RoomCycle, fetchCycleContentApi, saveCycleContentApi } from '../roomCycleApi';
 import { Lock, CheckCheck, Save } from 'lucide-react';
+import ConfirmationModal from '../../../components/common/ConfirmationModal'; // ✨ Import
 import EditorCanvas from './editor/EditorCanvas';
 import EditorSidebar from './editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
@@ -25,6 +26,16 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
 
     // State for completed view data
     const [completedData, setCompletedData] = useState<any>(null);
+
+    // ✨ Modal State
+    const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
     // ✨ Load Shared Content (API Flow 1)
     React.useEffect(() => {
@@ -74,33 +85,41 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
     };
 
     const handleCompleteTurn = async () => {
-        if (!confirm("작성을 완료하고 다음 사람에게 넘기시겠습니까?\n작성 후에는 수정할 수 없습니다.")) return;
-
-        setIsSubmitting(true);
-        try {
-            // 1. Construct the content object (JSON of blocks/stickers)
-            // Note: We send everything (Locked + New)
-            const contentPayload = {
-                title: editor.title,
-                blocks: editor.blocks,
-                stickers: editor.stickers,
-                floatingTexts: editor.floatingTexts,
-                floatingImages: editor.floatingImages,
-                titleStyles: editor.titleStyles,
-            };
-
-            // 2. Save Content (API Flow 2)
-            await saveCycleContentApi(cycle.id, contentPayload);
-
-            // 3. Pass Turn (API Flow 3)
-            await onPassTurn();
-
-        } catch (e) {
-            console.error(e);
-            alert("제출 실패. 다시 시도해주세요.");
-        } finally {
-            setIsSubmitting(false);
-        }
+        setConfirmation({
+            isOpen: true,
+            title: '작성 완료',
+            message: "작성을 완료하고 다음 사람에게 넘기시겠습니까?\n작성 후에는 수정할 수 없습니다.",
+            type: 'info',
+            onConfirm: async () => {
+                setConfirmation(prev => ({ ...prev, isOpen: false }));
+                setIsSubmitting(true);
+                try {
+                    const contentPayload = {
+                        title: editor.title,
+                        blocks: editor.blocks,
+                        stickers: editor.stickers,
+                        floatingTexts: editor.floatingTexts,
+                        floatingImages: editor.floatingImages,
+                        titleStyles: editor.titleStyles,
+                    };
+                    await saveCycleContentApi(cycle.id, contentPayload);
+                    await onPassTurn();
+                } catch (e) {
+                    console.error(e);
+                    // Alert Failure
+                    setConfirmation({
+                        isOpen: true,
+                        title: '오류 발생',
+                        message: "제출 실패. 다시 시도해주세요.",
+                        type: 'danger',
+                        singleButton: true,
+                        onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                    });
+                } finally {
+                    setIsSubmitting(false);
+                }
+            }
+        });
     };
 
     // ✨ Temp Save Handler
@@ -116,11 +135,29 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                 titleStyles: editor.titleStyles,
             };
             await saveCycleContentApi(cycle.id, contentPayload);
-            alert("임시 저장되었습니다.");
-            editor.setIsDirty(false); // ✨ Reset Dirty
+
+            // Success Modal
+            setConfirmation({
+                isOpen: true,
+                title: '임시 저장 완료',
+                message: "작성 중인 내용이 안전하게 저장되었습니다.",
+                type: 'success',
+                singleButton: true,
+                onConfirm: () => {
+                    setConfirmation(prev => ({ ...prev, isOpen: false }));
+                    editor.setIsDirty(false); // ✨ Reset Dirty
+                }
+            });
         } catch (e) {
             console.error(e);
-            alert("임시 저장 실패");
+            setConfirmation({
+                isOpen: true,
+                title: '저장 실패',
+                message: "임시 저장 중 오류가 발생했습니다.",
+                type: 'danger',
+                singleButton: true,
+                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -174,15 +211,15 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                         <button
                             onClick={handleTempSave}
                             disabled={isSubmitting}
-                            className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition shadow-sm flex items-center gap-2 disabled:opacity-50"
+                            className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm bg-white border border-indigo-200 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition shadow-sm flex items-center gap-1 md:gap-2 disabled:opacity-50"
                         >
-                            <Save size={18} />
+                            <Save size={14} className="md:w-[18px] md:h-[18px]" />
                             임시 저장
                         </button>
                         <button
                             onClick={handleCompleteTurn}
                             disabled={isSubmitting}
-                            className="px-6 py-2 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                            className="px-4 py-1.5 md:px-6 md:py-2 text-xs md:text-sm bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-indigo-500/20 disabled:opacity-50"
                         >
                             {isSubmitting ? '전송 중...' : '작성 완료'}
                         </button>
@@ -253,6 +290,16 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                         </div>
                     </div>
                 </div>
+                <ConfirmationModal
+                    isOpen={confirmation.isOpen}
+                    onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                    title={confirmation.title}
+                    message={confirmation.message}
+                    onConfirm={confirmation.onConfirm}
+                    onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                    type={confirmation.type}
+                    singleButton={confirmation.singleButton}
+                />
             </div>
         );
     }

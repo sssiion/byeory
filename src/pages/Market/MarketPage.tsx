@@ -13,7 +13,7 @@ import { STICKERS } from '../post/constants';
 import { useMarket } from '../../hooks/useMarket';
 import { ShoppingBag, Search, Plus, Heart, FolderOpen, X, Check } from 'lucide-react';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
-import { fetchMyPostTemplatesApi } from '../post/api';
+import { fetchMyPostTemplatesApi, uploadImageToSupabase, fetchPostTemplateById, createPostTemplateApi } from '../post/api';
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
@@ -41,7 +41,9 @@ const Market: React.FC = () => {
         updateItem,
         refreshMarket,
         totalCount,
-        changeSort
+        changeSort,
+        wishlistItems,
+        wishlistDetails
     } = useMarket(); // destructured
     const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history' | 'free'>('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -110,16 +112,19 @@ const Market: React.FC = () => {
             source: 'api'
         }));
 
-        const formattedTemplates = apiTemplates.map(t => ({
-            id: t.id,
-            title: t.name,
-            type: 'template_post',
-            description: '사용자가 직접 생성한 게시물 템플릿입니다.',
-            price: 0,
-            source: 'api',
-            // Store necessary data to replicate the template if needed, though usually referenceId logic handles it
-            originalId: t.id
-        }));
+        const formattedTemplates = apiTemplates
+            .filter(t => !t.tags?.includes('acquired'))
+            .map(t => ({
+                id: t.id,
+                title: t.name,
+                type: 'template_post',
+                description: '사용자가 직접 생성한 게시물 템플릿입니다.',
+                price: 0,
+                source: 'api',
+                // Store necessary data to replicate the template if needed, though usually referenceId logic handles it
+                originalId: t.id,
+                thumbnailUrl: t.thumbnailUrl // ✨ ADDED
+            }));
 
         const allCandidates = [...formattedWidgets, ...formattedTemplates];
         const sellable = allCandidates.filter(candidate => !isOwned(candidate.id))
@@ -186,12 +191,36 @@ const Market: React.FC = () => {
                 setConfirmation(prev => ({ ...prev, isOpen: false }));
                 const success = await buyItem(item.id, effectivePrice);
 
+                // ✨ Auto-Clone Template to My Collection
+                // If the user bought a template, fetch the original data and create a copy in their personal library.
+                if (success && ['template_post', 'TEMPLATE_POST'].includes(item.type) && (item as any).referenceId) {
+                    try {
+                        const original = await fetchPostTemplateById((item as any).referenceId);
+                        if (original) {
+                            await createPostTemplateApi({
+                                name: original.name,
+                                paperId: original.paperId || 'default',
+                                styles: original.styles,
+                                defaultFontColor: original.defaultFontColor,
+                                stickers: original.stickers || [],
+                                floatingTexts: original.floatingTexts || [],
+                                floatingImages: original.floatingImages || [],
+                                thumbnailUrl: original.thumbnailUrl,
+                                tags: ['acquired'] // Tag as purchased
+                            });
+                            console.log("Template cloned successfully");
+                        }
+                    } catch (e) {
+                        console.error("Failed to clone purchased template", e);
+                    }
+                }
+
                 setTimeout(() => {
                     if (success) {
                         setConfirmation({
                             isOpen: true,
                             title: '구매 완료! 🎉',
-                            message: `'${item.title}' 구매가 완료되었습니다.`,
+                            message: `'${item.title}' 구매가 완료되었습니다.\n[나의 템플릿] 보관함에 추가되었습니다.`,
                             type: 'success',
                             singleButton: true,
                             onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
@@ -216,8 +245,41 @@ const Market: React.FC = () => {
         setIsEditMode(isEdit);
     };
 
-    const handleRegisterSubmit = async (data: { price: number; description: string; tags: string[] }) => {
+    const handleRegisterSubmit = async (data: { price: number; description: string; tags: string[]; imageFile?: File | null }) => {
         if (!sellModalItem) return;
+
+        let imageUrl = sellModalItem.imageUrl || sellModalItem.thumbnailUrl;
+
+        // ✨ Upload thumbnail if provided
+        if (data.imageFile) {
+            const uploadedUrl = await uploadImageToSupabase(data.imageFile);
+            if (uploadedUrl) {
+                imageUrl = uploadedUrl;
+            } else {
+                alert("이미지 업로드에 실패했습니다. 기존(또는 기본) 이미지를 사용합니다.");
+            }
+        }
+
+        // ✨ Fallback/Refresh for Templates: Use fresh thumbnail from candidates
+        // This ensures that if the template has a new thumbnail, updating the market item picks it up.
+        if (['template_post', 'TEMPLATE_POST'].includes(sellModalItem.type)) {
+            // If manual upload is missing (which is always true for templates now), try to find the fresh URL.
+            // Even if 'imageUrl' exists (old one), we might want to OVERWRITE it with the fresh one?
+            // Yes, because the user might have updated the template.
+            // But valid 'imageUrl' from previous save shouldn't be overwritten if the template hasn't changed?
+            // Actually, if it's a template, the 'thumbnailUrl' IS the source of truth for the visual.
+            // We should prioritize the candidate's thumbnail if available.
+
+            const templateId = isEditMode ? sellModalItem.referenceId : sellModalItem.id;
+            const candidate = mySellableCandidates.find(c => String(c.id) === String(templateId));
+            if (candidate?.thumbnailUrl) {
+                // alert(`Debug Found: ${candidate.thumbnailUrl}`);
+                imageUrl = candidate.thumbnailUrl;
+            } else {
+                // alert(`Debug Not Found: Template ID ${templateId}\nCandidates: ${mySellableCandidates.length}`);
+                // console.warn("Candidate not found for template refresh", templateId);
+            }
+        }
 
         if (isEditMode) {
             // Update Item
@@ -225,7 +287,8 @@ const Market: React.FC = () => {
                 ...sellModalItem,
                 price: data.price,
                 description: data.description,
-                tags: data.tags
+                tags: data.tags,
+                imageUrl: imageUrl // ✨ Updated Image URL
             });
 
             if (success) {
@@ -237,7 +300,8 @@ const Market: React.FC = () => {
                 ...sellModalItem,
                 price: data.price,
                 description: data.description,
-                tags: data.tags
+                tags: data.tags,
+                imageUrl: imageUrl // ✨ New Image URL
             });
             alert(`'${sellModalItem.title}'이(가) 등록되었습니다!`);
         }
@@ -251,14 +315,17 @@ const Market: React.FC = () => {
     const allMarketItems = [...marketItems];
 
     const filteredItems = useMemo(() => {
-        return allMarketItems.filter((item: any) => {
+        // ✨ Use wishlistDetails as source when in wishlist tab
+        const sourceItems = activeTab === 'wishlist' ? wishlistDetails : allMarketItems;
+
+        return sourceItems.filter((item: any) => {
             // 0. Hide Owned filtering
             if (hideOwned && isOwned(item.id)) return false;
 
             // 1. Tab Filtering
             let matchesTab = false;
             if (activeTab === 'wishlist') {
-                matchesTab = isWishlisted(item.id);
+                matchesTab = true; // ✨ Already sourced from wishlist
             } else if (activeTab === 'history' || activeTab === 'myshop') {
                 return false;
             } else if (activeTab === 'all') {
@@ -280,7 +347,7 @@ const Market: React.FC = () => {
 
             return matchesSearch;
         });
-    }, [allMarketItems, activeTab, isWishlisted, searchTerm, hideOwned, isOwned]);
+    }, [allMarketItems, wishlistDetails, activeTab, isWishlisted, searchTerm, hideOwned, isOwned]);
 
     return (
         <MarketLayout header={<Navigation />}>
@@ -386,7 +453,7 @@ const Market: React.FC = () => {
 
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-2 gap-3 md:gap-0">
                             <span className="text-sm font-bold text-[var(--text-secondary)]">
-                                총 {totalCount}개의 아이템
+                                총 {activeTab === 'wishlist' ? wishlistItems.length : totalCount}개의 아이템
                             </span>
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
@@ -507,12 +574,16 @@ const Market: React.FC = () => {
                                                     <div className={`absolute top-3 right-3 px-2 py-1 text-[10px] font-bold rounded-full border ${badgeColor}`}>
                                                         {statusText}
                                                     </div>
-                                                    <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                                                        {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
-                                                            (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
-                                                                (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
-                                                                    (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
-                                                                        item.type}
+                                                    <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider overflow-hidden">
+                                                        {(item.imageUrl || item.thumbnailUrl) ? (
+                                                            <img src={item.imageUrl || item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            (item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
+                                                                (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
+                                                                    (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
+                                                                        (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
+                                                                            item.type
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <h3 className="font-bold text-[var(--text-primary)]">{item.title}</h3>
@@ -570,12 +641,16 @@ const Market: React.FC = () => {
                                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                                     {mySellableCandidates.map((item, idx) => (
                                         <div key={`${item.source}-${item.id}-${idx}`} className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 group hover:border-[var(--btn-bg)] transition-colors relative">
-                                            <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider">
-                                                {item.type === 'template_widget' ? '위젯 템플릿' :
-                                                    item.type === 'sticker' ? '스티커' :
-                                                        item.type === 'template_post' ? '게시물 템플릿' :
-                                                            item.type === 'start_pack' ? '스타터 팩' :
-                                                                '로컬 아이템'}
+                                            <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider overflow-hidden">
+                                                {(item.imageUrl || item.thumbnailUrl) ? (
+                                                    <img src={item.imageUrl || item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    item.type === 'template_widget' ? '위젯 템플릿' :
+                                                        item.type === 'sticker' ? '스티커' :
+                                                            item.type === 'template_post' ? '게시물 템플릿' :
+                                                                item.type === 'start_pack' ? '스타터 팩' :
+                                                                    '로컬 아이템'
+                                                )}
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-[var(--text-primary)]">{item.title}</h3>

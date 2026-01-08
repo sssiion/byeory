@@ -9,6 +9,7 @@ export const useMarket = () => {
     const [sellingItems, setSellingItems] = useState<any[]>([]);
     const [marketItems, setMarketItems] = useState<any[]>([]);
     const [wishlistItems, setWishlistItems] = useState<string[]>([]);
+    const [wishlistDetails, setWishlistDetails] = useState<any[]>([]);
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [keyword, setKeyword] = useState('');
@@ -105,6 +106,8 @@ export const useMarket = () => {
             }
 
             // 2. Fetch My Selling Items
+            let currentSellingItems: any[] = [];
+
             const sellingRes = await fetch('http://localhost:8080/api/market/my-items', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -127,7 +130,32 @@ export const useMarket = () => {
                     reviewCount: i.reviewCount,
                     isBackend: true
                 }));
+                currentSellingItems = backendSelling;
                 setSellingItems(backendSelling);
+            }
+
+            // 2.5 Fetch Wishlist
+            const wishRes = await fetch('http://localhost:8080/api/market/wishlist', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (wishRes.ok) {
+                const wItems = await wishRes.json();
+                const mappedWishlist = wItems.map((i: any) => ({
+                    id: String(i.id),
+                    title: i.name,
+                    price: i.price,
+                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
+                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
+                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
+                    type: i.category,
+                    author: i.sellerName,
+                    status: i.status || 'ON_SALE',
+                    referenceId: i.referenceId,
+                    salesCount: i.salesCount || 0,
+                    isBackend: true
+                }));
+                setWishlistDetails(mappedWishlist);
+                setWishlistItems(mappedWishlist.map((i: any) => i.id));
             }
 
             // 3. Fetch All Market Items
@@ -171,7 +199,19 @@ export const useMarket = () => {
             if (marketRes.ok) {
                 const data = await marketRes.json();
                 // Check for nested page object (PagingAndSortingRepository format) or flat format
-                const total = data.page?.totalElements ?? data.totalElements ?? 0;
+                let total = data.page?.totalElements ?? data.totalElements ?? 0;
+
+                // ✨ Subtract user's own items from total count calculation
+                if (userId && currentSellingItems.length > 0) {
+                    const myMatching = currentSellingItems.filter(i => {
+                        if (i.status !== 'ON_SALE') return false;
+                        if (targetCategory && targetCategory !== 'all' && i.type !== targetCategory) return false;
+                        if (targetKeyword && !i.title.toLowerCase().includes(targetKeyword.toLowerCase())) return false;
+                        return true;
+                    });
+                    total = Math.max(0, total - myMatching.length);
+                }
+
                 setTotalCount(total);
                 const items = data.content;
                 const backendItems = items.map((i: any) => ({
@@ -392,6 +432,8 @@ export const useMarket = () => {
                 })
             };
 
+            alert(`DEBUG OUT: Sending Update to Backend\nItemID: ${itemId}\nPayload Image: ${itemData.imageUrl}`);
+
             const response = await fetch(`http://localhost:8080/api/market/items/${itemId}`, {
                 method: 'PUT',
                 headers: {
@@ -408,13 +450,21 @@ export const useMarket = () => {
                 });
                 if (res.ok) {
                     const items = await res.json();
+
+                    // Verify if it came back
+                    const updatedBackendItem = items.find((i: any) => String(i.id) === String(itemId));
+                    const updatedJson = updatedBackendItem?.contentJson ? JSON.parse(updatedBackendItem.contentJson) : {};
+                    alert(`DEBUG IN: Refreshed from Backend\nSaved Image: ${updatedJson.imageUrl}`);
+
                     const selling = items.map((i: any) => ({
                         id: String(i.id),
                         title: i.name,
                         price: i.price,
                         description: i.contentJson ? JSON.parse(i.contentJson).description : '',
                         tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
+                        imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
                         type: i.category,
+                        author: i.sellerName,
                         salesCount: i.salesCount,
                         status: i.status,
                         referenceId: i.referenceId
@@ -536,6 +586,7 @@ export const useMarket = () => {
         purchasedItems,
         sellingItems,
         wishlistItems,
+        wishlistDetails,
         isOwned,
         isWishlisted,
         toggleWishlist,

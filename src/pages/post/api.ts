@@ -62,7 +62,8 @@ export const deleteOldImage = async (oldUrl: string | null) => {
 
 export const uploadImageToSupabase = async (file: File): Promise<string | null> => {
     if (!supabase) return null;
-    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const { error } = await supabase.storage.from('blog-assets').upload(fileName, file);
     if (error) { console.error(error); return null; }
     const { data } = supabase.storage.from('blog-assets').getPublicUrl(fileName);
@@ -864,6 +865,45 @@ export const createPostTemplateApi = async (templateData: any) => {
     }
 };
 
+// ✨ 템플릿 상세 조회 (GET)
+export const fetchPostTemplateById = async (templateId: string | number) => {
+    try {
+        const response = await fetch(`${API_TEMPLATE_URL}/${templateId}`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("템플릿 상세 조회 실패");
+        const data = await response.json();
+        return {
+            ...data,
+            stickers: (data.stickers || []).map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h),
+                opacity: s.opacity || 1
+            })),
+            floatingTexts: (data.floatingTexts || []).map((text: any) => ({
+                ...text,
+                x: sanitizeCoordinate(text.x),
+                y: sanitizeCoordinate(text.y),
+                w: sanitizeCoordinate(text.w),
+                h: sanitizeCoordinate(text.h)
+            })),
+            floatingImages: (data.floatingImages || []).map((img: any) => ({
+                ...img,
+                x: sanitizeCoordinate(img.x),
+                y: sanitizeCoordinate(img.y),
+                w: sanitizeCoordinate(img.w),
+                h: sanitizeCoordinate(img.h)
+            }))
+        };
+    } catch (error) {
+        console.error("fetchPostTemplateById error", error);
+        return null;
+    }
+};
+
 // ✨ 내 템플릿 목록 조회 (GET)
 export const fetchMyPostTemplatesApi = async () => {
     try {
@@ -874,6 +914,7 @@ export const fetchMyPostTemplatesApi = async () => {
         const templates = await response.json();
         return templates.map((t: any) => ({
             ...t,
+            thumbnailUrl: t.thumbnailUrl,
             stickers: (t.stickers || []).map((s: any) => ({
                 ...s,
                 x: sanitizeCoordinate(s.x),

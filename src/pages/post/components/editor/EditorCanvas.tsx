@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import ContentBlock from './ContentBlock';
 import ResizableItem from './ResizableItem';
 import EditorToolbar from './EditorToolbar';
@@ -28,16 +28,19 @@ interface Props {
     paperStyles?: Record<string, any>; // ✨ New Prop
 }
 
-const EditorCanvas: React.FC<Props> = ({
+const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
     setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick, paperStyles
-}) => {
+}, ref) => {
 
     // ✨ Responsive Scaling Logic
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined);
+
+    // ✨ Expose Content Ref
+    useImperativeHandle(ref, () => contentRef.current!);
 
     useEffect(() => {
         const handleResize = () => {
@@ -368,6 +371,6 @@ const EditorCanvas: React.FC<Props> = ({
             </div>
         </div>
     );
-};
+});
 
 export default EditorCanvas;
