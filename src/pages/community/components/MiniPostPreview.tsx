@@ -21,7 +21,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     stickers = [],
     floatingTexts = [],
     floatingImages = [],
-    scale = 0.4,
+    scale = 1,
     minHeight = 'auto'
 }) => {
     const ORIGINAL_WIDTH = 800; // 에디터 기준 너비
@@ -34,8 +34,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
         return {
             position: 'absolute' as const,
-            left: typeof x === 'number' ? `${x}px` : x,
-            top: typeof y === 'number' ? `${y}px` : y,
+            left: `${x}px`,
+            top: `${y}px`,
             width: typeof width === 'number' ? `${width}px` : width,
             height: typeof height === 'number' ? `${height}px` : height,
             transform: `rotate(${item.rotation || 0}deg)`,

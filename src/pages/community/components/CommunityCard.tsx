@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // useState 추가
+import React, {useEffect, useRef, useState} from 'react'; // useState 추가
 import { Heart, Eye, MessageCircle } from 'lucide-react';
 import type { CommunityResponse } from '../types';
 import MiniPostViewer from "./MiniPostPreview.tsx";
@@ -10,6 +10,35 @@ interface CommunityCardProps {
 }
 
 const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
+    // 🔥 1. 동적 스케일 계산을 위한 상태와 Ref
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1); // 기본 1배율
+    // 🔥 2. 카드의 너비가 바뀔 때마다 스케일 다시 계산
+    useEffect(() => {
+        const calculateScale = () => {
+            if (containerRef.current) {
+                const cardWidth = containerRef.current.clientWidth; // 현재 카드의 내부 너비
+                const BASE_WIDTH = 800; // 포스터 에디터의 기준 너비 (MiniPostViewer 내부 기준)
+
+                // (현재 카드 너비 / 800) 비율만큼 축소
+                const newScale = cardWidth / BASE_WIDTH;
+                setScale(newScale);
+            }
+        };
+
+        // ResizeObserver로 크기 변화 감지
+        const observer = new ResizeObserver(() => {
+            calculateScale();
+        });
+
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, []);
+
+
     // 조회수 중복 증가 방지용 상태
     const [hasViewed, setHasViewed] = useState(false);
 
@@ -43,6 +72,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
             {/* 1. 배경: 스크롤 및 이벤트 감지 */}
             <div
                 // onScroll 이벤트 연결
+                ref={containerRef}
                 onScroll={handleScroll}
                 className="absolute inset-0 bg-white overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent"
             >
@@ -57,7 +87,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
                                 stickers={data.stickers || []}
                                 floatingTexts={data.floatingTexts || []}
                                 floatingImages={data.floatingImages || []}
-                                scale={0.38}
+                                scale={scale}
                                 minHeight="100%"
                             />
                         </div>
