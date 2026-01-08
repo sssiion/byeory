@@ -5,12 +5,17 @@ interface TodoItemProps {
   todo: Todo;
   onToggleComplete: (id: string) => void;
   onEdit: (todo: Todo) => void;
+  isReadOnly?: boolean;
 }
 
-export function TodoItem({ todo, onToggleComplete, onEdit }: TodoItemProps) {
+export function TodoItem({ todo, onToggleComplete, onEdit, isReadOnly = false }: TodoItemProps) {
 
 
   const getTimeDisplay = () => {
+    if (isReadOnly) {
+      return `작성시간 : ${todo.startTime || ''}`;
+    }
+
     if (todo.allDay) {
       if (todo.startDate === todo.endDate) {
         return '하루종일';
@@ -31,17 +36,19 @@ export function TodoItem({ todo, onToggleComplete, onEdit }: TodoItemProps) {
         }`}
     >
       {/* Checkbox */}
-      <button
-        onClick={() => onToggleComplete(todo.id)}
-        className="flex-shrink-0 theme-text-secondary transition-colors hover:opacity-80"
-        style={{ color: todo.completed ? 'var(--btn-bg)' : undefined }}
-      >
-        {todo.completed ? (
-          <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" />
-        ) : (
-          <Circle className="w-5 h-5 md:w-6 md:h-6" />
-        )}
-      </button>
+      {!isReadOnly && (
+        <button
+          onClick={() => onToggleComplete(todo.id)}
+          className="flex-shrink-0 theme-text-secondary transition-colors hover:opacity-80"
+          style={{ color: todo.completed ? 'var(--btn-bg)' : undefined }}
+        >
+          {todo.completed ? (
+            <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" />
+          ) : (
+            <Circle className="w-5 h-5 md:w-6 md:h-6" />
+          )}
+        </button>
+      )}
 
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -54,12 +61,14 @@ export function TodoItem({ todo, onToggleComplete, onEdit }: TodoItemProps) {
       </div>
 
       {/* Edit button (changed from Settings) */}
-      <button
-        onClick={() => onEdit(todo)}
-        className="flex-shrink-0 p-2 theme-text-secondary hover:text-[var(--btn-bg)] hover:bg-black/5 rounded-lg transition-colors"
-      >
-        <Pencil className="w-4 h-4 md:w-5 md:h-5" />
-      </button>
+      {!isReadOnly && (
+        <button
+          onClick={() => onEdit(todo)}
+          className="flex-shrink-0 p-2 theme-text-secondary hover:text-[var(--btn-bg)] hover:bg-black/5 rounded-lg transition-colors"
+        >
+          <Pencil className="w-4 h-4 md:w-5 md:h-5" />
+        </button>
+      )}
     </div>
   );
 }

@@ -8,3 +8,9 @@ export interface Todo {
     endTime?: string;
     allDay: boolean;
 }
+
+export interface Post {
+    id: number;
+    title: string;
+    createdAt: string;
+}

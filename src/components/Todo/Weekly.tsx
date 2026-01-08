@@ -25,6 +25,9 @@ interface WeeklyViewProps {
   onUpdateTodo: (id: string, updates: Partial<Todo>) => void;
   onDeleteTodo: (id: string) => void;
   onToggleComplete: (id: string) => void;
+  currentDate: Date;
+  onDateChange: (date: Date) => void;
+  isReadOnly?: boolean;
 }
 
 interface DraggableTodoItemProps {
@@ -73,6 +76,7 @@ interface DayColumnProps {
   onSelectDate: (date: string) => void;
   onAddClick: (date: string) => void;
   isSelected: boolean;
+  isReadOnly?: boolean;
 }
 
 function DayColumn({
@@ -84,6 +88,7 @@ function DayColumn({
   onSelectDate,
   onAddClick,
   isSelected,
+  isReadOnly,
 }: DayColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "TODO",
@@ -142,26 +147,28 @@ function DayColumn({
             <DraggableTodoItem
               key={todo.id}
               todo={todo}
-              onSelect={() => onSelectDate(date)}
+              onSelect={isReadOnly ? () => { } : () => onSelectDate(date)}
             />
           ))}
         </div>
 
         {/* 모바일에서는 항상 + 버튼 표시 (할 일이 있어도 상세 내용은 하단에서 확인) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddClick(date);
-          }}
-          className={`w-full py-1 md:py-3 text-[10px] md:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1 ${todos.length > 0 ? 'md:hidden' : ''}`}
-          style={{
-            color: 'var(--btn-bg)',
-            backgroundColor: 'rgba(var(--btn-bg-rgb), 0.1)',
-          }}
-        >
-          <Plus className="w-3 h-3 md:w-4 md:h-4" />
-          <span className="hidden md:inline">일정 추가</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddClick(date);
+            }}
+            className={`w-full py-1 md:py-3 text-[10px] md:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1 ${todos.length > 0 ? 'md:hidden' : ''}`}
+            style={{
+              color: 'var(--btn-bg)',
+              backgroundColor: 'rgba(var(--btn-bg-rgb), 0.1)',
+            }}
+          >
+            <Plus className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden md:inline">일정 추가</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -173,12 +180,15 @@ function WeeklyViewContent({
   onUpdateTodo,
   onDeleteTodo,
   onToggleComplete,
+  currentDate,
+  onDateChange,
+  isReadOnly = false,
 }: WeeklyViewProps) {
   // 초기값을 오늘 날짜로 안전하게 설정
-  const [currentDate, setCurrentDate] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  });
+  // const [currentDate, setCurrentDate] = useState(() => {
+  //   const now = new Date();
+  //   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // });
 
   // 모달 관련 상태
   const [showAddModal, setShowAddModal] = useState(false);
@@ -210,13 +220,13 @@ function WeeklyViewContent({
   const goToPreviousWeek = () => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() - 7);
-    setCurrentDate(newDate);
+    onDateChange(newDate);
   };
 
   const goToNextWeek = () => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + 7);
-    setCurrentDate(newDate);
+    onDateChange(newDate);
   };
 
   const formatWeekRange = (dates: Date[]) => {
@@ -290,35 +300,39 @@ function WeeklyViewContent({
 
         <div className="flex items-center gap-2 md:gap-4 justify-between md:justify-end">
           {/* Filter */}
-          <div className="flex items-center gap-3 md:gap-4 md:border-r theme-border md:pr-4">
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showIncomplete}
-                onChange={(e) => setShowIncomplete(e.target.checked)}
-                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
-              />
-              <span className="text-xs md:text-sm font-medium theme-text-secondary">미완료</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={showCompleted}
-                onChange={(e) => setShowCompleted(e.target.checked)}
-                className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
-              />
-              <span className="text-xs md:text-sm font-medium theme-text-secondary">완료</span>
-            </label>
-          </div>
+          {!isReadOnly && (
+            <div className="flex items-center gap-3 md:gap-4 md:border-r theme-border md:pr-4">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showIncomplete}
+                  onChange={(e) => setShowIncomplete(e.target.checked)}
+                  className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
+                />
+                <span className="text-xs md:text-sm font-medium theme-text-secondary">미완료</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showCompleted}
+                  onChange={(e) => setShowCompleted(e.target.checked)}
+                  className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-600 focus:ring-blue-500 theme-border"
+                />
+                <span className="text-xs md:text-sm font-medium theme-text-secondary">완료</span>
+              </label>
+            </div>
+          )}
 
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 text-white rounded-lg transition-colors hover:opacity-90"
-            style={{ backgroundColor: 'var(--btn-bg)' }}
-          >
-            <Plus className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="text-xs md:text-sm xl:text-base font-medium">할 일 추가</span>
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 text-white rounded-lg transition-colors hover:opacity-90"
+              style={{ backgroundColor: 'var(--btn-bg)' }}
+            >
+              <Plus className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-xs md:text-sm xl:text-base font-medium">할 일 추가</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -346,6 +360,7 @@ function WeeklyViewContent({
                 setShowAddModal(true);
               }}
               isSelected={dateString === selectedDate}
+              isReadOnly={isReadOnly}
             />
           );
         })}
@@ -400,8 +415,9 @@ function WeeklyViewContent({
                   <TodoItem
                     key={todo.id}
                     todo={todo}
-                    onToggleComplete={onToggleComplete}
-                    onEdit={setEditingTodo}
+                    onToggleComplete={isReadOnly ? () => { } : onToggleComplete}
+                    onEdit={isReadOnly ? () => { } : setEditingTodo}
+                    isReadOnly={isReadOnly}
                   />
                 ))
             )}
