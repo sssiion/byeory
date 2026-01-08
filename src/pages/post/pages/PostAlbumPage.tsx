@@ -180,7 +180,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                             <AlbumBook
                                 title={album.name}
                                 tag={album.tag || undefined}
-                                count={formatStats(stats)}
+                                count={album.type === 'room' ? undefined : formatStats(stats)}
                                 config={album.coverConfig}
                                 className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
                             />

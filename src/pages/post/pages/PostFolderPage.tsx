@@ -134,6 +134,13 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     const folders = contents.filter(c => c.type === 'FOLDER').map(c => c.data);
     const localPosts = contents.filter(c => c.type === 'POST').map(c => c.data as PostData);
 
+    // ✨ Check if current view is a Room
+    const isRoom = React.useMemo(() => {
+        if (!albumId) return false;
+        const target = customAlbums.find(a => String(a.id) === String(albumId));
+        return target?.type === 'room' || String(albumId).startsWith('room-');
+    }, [albumId, customAlbums]);
+
     // ✨ Augmented Albums for Breadcrumbs (Include current if missing from global list)
     const augmentedAlbums = React.useMemo(() => {
         if (!currentAlbum) return customAlbums;
@@ -444,107 +451,111 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                 )}
 
                 {/* Posts Display */}
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({localPosts.length})</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {localPosts.length === 0 ? (
-                        <div className="col-span-full py-20 text-center text-gray-400">
-                            {isLoading ? "로딩 중..." : "이 폴더에는 아직 글이 없습니다."}
-                        </div>
-                    ) : (
-                        localPosts.map(p => (
-                            <DraggablePost key={p.id} id={p.id}>
-                                <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden">
-                                    {/* 1. Top - Thumbnail (60%) */}
-                                    <div className="h-[60%] w-full bg-white relative overflow-hidden">
-                                        <PostThumbnail post={p} width={400} height={320} />
-
-                                        {/* Overlay Gradient for depth */}
-                                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
-                                    </div>
-
-                                    {/* 2. Bottom - Info (40%) */}
-                                    <div className="h-[40%] p-5 flex flex-col justify-between bg-[var(--bg-card)]">
-                                        <div className="space-y-2">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <h4 className="font-bold text-[var(--text-primary)] text-lg line-clamp-1 leading-tight">{p.title}</h4>
-                                                {/* ✨ Visibility Indicator */}
-                                                {p.visibility === 'private' && (
-                                                    <div className="text-gray-400 p-0.5" title="나만 보기">
-                                                        <Lock size={14} />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Hashtags */}
-                                            <div className="flex flex-wrap gap-1.5 items-center">
-                                                {p.tags && p.tags.length > 0 ? (
-                                                    <>
-                                                        {p.tags.slice(0, 2).map((t: string) => (
-                                                            <span key={t} className="text-[11px] font-medium text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-md truncate max-w-[80px]">#{t}</span>
-                                                        ))}
-                                                        {p.tags.length > 2 && (
-                                                            <span className="text-[10px] text-[var(--text-secondary)] font-medium">+{p.tags.length - 2}</span>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <span className="text-[11px] text-[var(--text-secondary)] opacity-50">태그 없음</span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Footer: Actions & Date */}
-                                        <div className="flex items-end justify-between mt-2 pt-2 border-t border-[var(--border-color)]/50">
-                                            <span className="text-[11px] font-medium text-[var(--text-secondary)] tracking-tight">
-                                                {p.date}
-                                            </span>
-
-                                            <div className="flex gap-1" onPointerDown={(e) => e.stopPropagation()}>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onToggleFavorite(p.id);
-                                                    }}
-                                                    className={`p-1.5 rounded-lg transition-all ${p.isFavorite ? 'text-yellow-400 bg-yellow-400/10' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)]'}`}
-                                                    title="즐겨찾기"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                                                </button>
-
-                                                {(albumId === '__all__' || albumId === '__others__') ? (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (confirm("정말 이 기록을 영구 삭제하시겠습니까?")) {
-                                                                onDeletePost(p.id);
-                                                            }
-                                                        }}
-                                                        className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="영구 삭제"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (confirm("이 앨범에서 제거하시겠습니까?")) {
-                                                                handleManageItem('REMOVE', 'POST', p.id);
-                                                            }
-                                                        }}
-                                                        className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="앨범에서 제거"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                {!isRoom && (
+                    <>
+                        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({localPosts.length})</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            {localPosts.length === 0 ? (
+                                <div className="col-span-full py-20 text-center text-gray-400">
+                                    {isLoading ? "로딩 중..." : "이 폴더에는 아직 글이 없습니다."}
                                 </div>
-                            </DraggablePost>
-                        ))
-                    )}
-                </div>
+                            ) : (
+                                localPosts.map(p => (
+                                    <DraggablePost key={p.id} id={p.id}>
+                                        <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden">
+                                            {/* 1. Top - Thumbnail (60%) */}
+                                            <div className="h-[60%] w-full bg-white relative overflow-hidden">
+                                                <PostThumbnail post={p} width={400} height={320} />
+
+                                                {/* Overlay Gradient for depth */}
+                                                <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+                                            </div>
+
+                                            {/* 2. Bottom - Info (40%) */}
+                                            <div className="h-[40%] p-5 flex flex-col justify-between bg-[var(--bg-card)]">
+                                                <div className="space-y-2">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <h4 className="font-bold text-[var(--text-primary)] text-lg line-clamp-1 leading-tight">{p.title}</h4>
+                                                        {/* ✨ Visibility Indicator */}
+                                                        {p.visibility === 'private' && (
+                                                            <div className="text-gray-400 p-0.5" title="나만 보기">
+                                                                <Lock size={14} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Hashtags */}
+                                                    <div className="flex flex-wrap gap-1.5 items-center">
+                                                        {p.tags && p.tags.length > 0 ? (
+                                                            <>
+                                                                {p.tags.slice(0, 2).map((t: string) => (
+                                                                    <span key={t} className="text-[11px] font-medium text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-md truncate max-w-[80px]">#{t}</span>
+                                                                ))}
+                                                                {p.tags.length > 2 && (
+                                                                    <span className="text-[10px] text-[var(--text-secondary)] font-medium">+{p.tags.length - 2}</span>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-[11px] text-[var(--text-secondary)] opacity-50">태그 없음</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Footer: Actions & Date */}
+                                                <div className="flex items-end justify-between mt-2 pt-2 border-t border-[var(--border-color)]/50">
+                                                    <span className="text-[11px] font-medium text-[var(--text-secondary)] tracking-tight">
+                                                        {p.date}
+                                                    </span>
+
+                                                    <div className="flex gap-1" onPointerDown={(e) => e.stopPropagation()}>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onToggleFavorite(p.id);
+                                                            }}
+                                                            className={`p-1.5 rounded-lg transition-all ${p.isFavorite ? 'text-yellow-400 bg-yellow-400/10' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)]'}`}
+                                                            title="즐겨찾기"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={p.isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                                        </button>
+
+                                                        {(albumId === '__all__' || albumId === '__others__') ? (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (confirm("정말 이 기록을 영구 삭제하시겠습니까?")) {
+                                                                        onDeletePost(p.id);
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="영구 삭제"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (confirm("이 앨범에서 제거하시겠습니까?")) {
+                                                                        handleManageItem('REMOVE', 'POST', p.id);
+                                                                    }
+                                                                }}
+                                                                className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="앨범에서 제거"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DraggablePost>
+                                ))
+                            )}
+                        </div>
+                    </>
+                )}
 
                 {/* Modals */}
                 <CreateFolderModal
