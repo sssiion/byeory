@@ -190,38 +190,8 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                 </div>
 
                 {/* Editor Body */}
-                <div className="flex-1 flex overflow-hidden relative">
-                    {/* Sidebar */}
-                    <div className="w-80 border-r bg-white shrink-0 overflow-y-auto hidden md:block">
-                        <div className="p-4">
-                            <EditorSidebar
-                                containerClassName=""
-                                showActionButtons={false}
-                                isSaving={editor.isSaving}
-                                onSave={() => { }} // Disabled in RollingPaper
-                                onTempSave={handleTempSave} // ✨ Pass temp save handler
-                                onCancel={() => { }} // Disabled
-                                onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
-                                onAddFloatingText={editor.addFloatingText}
-                                onAddSticker={editor.addSticker}
-                                onAddFloatingImage={editor.addFloatingImage}
-                                rawInput={editor.rawInput} setRawInput={editor.setRawInput}
-                                selectedLayoutId={editor.selectedLayoutId} setSelectedLayoutId={editor.setSelectedLayoutId}
-                                tempImages={editor.tempImages} setTempImages={editor.setTempImages}
-                                fileInputRef={editor.fileInputRef as React.RefObject<HTMLInputElement>} handleImagesUpload={handleImagesUpload}
-                                onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
-                                currentTags={editor.currentTags}
-                                onTagsChange={editor.setTags}
-                                // ✨ Fix: Enable Design & Templates
-                                applyPaperPreset={editor.applyPaperPreset}
-                                onSaveAsTemplate={editor.handleSaveAsTemplate}
-                                myTemplates={editor.myTemplates}
-                                applyTemplate={editor.applyTemplate}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Canvas */}
+                <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+                    {/* Canvas - Moved First for Mobile Top / Desktop Left (Consistency) */}
                     <div className="flex-1 bg-gray-100 overflow-hidden relative">
                         <EditorCanvas
                             title={editor.title} setTitle={editor.setTitle}
@@ -251,6 +221,36 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                             }}
                             paperStyles={editor.paperStyles} // ✨ Fix: Apply Paper Styles
                         />
+                    </div>
+
+                    {/* Sidebar - Moved Second for Mobile Bottom / Desktop Right */}
+                    <div className="w-full md:w-80 h-[45vh] md:h-full border-t md:border-t-0 md:border-l bg-white shrink-0 overflow-y-auto">
+                        <div className="p-4">
+                            <EditorSidebar
+                                containerClassName=""
+                                showActionButtons={false}
+                                isSaving={editor.isSaving}
+                                onSave={() => { }} // Disabled in RollingPaper
+                                onTempSave={handleTempSave} // ✨ Pass temp save handler
+                                onCancel={() => { }} // Disabled
+                                onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
+                                onAddFloatingText={editor.addFloatingText}
+                                onAddSticker={editor.addSticker}
+                                onAddFloatingImage={editor.addFloatingImage}
+                                rawInput={editor.rawInput} setRawInput={editor.setRawInput}
+                                selectedLayoutId={editor.selectedLayoutId} setSelectedLayoutId={editor.setSelectedLayoutId}
+                                tempImages={editor.tempImages} setTempImages={editor.setTempImages}
+                                fileInputRef={editor.fileInputRef as React.RefObject<HTMLInputElement>} handleImagesUpload={handleImagesUpload}
+                                onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
+                                currentTags={editor.currentTags}
+                                onTagsChange={editor.setTags}
+                                // ✨ Fix: Enable Design & Templates
+                                applyPaperPreset={editor.applyPaperPreset}
+                                onSaveAsTemplate={editor.handleSaveAsTemplate}
+                                myTemplates={editor.myTemplates}
+                                applyTemplate={editor.applyTemplate}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
