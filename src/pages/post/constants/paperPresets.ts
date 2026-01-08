@@ -1,4 +1,6 @@
 import type { Sticker, FloatingImage, FloatingText } from '../types';
+import dustPattern from '../../../assets/patterns/dust.png';
+import paperFibersPattern from '../../../assets/patterns/paper-fibers.png';
 
 export interface PaperPreset {
     id: string;
@@ -38,7 +40,7 @@ export const PAPER_PRESETS: Record<string, PaperPreset> = {
         name: '한지 (Hanji)',
         styles: {
             backgroundColor: '#f5f5dc', // Beige
-            backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper-fibers.png")', // Example texture
+            backgroundImage: `url("${paperFibersPattern}")`, // Example texture
             backgroundSize: 'auto',
             backgroundRepeat: 'repeat',
             border: '2px solid #5d4037', // Brush-like brown border
@@ -95,7 +97,7 @@ export const PAPER_PRESETS: Record<string, PaperPreset> = {
         name: '나무 보드 (Wood)',
         styles: {
             backgroundColor: '#d8b98b', // MDF color matching the image
-            backgroundImage: 'url("https://www.transparenttextures.com/patterns/dust.png")', // Subtle grain/noise
+            backgroundImage: `url("${dustPattern}")`, // Subtle grain/noise
             boxShadow: '0 4px 6px rgba(0,0,0,0.1)', // Soft shadow, no heavy frame
             padding: '3rem',
             border: 'none', // Removed separate frame

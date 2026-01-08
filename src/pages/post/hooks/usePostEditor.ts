@@ -211,7 +211,7 @@ export const usePostEditor = () => {
             albumIds: mergedAlbumIds,
             mode,
             isFavorite,
-            isPublic,
+            isPublic: isTemp ? false : isPublic,
             styles: paperStyles
         };
 
@@ -228,6 +228,7 @@ export const usePostEditor = () => {
                 alert("임시 저장되었습니다.");
                 // ✨ Do NOT navigate away, just reset dirty
                 setIsDirty(false);
+                setIsPublic(false);
                 // Also refresh tags in UI
                 _setCurrentTags(safeTags);
             } else {
@@ -253,25 +254,30 @@ export const usePostEditor = () => {
     };
 
     // ✨ Save as Template
-    const handleSaveAsTemplate = async () => {
-        const name = prompt("템플릿 이름을 입력해주세요:");
+    const handleSaveAsTemplate = async (thumbnailUrl?: string | any) => {
+        // Guard: If thumbnailUrl is an Event object (or not a string), treat as undefined
+        const safeThumbnailUrl = typeof thumbnailUrl === 'string' ? thumbnailUrl : undefined;
+
+        const name = prompt("이 디자인을 '나만의 템플릿'으로 저장하시겠습니까?\n이름을 입력해주세요:");
         if (!name) return;
 
-        // Extract style/decoration data
-        const templateData = {
+        // 1. Construct Template JSON
+        const template = {
             name,
             styles: paperStyles,
-            stickers,
-            floatingTexts,
-            floatingImages,
-            defaultFontColor: titleStyles.color || '#000000'
+            stickers: stickers,
+            floatingTexts: floatingTexts,
+            floatingImages: floatingImages,
+            defaultFontColor: '#000000', // Basic implementation
+            thumbnailUrl: safeThumbnailUrl // ✨ Save generated thumbnail
         };
 
-        try {
-            await createPostTemplateApi(templateData);
-            alert("템플릿이 저장되었습니다!");
-        } catch (e) {
-            console.error(e);
+        // 2. Call API
+        const result = await createPostTemplateApi(template);
+        if (result) {
+            alert("템플릿이 저장되었습니다! ✨\n(마켓에서 판매할 수도 있어요!)");
+            fetchMyTemplates(); // Refresh List
+        } else {
             alert("템플릿 저장 실패");
         }
     };
@@ -389,7 +395,17 @@ export const usePostEditor = () => {
     const handleDeletePost = async (id: number) => {
         if (confirm("삭제하시겠습니까?")) {
             await deletePostApi(id);
-            fetchPosts();
+            await fetchPosts();
+
+            // ✨ Exit if current post is deleted
+            if (currentPostId === id) {
+                setCurrentPostId(null);
+                if (selectedAlbumId) {
+                    setViewMode('folder');
+                } else {
+                    setViewMode('album');
+                }
+            }
         }
     };
 

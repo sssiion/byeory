@@ -4,6 +4,8 @@ import EditorSidebar from '../components/editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
 
 import SavePostModal from '../components/SavePostModal';
+import { domToPng } from 'modern-screenshot';
+import { uploadImageToSupabase } from '../api';
 
 interface Props {
     editor: ReturnType<typeof usePostEditor>;
@@ -12,16 +14,53 @@ interface Props {
 
 const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
+    const canvasRef = React.useRef<HTMLDivElement>(null);
 
     const handleConfirmSave = async () => {
         await editor.handleSave(); // 실제 저장 로직
         setIsSaveModalOpen(false);
     };
 
+    const handleSaveAsTemplateWrapper = async () => {
+        // ✨ Auto-Generate Thumbnail
+        if (canvasRef.current) {
+            try {
+                const dataUrl = await domToPng(canvasRef.current, {
+                    scale: 0.5,
+                    // backgroundColor: '#ffffff', // Removed to allow background images/colors to show
+                });
+
+                if (dataUrl) {
+                    const blob = await (await fetch(dataUrl)).blob();
+                    const file = new File([blob], `tmpl-${Date.now()}.png`, { type: "image/png" });
+                    const url = await uploadImageToSupabase(file);
+
+                    if (url) {
+                        // alert(`Debug: 썸네일 생성 성공!\nURL: ${url}`);
+                    } else {
+                        // alert(`Debug: 썸네일 업로드 실패 (Supabase Error)`);
+                    }
+
+                    editor.handleSaveAsTemplate(url || undefined);
+                } else {
+                    // alert("Debug: 썸네일 캡처 데이터 없음");
+                    editor.handleSaveAsTemplate();
+                }
+            } catch (e: any) {
+                console.warn("Thumbnail capture failed", e);
+                // alert(`Debug Error: ${e?.message}`);
+                editor.handleSaveAsTemplate();
+            }
+        } else {
+            editor.handleSaveAsTemplate();
+        }
+    };
+
     return (
         <div className="flex flex-col xl:flex-row h-auto min-h-[85vh] gap-6 relative">
             {/* 메인 캔버스 */}
             <EditorCanvas
+                ref={canvasRef}
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
                 viewMode={'editor'}
@@ -80,7 +119,7 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 currentTags={editor.currentTags}
                 onTagsChange={editor.setTags}
                 applyPaperPreset={editor.applyPaperPreset}
-                onSaveAsTemplate={editor.handleSaveAsTemplate}
+                onSaveAsTemplate={handleSaveAsTemplateWrapper}
                 myTemplates={editor.myTemplates}
                 applyTemplate={editor.applyTemplate}
             />

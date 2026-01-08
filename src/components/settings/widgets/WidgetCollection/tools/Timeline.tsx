@@ -20,7 +20,7 @@ export const TimelineConfig = {
     validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
 };
 
-export const Timeline = ({ className, style, gridSize }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
+export const Timeline = ({ className, style }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [events, setEvents] = useWidgetStorage<TimelineEvent[]>('widget-timeline-events', [
         { id: 1, date: '2025.12.27', title: '프로젝트 시작', description: '위젯 만들기' },
         { id: 2, date: '2026.01.01', title: '새해', description: '해돋이 보러가기' },

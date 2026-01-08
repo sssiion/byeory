@@ -5,6 +5,9 @@ import { usePostEditor } from '../hooks/usePostEditor';
 
 import SavePostModal from '../components/SavePostModal';
 
+import { domToPng } from 'modern-screenshot';
+import { uploadImageToSupabase } from '../api';
+
 interface Props {
     editor: ReturnType<typeof usePostEditor>;
     handleImagesUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -13,15 +16,45 @@ interface Props {
 const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
 
+    const canvasRef = React.useRef<HTMLDivElement>(null);
+
     const handleConfirmSave = async () => {
         await editor.handleSave(); // 실제 저장 로직
         setIsSaveModalOpen(false);
+    };
+
+    const handleSaveAsTemplateWrapper = async () => {
+        // ✨ Auto-Generate Thumbnail (Synced with CreatePage)
+        if (canvasRef.current) {
+            try {
+                const dataUrl = await domToPng(canvasRef.current, {
+                    scale: 0.5,
+                    // backgroundColor: '#ffffff',
+                });
+
+                if (dataUrl) {
+                    const blob = await (await fetch(dataUrl)).blob();
+                    const file = new File([blob], `tmpl-${Date.now()}.png`, { type: "image/png" });
+                    const url = await uploadImageToSupabase(file);
+                    editor.handleSaveAsTemplate(url || undefined);
+                } else {
+                    editor.handleSaveAsTemplate();
+                }
+            } catch (e: any) {
+                console.warn("Thumbnail capture failed", e);
+                // alert(`Error: ${e?.message}`);
+                editor.handleSaveAsTemplate();
+            }
+        } else {
+            editor.handleSaveAsTemplate();
+        }
     };
 
     return (
         <div className="flex flex-col xl:flex-row h-auto min-h-[85vh] gap-6 relative">
             {/* 메인 캔버스 */}
             <EditorCanvas
+                ref={canvasRef} // ✨ Pass Ref
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
                 viewMode={'editor'}
@@ -100,7 +133,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 currentTags={editor.currentTags}
                 onTagsChange={editor.setTags}
                 applyPaperPreset={editor.applyPaperPreset}
-                onSaveAsTemplate={editor.handleSaveAsTemplate}
+                onSaveAsTemplate={handleSaveAsTemplateWrapper}
                 myTemplates={editor.myTemplates}
                 applyTemplate={editor.applyTemplate}
             />

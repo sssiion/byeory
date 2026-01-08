@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { X, Tag, FileText, DollarSign } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Tag, FileText, DollarSign, Image as ImageIcon, Upload } from 'lucide-react';
 
 interface SellModalProps {
     item: any;
     onClose: () => void;
-    onSubmit: (data: { price: number; description: string; tags: string[] }) => void;
+    onSubmit: (data: { price: number; description: string; tags: string[]; imageFile?: File | null }) => void;
 }
 
 const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
@@ -12,6 +12,23 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
     const [description, setDescription] = useState(item.description || '');
     const [tags, setTags] = useState<string[]>(item.tags || []);
     const [tagInput, setTagInput] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    // ✨ Initialize with thumbnail if available
+    const [previewUrl, setPreviewUrl] = useState<string | null>(item.imageUrl || item.thumbnailUrl || null);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleAddTag = () => {
         if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -37,15 +54,15 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
             alert('유효한 가격을 입력해주세요.');
             return;
         }
-        onSubmit({ price: numPrice, description, tags });
+        onSubmit({ price: numPrice, description, tags, imageFile });
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[var(--bg-card)] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-color)] animate-in zoom-in-95 duration-200">
+            <div className="bg-[var(--bg-card)] w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-color)] animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)]">
+                <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-card-secondary)] shrink-0">
                     <div>
                         <h2 className="text-xl font-black text-[var(--text-primary)]">판매 등록</h2>
                         <p className="text-xs text-[var(--text-secondary)] mt-1">{item.title}</p>
@@ -55,8 +72,46 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6 space-y-6">
+                {/* Body - Scrollable */}
+                <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                    {/* Thumbnail Upload / Display */}
+                    {!['template_post', 'TEMPLATE_POST', 'template_widget', 'TEMPLATE_WIDGET'].includes(item.type) && (
+                        <div>
+                            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase flex items-center gap-1">
+                                <ImageIcon size={12} /> 썸네일 이미지
+                            </label>
+
+                            <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-full aspect-video bg-[var(--bg-card-secondary)] rounded-xl border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--btn-bg)] hover:bg-[var(--btn-bg)]/5 transition-all group overflow-hidden relative"
+                            >
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                                ) : (
+                                    <>
+                                        <Upload className="w-8 h-8 text-[var(--text-secondary)] group-hover:text-[var(--btn-bg)] mb-2 transition-colors" />
+                                        <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--btn-bg)] transition-colors">클릭하여 이미지 업로드</span>
+                                    </>
+                                )}
+                                {/* Overlay for Change */}
+                                {previewUrl && (
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span className="text-white text-xs font-bold flex items-center gap-1">
+                                            <Upload size={12} /> 변경하기
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImageChange}
+                                accept="image/*"
+                                hidden
+                            />
+                        </div>
+                    )}
+
                     {/* Price Input */}
                     <div>
                         <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase flex items-center gap-1">
@@ -119,7 +174,7 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-card-secondary)]">
+                <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-card-secondary)] shrink-0">
                     <button
                         onClick={handleSubmit}
                         className="w-full py-3 bg-[var(--btn-bg)] text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg"
