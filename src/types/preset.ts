@@ -1,5 +1,5 @@
+import type {WidgetInstance} from "../components/settings/widgets/type.ts";
 
-import type { WidgetInstance } from "../components/settings/widgets/Registry";
 
 export interface WidgetPreset {
     id: string;

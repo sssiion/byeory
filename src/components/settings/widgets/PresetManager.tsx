@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, FolderOpen, Plus, X, Check, RefreshCw } from 'lucide-react';
 import type { WidgetPreset } from '../../../types/preset';
-import type { WidgetInstance } from './Registry';
+import type {WidgetInstance} from "./type.ts";
 
 interface PresetManagerProps {
     currentWidgets: WidgetInstance[];

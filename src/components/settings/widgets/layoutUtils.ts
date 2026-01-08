@@ -1,4 +1,4 @@
-import type { WidgetInstance } from './Registry';
+import type {WidgetInstance} from "./type.ts";
 
 export const collides = (w1: WidgetInstance['layout'], w2: WidgetInstance['layout']): boolean => {
     if (w1 === w2) return false; // Same widget

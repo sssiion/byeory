@@ -1,14 +1,17 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Maximize2, HelpCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { type WidgetInstance, WIDGET_REGISTRY } from './Registry';
-import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
+import BlockRenderer from "./customwidget/components/BlockRenderer"; // .tsx 제거
 import { useCredits } from '../../../context/CreditContext';
+import type {WidgetConfig, WidgetInstance} from "./type.ts";
+import {WIDGET_COMPONENT_MAP} from "./componentMap.ts";
+
 
 interface DraggableWidgetProps {
     widget: WidgetInstance;
+    registry: Record<string, WidgetConfig>;
     isEditMode: boolean;
     removeWidget: (id: string) => void;
     updateLayout: (id: string, layout: Partial<WidgetInstance['layout']>) => void;
@@ -20,7 +23,7 @@ interface DraggableWidgetProps {
     isSelected?: boolean;
     onSelect?: () => void;
     onShowInfo?: () => void;
-    onUpdateWidget?: (id: string, updates: any) => void; // ✨ New Prop
+    onUpdateWidget?: (id: string, updates: any) => void;
 }
 
 const ItemTypes = {
@@ -28,24 +31,24 @@ const ItemTypes = {
 };
 
 export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
-    widget,
-    isEditMode,
-    removeWidget,
-    updateLayout,
-    onDragStart,
-    onDragEnd,
-    onHover,
-    onDrop,
-    isMobile = false,
-    isSelected = false,
-    onSelect,
-    onShowInfo,
-    onUpdateWidget
-}) => {
+                                                                    widget,
+                                                                    registry,
+                                                                    isEditMode,
+                                                                    removeWidget,
+                                                                    updateLayout,
+                                                                    onDragStart,
+                                                                    onDragEnd,
+                                                                    onHover,
+                                                                    onDrop,
+                                                                    isMobile = false,
+                                                                    isSelected = false,
+                                                                    onSelect,
+                                                                    onShowInfo,
+                                                                    onUpdateWidget
+                                                                }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
 
-    // ✨ Context for generic interaction quest
     const { triggerWidgetInteraction } = useCredits();
 
     const [{ isDragging }, drag, preview] = useDrag({
@@ -81,14 +84,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         preview(getEmptyImage(), { captureDraggingState: true });
     }, [preview]);
 
-    // Close size menu if deselected
     useEffect(() => {
         if (!isSelected) {
             setShowSizeMenu(false);
         }
     }, [isSelected]);
 
-    // Close size menu on click outside
     useEffect(() => {
         if (!showSizeMenu) return;
         const handleClickOutside = (e: MouseEvent) => {
@@ -107,22 +108,33 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     const { x, y, w, h } = widget.layout;
     const isTransparent = widget.type === 'transparent';
 
-    // 🌟 [핵심 수정] 위젯 렌더링 로직 분기
+    // Widget Rendering Logic
     let WidgetComponent: any = null;
-    let registryItem: any = WIDGET_REGISTRY[widget.type];
+    let registryItem: WidgetConfig | undefined = registry[widget.type];
 
-    // 1. 커스텀 블록 (저장된 위젯)인 경우
+    // Registry에 있고, ComponentMap에도 코드가 있다면 연결
+    if (registryItem && WIDGET_COMPONENT_MAP[widget.type]) {
+        WidgetComponent = WIDGET_COMPONENT_MAP[widget.type];
+    }
+
+    // Fallback logic
     if (widget.type === 'custom-block' || !registryItem) {
-        // 가짜 registryItem 생성 (에러 방지용)
-        registryItem = { category: 'My Saved', validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] };
-    }
-    // 2. 일반 레지스트리 위젯인 경우
-    else {
-        WidgetComponent = registryItem.component;
+        registryItem = {
+            id: 0,
+            widgetType: widget.type,
+            label: 'Custom',
+            description: '',
+            category: 'My Saved',
+            keywords: [],
+            defaultSize: '2x2',
+            validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
+            defaultProps: {},
+            isSystem: false,
+            component: null as any
+        };
     }
 
-    // Grid Layout Style Logic
-    let gridStyle: React.CSSProperties = {
+    const gridStyle: React.CSSProperties = {
         gridColumn: `${x} / span ${w}`,
         gridRow: `${y} / span ${h}`,
         opacity: isDragging ? 0 : 1,
@@ -131,13 +143,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
     return (
         <motion.div
-            layout // Enable layout animation on all devices for smooth transitions
+            layout
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             ref={ref}
             className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 
                 ${isTransparent
-                    ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
-                    : 'theme-bg-card shadow-sm hover:shadow-md'} 
+                ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
+                : 'theme-bg-card shadow-sm hover:shadow-md'} 
                 ${(isEditMode && !isMobile) ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2 overflow-visible' : 'overflow-hidden'}
                 ${isDragging ? 'pointer-events-none' : ''}
                 ${(isMobile && isSelected && isEditMode) ? 'ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
@@ -146,53 +158,53 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             `}
             style={gridStyle}
             onClick={(e) => {
-                // On mobile edit mode, tap to select
                 if (isMobile && isEditMode) {
                     onSelect?.();
-                    e.stopPropagation(); // Prevent deselecting from background click
+                    e.stopPropagation();
                 } else if (!isEditMode) {
-                    // ✨ Trigger "Play Widget" Quest on generic interaction (click)
                     triggerWidgetInteraction();
                 }
             }}
             onContextMenu={(e) => {
-                // Prevent context menu to allow long-press drag on mobile/touch
                 if (isEditMode) e.preventDefault();
             }}
         >
-            {/* Widget Content */}
             <div className={`w-full h-full transition-transform overflow-hidden rounded-2xl ${isEditMode ? 'pointer-events-none' : ''}`}>
-                {(widget.type === 'custom-block' || !WIDGET_REGISTRY[widget.type]) ? (
-                    <BlockRenderer
-                        block={{
-                            id: widget.id,
-                            type: (widget.props as any).type || widget.type,
-                            content: (widget.props as any).content || {},
-                            styles: (widget.props as any).styles || {}
-                        }}
-                        selectedBlockId={null}
-                        onSelectBlock={() => { }}
-                        onRemoveBlock={() => { }}
-                        activeContainer={null as any}
-                        onSetActiveContainer={() => { }}
-                        onUpdateBlock={(id, updates) => {
-                            if (onUpdateWidget) {
-                                onUpdateWidget(widget.id, updates);
-                            }
-                        }}
-                    />
-                ) : (
-                    <WidgetComponent
-                        {...(widget.props || {})}
-                        gridSize={{ w, h }}
-                        updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
-                        widgetId={widget.id}
-                        onInteraction={triggerWidgetInteraction}
-                    />
-                )}
+                <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-2xl" />}>
+
+                    {/* 🔥 [수정 3] WidgetComponent가 없거나 custom-block 일 때 BlockRenderer 렌더링 */}
+                    {(widget.type === 'custom-block' || !WidgetComponent) ? (
+                        <BlockRenderer
+                            block={{
+                                id: widget.id,
+                                // 🔥 [핵심 수정] widget.props가 undefined일 경우를 대비해 || {} 추가
+                                type: (widget.props || {}).type || widget.type,
+                                content: (widget.props || {}).content || {},
+                                styles: (widget.props || {}).styles || {}
+                            }}
+                            selectedBlockId={null}
+                            onSelectBlock={() => { }}
+                            onRemoveBlock={() => { }}
+                            activeContainer={null as any}
+                            onSetActiveContainer={() => { }}
+                            onUpdateBlock={(id, updates) => {
+                                if (onUpdateWidget) {
+                                    onUpdateWidget(widget.id, updates);
+                                }
+                            }}
+                        />
+                    ) : (
+                        <WidgetComponent
+                            {...(widget.props || {})}
+                            gridSize={{ w, h }}
+                            updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
+                            widgetId={widget.id}
+                            onInteraction={triggerWidgetInteraction}
+                        />
+                    )}
+                </Suspense>
             </div>
 
-            {/* Edit Overlay */}
             {isEditMode && (
                 <div
                     style={{
@@ -202,7 +214,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     className={`absolute inset-0 bg-black/10 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center transition-opacity border-2 border-[var(--btn-bg)] z-20 gap-2 pointer-events-auto
                     ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}
                 `}>
-                    {/* Help Button (Top Right) */}
+                    {/* Info Button */}
                     {isEditMode && (
                         <button
                             onClick={(e) => {
@@ -216,7 +228,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                         </button>
                     )}
 
-                    {/* Size Control (Hidden for Global widgets) */}
+                    {/* Size Control */}
                     {registryItem.category !== 'Global' && (
                         <div className="relative size-menu-container">
                             <button
@@ -237,38 +249,18 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                         [2, 3], [3, 3], [4, 2]
                                     ]).filter(([cw, ch]: [number, number]) => {
                                         if (isMobile) {
-                                            // Ensure small widgets are selectable on mobile
-                                            if (cw > 2) return false; // Hide sizes wider than 2 cols on mobile
-                                            if (ch > 2) return false; // Hide sizes taller than 2 rows on mobile (Global Rule)
-
-                                            // Special rules for 'welcome' widget on mobile
+                                            if (cw > 2) return false;
+                                            if (ch > 2) return false;
+                                            // Mobile specific filters...
                                             if (widget.type === 'welcome') {
-                                                if (cw === 1 && ch === 2) return false; // Block 1x2
-                                                if (ch > 2) return false; // Max height 2
+                                                if (cw === 1 && ch === 2) return false;
+                                                if (ch > 2) return false;
                                             }
-
-                                            // Special rules for 'ootd' widget on mobile
-                                            if (widget.type === 'ootd') {
-                                                if (ch !== 2) return false; // Only allow height 2
-                                            }
-
-                                            // Special rules for 'chat-diary' widget on mobile
-                                            if (widget.type === 'chat-diary') {
-                                                if (cw !== 2) return false; // Force width 2 (full width)
-                                            }
-
-                                            // Special rules for 'asmr-mixer' widget on mobile
-                                            if (widget.type === 'asmr-mixer') {
-                                                if (cw !== 2) return false; // Force width 2
-                                            }
-
-                                            // Special rules for 'random-picker' widget on mobile
-                                            if (widget.type === 'random-picker') {
-                                                if (cw === 1 && ch === 1) return false; // Hide 1x1
-                                            }
+                                            if (widget.type === 'ootd' && ch !== 2) return false;
+                                            if (widget.type === 'chat-diary' && cw !== 2) return false;
+                                            if (widget.type === 'asmr-mixer' && cw !== 2) return false;
+                                            if (widget.type === 'random-picker' && cw === 1 && ch === 1) return false;
                                         }
-                                        if (registryItem.minW && cw < registryItem.minW) return false;
-                                        if (registryItem.minH && ch < registryItem.minH) return false;
                                         return true;
                                     }).map(([cw, ch]: [number, number]) => (
                                         <button
@@ -276,15 +268,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 updateLayout(widget.id, { w: cw, h: ch });
+                                                // LocalStorage Config Logic
                                                 try {
                                                     const key = `widget-config-${widget.type}`;
                                                     const existing = localStorage.getItem(key);
                                                     const config = existing ? JSON.parse(existing) : {};
                                                     const newConfig = { ...config, defaultSize: `${cw}x${ch}` };
                                                     localStorage.setItem(key, JSON.stringify(newConfig));
-
-                                                    const regItem = WIDGET_REGISTRY[widget.type];
-                                                    if (regItem) regItem.defaultSize = `${cw}x${ch}`;
                                                 } catch (e) { console.warn(e); }
                                                 setShowSizeMenu(false);
                                             }}
@@ -298,7 +288,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                         </div>
                     )}
 
-                    {/* Remove Button */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

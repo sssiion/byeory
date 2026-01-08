@@ -1,361 +1,69 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, ChevronRight, HelpCircle, Loader2, Database, Plus, Trash2, Pencil } from 'lucide-react';
-import { WIDGET_REGISTRY, type WidgetType } from './Registry';
-import { matchKoreanSearch } from '../../../utils/searchUtils';
-import { useIsMobile } from '../../../hooks';
-import type { WidgetBlock } from "./customwidget/types.ts";
-import { WidgetInfoModal } from './WidgetInfoModal';
+import {useWidgetRegistry} from "./useWidgetRegistry.ts";
+import type {WidgetConfig} from "./type.ts";
 
-import { getMyWidgets, deleteWidget } from "./customwidget/widgetApi.ts";
-import BlockRenderer from "./customwidget/components/BlockRenderer.tsx";
-
-const CATEGORY_TRANSLATIONS: Record<string, string> = {
-    'My Saved': '📂 내 보관함 (Saved)',
-    'System': '시스템',
-    'Data & Logic': '데이터 & 로직',
-    'Diary & Emotion': '다이어리 & 감정',
-    'Utility': '유틸리티',
-    'Decoration': '꾸미기',
-    'Collection': '수집품',
-    'Interactive': '인터랙티브',
-    'Tool': '도구',
-    'Global': '글로벌 효과',
-};
-
-// 🌟 미리보기 렌더링 헬퍼
-const renderWidgetPreview = (widgetData: any) => {
-    const block: WidgetBlock = {
-        id: String(widgetData.id),
-        type: widgetData.type,
-        content: widgetData.content || {},
-        styles: widgetData.styles || {}
-    };
-
-    return (
-        <div className="w-full h-full overflow-hidden transform scale-95 origin-center">
-            <BlockRenderer
-                block={block}
-                selectedBlockId={null}
-                onSelectBlock={() => { }}
-                onRemoveBlock={() => { }}
-                activeContainer={{ blockId: 'root', colIndex: 0 }}
-                onSetActiveContainer={() => { }}
-                onUpdateBlock={() => { }}
-            />
-        </div>
-    );
-};
-
-function WidgetContainer({ children, title, className = '', onInfoClick, isMobile, buttons }: {
-    children: React.ReactNode;
-    title: string;
-    className?: string;
-    onInfoClick?: (e: React.MouseEvent) => void;
-    isMobile?: boolean;
-    buttons?: React.ReactNode;
-}) {
-    return (
-        <div className={`flex flex-col w-full h-full bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] overflow-hidden group hover:border-blue-400 hover:shadow-md transition-all duration-200 ${className}`}>
-            <div className="flex-1 min-h-0 relative isolate overflow-hidden bg-[var(--bg-card-secondary)]/30 flex items-center justify-center p-2">
-                <div className="w-full h-full flex items-center justify-center pointer-events-none select-none">
-                    {children}
-                </div>
-            </div>
-            <div className="shrink-0 h-[40px] px-3 border-t border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-card)] z-10 relative">
-                <h2 className="text-xs text-[var(--text-primary)] font-bold truncate pr-2 flex-1">{title}</h2>
-                <div className={`flex items-center gap-1 transition-all ${isMobile ? 'hidden' : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'}`}>
-                    {buttons ? buttons : (
-                        <>
-                            <button onClick={onInfoClick} className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)] transition-colors"><HelpCircle size={12} /></button>
-                            <div className="w-6 h-6 rounded-full bg-[var(--btn-bg)] flex items-center justify-center text-[var(--btn-text)]"><Plus size={14} strokeWidth={3} /></div>
-                        </>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
+// MainPage에서 넘겨주는 props 이름(onSelect, onEdit)과 일치시킵니다.
 interface WidgetGalleryProps {
-    onSelect?: (item: WidgetType | any) => void;
-    onEdit?: (item: any) => void;
+    onSelect: (widgetType: string) => void; // 문자열(ID)을 넘기도록 수정
+    onEdit?: (data: WidgetConfig) => void;           // MainPage에서 onEdit도 넘겨주고 있으므로 추가
 }
 
-type CombinedWidgetEntry = {
-    type: string;
-    label: string;
-    category: string;
-    description?: string;
-    keywords?: string[];
-    defaultSize?: string;
-    isSaved?: boolean;
-    data?: any;
-    createdAt?: string;
-};
+export const WidgetGallery = ({ onSelect, onEdit }: WidgetGalleryProps) => {
+    // 훅을 통해 DB에서 위젯 정보를 가져옴
+    const { registry, isLoading, error } = useWidgetRegistry();
 
-export function WidgetGallery({ onSelect, onEdit }: WidgetGalleryProps) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-    const [selectedInfoWidget, setSelectedInfoWidget] = useState<CombinedWidgetEntry | null>(null);
-    const isMobile = useIsMobile();
+    if (isLoading) {
+        return <div className="p-4 text-center text-gray-500">위젯 목록을 불러오는 중...</div>;
+    }
 
-    const [savedWidgets, setSavedWidgets] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    if (error) {
+        return <div className="p-4 text-center text-red-500">위젯 목록 로딩 실패</div>;
+    }
 
-    // 🌟 1. DB 데이터 불러오기
-    useEffect(() => {
-        const fetchWidgets = async () => {
-            try {
-                setIsLoading(true);
-                const data = await getMyWidgets();
-                if (Array.isArray(data)) {
-                    setSavedWidgets(data);
-                    if (data.length > 0) {
-                        setExpandedCategories(prev => new Set(prev).add('My Saved'));
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to load saved widgets", e);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchWidgets();
-    }, []);
-
-    useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
-
-    // 🌟 2. 데이터 통합
-    const groupedWidgets = useMemo(() => {
-        const groups: Record<string, CombinedWidgetEntry[]> = {};
-
-        const registryEntries = Object.entries(WIDGET_REGISTRY).map(([key, widget]) => ({
-            ...widget,
-            type: key,
-            isSaved: false
-        }));
-
-        const savedEntries = savedWidgets.map((widget) => ({
-            type: widget.type,
-            label: widget.name || '제목 없음',
-            category: 'My Saved',
-            description: `저장된 날짜: ${widget.createdAt ? new Date(widget.createdAt).toLocaleDateString() : '알 수 없음'}`,
-            isSaved: true,
-            data: widget,
-            createdAt: widget.createdAt
-        }));
-
-        const allEntries: CombinedWidgetEntry[] = [...savedEntries, ...registryEntries];
-
-        allEntries.sort((a, b) => {
-            if (a.category === 'My Saved' && b.category !== 'My Saved') return -1;
-            if (a.category !== 'My Saved' && b.category === 'My Saved') return 1;
-            if (a.category === b.category) return a.label.localeCompare(b.label);
-            return a.category.localeCompare(b.category);
-        });
-
-        for (const widget of allEntries) {
-            const isMatch =
-                matchKoreanSearch(widget.label, debouncedSearch, { useChosung: true }) ||
-                matchKoreanSearch(widget.category, debouncedSearch, { useChosung: false }) ||
-                (widget.description && matchKoreanSearch(widget.description, debouncedSearch, { useChosung: false })) ||
-                (widget.keywords && widget.keywords.some(k => matchKoreanSearch(k, debouncedSearch, { useChosung: false })));
-
-            if (debouncedSearch && !isMatch) continue;
-
-            const cat = widget.category || 'Other';
-            if (!groups[cat]) groups[cat] = [];
-            groups[cat].push(widget);
-        }
-
-        return groups;
-    }, [debouncedSearch, savedWidgets]);
-
-    useEffect(() => {
-        if (debouncedSearch) {
-            setExpandedCategories(new Set(Object.keys(groupedWidgets)));
-        }
-    }, [debouncedSearch, groupedWidgets]);
-
-    const toggleCategory = (category: string) => {
-        const newSet = new Set(expandedCategories);
-        if (newSet.has(category)) newSet.delete(category);
-        else newSet.add(category);
-        setExpandedCategories(newSet);
-    };
-
-    const categories = Object.keys(groupedWidgets);
+    // registry 객체를 배열로 변환
+    const widgets = Object.values(registry);
 
     return (
-        <div className="h-full flex flex-col bg-[var(--bg-card)]">
-            {/* Header */}
-            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-header)] sticky top-0 z-20">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--icon-color)]" size={16} />
-                    <input
-                        type="text"
-                        placeholder="위젯 검색 (내 보관함 포함)"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 rounded-lg bg-[var(--bg-card-secondary)] border border-transparent focus:bg-[var(--bg-card)] focus:border-[var(--btn-bg)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] transition-all outline-none text-sm"
-                        autoFocus
-                    />
-                </div>
-            </div>
+        <div className="grid grid-cols-2 gap-4 p-4 md:grid-cols-3 lg:grid-cols-4 overflow-y-auto custom-scrollbar h-full pb-20">
+            {widgets.map((widget) => (
+                <div
+                    key={widget.widgetType}
+                    className="border border-[var(--border-color)] rounded-xl p-4 cursor-pointer hover:bg-[var(--bg-card-secondary)] transition-all hover:scale-[1.02] active:scale-95 bg-[var(--bg-card)] shadow-sm group"
+                    onClick={() => {
+                        // 🌟 중요: 객체 전체가 아니라 'widgetType'(문자열)만 넘겨야 MainPage의 addWidget이 정상 작동함
+                        onSelect(widget.widgetType);
+                    }}
+                >
+                    <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-bold text-lg text-[var(--text-primary)]">{widget.label}</h3>
 
-            {/* List */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 overscroll-contain">
-                {isLoading && (
-                    <div className="flex justify-center p-2 text-xs text-[var(--text-secondary)] gap-2">
-                        <Loader2 className="animate-spin" size={14} /> 불러오는 중...
-                    </div>
-                )}
-
-                {categories.length === 0 && !isLoading ? (
-                    <div className="text-center py-10 text-[var(--text-secondary)]">
-                        <p className="text-sm">검색 결과가 없습니다.</p>
-                    </div>
-                ) : (
-                    categories.map(category => (
-                        <div key={category} className="rounded-xl overflow-hidden border border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                        {/* 편집 가능한 위젯인 경우 Edit 버튼 표시 (onEdit이 있을 때만) */}
+                        {onEdit && !widget.isSystem && (
                             <button
-                                onClick={() => toggleCategory(category)}
-                                className="w-full flex items-center justify-between p-3 hover:bg-[var(--bg-card-secondary)] transition-colors text-left"
+                                onClick={(e) => {
+                                    e.stopPropagation(); // 부모 클릭 방지
+                                    onEdit(widget);
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-gray-600"
                             >
-                                <div className="flex items-center gap-2">
-                                    <div className={`transition-transform duration-200 ${expandedCategories.has(category) ? 'rotate-90 text-[var(--btn-bg)]' : 'text-[var(--icon-color)]'}`}>
-                                        <ChevronRight size={16} />
-                                    </div>
-                                    <span className={`text-sm font-bold ${category === 'My Saved' ? 'text-[var(--btn-bg)]' : 'text-[var(--text-primary)]'}`}>
-                                        {CATEGORY_TRANSLATIONS[category] || category}
-                                    </span>
-                                </div>
-                                <span className="text-[10px] px-2 py-0.5 bg-[var(--bg-card)] text-[var(--text-secondary)] rounded-full border border-[var(--border-color)]">
-                                    {groupedWidgets[category].length}
-                                </span>
+                                Edit
                             </button>
+                        )}
+                    </div>
 
-                            {expandedCategories.has(category) && (
-                                <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-card)] grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in slide-in-from-top-1 duration-200">
-                                    {groupedWidgets[category].map((widget, idx) => (
-                                        <div
-                                            key={`${widget.type}-${idx}`}
-                                            className="h-[120px] cursor-pointer"
-                                            onClick={() => {
-                                                if (isMobile) {
-                                                    setSelectedInfoWidget(widget);
-                                                } else {
-                                                    onSelect?.(widget.isSaved ? widget.data : widget.type);
-                                                }
-                                            }}
-                                        >
-                                            <WidgetContainer
-                                                title={widget.label}
-                                                isMobile={isMobile}
-                                                onInfoClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedInfoWidget(widget);
-                                                }}
-                                                buttons={widget.isSaved ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                onEdit?.(widget.data);
-                                                            }}
-                                                            className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--btn-bg)] transition-colors"
-                                                            title="수정"
-                                                        >
-                                                            <Pencil size={12} />
-                                                        </button>
-                                                        <button
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                if (confirm('정말 삭제하시겠습니까?')) {
-                                                                    try {
-                                                                        const id = widget.data?.id || widget.data?._id;
-                                                                        if (id) {
-                                                                            await deleteWidget(id);
-                                                                            setSavedWidgets(prev => prev.filter(w => (w.id || w._id) !== id));
-                                                                        }
-                                                                    } catch (err) {
-                                                                        alert('삭제 실패');
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-red-100 hover:text-red-500 transition-colors"
-                                                            title="삭제"
-                                                        >
-                                                            <Trash2 size={12} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedInfoWidget(widget);
-                                                            }}
-                                                            className="w-6 h-6 rounded-full bg-[var(--bg-card-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)] transition-colors"
-                                                            title="정보"
-                                                        >
-                                                            <HelpCircle size={12} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                onSelect?.(widget.data);
-                                                            }}
-                                                            className="w-6 h-6 rounded-full bg-[var(--btn-bg)] flex items-center justify-center text-[var(--btn-text)] hover:brightness-110 transition-colors"
-                                                            title="추가"
-                                                        >
-                                                            <Plus size={14} strokeWidth={3} />
-                                                        </button>
-                                                    </div>
-                                                ) : undefined}
-                                            >
-                                                {/* 🌟 렌더링 분기 */}
-                                                {widget.isSaved ? (
-                                                    <div className="w-full h-full transform scale-[0.8] origin-center flex items-center justify-center">
-                                                        {renderWidgetPreview(widget.data)}
-                                                    </div>
-                                                ) : (
-                                                    // 기존 템플릿 로직 (Global 예외처리 등)
-                                                    widget.category === 'Global' ? (
-                                                        <div className="text-[var(--text-secondary)] p-2 border rounded-full"><Database size={20} /></div>
-                                                    ) : (
-                                                        <img
-                                                            src={`/thumbnails/${widget.type}.png`}
-                                                            alt={widget.label}
-                                                            className="w-full h-full object-contain pointer-events-none"
-                                                            onError={(e) => e.currentTarget.style.display = 'none'}
-                                                        />
-                                                    )
-                                                )}
-                                            </WidgetContainer>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))
-                )
-                }
-            </div >
+                    <p className="text-sm text-[var(--text-secondary)] mb-3 line-clamp-2 h-10">
+                        {widget.description}
+                    </p>
 
-            {/* Info Modal */}
-            {
-                selectedInfoWidget && (
-                    <WidgetInfoModal
-                        widget={selectedInfoWidget}
-                        onClose={() => setSelectedInfoWidget(null)}
-                        onAction={() => {
-                            onSelect?.(selectedInfoWidget.isSaved ? selectedInfoWidget.data : selectedInfoWidget.type);
-                        }}
-                    />
-                )
-            }
-        </div >
+                    <div className="flex gap-2 text-xs flex-wrap">
+                        <span className="px-2 py-1 bg-[var(--bg-card-secondary)] rounded text-[var(--text-secondary)] border border-[var(--border-color)]">
+                            {widget.category}
+                        </span>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded border border-blue-100 font-medium">
+                            {widget.defaultSize}
+                        </span>
+                    </div>
+                </div>
+            ))}
+        </div>
     );
-}
+};
