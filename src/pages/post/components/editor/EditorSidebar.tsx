@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { useMarket } from '../../../../hooks/useMarket';
-import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot } from 'lucide-react';
+import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 interface Props {
     isSaving: boolean;
@@ -35,6 +36,45 @@ const EditorSidebar: React.FC<Props> = ({
     currentTags, onTagsChange
 }) => {
     const { isOwned, buyItem, getMarketItem, getPackPrice } = useMarket();
+
+    // ✨ 음성 인식 관련 Hook
+    const {
+        transcript,
+        listening,
+        resetTranscript,
+        browserSupportsSpeechRecognition
+    } = useSpeechRecognition();
+
+    // 사이드바 전용 녹음 상태 관리
+    const [isRecordingSidebar, setIsRecordingSidebar] = useState(false);
+    const baseInputRef = useRef(rawInput); // 녹음 시작 전 텍스트 저장용
+
+    // ✨ 음성 인식 텍스트 동기화
+    useEffect(() => {
+        if (listening && isRecordingSidebar) {
+            // 기존 텍스트 + 공백 + 인식된 텍스트
+            const newText = `${baseInputRef.current} ${transcript}`.trim();
+            setRawInput(newText);
+        }
+    }, [transcript, listening, isRecordingSidebar, setRawInput]);
+
+    // ✨ 녹음 토글 함수
+    const toggleRecording = () => {
+        if (!browserSupportsSpeechRecognition) {
+            alert("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome을 사용해주세요.");
+            return;
+        }
+
+        if (listening) {
+            SpeechRecognition.stopListening();
+            setIsRecordingSidebar(false);
+        } else {
+            baseInputRef.current = rawInput || ''; // 현재 입력된 값 저장
+            resetTranscript();
+            setIsRecordingSidebar(true);
+            SpeechRecognition.startListening({ continuous: true, language: 'ko-KR' });
+        }
+    };
 
     // Confirmation Modal State
     const [confirmation, setConfirmation] = useState<{
@@ -322,16 +362,36 @@ const EditorSidebar: React.FC<Props> = ({
                         <Bot size={18} className="text-[var(--text-secondary)]" />
                         AI 기록 도우미
                     </h3>
+
                     <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold border border-indigo-100">BETA</span>
                 </div>
 
                 <div className="p-4 flex flex-col gap-4">
-                    <textarea
-                        value={rawInput}
-                        onChange={e => setRawInput(e.target.value)}
-                        className="w-full h-28 p-3 bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--btn-bg)] focus:border-transparent transition-all resize-none placeholder-gray-400"
-                        placeholder="오늘 하루는 어떠셨나요? 키워드나 짧은 문장을 입력하시면 AI가 멋진 일기를 만들어드려요."
-                    />
+                    <div className={`
+                        relative w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-secondary)]
+                        focus-within:ring-2 focus-within:ring-[var(--btn-bg)] focus-within:border-transparent transition-all
+                    `}>
+                        <textarea
+                            value={rawInput}
+                            onChange={e => setRawInput(e.target.value)}
+                            // textarea 자체의 테두리(border)는 없애고(bg-transparent border-none), 부모 div가 테두리 역할을 합니다.
+                            className="w-full h-28 p-3 pr-10 bg-transparent border-none outline-none resize-none placeholder-gray-400 text-sm"
+                            placeholder="오늘 하루는 어떠셨나요? 키워드나 짧은 문장을 입력하시면 AI가 멋진 일기를 만들어드려요."
+                        />
+                        {/* 버튼은 Wrapper Div 안에 절대 위치로 고정됩니다 */}
+                        <button
+                            onClick={toggleRecording}
+                            className={`absolute bottom-2 right-2 p-1.5 rounded-full transition-all duration-200
+                                ${listening && isRecordingSidebar
+                                ? 'text-red-500 bg-red-50 animate-pulse'
+                                : 'text-gray-400 hover:text-indigo-600 hover:bg-gray-200/50'
+                            }
+                            `}
+                            title={listening ? "음성 인식 중지" : "음성으로 말하기"}
+                        >
+                            {listening && isRecordingSidebar ? <MicOff size={16} /> : <Mic size={16} />}
+                        </button>
+                    </div>
 
                     <div>
                         <span className="text-xs font-bold text-[var(--text-secondary)] mb-2 block uppercase tracking-wider">Layout Style</span>
