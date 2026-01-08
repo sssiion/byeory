@@ -16,6 +16,7 @@ interface WordItem {
 }
 
 interface PersonaAnalysisData {
+    representativeEmoji: string;
     digitalSelf: string[];
     characteristics: string[];
     moods: MoodItem[];
@@ -250,12 +251,12 @@ function AnalysisPage() {
                                 {/* 아바타 (이미지 또는 이모지) */}
                                 <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-400 to-pink-400 p-1">
                                     <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-4xl">
-                                        🧑‍💻
+                                        {data.representativeEmoji || "🧑‍💻"}
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <h2 className="text-sm font-bold text-orange-500 tracking-wide uppercase">Your Digital Self</h2>
+                                    <h2 className="text-sm font-bold text-orange-500 tracking-wide uppercase">나는 어떤 사람인가요?</h2>
                                     {data.digitalSelf.map((sent, idx) => (
                                         <p key={idx} className="text-gray-700 font-medium leading-relaxed">
                                             {sent}
