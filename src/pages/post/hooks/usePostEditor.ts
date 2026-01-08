@@ -163,8 +163,10 @@ export const usePostEditor = () => {
 
     // 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
     // ✨ Support Temp Save
-    const handleSave = async (isTemp: boolean = false) => {
-        if (!title.trim() && !isTemp) return alert("제목을 입력해주세요!");
+    // 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
+    // ✨ Support Temp Save
+    const handleSave = async (isTemp: boolean = false): Promise<{ success: boolean; message?: string; type?: 'info' | 'success' | 'danger' }> => {
+        if (!title.trim() && !isTemp) return { success: false, message: "제목을 입력해주세요!", type: "danger" };
 
         const safeTags = Array.isArray(currentTags) ? [...currentTags.filter(t => typeof t === 'string')] : [];
 
@@ -225,14 +227,13 @@ export const usePostEditor = () => {
             triggerPostCreation();
 
             if (isTemp) {
-                alert("임시 저장되었습니다.");
                 // ✨ Do NOT navigate away, just reset dirty
                 setIsDirty(false);
                 setIsPublic(false);
                 // Also refresh tags in UI
                 _setCurrentTags(safeTags);
+                return { success: true, message: "임시 저장되었습니다.", type: "success" };
             } else {
-                alert("저장 완료!");
                 await Promise.all([
                     fetchPosts(),
                     fetchAlbums()
@@ -244,10 +245,11 @@ export const usePostEditor = () => {
                     setViewMode('album');
                 }
                 setIsDirty(false); // ✨ Reset Dirty Flag
+                return { success: true, message: "저장 완료!", type: "success" };
             }
         } catch (e) {
-            alert("저장 실패: 서버 오류가 발생했습니다.");
             console.error(e);
+            return { success: false, message: "저장 실패: 서버 오류가 발생했습니다.", type: "danger" };
         } finally {
             setIsSaving(false);
         }

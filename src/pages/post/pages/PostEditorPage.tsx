@@ -4,6 +4,7 @@ import EditorSidebar from '../components/editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
 
 import SavePostModal from '../components/SavePostModal';
+import ConfirmationModal from '../../../components/common/ConfirmationModal'; // ✨ Import
 
 import { domToPng } from 'modern-screenshot';
 import { uploadImageToSupabase } from '../api';
@@ -16,11 +17,32 @@ interface Props {
 const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
 
+    // ✨ Modal State
+    const [confirmation, setConfirmation] = React.useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
     const canvasRef = React.useRef<HTMLDivElement>(null);
 
     const handleConfirmSave = async () => {
-        await editor.handleSave(); // 실제 저장 로직
+        const result = await editor.handleSave(); // 실제 저장 로직
         setIsSaveModalOpen(false);
+
+        if (result?.message) {
+            setConfirmation({
+                isOpen: true,
+                title: result.success ? '저장 완료' : '저장 실패',
+                message: result.message,
+                type: result.type || (result.success ? 'success' : 'danger'),
+                singleButton: true,
+                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+            });
+        }
     };
 
     const handleSaveAsTemplateWrapper = async () => {
@@ -85,7 +107,15 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onSave={() => {
                     // ✨ Validation: Check Title & Content
                     if (!editor.title.trim()) {
-                        return alert("제목을 입력해주세요!");
+                        setConfirmation({
+                            isOpen: true,
+                            title: '입력 확인',
+                            message: "제목을 입력해주세요!",
+                            type: 'danger',
+                            singleButton: true,
+                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                        });
+                        return;
                     }
                     const hasContent = editor.blocks.some(b => b.text?.trim() || b.imageUrl || b.imageUrl2) ||
                         editor.stickers.length > 0 ||
@@ -93,12 +123,32 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                         editor.floatingImages.length > 0;
 
                     if (!hasContent) {
-                        return alert("내용을 입력해주세요!");
+                        setConfirmation({
+                            isOpen: true,
+                            title: '입력 확인',
+                            message: "내용을 입력해주세요!",
+                            type: 'danger',
+                            singleButton: true,
+                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                        });
+                        return;
                     }
 
                     setIsSaveModalOpen(true);
                 }}
-                onTempSave={() => editor.handleSave(true)} // ✨ Temp Save Handler
+                onTempSave={async () => {
+                    const result = await editor.handleSave(true);
+                    if (result?.message) {
+                        setConfirmation({
+                            isOpen: true,
+                            title: result.success ? '임시 저장' : '저장 실패',
+                            message: result.message,
+                            type: result.type || (result.success ? 'success' : 'danger'),
+                            singleButton: true,
+                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                        });
+                    }
+                }} // ✨ Temp Save Handler
                 onCancel={() => {
                     // ✨ Check Dirty
                     if (editor.isDirty && !confirm("작성 중인 내용이 저장되지 않았습니다. 정말 나가시겠습니까?")) {
@@ -156,6 +206,17 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 setIsFavorite={editor.setIsFavorite}
                 isPublic={editor.isPublic}
                 setIsPublic={editor.setIsPublic}
+            />
+
+            <ConfirmationModal
+                isOpen={confirmation.isOpen}
+                onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                title={confirmation.title}
+                message={confirmation.message}
+                onConfirm={confirmation.onConfirm}
+                onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                type={confirmation.type}
+                singleButton={confirmation.singleButton}
             />
         </div>
     );
