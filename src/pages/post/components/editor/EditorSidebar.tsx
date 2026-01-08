@@ -2,13 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks/useMarket';
-import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff } from 'lucide-react';
+import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 interface Props {
     isSaving: boolean;
     onSave: () => void;
+    onTempSave: () => void; // ✨ New Prop
     onCancel: () => void;
     onAddBlock: () => void;
     onAddFloatingText: () => void;
@@ -39,7 +40,7 @@ interface Props {
 }
 
 const EditorSidebar: React.FC<Props> = ({
-    isSaving, onSave, onCancel,
+    isSaving, onSave, onTempSave, onCancel,
     onAddBlock, onAddFloatingText, onAddSticker, onAddFloatingImage,
     rawInput, setRawInput, selectedLayoutId, setSelectedLayoutId,
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
@@ -235,21 +236,29 @@ const EditorSidebar: React.FC<Props> = ({
         <div className={`w-full ${containerClassName} flex flex-col gap-5 h-full overflow-y-auto pr-1 pb-10`}>
             {/* 상단 액션 버튼 */}
             {showActionButtons && (
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                     <button
                         onClick={onCancel}
-                        className="flex-1 py-3 px-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] transition-all flex items-center justify-center gap-2"
+                        className="py-3 px-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] transition-all flex items-center justify-center"
+                        title="취소"
                     >
                         <X size={18} />
-                        취소
+                    </button>
+                    <button
+                        onClick={onTempSave} // ✨ Temp Save
+                        disabled={isSaving}
+                        className="flex-1 py-3 px-3 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+                    >
+                        <Save size={18} />
+                        {isSaving ? "..." : "임시 저장"}
                     </button>
                     <button
                         onClick={onSave}
                         disabled={isSaving}
-                        className="flex-1 py-3 px-4 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex-1 py-3 px-3 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                        <Save size={18} />
-                        {isSaving ? "저장 중..." : "저장"}
+                        <Check size={18} />
+                        {isSaving ? "저장 중..." : "완료"}
                     </button>
                 </div>
             )}

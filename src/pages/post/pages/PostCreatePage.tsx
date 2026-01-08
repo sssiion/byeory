@@ -64,7 +64,9 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     }
 
                     setIsSaveModalOpen(true);
+                    setIsSaveModalOpen(true);
                 }}
+                onTempSave={() => editor.handleSave(true)}
                 onCancel={() => editor.setViewMode('album')}
                 onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
                 onAddFloatingText={editor.addFloatingText}

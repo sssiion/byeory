@@ -65,14 +65,27 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
 
                     setIsSaveModalOpen(true);
                 }}
+                onTempSave={() => editor.handleSave(true)} // ✨ Temp Save Handler
                 onCancel={() => {
-                    // ✨ Cancel Logic: Go back to 'read' mode or previous view
-                    // If it's an existing post (editor.currentPostId exists), go back to 'read'
-                    // If it's a new post (PostCreatePage handles this), go back to 'album'
-                    if (editor.currentPostId) {
+                    // ✨ Check Dirty
+                    if (editor.isDirty && !confirm("작성 중인 내용이 저장되지 않았습니다. 정말 나가시겠습니까?")) {
+                        return;
+                    }
+
+                    // ✨ Cancel Logic: Smart Navigation
+                    // If it's a draft (Temp Save), go back to List (Album/Folder)
+                    // If it's a published post (Edit), go back to Read Mode
+                    const isDraft = editor.currentTags.includes('임시저장');
+
+                    if (editor.currentPostId && !isDraft) {
                         editor.setViewMode('read');
                     } else {
-                        editor.setViewMode('album'); // Should not happen here technically as this is PostEditorPage
+                        // Draft or New Post -> Go to Album/Folder
+                        if (editor.selectedAlbumId && editor.selectedAlbumId !== '__all__' && editor.selectedAlbumId !== '__others__') {
+                            editor.setViewMode('folder');
+                        } else {
+                            editor.setViewMode('album');
+                        }
                     }
                 }}
                 onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}

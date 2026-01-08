@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { type RoomCycle, fetchCycleContentApi } from '../roomCycleApi';
-import { Lock, Sun, Cloud, CloudRain, Snowflake, Check, Clock, Smile, Frown, Angry, Meh } from 'lucide-react';
+import { type RoomCycle, fetchCycleContentApi, saveCycleContentApi } from '../roomCycleApi';
+import { Lock, Sun, Cloud, CloudRain, Snowflake, Check, Clock, Smile, Frown, Angry, Meh, Save } from 'lucide-react';
 
 interface Props {
     cycle: RoomCycle;
@@ -55,6 +55,16 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
 
     // Accumulated content from server
     const [sharedContent, setSharedContent] = useState<any>(null);
+
+    // ✨ Dirty State
+    const [isDirty, setIsDirty] = useState(false);
+
+    // ✨ Update isDirty on change
+    useEffect(() => {
+        if (content.length > 0 && !isSubmitting) {
+            setIsDirty(true);
+        }
+    }, [content, feeling, weather]);
 
     // Date Logic
     const [displayDate, setDisplayDate] = useState('');
@@ -154,6 +164,47 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
         }
     };
 
+    // ✨ Temp Save
+    const handleTempSave = async () => {
+        setIsSubmitting(true);
+        try {
+            const previousBlocks = sharedContent?.blocks || [];
+            const payload = {
+                title: cycle.title,
+                blocks: [
+                    ...previousBlocks,
+                    {
+                        type: "paragraph",
+                        text: content,
+                        date: displayDate,
+                        feeling,
+                        weather
+                    }
+                ]
+            };
+            await saveCycleContentApi(cycle.id, payload);
+            alert("임시 저장되었습니다.");
+            setIsDirty(false); // ✨ Reset Dirty
+        } catch (e) {
+            console.error(e);
+            alert("임시 저장 실패");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // ✨ Prevent Accidental Refresh
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isDirty]);
+
     // --- RENDER ---
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-8">
@@ -248,6 +299,14 @@ const ExchangeDiaryView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                                     className="mt-3 w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-700 transition"
                                 >
                                     {isSubmitting ? '저장 중...' : '교환일기 작성완료'}
+                                </button>
+                                <button
+                                    onClick={handleTempSave}
+                                    disabled={isSubmitting}
+                                    className="mt-2 w-full py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg font-bold text-xs hover:bg-indigo-50 transition flex items-center justify-center gap-2"
+                                >
+                                    <Save size={14} />
+                                    임시 저장
                                 </button>
                             </div>
                         );

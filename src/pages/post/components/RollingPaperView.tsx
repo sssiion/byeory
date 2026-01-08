@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { type RoomCycle, fetchCycleContentApi, saveCycleContentApi } from '../roomCycleApi';
-import { Lock, CheckCheck } from 'lucide-react';
+import { Lock, CheckCheck, Save } from 'lucide-react';
 import EditorCanvas from './editor/EditorCanvas';
 import EditorSidebar from './editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
@@ -103,6 +103,41 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
         }
     };
 
+    // ✨ Temp Save Handler
+    const handleTempSave = async () => {
+        setIsSubmitting(true);
+        try {
+            const contentPayload = {
+                title: editor.title,
+                blocks: editor.blocks,
+                stickers: editor.stickers,
+                floatingTexts: editor.floatingTexts,
+                floatingImages: editor.floatingImages,
+                titleStyles: editor.titleStyles,
+            };
+            await saveCycleContentApi(cycle.id, contentPayload);
+            alert("임시 저장되었습니다.");
+            editor.setIsDirty(false); // ✨ Reset Dirty
+        } catch (e) {
+            console.error(e);
+            alert("임시 저장 실패");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // ✨ Prevent Accidental Refresh
+    React.useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (editor.isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [editor.isDirty]);
+
     // 1. LOCKED / WAITING VIEW
     if (cycle.status === 'IN_PROGRESS' && !cycle.isMyTurn) {
         return (
@@ -135,13 +170,23 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                 {/* Header */}
                 <div className="shrink-0 h-16 bg-white border-b flex items-center justify-between px-6 z-50">
                     <span className="font-bold text-lg">✏️ 나의 차례</span>
-                    <button
-                        onClick={handleCompleteTurn}
-                        disabled={isSubmitting}
-                        className="px-6 py-2 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-indigo-500/20 disabled:opacity-50"
-                    >
-                        {isSubmitting ? '전송 중...' : '작성 완료'}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleTempSave}
+                            disabled={isSubmitting}
+                            className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition shadow-sm flex items-center gap-2 disabled:opacity-50"
+                        >
+                            <Save size={18} />
+                            임시 저장
+                        </button>
+                        <button
+                            onClick={handleCompleteTurn}
+                            disabled={isSubmitting}
+                            className="px-6 py-2 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                        >
+                            {isSubmitting ? '전송 중...' : '작성 완료'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Editor Body */}
@@ -154,6 +199,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                                 showActionButtons={false}
                                 isSaving={editor.isSaving}
                                 onSave={() => { }} // Disabled in RollingPaper
+                                onTempSave={handleTempSave} // ✨ Pass temp save handler
                                 onCancel={() => { }} // Disabled
                                 onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
                                 onAddFloatingText={editor.addFloatingText}

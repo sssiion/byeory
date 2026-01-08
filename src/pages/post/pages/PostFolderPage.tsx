@@ -486,17 +486,25 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
 
                                                     {/* Hashtags */}
                                                     <div className="flex flex-wrap gap-1.5 items-center">
-                                                        {p.tags && p.tags.length > 0 ? (
+                                                        {/* ✨ Draft Badge */}
+                                                        {p.tags?.includes('#임시저장') && (
+                                                            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                                                임시저장
+                                                            </span>
+                                                        )}
+
+                                                        {p.tags && p.tags.filter(t => t !== '#임시저장').length > 0 ? (
                                                             <>
-                                                                {p.tags.slice(0, 2).map((t: string) => (
+                                                                {p.tags.filter(t => t !== '#임시저장').slice(0, 2).map((t: string) => (
                                                                     <span key={t} className="text-[11px] font-medium text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-md truncate max-w-[80px]">#{t}</span>
                                                                 ))}
-                                                                {p.tags.length > 2 && (
-                                                                    <span className="text-[10px] text-[var(--text-secondary)] font-medium">+{p.tags.length - 2}</span>
+                                                                {p.tags.filter(t => t !== '#임시저장').length > 2 && (
+                                                                    <span className="text-[10px] text-[var(--text-secondary)] font-medium">+{p.tags.filter(t => t !== '#임시저장').length - 2}</span>
                                                                 )}
                                                             </>
                                                         ) : (
-                                                            <span className="text-[11px] text-[var(--text-secondary)] opacity-50">태그 없음</span>
+                                                            !p.tags?.includes('#임시저장') && <span className="text-[11px] text-[var(--text-secondary)] opacity-50">태그 없음</span>
                                                         )}
                                                     </div>
                                                 </div>

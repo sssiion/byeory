@@ -14,19 +14,37 @@ export const usePostEditor = () => {
     const [viewMode, setViewMode] = useState<ViewMode>('album');
     const [posts, setPosts] = useState<PostData[]>([]);
     const [currentPostId, setCurrentPostId] = useState<number | null>(null);
-    const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null); // ✨ 선택된 앨범 ID
-    const [title, setTitle] = useState("");
-    const [titleStyles, setTitleStyles] = useState({
+    const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+
+    // ✨ Dirty Flag for Unsaved Changes
+    const [isDirty, setIsDirty] = useState(false);
+
+    // ✨ Wrapped Setters to track Dirty State
+    const [title, _setTitle] = useState("");
+    const setTitle = (value: React.SetStateAction<string>) => { _setTitle(value); setIsDirty(true); };
+
+    const [titleStyles, _setTitleStyles] = useState({
         fontSize: '30px',
         fontWeight: 'bold',
         fontFamily: "'Noto Sans KR', sans-serif",
         color: '#000000',
         textAlign: 'left'
     });
-    const [blocks, setBlocks] = useState<Block[]>([]);
-    const [stickers, setStickers] = useState<Sticker[]>([]);
-    const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
-    const [floatingImages, setFloatingImages] = useState<FloatingImage[]>([]);
+    const setTitleStyles = (value: React.SetStateAction<typeof titleStyles>) => { _setTitleStyles(value); setIsDirty(true); };
+
+    const [blocks, _setBlocks] = useState<Block[]>([]);
+    const setBlocks = (value: React.SetStateAction<Block[]>) => { _setBlocks(value); setIsDirty(true); };
+
+    const [stickers, _setStickers] = useState<Sticker[]>([]);
+    const setStickers = (value: React.SetStateAction<Sticker[]>) => { _setStickers(value); setIsDirty(true); };
+
+    const [floatingTexts, _setFloatingTexts] = useState<FloatingText[]>([]);
+    const setFloatingTexts = (value: React.SetStateAction<FloatingText[]>) => { _setFloatingTexts(value); setIsDirty(true); };
+
+    const [floatingImages, _setFloatingImages] = useState<FloatingImage[]>([]);
+    const setFloatingImages = (value: React.SetStateAction<FloatingImage[]>) => { _setFloatingImages(value); setIsDirty(true); };
+
+    // ... Selection States (No need to be dirty)
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [selectedType, setSelectedType] = useState<'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null>(null);
     const [rawInput, setRawInput] = useState("");
@@ -34,26 +52,29 @@ export const usePostEditor = () => {
     const [selectedLayoutId, setSelectedLayoutId] = useState('type-a');
     const [isAiProcessing, setIsAiProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    // ✨ 커스텀 앨범 목록 (API 사용)
-    const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
-    const [myTemplates, setMyTemplates] = useState<any[]>([]); // ✨ My Templates
 
-    // ✨ New fields for Album/Note Management
+    // ... Albums & Templates
+    const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
+    const [myTemplates, setMyTemplates] = useState<any[]>([]);
+
     const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
     const [isFavorite, setIsFavorite] = useState(false);
 
-    const [currentTags, setCurrentTags] = useState<string[]>([]); // ✨ 현재 작성 중인 포스트의 태그들
-    const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]); // ✨ 저장할 타겟 앨범 ID들
-    const [isPublic, setIsPublic] = useState(true); // ✨ 커뮤니티 공개 여부
-    // ✨ Sort Option Persistence
+    const [currentTags, _setCurrentTags] = useState<string[]>([]);
+    const setTags = (value: React.SetStateAction<string[]>) => { _setCurrentTags(value); setIsDirty(true); };
+
+    const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]);
+    const [isPublic, setIsPublic] = useState(true);
     const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>('name');
 
-    // ✨ Paper Styles State
-    const [paperStyles, setPaperStyles] = useState<Record<string, any>>({
+    // ✨ Paper Styles (Dirty tracked)
+    const [paperStyles, _setPaperStyles] = useState<Record<string, any>>({
         backgroundColor: '#ffffff',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         padding: '3rem',
     });
+    const setPaperStyles = (value: React.SetStateAction<Record<string, any>>) => { _setPaperStyles(value); setIsDirty(true); };
+
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,26 +121,28 @@ export const usePostEditor = () => {
     };
 
     const handlePostClick = (post: PostData) => {
-        setCurrentPostId(post.id); setTitle(post.title);
-        setTitleStyles((post.titleStyles as any) || {
+        setCurrentPostId(post.id);
+        _setTitle(post.title); // ✨ Use internal setter (no dirty)
+        _setTitleStyles((post.titleStyles as any) || {
             fontSize: '30px',
             fontWeight: 'bold',
             fontFamily: "'Noto Sans KR', sans-serif",
             color: '#000000',
             textAlign: 'left'
         });
-        setBlocks(post.blocks); setStickers(post.stickers);
-        setFloatingTexts(post.floatingTexts || []);
-        setFloatingImages(post.floatingImages || []);
-        setCurrentTags(post.tags || []); // ✨ 태그 로드
-        setTargetAlbumIds(post.albumIds || []); // ✨ 앨범 ID 로드
+        _setBlocks(post.blocks);
+        _setStickers(post.stickers);
+        _setFloatingTexts(post.floatingTexts || []);
+        _setFloatingImages(post.floatingImages || []);
+        _setCurrentTags(post.tags || []); // ✨ Use internal setter
+        setTargetAlbumIds(post.albumIds || []);
 
         // ✨ Load Paper Styles
         if (post.styles) {
-            setPaperStyles(post.styles);
+            _setPaperStyles(post.styles); // ✨ Use internal setter
         } else {
             // Default if none
-            setPaperStyles({
+            _setPaperStyles({
                 backgroundColor: '#ffffff',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                 padding: '3rem',
@@ -132,23 +155,36 @@ export const usePostEditor = () => {
             const hasTags = post.tags && post.tags.length > 0;
             setMode(hasTags ? 'AUTO' : 'MANUAL');
         }
-        setIsFavorite(post.isFavorite || false); // ✨ Load favorite
-        setIsPublic(post.isPublic ?? true); // ✨ Load public status
+        setIsFavorite(post.isFavorite || false);
+        setIsPublic(post.isPublic ?? true);
         setViewMode('read');
+        setIsDirty(false); // ✨ Reset Dirty Flag
     };
 
     // 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
-    const handleSave = async () => {
-        if (!title.trim()) return alert("제목을 입력해주세요!");
+    // ✨ Support Temp Save
+    const handleSave = async (isTemp: boolean = false) => {
+        if (!title.trim() && !isTemp) return alert("제목을 입력해주세요!");
 
-        // ...
-        const safeTags = Array.isArray(currentTags) ? currentTags.filter(t => typeof t === 'string') : [];
+        const safeTags = Array.isArray(currentTags) ? [...currentTags.filter(t => typeof t === 'string')] : [];
+
+        // ✨ Handle Draft Tag
+        const DRAFT_TAG = '임시저장';
+        if (isTemp) {
+            if (!safeTags.includes(DRAFT_TAG)) safeTags.push(DRAFT_TAG);
+        } else {
+            // Remove draft tag if exists
+            const idx = safeTags.indexOf(DRAFT_TAG);
+            if (idx > -1) safeTags.splice(idx, 1);
+        }
+
         const safeAlbumIds = Array.isArray(targetAlbumIds) ? targetAlbumIds.filter(id => typeof id === 'string') : [];
         const finalAlbumIds = new Set(safeAlbumIds);
 
         if (mode === 'AUTO' && safeTags.length > 0) {
             const uniqueTags = Array.from(new Set(safeTags));
             for (const tag of uniqueTags) {
+                if (tag === DRAFT_TAG) continue; // Skip creating folder for draft tag
                 const existing = customAlbums.find(a =>
                     (a.tag === tag || a.name === tag) &&
                     (a.type === 'album' || a.type === 'room')
@@ -176,24 +212,37 @@ export const usePostEditor = () => {
             mode,
             isFavorite,
             isPublic,
-            styles: paperStyles // ✨ Save Paper Styles
+            styles: paperStyles
         };
 
-        // ... (rest of logging and save logic) ...
         setIsSaving(true);
         try {
-            await savePostToApi(postData, !!currentPostId);
+            const savedPost = await savePostToApi(postData, !!currentPostId);
+            if (!currentPostId && savedPost?.id) {
+                setCurrentPostId(savedPost.id);
+            }
+
             triggerPostCreation();
-            alert("저장 완료!");
-            await Promise.all([
-                fetchPosts(),
-                fetchAlbums()
-            ]);
-            if (targetAlbumIds.length === 1) {
-                setSelectedAlbumId(targetAlbumIds[0]);
-                setViewMode('folder');
+
+            if (isTemp) {
+                alert("임시 저장되었습니다.");
+                // ✨ Do NOT navigate away, just reset dirty
+                setIsDirty(false);
+                // Also refresh tags in UI
+                _setCurrentTags(safeTags);
             } else {
-                setViewMode('album');
+                alert("저장 완료!");
+                await Promise.all([
+                    fetchPosts(),
+                    fetchAlbums()
+                ]);
+                if (targetAlbumIds.length === 1) {
+                    setSelectedAlbumId(targetAlbumIds[0]);
+                    setViewMode('folder');
+                } else {
+                    setViewMode('album');
+                }
+                setIsDirty(false); // ✨ Reset Dirty Flag
             }
         } catch (e) {
             alert("저장 실패: 서버 오류가 발생했습니다.");
@@ -215,7 +264,7 @@ export const usePostEditor = () => {
             stickers,
             floatingTexts,
             floatingImages,
-            defaultFontColor: titleStyles.color || '#000000' // Simple heuristic
+            defaultFontColor: titleStyles.color || '#000000'
         };
 
         try {
@@ -232,7 +281,7 @@ export const usePostEditor = () => {
         setIsAiProcessing(true);
         try {
             const newBlocks = await generateBlogContent(rawInput, selectedLayoutId, tempImages);
-            if (newBlocks.length > 0) setBlocks(newBlocks);
+            if (newBlocks.length > 0) setBlocks(newBlocks); // Uses wrapper -> Dirty
         } catch (e) {
             alert("AI 생성 실패");
         } finally {
@@ -240,6 +289,8 @@ export const usePostEditor = () => {
         }
     };
 
+    // ✨ Interaction Wrappers (Already using setters that trigger dirty if defined above, 
+    // but handleUpdate modifies specific items, so it needs to use setBlocks)
     const handleUpdate = (id: string, updates: any) => {
         setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
         setStickers(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
@@ -356,44 +407,35 @@ export const usePostEditor = () => {
 
     // ✨ Apply Paper Preset logic
     const applyPaperPreset = (preset: any) => {
-        setPaperStyles(preset.styles);
+        setPaperStyles(preset.styles); // Wrapper triggers dirty
         if (preset.defaultFontColor) {
             setTitleStyles(prev => ({ ...prev, color: preset.defaultFontColor }));
         }
 
-        // Filter out existing preset stickers, keep user stickers
         const userStickers = stickers.filter(s => s.id.startsWith('sticker-'));
-        // Add new preset stickers
         const presetStickers = (preset.stickers || []).map((s: Sticker) => ({
             ...s,
-            // Copy logic, maybe ensure ID is unique if added multiple times? 
-            // Presets usually have fixed IDs.
         }));
         setStickers([...userStickers, ...presetStickers]);
     };
 
     const applyTemplate = (template: any) => {
-        // Apply Paper Styles (Reset if missing)
         setPaperStyles(template.styles || {
             backgroundColor: '#ffffff',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             padding: '3rem',
         });
 
-        // Apply Font Color (Reset if missing)
         setTitleStyles(prev => ({
             ...prev,
             color: template.defaultFontColor || '#000000'
         }));
 
-        // 1. Filter out existing decorative/template items, keeping only user content
-        // User content is identified by 'sticker-' prefix (created by addSticker)
-        // We exclude 'tmpl-' items which we are about to create
         setStickers(prev => {
             const userStickers = prev.filter(s => s.id.startsWith('sticker-'));
             const newStickers = (template.stickers || []).map((s: any) => ({
                 ...s,
-                id: `tmpl-sticker-${Date.now()}-${Math.random()}` // Distinct prefix
+                id: `tmpl-sticker-${Date.now()}-${Math.random()}`
             }));
             return [...userStickers, ...newStickers];
         });
@@ -421,27 +463,26 @@ export const usePostEditor = () => {
     const handleStartWriting = (initialAlbumId?: string) => {
         const validAlbumId = (typeof initialAlbumId === 'string' || typeof initialAlbumId === 'number') ? String(initialAlbumId) : undefined;
 
-        setCurrentPostId(null); // 새 글
-        setTitle('');
+        setCurrentPostId(null);
+        _setTitle(''); // ✨ No dirty
         setRawInput('');
-        setTitleStyles({
+        _setTitleStyles({
             fontSize: '30px',
             fontWeight: 'bold',
             fontFamily: "'Noto Sans KR', sans-serif",
             color: '#000000',
             textAlign: 'left'
         });
-        setBlocks([{ id: `b-${Date.now()}`, type: 'paragraph', text: '' }]); // 초기 블록
-        setStickers([]);
-        setFloatingTexts([]);
-        setFloatingImages([]);
-        setTempImages([]); // 임시 이미지 초기화
+        _setBlocks([{ id: `b-${Date.now()}`, type: 'paragraph', text: '' }]);
+        _setStickers([]);
+        _setFloatingTexts([]);
+        _setFloatingImages([]);
+        setTempImages([]);
         setSelectedId(null);
         setSelectedType(null);
-        setCurrentTags([]); // ✨ 태그 초기화
+        _setCurrentTags([]);
 
-        // ✨ Reset Paper Styles
-        setPaperStyles({
+        _setPaperStyles({
             backgroundColor: '#ffffff',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             padding: '3rem',
@@ -457,6 +498,7 @@ export const usePostEditor = () => {
         setIsFavorite(false);
         setIsPublic(true);
         setViewMode('editor');
+        setIsDirty(false); // ✨ Reset Dirty
     };
 
     return {
@@ -473,7 +515,7 @@ export const usePostEditor = () => {
         selectedAlbumId, handleAlbumClick,
         customAlbums, handleCreateAlbum,
         handleUpdateAlbum, handleDeleteAlbum,
-        currentTags, setTags: setCurrentTags,
+        currentTags, setTags,
         targetAlbumIds, setTargetAlbumIds,
         sortOption, setSortOption, handleDeletePost,
         handleToggleFavorite,
@@ -483,8 +525,9 @@ export const usePostEditor = () => {
         isPublic, setIsPublic,
         refreshPosts: fetchPosts,
         setStickers, setFloatingTexts, setFloatingImages,
-        paperStyles, setPaperStyles, applyPaperPreset, // ✨ Expose applyPaperPreset
-        handleSaveAsTemplate, // ✨ Expose Template Save
-        myTemplates, applyTemplate, fetchMyTemplates // ✨ Expose Template Load
+        paperStyles, setPaperStyles, applyPaperPreset,
+        handleSaveAsTemplate,
+        myTemplates, applyTemplate, fetchMyTemplates,
+        isDirty, setIsDirty,
     };
 };

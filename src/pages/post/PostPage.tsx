@@ -26,7 +26,11 @@ const Post: React.FC = () => {
     React.useEffect(() => {
         const handlePostTabClick = () => {
             if (editor.viewMode === 'editor') {
-                if (window.confirm("작성 중인 내용이 저장되지 않을 수 있습니다. 포스트 홈으로 이동하시겠습니까?")) {
+                if (editor.isDirty) {
+                    if (window.confirm("작성 중인 내용이 저장되지 않을 수 있습니다. 포스트 홈으로 이동하시겠습니까?")) {
+                        editor.setViewMode('album');
+                    }
+                } else {
                     editor.setViewMode('album');
                 }
             } else if (editor.viewMode !== 'album') {
@@ -36,12 +40,12 @@ const Post: React.FC = () => {
 
         window.addEventListener('post-tab-click', handlePostTabClick);
         return () => window.removeEventListener('post-tab-click', handlePostTabClick);
-    }, [editor.viewMode, editor.setViewMode]);
+    }, [editor.viewMode, editor.setViewMode, editor.isDirty]);
 
     // ✨ Prevent Accidental Refresh / Close in Editor Mode
     React.useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (editor.viewMode === 'editor') {
+            if (editor.viewMode === 'editor' && editor.isDirty) {
                 // Prevent default behavior to trigger browser dialog
                 e.preventDefault();
                 e.returnValue = ''; // Required for Chrome
@@ -50,7 +54,7 @@ const Post: React.FC = () => {
 
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [editor.viewMode]);
+    }, [editor.viewMode, editor.isDirty]);
 
     // 이미지 업로드 핸들러 (Hook -> Component 전달용)
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
