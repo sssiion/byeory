@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navigation from '../../components/Header/Navigation';
-import { Globe, Search, X } from 'lucide-react';
+import { Globe, Search, X, Settings } from 'lucide-react'; // Settings 아이콘 추가 (선택사항)
 import CommunityFeed from './components/CommunityFeed';
 import { fetchMyProfile } from './api';
 
@@ -9,6 +9,9 @@ const Community: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [recentTags, setRecentTags] = useState<string[]>([]);
+
+    // 1. 수정 모드 상태 추가
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
         const initUser = async () => {
@@ -28,7 +31,7 @@ const Community: React.FC = () => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
 
-        const tag = searchQuery.trim().replace(/^#/, ''); // Remove # if user typed it
+        const tag = searchQuery.trim().replace(/^#/, '');
         setSelectedTag(tag);
 
         const updatedTags = [tag, ...recentTags.filter(t => t !== tag)].slice(0, 10);
@@ -36,11 +39,16 @@ const Community: React.FC = () => {
         localStorage.setItem('community_recent_tags', JSON.stringify(updatedTags));
 
         setSearchQuery('');
+        setIsEditMode(false); // 검색 시 수정 모드 종료
     };
 
     const handleTagClick = (tag: string) => {
+        // 수정 모드일 때는 태그 클릭(검색) 방지하고 삭제만 가능하게 할지,
+        // 혹은 둘 다 가능하게 할지 선택 사항이지만, 보통은 수정모드여도 클릭은 되거나 막습니다.
+        // 여기서는 클릭 기능 유지하되, 수정모드가 아닐 때만 토글되게 하는 것이 자연스러울 수 있으나
+        // 요청하신 기능(X표시 제어)에 집중하여 클릭은 유지합니다.
         if (selectedTag === tag) {
-            setSelectedTag(null); // Toggle off
+            setSelectedTag(null);
         } else {
             setSelectedTag(tag);
         }
@@ -53,6 +61,11 @@ const Community: React.FC = () => {
         localStorage.setItem('community_recent_tags', JSON.stringify(updatedTags));
         if (selectedTag === tag) {
             setSelectedTag(null);
+        }
+
+        // 태그가 다 지워지면 수정모드 끄기
+        if (updatedTags.length === 0) {
+            setIsEditMode(false);
         }
     };
 
@@ -88,46 +101,75 @@ const Community: React.FC = () => {
 
                 {/* Recent / Selected Tags */}
                 {(recentTags.length > 0 || selectedTag) && (
-                    <div className="flex flex-wrap items-center gap-2 mb-8 animate-fade-in-up">
-                        <span className="text-xs text-[var(--text-secondary)] mr-2">최근 검색:</span>
-                        {recentTags.map((tag, index) => (
-                            <button
-                                key={`tag-${tag}-${index}`}
-                                onClick={() => handleTagClick(tag)}
-                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 group border ${selectedTag === tag
-                                    ? 'bg-indigo-500 border-indigo-500 text-white shadow-md transform scale-105'
-                                    : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-indigo-300 hover:text-indigo-500'
+                    <div className="mb-8 animate-fade-in-up">
+                        {/* 2. 상단 라벨 및 편집 토글 버튼 영역 */}
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-[var(--text-secondary)]">최근 검색:</span>
+                            {recentTags.length > 0 && (
+                                <button
+                                    onClick={() => setIsEditMode(!isEditMode)}
+                                    className={`text-xs font-medium px-2 py-1 rounded transition-colors ${
+                                        isEditMode
+                                            ? 'text-indigo-500 bg-indigo-50'
+                                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                     }`}
-                            >
-                                <span className="opacity-70">#</span>{tag}
-                                <div
-                                    onClick={(e) => handleRemoveTag(tag, e)}
-                                    className={`rounded-full p-0.5 transition-colors ${selectedTag === tag
-                                        ? 'hover:bg-indigo-600'
-                                        : 'hover:bg-[var(--bg-card-secondary)]'
-                                        }`}
                                 >
-                                    <X size={12} className={selectedTag === tag ? "opacity-100" : "opacity-0 group-hover:opacity-60"} />
-                                </div>
-                            </button>
-                        ))}
-                        {selectedTag && !recentTags.includes(selectedTag) && (
-                            <button
-                                onClick={() => handleTagClick(selectedTag)}
-                                className="px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-500 border border-indigo-500 text-white shadow-md flex items-center gap-1.5"
-                            >
-                                <span className="opacity-70">#</span>{selectedTag}
-                                <X size={12} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedTag(null); }} />
-                            </button>
-                        )}
-                        {selectedTag && (
-                            <button
-                                onClick={() => setSelectedTag(null)}
-                                className="ml-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] underline decoration-dotted underline-offset-4"
-                            >
-                                전체보기
-                            </button>
-                        )}
+                                    {isEditMode ? '완료' : '편집'}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            {recentTags.map((tag, index) => (
+                                <button
+                                    key={`tag-${tag}-${index}`}
+                                    onClick={() => handleTagClick(tag)}
+                                    className={`pl-3 pr-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 border ${selectedTag === tag
+                                        ? 'bg-indigo-500 border-indigo-500 text-white shadow-md transform scale-105'
+                                        : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-indigo-300 hover:text-indigo-500'
+                                    } 
+                                        /* 3. 수정 모드일 때 우측 패딩 조정 (X 버튼 공간 확보) - 선택사항 */
+                                        ${isEditMode ? 'pr-1.5' : ''}
+                                        `}
+                                >
+                                    <span className="opacity-70">#</span>{tag}
+
+                                    {/* 4. 수정 모드일 때만 X 버튼 렌더링 */}
+                                    {isEditMode && (
+                                        <div
+                                            onClick={(e) => handleRemoveTag(tag, e)}
+                                            className={`rounded-full p-0.5 ml-1 transition-colors cursor-pointer ${selectedTag === tag
+                                                ? 'hover:bg-indigo-600 text-white'
+                                                : 'hover:bg-[var(--bg-card-secondary)] text-[var(--text-secondary)]'
+                                            }`}
+                                        >
+                                            <X size={14} />
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+
+                            {/* 선택된 태그가 최근 검색어에 없을 경우 표시되는 태그 (수정 모드 영향 X) */}
+                            {selectedTag && !recentTags.includes(selectedTag) && (
+                                <button
+                                    onClick={() => handleTagClick(selectedTag)}
+                                    className="px-3 py-1.5 rounded-full text-sm font-medium bg-indigo-500 border border-indigo-500 text-white shadow-md flex items-center gap-1.5"
+                                >
+                                    <span className="opacity-70">#</span>{selectedTag}
+                                    <X size={12} className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedTag(null); }} />
+                                </button>
+                            )}
+
+                            {/* 전체보기 버튼 */}
+                            {selectedTag && (
+                                <button
+                                    onClick={() => setSelectedTag(null)}
+                                    className="ml-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] underline decoration-dotted underline-offset-4"
+                                >
+                                    전체보기
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
 
