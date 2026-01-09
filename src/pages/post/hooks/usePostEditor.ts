@@ -65,7 +65,7 @@ export const usePostEditor = () => {
 
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]);
     const [isPublic, setIsPublic] = useState(true);
-    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>('name');
+    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest'>('name');
 
     // ✨ Paper Styles (Dirty tracked)
     const [paperStyles, _setPaperStyles] = useState<Record<string, any>>({

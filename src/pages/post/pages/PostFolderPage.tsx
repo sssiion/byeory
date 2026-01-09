@@ -65,6 +65,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
     const [isCycleModalOpen, setIsCycleModalOpen] = useState(false); // ✨ New Cycle Modal State
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false); // ✨ Favorites Filter State
 
     // ✨ Local State for API Data
     const [contents, setContents] = useState<{ type: 'POST' | 'FOLDER', data: any }[]>([]);
@@ -133,6 +134,11 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     // ✨ Derived Lists from Local Content
     const folders = contents.filter(c => c.type === 'FOLDER').map(c => c.data);
     const localPosts = contents.filter(c => c.type === 'POST').map(c => c.data as PostData);
+
+    // ✨ Filtered Posts
+    const displayedPosts = showFavoritesOnly
+        ? localPosts.filter(p => p.isFavorite)
+        : localPosts;
 
     // ✨ Check if current view is a Room
     const isRoom = React.useMemo(() => {
@@ -298,6 +304,20 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         <div className="flex items-center text-lg font-medium overflow-hidden">
                             <PostBreadcrumb items={breadcrumbItems} />
 
+                            {/* ✨ Favorites Toggle (Visible in lists) */}
+                            {!isRoom && (
+                                <button
+                                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                                    className={`ml-3 p-1.5 rounded-full transition-all ${showFavoritesOnly
+                                            ? 'bg-yellow-100 text-yellow-500 shadow-sm'
+                                            : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-card-secondary)] hover:text-yellow-400'
+                                        }`}
+                                    title={showFavoritesOnly ? "모든 기록 보기" : "즐겨찾기만 보기"}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                </button>
+                            )}
+
                             {/* ✨ Room Settings Trigger */}
                             {(() => {
                                 const activeAlbum = augmentedAlbums.find(a => String(a.id) === String(albumId));
@@ -453,14 +473,27 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                 {/* Posts Display */}
                 {!isRoom && (
                     <>
-                        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4">기록들 ({localPosts.length})</h3>
+                        <h3 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                            {showFavoritesOnly ? (
+                                <>
+                                    <span className="text-yellow-500">⭐</span>
+                                    즐겨찾기 ({displayedPosts.length})
+                                </>
+                            ) : (
+                                `기록들 (${displayedPosts.length})`
+                            )}
+                        </h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {localPosts.length === 0 ? (
+                            {displayedPosts.length === 0 ? (
                                 <div className="col-span-full py-20 text-center text-gray-400">
-                                    {isLoading ? "로딩 중..." : "이 폴더에는 아직 글이 없습니다."}
+                                    {isLoading ? "로딩 중..." : (
+                                        showFavoritesOnly
+                                            ? "즐겨찾기한 기록이 없습니다."
+                                            : "이 폴더에는 아직 글이 없습니다."
+                                    )}
                                 </div>
                             ) : (
-                                localPosts.map(p => (
+                                displayedPosts.map(p => (
                                     <DraggablePost key={p.id} id={p.id}>
                                         <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden">
                                             {/* 1. Top - Thumbnail (60%) */}
