@@ -94,7 +94,14 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const fetchDetail = async () => {
         try {
             const detail = await getCommunityDetail(data.postId, currentUserId);
-            if (detail) setPostDetail(detail);
+            if (detail) {
+                setPostDetail(detail);
+                // ✨ Sync like state with fresh detail data
+                setLikeState({
+                    isLiked: detail.isLiked,
+                    count: detail.likeCount
+                });
+            }
         } catch (error) {
             console.error("Failed to fetch community detail:", error);
         }
@@ -321,9 +328,9 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                     <div className="flex items-center gap-4 py-4 border-t theme-border mt-4">
                         <button
                             onClick={handleLikeClick}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 font-medium ${likeState.isLiked
-                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
-                                : 'theme-bg-card border theme-border theme-text-primary hover:bg-black/5'
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 font-medium border ${likeState.isLiked
+                                ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600 dark:bg-red-500 dark:border-red-500 dark:text-white'
+                                : 'theme-bg-card theme-border theme-text-primary hover:bg-black/5 dark:hover:bg-white/10'
                                 }`}
                         >
                             <Heart

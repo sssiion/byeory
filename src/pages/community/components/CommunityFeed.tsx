@@ -172,8 +172,10 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
             {/* {loading && ( ... )} */}
 
             {!loading && !hasMore && posts.length > 0 && (
-                <div className="text-center py-8 text-gray-400 opacity-80 text-sm">
-                    ✨ 모든 게시글을 확인했습니다
+                <div className="text-center py-8 flex items-center justify-center">
+                    <span className="px-4 py-1.5 rounded-full bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/30 shadow-sm text-sm font-medium theme-text-secondary flex items-center gap-2">
+                        ✨ 모든 게시글을 확인했습니다
+                    </span>
                 </div>
             )}
 

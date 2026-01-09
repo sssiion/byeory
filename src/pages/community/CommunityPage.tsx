@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navigation from '../../components/Header/Navigation';
-import { Globe, Search, X, Settings } from 'lucide-react'; // Settings 아이콘 추가 (선택사항)
+import { Globe, Search, X } from 'lucide-react'; // Settings 아이콘 추가 (선택사항)
 import CommunityFeed from './components/CommunityFeed';
 import { fetchMyProfile } from './api';
 
@@ -9,15 +9,22 @@ const Community: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [recentTags, setRecentTags] = useState<string[]>([]);
+    const [isAuthChecking, setIsAuthChecking] = useState(true); // ✨ Auth Check State
 
     // 1. 수정 모드 상태 추가
     const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
         const initUser = async () => {
-            const profile = await fetchMyProfile();
-            if (profile) {
-                setUserId(profile.id);
+            try {
+                const profile = await fetchMyProfile();
+                if (profile) {
+                    setUserId(profile.id);
+                }
+            } catch (error) {
+                console.error("Auth check failed:", error);
+            } finally {
+                setIsAuthChecking(false); // ✨ Finished checking
             }
         };
         const savedTags = localStorage.getItem('community_recent_tags');
@@ -108,11 +115,10 @@ const Community: React.FC = () => {
                             {recentTags.length > 0 && (
                                 <button
                                     onClick={() => setIsEditMode(!isEditMode)}
-                                    className={`text-xs font-medium px-2 py-1 rounded transition-colors ${
-                                        isEditMode
-                                            ? 'text-indigo-500 bg-indigo-50'
-                                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                                    }`}
+                                    className={`text-xs font-medium px-2 py-1 rounded transition-colors ${isEditMode
+                                        ? 'text-indigo-500 bg-indigo-50'
+                                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                        }`}
                                 >
                                     {isEditMode ? '완료' : '편집'}
                                 </button>
@@ -127,7 +133,7 @@ const Community: React.FC = () => {
                                     className={`pl-3 pr-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 border ${selectedTag === tag
                                         ? 'bg-indigo-500 border-indigo-500 text-white shadow-md transform scale-105'
                                         : 'bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-indigo-300 hover:text-indigo-500'
-                                    } 
+                                        } 
                                         /* 3. 수정 모드일 때 우측 패딩 조정 (X 버튼 공간 확보) - 선택사항 */
                                         ${isEditMode ? 'pr-1.5' : ''}
                                         `}
@@ -141,7 +147,7 @@ const Community: React.FC = () => {
                                             className={`rounded-full p-0.5 ml-1 transition-colors cursor-pointer ${selectedTag === tag
                                                 ? 'hover:bg-indigo-600 text-white'
                                                 : 'hover:bg-[var(--bg-card-secondary)] text-[var(--text-secondary)]'
-                                            }`}
+                                                }`}
                                         >
                                             <X size={14} />
                                         </div>
@@ -174,7 +180,13 @@ const Community: React.FC = () => {
                 )}
 
                 <div className="w-full">
-                    <CommunityFeed currentUserId={userId} selectedTag={selectedTag} />
+                    {isAuthChecking ? (
+                        <div className="flex justify-center py-20">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                        </div>
+                    ) : (
+                        <CommunityFeed currentUserId={userId} selectedTag={selectedTag} />
+                    )}
                 </div>
             </main>
         </div>
