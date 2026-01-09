@@ -2,17 +2,50 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { HeartCrack, ArrowLeft, ShieldAlert } from 'lucide-react';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const GetOutPage: React.FC = () => {
     const navigate = useNavigate();
     const { logout } = useAuth(); // user is no longer needed for verification
     const [inputConfirmation, setInputConfirmation] = useState("");
 
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
     const handleDelete = async () => {
         if (inputConfirmation !== "탈퇴합니다") return;
 
-        if (!window.confirm("정말로 탈퇴하시겠습니까? 돌이킬 수 없습니다.")) return;
+        // Custom Confirmation Logic
+        setConfirmModal({
+            isOpen: true,
+            title: "정말 떠나시나요?",
+            message: "정말로 탈퇴하시겠습니까? 돌이킬 수 없습니다.",
+            type: 'danger',
+            singleButton: false, // Two buttons for confirmation
+            onConfirm: async () => {
+                closeConfirmModal(); // Close modal first
+                await executeDelete();
+            }
+        });
+    };
 
+    const executeDelete = async () => {
         try {
             const token = localStorage.getItem('accessToken');
             const response = await fetch('http://localhost:8080/api/user', {
@@ -23,16 +56,38 @@ const GetOutPage: React.FC = () => {
             });
 
             if (response.ok) {
-                alert("그동안 벼리를 이용해주셔서 감사합니다.\n부디 좋은 기억으로 남기를 바랍니다.");
-                logout(); // Clears local storage
-                navigate('/');
+                setConfirmModal({
+                    isOpen: true,
+                    title: "안녕히 가세요",
+                    message: "그동안 벼리를 이용해주셔서 감사합니다.\n부디 좋은 기억으로 남기를 바랍니다.",
+                    type: 'success',
+                    singleButton: true,
+                    onConfirm: () => {
+                        logout(); // Clears local storage
+                        navigate('/');
+                    }
+                });
             } else {
                 const msg = await response.text();
-                alert("탈퇴 처리에 실패했습니다: " + msg);
+                setConfirmModal({
+                    isOpen: true,
+                    title: "탈퇴 실패",
+                    message: "탈퇴 처리에 실패했습니다: " + msg,
+                    type: 'danger',
+                    singleButton: true,
+                    onConfirm: closeConfirmModal
+                });
             }
         } catch (e) {
             console.error("Delete error", e);
-            alert("서버 통신 오류가 발생했습니다.");
+            setConfirmModal({
+                isOpen: true,
+                title: "오류 발생",
+                message: "서버 통신 오류가 발생했습니다.",
+                type: 'danger',
+                singleButton: true,
+                onConfirm: closeConfirmModal
+            });
         }
     };
 
@@ -113,6 +168,18 @@ const GetOutPage: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                singleButton={confirmModal.singleButton}
+                onConfirm={() => {
+                    confirmModal.onConfirm();
+                }}
+                onCancel={closeConfirmModal}
+            />
         </div>
     );
 };

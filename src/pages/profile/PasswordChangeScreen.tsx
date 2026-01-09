@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../../components/Header/Navigation';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const PasswordChangeScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -11,6 +12,36 @@ const PasswordChangeScreen: React.FC = () => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showModal = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: onConfirm || closeConfirmModal
+        });
+    };
 
     // Password validation regex
     const hasMinLength = newPassword.length >= 8;
@@ -24,22 +55,21 @@ const PasswordChangeScreen: React.FC = () => {
 
     const handleSave = async () => {
         if (!currentPassword) {
-            alert("현재 비밀번호를 입력해주세요");
+            showModal("입력 오류", "현재 비밀번호를 입력해주세요", 'danger');
             return;
         }
         if (!isPasswordValid) {
-            alert("비밀번호 조건을 충족해주세요");
+            showModal("입력 오류", "비밀번호 조건을 충족해주세요", 'danger');
             return;
         }
         if (!passwordsMatch) {
-            alert("비밀번호가 일치하지 않습니다");
+            showModal("입력 오류", "비밀번호가 일치하지 않습니다", 'danger');
             return;
         }
 
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            alert("로그인 정보가 없습니다.");
-            navigate('/login');
+            showModal("알림", "로그인 정보가 없습니다.", 'danger', () => navigate('/login'));
             return;
         }
 
@@ -57,14 +87,13 @@ const PasswordChangeScreen: React.FC = () => {
             });
 
             if (response.ok) {
-                alert("비밀번호가 변경되었습니다.");
-                navigate('/profile');
+                showModal("성공", "비밀번호가 변경되었습니다.", 'success', () => navigate('/profile'));
             } else {
-                alert("현재 비밀번호가 일치하지 않습니다");
+                showModal("변경 실패", "현재 비밀번호가 일치하지 않습니다", 'danger');
             }
         } catch (error) {
             console.error("Error changing password:", error);
-            alert("서버와 통신 중 오류가 발생했습니다.");
+            showModal("오류", "서버와 통신 중 오류가 발생했습니다.", 'danger');
         }
     };
 
@@ -271,6 +300,19 @@ const PasswordChangeScreen: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                <ConfirmationModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    singleButton={confirmModal.singleButton}
+                    onConfirm={() => {
+                        confirmModal.onConfirm();
+                        if (confirmModal.singleButton) closeConfirmModal();
+                    }}
+                    onCancel={closeConfirmModal}
+                />
             </div>
         </div>
     );

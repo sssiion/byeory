@@ -156,8 +156,17 @@ export const createCommunityMessage = async (postId: number, content: string, us
     }
 };
 
-export const deleteCommunityMessage = async (messageId: number): Promise<void> => {
+export const updateCommunityMessage = async (messageId: number, content: string, userId: number): Promise<CommunityMessage> => {
+    const response = await axios.patch(`${BASE_URL}/messages/${messageId}`, { content }, {
+        params: { userId },
+        headers: getAuthHeader(),
+    });
+    return response.data;
+};
+
+export const deleteCommunityMessage = async (messageId: number, userId: number): Promise<void> => {
     await axios.delete(`${BASE_URL}/messages/${messageId}`, {
+        params: { userId },
         headers: getAuthHeader(),
     });
 };

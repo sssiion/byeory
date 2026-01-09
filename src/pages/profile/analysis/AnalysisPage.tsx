@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sparkles, RefreshCw, Calendar, ChevronDown } from "lucide-react";
 import Navigation from '../../../components/Header/Navigation';
+import ConfirmationModal from '../../../components/common/ConfirmationModal';
 
 // --- 타입 정의 (JSON 구조에 맞춤) ---
 interface MoodItem {
@@ -124,6 +125,25 @@ function AnalysisPage() {
     const [filterMode, setFilterMode] = useState<'ALL' | 'MONTH'>('ALL');
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
     const fetchPersona = async () => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
@@ -186,7 +206,14 @@ function AnalysisPage() {
             if (response.ok) {
                 await fetchPersona(); // 재조회
             } else {
-                alert("게시글이 부족하거나 분석에 실패했습니다.");
+                setConfirmModal({
+                    isOpen: true,
+                    title: "분석 실패",
+                    message: "게시글이 부족하거나 분석에 실패했습니다.",
+                    type: 'danger',
+                    singleButton: true,
+                    onConfirm: closeConfirmModal
+                });
             }
         } catch (e) {
             console.error(e);
@@ -300,7 +327,7 @@ function AnalysisPage() {
                     // 데이터 없음 표시
                     <div className="py-20 text-center space-y-4">
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-3xl">🧐</div>
-                        <p className="text-gray-500">아직 분석된 데이터가 없습니다.<br/>첫 번째 분석을 시작해보세요!</p>
+                        <p className="text-gray-500">아직 분석된 데이터가 없습니다.<br />첫 번째 분석을 시작해보세요!</p>
                     </div>
                 )}
 
@@ -317,6 +344,18 @@ function AnalysisPage() {
                 </div>
 
             </main>
+
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                singleButton={confirmModal.singleButton}
+                onConfirm={() => {
+                    confirmModal.onConfirm();
+                }}
+                onCancel={closeConfirmModal}
+            />
         </div>
     );
 }

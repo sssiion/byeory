@@ -59,9 +59,10 @@ interface Props {
     onToggleFavorite: (id: number) => void; // ✨ New Prop
     onMovePost: (postId: string | number, targetAlbumId: string | null) => void; // ✨ DnD Prop
     onRefresh?: () => void; // ✨ Data Refresh Trigger
+    showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
-const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh }) => {
+const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh, showConfirmModal }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
     const [isCycleModalOpen, setIsCycleModalOpen] = useState(false); // ✨ New Cycle Modal State
@@ -309,8 +310,8 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                 <button
                                     onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
                                     className={`ml-3 p-1.5 rounded-full transition-all ${showFavoritesOnly
-                                            ? 'bg-yellow-100 text-yellow-500 shadow-sm'
-                                            : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-card-secondary)] hover:text-yellow-400'
+                                        ? 'bg-yellow-100 text-yellow-500 shadow-sm'
+                                        : 'text-[var(--text-tertiary)] hover:bg-[var(--bg-card-secondary)] hover:text-yellow-400'
                                         }`}
                                     title={showFavoritesOnly ? "모든 기록 보기" : "즐겨찾기만 보기"}
                                 >
@@ -424,9 +425,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (confirm(`'${album.name}' 폴더와 그 안의 모든 내용이 삭제됩니다.\n계속하시겠습니까?`)) {
-                                                    onDeleteAlbum(album.id);
-                                                }
+                                                onDeleteAlbum(album.id);
                                             }}
                                             className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all z-10"
                                         >
@@ -564,9 +563,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if (confirm("정말 이 기록을 영구 삭제하시겠습니까?")) {
-                                                                        onDeletePost(p.id);
-                                                                    }
+                                                                    onDeletePost(p.id);
                                                                 }}
                                                                 className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                                 title="영구 삭제"
@@ -577,8 +574,10 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if (confirm("이 앨범에서 제거하시겠습니까?")) {
-                                                                        handleManageItem('REMOVE', 'POST', p.id);
+                                                                    if (showConfirmModal) {
+                                                                        showConfirmModal("앨범에서 제거", "이 앨범에서 제거하시겠습니까?", 'danger', () => {
+                                                                            handleManageItem('REMOVE', 'POST', p.id);
+                                                                        });
                                                                     }
                                                                 }}
                                                                 className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -603,6 +602,7 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     isOpen={isCreateFolderOpen}
                     onClose={() => setIsCreateFolderOpen(false)}
                     onCreate={handleCreateFolder}
+                    showConfirmModal={showConfirmModal}
                 />
 
                 {/* ✨ Picker Modal */}

@@ -9,6 +9,7 @@ import PostCreatePage from './pages/PostCreatePage';
 import PostAlbumPage from './pages/PostAlbumPage';
 import PostFolderPage from './pages/PostFolderPage';
 import CreateAlbumModal from './components/CreateAlbumModal';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const Post: React.FC = () => {
     // Custom Hook 사용
@@ -27,9 +28,15 @@ const Post: React.FC = () => {
         const handlePostTabClick = () => {
             if (editor.viewMode === 'editor') {
                 if (editor.isDirty) {
-                    if (window.confirm("작성 중인 내용이 저장되지 않을 수 있습니다. 포스트 홈으로 이동하시겠습니까?")) {
-                        editor.setViewMode('album');
-                    }
+                    editor.showConfirmModal(
+                        "이동 확인",
+                        "작성 중인 내용이 저장되지 않을 수 있습니다.\n포스트 홈으로 이동하시겠습니까?",
+                        "danger",
+                        () => {
+                            editor.setViewMode('album');
+                            editor.closeConfirmModal();
+                        }
+                    );
                 } else {
                     editor.setViewMode('album');
                 }
@@ -40,7 +47,7 @@ const Post: React.FC = () => {
 
         window.addEventListener('post-tab-click', handlePostTabClick);
         return () => window.removeEventListener('post-tab-click', handlePostTabClick);
-    }, [editor.viewMode, editor.setViewMode, editor.isDirty]);
+    }, [editor.viewMode, editor.setViewMode, editor.isDirty, editor.showConfirmModal]);
 
     // ✨ Prevent Accidental Refresh / Close in Editor Mode
     React.useEffect(() => {
@@ -110,6 +117,7 @@ const Post: React.FC = () => {
                             const album = editor.customAlbums.find(a => a.id === id);
                             if (album) editor.handleToggleAlbumFavorite(album);
                         }}
+                        showConfirmModal={editor.showConfirmModal}
                     />
                 )}
 
@@ -132,6 +140,7 @@ const Post: React.FC = () => {
                         }}
                         onMovePost={() => { }} // Disabled for now
                         onRefresh={editor.refreshPosts}
+                        showConfirmModal={editor.showConfirmModal}
                     />
                 )}
 
@@ -166,6 +175,7 @@ const Post: React.FC = () => {
                 isOpen={isAlbumModalOpen}
                 onClose={() => setIsAlbumModalOpen(false)}
                 albums={editor.customAlbums}
+                showConfirmModal={editor.showConfirmModal}
                 onSave={(name, tag, parentId, type, roomConfig, coverConfig) => {
                     // Convert single tag to array for the hook
                     const tags = tag ? [tag] : [];
@@ -175,6 +185,18 @@ const Post: React.FC = () => {
                     editor.handleCreateAlbum(name, tags, pId, type, roomConfig, coverConfig);
                     setIsAlbumModalOpen(false);
                 }}
+            />
+
+            <ConfirmationModal
+                isOpen={editor.confirmModal.isOpen}
+                title={editor.confirmModal.title}
+                message={editor.confirmModal.message}
+                type={editor.confirmModal.type}
+                singleButton={editor.confirmModal.singleButton}
+                onConfirm={() => {
+                    editor.confirmModal.onConfirm();
+                }}
+                onCancel={editor.closeConfirmModal}
             />
         </div>
     );

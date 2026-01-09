@@ -255,6 +255,54 @@ export const usePostEditor = () => {
         }
     };
 
+    const handleDeleteAlbum = async (id: string) => {
+        showConfirmModal(
+            "앨범 삭제",
+            "정말 삭제하시겠습니까?",
+            "danger",
+            async () => {
+                await deleteAlbumApi(id);
+                fetchAlbums();
+                closeConfirmModal();
+            }
+        );
+    };
+
+    const handleDeletePost = async (id: number) => {
+        showConfirmModal(
+            "포스트 삭제",
+            "정말 삭제하시겠습니까?",
+            "danger",
+            async () => {
+                await deletePostApi(id);
+                await fetchPosts();
+
+                // ✨ Exit if current post is deleted
+                if (currentPostId === id) {
+                    setCurrentPostId(null);
+                    if (selectedAlbumId) {
+                        setViewMode('folder');
+                    } else {
+                        setViewMode('album');
+                    }
+                }
+                closeConfirmModal();
+            }
+        );
+    };
+
+    const handleToggleFavorite = async (post: PostData) => {
+        await savePostToApi({ ...post, isFavorite: !post.isFavorite }, true);
+        fetchPosts();
+    };
+
+    const handleToggleAlbumFavorite = async (album: CustomAlbum) => {
+        await updateAlbumApi(album.id, { ...album, isFavorite: !album.isFavorite });
+        fetchAlbums();
+    };
+
+
+
     // ✨ Save as Template
     const handleSaveAsTemplate = async (thumbnailUrl?: string | any) => {
         // Guard: If thumbnailUrl is an Event object (or not a string), treat as undefined
@@ -277,10 +325,10 @@ export const usePostEditor = () => {
         // 2. Call API
         const result = await createPostTemplateApi(template);
         if (result) {
-            alert("템플릿이 저장되었습니다! ✨\n(마켓에서 판매할 수도 있어요!)");
+            showConfirmModal("저장 완료", "템플릿이 저장되었습니다! ✨\n(마켓에서 판매할 수도 있어요!)", "success", undefined, true);
             fetchMyTemplates(); // Refresh List
         } else {
-            alert("템플릿 저장 실패");
+            showConfirmModal("저장 실패", "템플릿 저장에 실패했습니다.", "danger", undefined, true);
         }
     };
 
@@ -291,7 +339,7 @@ export const usePostEditor = () => {
             const newBlocks = await generateBlogContent(rawInput, selectedLayoutId, tempImages);
             if (newBlocks.length > 0) setBlocks(newBlocks); // Uses wrapper -> Dirty
         } catch (e) {
-            alert("AI 생성 실패");
+            showConfirmModal("오류", "AI 생성 실패", "danger", undefined, true);
         } finally {
             setIsAiProcessing(false);
         }
@@ -387,41 +435,37 @@ export const usePostEditor = () => {
         fetchAlbums();
     };
 
-    const handleDeleteAlbum = async (id: string) => {
-        if (confirm("삭제하시겠습니까?")) {
-            await deleteAlbumApi(id);
-            fetchAlbums();
-        }
+
+
+    // ✨ Modal State for Confirmations
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
     };
 
-    const handleDeletePost = async (id: number) => {
-        if (confirm("삭제하시겠습니까?")) {
-            await deletePostApi(id);
-            await fetchPosts();
-
-            // ✨ Exit if current post is deleted
-            if (currentPostId === id) {
-                setCurrentPostId(null);
-                if (selectedAlbumId) {
-                    setViewMode('folder');
-                } else {
-                    setViewMode('album');
-                }
-            }
-        }
+    const showConfirmModal = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void, singleButton: boolean = false) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton,
+            onConfirm: onConfirm || closeConfirmModal
+        });
     };
-
-    const handleToggleFavorite = async (post: PostData) => {
-        await savePostToApi({ ...post, isFavorite: !post.isFavorite }, true);
-        fetchPosts();
-    };
-
-    const handleToggleAlbumFavorite = async (album: CustomAlbum) => {
-        await updateAlbumApi(album.id, { ...album, isFavorite: !album.isFavorite });
-        fetchAlbums();
-    };
-
-
 
     // ✨ Apply Paper Preset logic
     const applyPaperPreset = (preset: any) => {
@@ -547,5 +591,6 @@ export const usePostEditor = () => {
         handleSaveAsTemplate,
         myTemplates, applyTemplate, fetchMyTemplates,
         isDirty, setIsDirty,
+        confirmModal, showConfirmModal, closeConfirmModal, // ✨ Export Modal State & Helpers
     };
 };

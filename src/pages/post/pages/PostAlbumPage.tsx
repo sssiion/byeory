@@ -22,9 +22,10 @@ interface Props {
     onPostClick: (post: PostData) => void;
     onToggleFavorite: (id: number) => void;
     handleToggleAlbumFavorite: (id: string) => void;
+    showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
-const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onUpdateAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite }) => {
+const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onUpdateAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite, showConfirmModal }) => {
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -56,7 +57,11 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
         // For now, ignoring Save for __all__ / __others__ as per 'Backend Only' instruction strictness (no LS).
         // OR: If they are virtual, we can't save them. User asked to remove LS. So they won't persist.
         if (editingCoverId === '__all__' || editingCoverId === '__others__') {
-            alert("기본 보관함 커버는 현재 저장되지 않습니다.");
+            if (showConfirmModal) {
+                showConfirmModal("알림", "기본 보관함 커버는 현재 저장되지 않습니다.", "info", undefined, true);
+            } else {
+                alert("기본 보관함 커버는 현재 저장되지 않습니다.");
+            }
             return;
         }
 
@@ -122,10 +127,10 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
         e.stopPropagation();
         const album = customAlbums.find(a => a.id === id);
         if (!album) return;
-        if (confirm(`'${album.name}' 앨범을 정말 삭제하시겠습니까?`)) {
-            onDeleteAlbum(id);
-            setActiveDropdownId(null);
-        }
+
+        // ✨ Delegate confirmation to the hook (onDeleteAlbum)
+        onDeleteAlbum(id);
+        setActiveDropdownId(null);
     };
 
     const formatStats = (info: { count: number, folderCount: number, totalCount: number }) => {
@@ -269,6 +274,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     }
                 }}
                 currentName={renamingId ? customAlbums.find(a => a.id === renamingId)?.name || '' : ''}
+                showConfirmModal={showConfirmModal}
             />
             {editingCoverId && (
                 <CoverCustomizer

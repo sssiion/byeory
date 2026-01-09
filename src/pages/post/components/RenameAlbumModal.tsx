@@ -6,9 +6,10 @@ interface Props {
     onClose: () => void;
     onSave: (newName: string) => void;
     currentName: string;
+    showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
-const RenameAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave, currentName }) => {
+const RenameAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave, currentName, showConfirmModal }) => {
     const [name, setName] = useState(currentName);
 
     useEffect(() => {
@@ -20,7 +21,14 @@ const RenameAlbumModal: React.FC<Props> = ({ isOpen, onClose, onSave, currentNam
     if (!isOpen) return null;
 
     const handleSave = () => {
-        if (!name.trim()) return alert("앨범 이름을 입력해주세요.");
+        if (!name.trim()) {
+            if (showConfirmModal) {
+                showConfirmModal("입력 확인", "앨범 이름을 입력해주세요.", "danger", undefined, true);
+            } else {
+                alert("앨범 이름을 입력해주세요.");
+            }
+            return;
+        }
         onSave(name);
         onClose();
     };

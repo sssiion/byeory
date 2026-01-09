@@ -5,15 +5,23 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     onCreate: (name: string) => Promise<string | null | void> | string | null | void;
+    showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
-const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate }) => {
+const CreateFolderModal: React.FC<Props> = ({ isOpen, onClose, onCreate, showConfirmModal }) => {
     const [name, setName] = useState('');
 
     if (!isOpen) return null;
 
     const handleCreate = async () => {
-        if (!name.trim()) return alert("폴더 이름을 입력해주세요.");
+        if (!name.trim()) {
+            if (showConfirmModal) {
+                showConfirmModal("입력 확인", "폴더 이름을 입력해주세요.", "danger", undefined, true);
+            } else {
+                alert("폴더 이름을 입력해주세요.");
+            }
+            return;
+        }
         const result = await onCreate(name);
 
         // ✨ Only close if creation succeeded (result is not null/false)

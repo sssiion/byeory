@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Calendar, Smile, Phone, FileText, Camera, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '../../components/Header/Navigation';
-import {uploadImageToSupabase,deleteOldImage} from "../post/api.ts";
+import { uploadImageToSupabase, deleteOldImage } from "../post/api.ts";
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const ProfileEditScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -18,12 +19,41 @@ const ProfileEditScreen: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showModal = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: onConfirm || closeConfirmModal
+        });
+    };
+
     useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem('accessToken');
             if (!token) {
-                alert("로그인 정보가 없습니다.");
-                navigate('/login');
+                showModal("알림", "로그인 정보가 없습니다.", 'danger', () => navigate('/login'));
                 return;
             }
 
@@ -96,7 +126,7 @@ const ProfileEditScreen: React.FC = () => {
                         setProfilePhoto(uploadedUrl); // Supabase에서 받은 공개 URL 저장
                     } else {
                         console.error("이미지 업로드 실패");
-                        // 필요하다면 여기에 에러 알림 추가 (예: alert("업로드 실패"))
+                        showModal("업로드 실패", "이미지 업로드에 실패했습니다.", 'danger');
                     }
                 } catch (error) {
                     console.error("업로드 중 에러 발생:", error);
@@ -112,11 +142,11 @@ const ProfileEditScreen: React.FC = () => {
 
     const handleSave = async () => {
         if (!name.trim()) {
-            alert("이름을 입력해주세요!");
+            showModal("입력 오류", "이름을 입력해주세요!", 'danger');
             return;
         }
         if (!nickname.trim()) {
-            alert("닉네임을 입력해주세요!");
+            showModal("입력 오류", "닉네임을 입력해주세요!", 'danger');
             return;
         }
 
@@ -125,7 +155,7 @@ const ProfileEditScreen: React.FC = () => {
             const birthYear = new Date(birthDate).getFullYear();
             const currentYear = new Date().getFullYear();
             if (birthYear < 1900 || birthYear > currentYear) {
-                alert(`생년월일 연도는 1900년부터 ${currentYear}년 사이여야 합니다.`);
+                showModal("입력 오류", `생년월일 연도는 1900년부터 ${currentYear}년 사이여야 합니다.`, 'danger');
                 return;
             }
         }
@@ -134,15 +164,14 @@ const ProfileEditScreen: React.FC = () => {
         if (phone) {
             const cleanPhone = phone.replace(/-/g, '');
             if (cleanPhone.length !== 11) {
-                alert("전화번호는 11자리여야 합니다.");
+                showModal("입력 오류", "전화번호는 11자리여야 합니다.", 'danger');
                 return;
             }
         }
 
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            alert("로그인 정보가 없습니다.");
-            navigate('/login');
+            showModal("알림", "로그인 정보가 없습니다.", 'danger', () => navigate('/login'));
             return;
         }
 
@@ -171,19 +200,20 @@ const ProfileEditScreen: React.FC = () => {
             });
 
             if (response.ok) {
-                alert("프로필이 수정되었습니다.");
-                navigate('/profile', { replace: true });
-                window.location.reload();
+                showModal("성공", "프로필이 수정되었습니다.", 'success', () => {
+                    navigate('/profile', { replace: true });
+                    window.location.reload();
+                });
             } else if (response.status === 409) {
-                alert("이미 존재하는 닉네임입니다.");
+                showModal("수정 실패", "이미 존재하는 닉네임입니다.", 'danger');
             } else {
                 const errorData = await response.text();
                 console.error("Profile update failed:", errorData);
-                alert("프로필 수정에 실패했습니다.");
+                showModal("수정 실패", "프로필 수정에 실패했습니다.", 'danger');
             }
         } catch (error) {
             console.error("Error updating profile:", error);
-            alert("서버와 통신 중 오류가 발생했습니다.");
+            showModal("오류", "서버와 통신 중 오류가 발생했습니다.", 'danger');
         }
     };
 
@@ -387,6 +417,20 @@ const ProfileEditScreen: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Confirmation Modal */}
+                <ConfirmationModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    singleButton={confirmModal.singleButton}
+                    onConfirm={() => {
+                        confirmModal.onConfirm();
+                        if (confirmModal.singleButton) closeConfirmModal();
+                    }}
+                    onCancel={closeConfirmModal}
+                />
             </div>
         </div>
     );

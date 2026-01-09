@@ -4,7 +4,7 @@ import EditorSidebar from '../components/editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
 
 import SavePostModal from '../components/SavePostModal';
-import ConfirmationModal from '../../../components/common/ConfirmationModal'; // ✨ Import
+
 
 import { domToPng } from 'modern-screenshot';
 import { uploadImageToSupabase } from '../api';
@@ -16,17 +16,6 @@ interface Props {
 
 const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
-
-    // ✨ Modal State
-    const [confirmation, setConfirmation] = React.useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        type?: 'info' | 'danger' | 'success';
-        singleButton?: boolean;
-    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
-
     const canvasRef = React.useRef<HTMLDivElement>(null);
 
     const handleConfirmSave = async () => {
@@ -34,14 +23,13 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
         setIsSaveModalOpen(false);
 
         if (result?.message) {
-            setConfirmation({
-                isOpen: true,
-                title: result.success ? '저장 완료' : '저장 실패',
-                message: result.message,
-                type: result.type || (result.success ? 'success' : 'danger'),
-                singleButton: true,
-                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-            });
+            editor.showConfirmModal(
+                result.success ? '저장 완료' : '저장 실패',
+                result.message,
+                result.type || (result.success ? 'success' : 'danger'),
+                undefined,
+                true
+            );
         }
     };
 
@@ -107,14 +95,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onSave={() => {
                     // ✨ Validation: Check Title & Content
                     if (!editor.title.trim()) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: '입력 확인',
-                            message: "제목을 입력해주세요!",
-                            type: 'danger',
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
+                        editor.showConfirmModal('입력 확인', "제목을 입력해주세요!", 'danger', undefined, true);
                         return;
                     }
                     const hasContent = editor.blocks.some(b => b.text?.trim() || b.imageUrl || b.imageUrl2) ||
@@ -123,14 +104,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                         editor.floatingImages.length > 0;
 
                     if (!hasContent) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: '입력 확인',
-                            message: "내용을 입력해주세요!",
-                            type: 'danger',
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
+                        editor.showConfirmModal('입력 확인', "내용을 입력해주세요!", 'danger', undefined, true);
                         return;
                     }
 
@@ -139,36 +113,44 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onTempSave={async () => {
                     const result = await editor.handleSave(true);
                     if (result?.message) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: result.success ? '임시 저장' : '저장 실패',
-                            message: result.message,
-                            type: result.type || (result.success ? 'success' : 'danger'),
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
+                        editor.showConfirmModal(
+                            result.success ? '임시 저장' : '저장 실패',
+                            result.message,
+                            result.type || (result.success ? 'success' : 'danger'),
+                            undefined,
+                            true
+                        );
                     }
                 }} // ✨ Temp Save Handler
                 onCancel={() => {
-                    // ✨ Check Dirty
-                    if (editor.isDirty && !confirm("작성 중인 내용이 저장되지 않았습니다. 정말 나가시겠습니까?")) {
-                        return;
-                    }
+                    const proceed = () => {
+                        // ✨ Cancel Logic: Smart Navigation
+                        // If it's a draft (Temp Save), go back to List (Album/Folder)
+                        // If it's a published post (Edit), go back to Read Mode
+                        const isDraft = editor.currentTags.includes('임시저장');
 
-                    // ✨ Cancel Logic: Smart Navigation
-                    // If it's a draft (Temp Save), go back to List (Album/Folder)
-                    // If it's a published post (Edit), go back to Read Mode
-                    const isDraft = editor.currentTags.includes('임시저장');
-
-                    if (editor.currentPostId && !isDraft) {
-                        editor.setViewMode('read');
-                    } else {
-                        // Draft or New Post -> Go to Album/Folder
-                        if (editor.selectedAlbumId && editor.selectedAlbumId !== '__all__' && editor.selectedAlbumId !== '__others__') {
-                            editor.setViewMode('folder');
+                        if (editor.currentPostId && !isDraft) {
+                            editor.setViewMode('read');
                         } else {
-                            editor.setViewMode('album');
+                            // Draft or New Post -> Go to Album/Folder
+                            if (editor.selectedAlbumId && editor.selectedAlbumId !== '__all__' && editor.selectedAlbumId !== '__others__') {
+                                editor.setViewMode('folder');
+                            } else {
+                                editor.setViewMode('album');
+                            }
                         }
+                    };
+
+                    // ✨ Check Dirty
+                    if (editor.isDirty) {
+                        editor.showConfirmModal(
+                            "나가기 확인",
+                            "작성 중인 내용이 저장되지 않았습니다. 정말 나가시겠습니까?",
+                            "danger",
+                            proceed
+                        );
+                    } else {
+                        proceed();
                     }
                 }}
                 onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
@@ -206,17 +188,6 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 setIsFavorite={editor.setIsFavorite}
                 isPublic={editor.isPublic}
                 setIsPublic={editor.setIsPublic}
-            />
-
-            <ConfirmationModal
-                isOpen={confirmation.isOpen}
-                onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
-                title={confirmation.title}
-                message={confirmation.message}
-                onConfirm={confirmation.onConfirm}
-                onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
-                type={confirmation.type}
-                singleButton={confirmation.singleButton}
             />
         </div>
     );

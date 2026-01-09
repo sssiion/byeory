@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, Eye, Send, Trash2 } from 'lucide-react';
+import { X, Heart, Eye, Send, Trash2, PenLine } from 'lucide-react';
 import type { CommunityResponse, CommunityMessage } from '../types';
 import {
     toggleCommunityLike,
     getCommunityMessages,
     createCommunityMessage,
     deleteCommunityMessage,
-    getCommunityDetail
+    getCommunityDetail,
+    updateCommunityMessage
 } from '../api';
 import EditorCanvas from '../../post/components/editor/EditorCanvas';
+import ConfirmationModal from '../../../components/common/ConfirmationModal';
 
 interface CommunityDetailModalProps {
     data: CommunityResponse;
@@ -16,7 +18,7 @@ interface CommunityDetailModalProps {
     onClose: () => void;
     currentUserId?: number;
     onLikeToggle: (newStatus: boolean) => void;
-    initialView?: 'content' | 'comments'; // ✨ 1. Add initialView prop
+    initialView?: 'content' | 'comments';
 }
 
 const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
@@ -25,7 +27,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     onClose,
     currentUserId,
     onLikeToggle,
-    initialView = 'content' // Default to content
+    initialView = 'content'
 }) => {
     // Detailed Post Data
     const [postDetail, setPostDetail] = useState<CommunityResponse | null>(null);
@@ -40,8 +42,31 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const [newMessage, setNewMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const commentsRef = useRef<HTMLDivElement>(null); // ✨ 2. Ref for comments section
-    const inputRef = useRef<HTMLInputElement>(null); // ✨ Ref for input
+    const commentsRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Edit State
+    const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+    const [editContent, setEditContent] = useState('');
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
 
     // Reset state when data changes
     useEffect(() => {
@@ -56,22 +81,19 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         }
     }, [data, isOpen]);
 
-    // ✨ 3. Scroll to comments if initialView is 'comments'
+    // Scroll to comments if initialView is 'comments'
     useEffect(() => {
         if (isOpen && initialView === 'comments' && commentsRef.current) {
-            // Slight delay to ensure modal rendering/transition
             setTimeout(() => {
                 commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                inputRef.current?.focus(); // ✨ Auto focus input
+                inputRef.current?.focus();
             }, 300);
         }
     }, [isOpen, initialView]);
 
     const fetchDetail = async () => {
         try {
-            // Fetch full details (including blocks) from public community endpoint
             const detail = await getCommunityDetail(data.postId, currentUserId);
-            console.log("Fetched Community Detail:", detail);
             if (detail) setPostDetail(detail);
         } catch (error) {
             console.error("Failed to fetch community detail:", error);
@@ -81,9 +103,12 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const fetchMessages = async () => {
         try {
             const msgs = await getCommunityMessages(data.postId);
-            setMessages(msgs);
-            // Scroll to bottom on load not ideal, maybe keep at top? 
-            // Standard is bottom for chat, but list for comments. Let's stick to list order.
+            // Calculate isOwner based on currentUserId
+            const processedMsgs = msgs.map(m => ({
+                ...m,
+                isOwner: currentUserId ? (Number(m.userId) === Number(currentUserId)) : false
+            }));
+            setMessages(processedMsgs);
         } catch (error) {
             console.error("Failed to fetch messages:", error);
         }
@@ -96,41 +121,99 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         setIsSubmitting(true);
         try {
             const created = await createCommunityMessage(data.postId, newMessage, currentUserId);
-            console.log("Created Message Response:", created);
-            setMessages(prev => [...prev, created]);
+            // Optimistically add with isOwner: true
+            setMessages(prev => [...prev, { ...created, isOwner: true }]);
             setNewMessage('');
-            // Optional: Scroll to new message
             setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
         } catch (error) {
-            alert("댓글 작성에 실패했습니다.");
+            setConfirmModal({
+                isOpen: true,
+                title: "작성 실패",
+                message: "댓글 작성 중 오류가 발생했습니다.",
+                type: 'danger',
+                singleButton: true,
+                onConfirm: closeConfirmModal
+            });
         } finally {
             setIsSubmitting(false);
-            // ✨ Maintain focus after submit
             setTimeout(() => inputRef.current?.focus(), 100);
         }
     };
 
-    const handleDeleteMessage = async (messageId: number) => {
-        if (!confirm("댓글을 삭제하시겠습니까?")) return;
+    const handleDeleteMessage = (messageId: number) => {
+        if (!currentUserId) return;
 
-        // Optimistic Delete
-        const backup = [...messages];
-        setMessages(prev => prev.filter(m => m.messageId !== messageId));
+        const executeDelete = async () => {
+            // Optimistic Delete
+            const backup = [...messages];
+            setMessages(prev => prev.filter(m => m.messageId !== messageId));
+            closeConfirmModal();
 
-        try {
-            await deleteCommunityMessage(messageId);
-        } catch (error) {
-            alert("삭제 실패");
-            setMessages(backup); // Revert
-        }
+            try {
+                await deleteCommunityMessage(messageId, currentUserId);
+            } catch (error) {
+                setConfirmModal({
+                    isOpen: true,
+                    title: "삭제 실패",
+                    message: "댓글 삭제에 실패했습니다.",
+                    type: 'danger',
+                    singleButton: true,
+                    onConfirm: () => {
+                        setMessages(backup); // Revert
+                        closeConfirmModal();
+                    }
+                });
+            }
+        };
+
+        setConfirmModal({
+            isOpen: true,
+            title: "댓글 삭제",
+            message: "이 댓글을 정말 삭제하시겠습니까?",
+            type: 'danger',
+            onConfirm: executeDelete
+        });
     };
 
-    if (!isOpen) return null;
+    const handleUpdateMessage = async (messageId: number) => {
+        if (!currentUserId || !editContent.trim()) return;
+
+        // Optimistic Update
+        const backup = [...messages];
+        setMessages(prev => prev.map(m =>
+            m.messageId === messageId ? { ...m, content: editContent } : m
+        ));
+        setEditingMessageId(null);
+
+        try {
+            await updateCommunityMessage(messageId, editContent, currentUserId);
+        } catch (error) {
+            setConfirmModal({
+                isOpen: true,
+                title: "수정 실패",
+                message: "댓글 수정에 실패했습니다.",
+                type: 'danger',
+                singleButton: true,
+                onConfirm: () => {
+                    setMessages(backup); // Revert
+                    setEditingMessageId(messageId);
+                    closeConfirmModal();
+                }
+            });
+        }
+    };
 
     const handleLikeClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!currentUserId) {
-            alert("로그인이 필요한 서비스입니다.");
+            setConfirmModal({
+                isOpen: true,
+                title: "로그인 필요",
+                message: "이 기능을 사용하려면 로그인이 필요합니다.",
+                type: 'info',
+                singleButton: true,
+                onConfirm: closeConfirmModal
+            });
             return;
         }
 
@@ -139,7 +222,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         const newCount = newIsLiked ? likeState.count + 1 : likeState.count - 1;
 
         setLikeState({ isLiked: newIsLiked, count: newCount });
-        onLikeToggle(newIsLiked); // Notify parent for sync
+        onLikeToggle(newIsLiked);
 
         try {
             await toggleCommunityLike(data.postId, currentUserId);
@@ -150,6 +233,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             console.error("Failed to toggle like:", error);
         }
     };
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -254,8 +339,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                         </div>
                     </div>
 
-                    {/* ✨ Comments Section */}
-                    {/* Attach ref here */}
+                    {/* Comments Section */}
                     <div ref={commentsRef} className="space-y-6 pt-4 border-t theme-border">
                         <h3 className="text-lg font-bold theme-text-primary flex items-center gap-2">
                             댓글 <span className="text-indigo-500">{messages.length}</span>
@@ -277,19 +361,59 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                                                     {new Date(msg.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
-                                                {msg.content}
-                                            </p>
+
+                                            {editingMessageId === msg.messageId ? (
+                                                <div className="mt-1">
+                                                    <textarea
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                        className="w-full p-2 text-sm rounded-lg border theme-border bg-white dark:bg-black/20 theme-text-primary focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                                        rows={2}
+                                                        autoFocus
+                                                    />
+                                                    <div className="flex justify-end gap-2 mt-2">
+                                                        <button
+                                                            onClick={() => setEditingMessageId(null)}
+                                                            className="px-3 py-1 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 theme-text-secondary"
+                                                        >
+                                                            취소
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleUpdateMessage(msg.messageId)}
+                                                            className="px-3 py-1 text-xs rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                                                        >
+                                                            수정 완료
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed whitespace-pre-wrap">
+                                                    {msg.content}
+                                                </p>
+                                            )}
                                         </div>
-                                        {/* Delete Button (Owner check needed) */}
-                                        {msg.isOwner && (
-                                            <button
-                                                onClick={() => handleDeleteMessage(msg.messageId)}
-                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 transition-all"
-                                                title="삭제"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
+
+                                        {/* Actions for Owner */}
+                                        {msg.isOwner && !editingMessageId && (
+                                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingMessageId(msg.messageId);
+                                                        setEditContent(msg.content);
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-indigo-500 transition-colors"
+                                                    title="수정"
+                                                >
+                                                    <PenLine size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteMessage(msg.messageId)}
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                                                    title="삭제"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 ))
@@ -299,7 +423,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                     </div>
                 </div>
 
-                {/* Footer Input - Fixed at bottom */}
+                {/* Footer Input */}
                 <div className="flex-shrink-0 p-4 border-t theme-border theme-bg-header bg-opacity-95 backdrop-blur-sm z-10">
                     <form onSubmit={handleMessageSubmit} className="flex gap-2 relative">
                         <input
@@ -324,8 +448,22 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                         </button>
                     </form>
                 </div>
-            </div >
-        </div >
+            </div>
+
+            {/* Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                singleButton={confirmModal.singleButton}
+                onConfirm={() => {
+                    confirmModal.onConfirm();
+                    if (confirmModal.singleButton) closeConfirmModal();
+                }}
+                onCancel={closeConfirmModal}
+            />
+        </div>
     );
 };
 

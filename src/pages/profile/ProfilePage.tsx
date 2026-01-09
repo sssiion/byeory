@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Image as ImageIcon, Clock, ChevronDown, RefreshCw } from "lucide-react";
 import PinInputModal from '../../components/Security/PinInputModal';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 function ProfilePage() {
     const { logout, checkPinStatus, unlockRequest, unlockVerify } = useAuth();
@@ -263,7 +264,14 @@ function ProfilePage() {
                 if (!error) {
                     setShowPinInputModal(false);
                     setUsePin(false); // PIN is now deleted
-                    alert("PIN 잠금이 해제되었으며, PIN 기능이 비활성화되었습니다.");
+                    setConfirmModal({
+                        isOpen: true,
+                        title: "PIN 해제",
+                        message: "PIN 잠금이 해제되었으며, PIN 기능이 비활성화되었습니다.",
+                        type: 'success',
+                        singleButton: true,
+                        onConfirm: closeConfirmModal
+                    });
                     return null;
                 }
                 return error;
@@ -275,6 +283,25 @@ function ProfilePage() {
         return "알 수 없는 오류";
     };
 
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
 
     // Use user data from fetch
     const userName = profile?.nickname || profile?.name || '';
@@ -552,9 +579,20 @@ function ProfilePage() {
                         <p>© 2025 벼리. All rights reserved.</p>
                     </div>
                 </div>
+
+                <ConfirmationModal
+                    isOpen={confirmModal.isOpen}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    type={confirmModal.type}
+                    singleButton={confirmModal.singleButton}
+                    onConfirm={() => {
+                        confirmModal.onConfirm();
+                        if (confirmModal.singleButton) closeConfirmModal();
+                    }}
+                    onCancel={closeConfirmModal}
+                />
             </main>
-
-
         </div>
     );
 }

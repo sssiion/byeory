@@ -4,7 +4,6 @@ import EditorSidebar from '../components/editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
 
 import SavePostModal from '../components/SavePostModal';
-import ConfirmationModal from '../../../components/common/ConfirmationModal'; // ✨ Import
 import { domToPng } from 'modern-screenshot';
 import { uploadImageToSupabase } from '../api';
 
@@ -17,29 +16,18 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
     const canvasRef = React.useRef<HTMLDivElement>(null);
 
-    // ✨ Modal State
-    const [confirmation, setConfirmation] = React.useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        type?: 'info' | 'danger' | 'success';
-        singleButton?: boolean;
-    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
-
     const handleConfirmSave = async () => {
         const result = await editor.handleSave(); // 실제 저장 로직
         setIsSaveModalOpen(false);
 
         if (result?.message) {
-            setConfirmation({
-                isOpen: true,
-                title: result.success ? '저장 완료' : '저장 실패',
-                message: result.message,
-                type: result.type || (result.success ? 'success' : 'danger'),
-                singleButton: true,
-                onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-            });
+            editor.showConfirmModal(
+                result.success ? '저장 완료' : '저장 실패',
+                result.message,
+                result.type || (result.success ? 'success' : 'danger'),
+                undefined,
+                true
+            );
         }
     };
 
@@ -113,14 +101,7 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onSave={() => {
                     // ✨ Validation: Check Title & Content
                     if (!editor.title.trim()) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: '입력 확인',
-                            message: "제목을 입력해주세요!",
-                            type: 'danger',
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
+                        editor.showConfirmModal('입력 확인', "제목을 입력해주세요!", 'danger', undefined, true);
                         return;
                     }
                     const hasContent = editor.blocks.some(b => b.text?.trim() || b.imageUrl || b.imageUrl2) ||
@@ -129,14 +110,7 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                         editor.floatingImages.length > 0;
 
                     if (!hasContent) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: '입력 확인',
-                            message: "내용을 입력해주세요!",
-                            type: 'danger',
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
+                        editor.showConfirmModal('입력 확인', "내용을 입력해주세요!", 'danger', undefined, true);
                         return;
                     }
 
@@ -145,14 +119,13 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onTempSave={async () => {
                     const result = await editor.handleSave(true);
                     if (result?.message) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: result.success ? '임시 저장' : '저장 실패',
-                            message: result.message,
-                            type: result.type || (result.success ? 'success' : 'danger'),
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
+                        editor.showConfirmModal(
+                            result.success ? '임시 저장' : '저장 실패',
+                            result.message,
+                            result.type || (result.success ? 'success' : 'danger'),
+                            undefined,
+                            true
+                        );
                     }
                 }}
                 onCancel={() => editor.setViewMode('album')}
@@ -192,17 +165,6 @@ const PostCreatePage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 setIsFavorite={editor.setIsFavorite}
                 isPublic={editor.isPublic}
                 setIsPublic={editor.setIsPublic}
-            />
-
-            <ConfirmationModal
-                isOpen={confirmation.isOpen}
-                onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
-                title={confirmation.title}
-                message={confirmation.message}
-                onConfirm={confirmation.onConfirm}
-                onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
-                type={confirmation.type}
-                singleButton={confirmation.singleButton}
             />
         </div>
     );

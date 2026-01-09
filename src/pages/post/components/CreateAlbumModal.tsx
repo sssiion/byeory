@@ -12,8 +12,9 @@ interface CreateAlbumModalProps {
     onClose: () => void;
     onSave: (name: string, tag: string | null, parentId: string | null, type: 'album' | 'room', roomConfig?: any, coverConfig?: any) => void;
     albums: CustomAlbum[];
+    showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
-const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, onSave }) => {
+const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, onSave, showConfirmModal }) => {
     const [name, setName] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [mode, setMode] = useState<'album' | 'room'>('album');
@@ -43,7 +44,14 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
     };
 
     const handleSave = () => {
-        if (!name.trim()) return alert("이름을 입력해주세요.");
+        if (!name.trim()) {
+            if (showConfirmModal) {
+                showConfirmModal("입력 확인", "이름을 입력해주세요.", "danger", undefined, true);
+            } else {
+                alert("이름을 입력해주세요.");
+            }
+            return;
+        }
 
         if (mode === 'room') {
             const roomConfig = {

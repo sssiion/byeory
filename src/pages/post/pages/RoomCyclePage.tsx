@@ -5,6 +5,7 @@ import RollingPaperView from '../components/RollingPaperView';
 import ExchangeDiaryView from '../components/ExchangeDiaryView';
 import { ArrowLeft, Loader } from 'lucide-react';
 import Navigation from '../../../components/Header/Navigation';
+import ConfirmationModal from '../../../components/common/ConfirmationModal';
 
 const RoomCyclePage: React.FC = () => {
     const { cycleId } = useParams<{ cycleId: string }>();
@@ -13,6 +14,36 @@ const RoomCyclePage: React.FC = () => {
     const [cycle, setCycle] = useState<RoomCycle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showModal = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: onConfirm || closeConfirmModal
+        });
+    };
 
     const loadCycle = async () => {
         if (!cycleId) return;
@@ -65,10 +96,10 @@ const RoomCyclePage: React.FC = () => {
 
             const updatedCycle = await passTurnApi(cycleId);
             setCycle(updatedCycle);
-            alert("작성이 완료되었습니다!");
+            showModal("작성 완료", "작성이 완료되었습니다!", 'success');
         } catch (e) {
             console.error(e);
-            alert("제출 중 오류가 발생했습니다.");
+            showModal("오류", "제출 중 오류가 발생했습니다.", 'danger');
         }
     };
 
@@ -119,6 +150,19 @@ const RoomCyclePage: React.FC = () => {
                     <ExchangeDiaryView cycle={cycle} onPassTurn={handlePassTurn} />
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                singleButton={confirmModal.singleButton}
+                onConfirm={() => {
+                    confirmModal.onConfirm();
+                    if (confirmModal.singleButton) closeConfirmModal();
+                }}
+                onCancel={closeConfirmModal}
+            />
         </div>
     );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Lock, ArrowRight, Loader } from 'lucide-react';
 import { joinRoomApi } from '../api';
+import ConfirmationModal from '../../../components/common/ConfirmationModal';
 
 const RoomJoinPage: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
@@ -9,12 +10,43 @@ const RoomJoinPage: React.FC = () => {
     const location = useLocation();
     const [password, setPassword] = useState('');
 
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type?: 'info' | 'danger' | 'success';
+        singleButton?: boolean;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { }
+    });
+
+    const closeConfirmModal = () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const showModal = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void) => {
+        setConfirmModal({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: onConfirm || closeConfirmModal
+        });
+    };
+
     // ✨ Check for Token on Mount
     React.useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            alert("로그인이 필요한 서비스입니다.");
-            navigate('/login', { state: { from: location } });
+            showModal("알림", "로그인이 필요한 서비스입니다.", 'danger', () => {
+                navigate('/login', { state: { from: location } });
+            });
         }
     }, [navigate, location]);
     const [isLoading, setIsLoading] = useState(false);
@@ -36,8 +68,7 @@ const RoomJoinPage: React.FC = () => {
         setError(null);
         try {
             await joinRoomApi(roomId, password);
-            alert("모임에 입장했습니다!");
-            navigate('/post'); // Redirect to Album List
+            showModal("입장 완료", "모임에 입장했습니다!", 'success', () => navigate('/post'));
         } catch (err: any) {
             // ✨ Check if error is related to Auth (401/403 often come as failures)
             // Or just use the user's requested message if it seems like a generic failure
@@ -105,6 +136,19 @@ const RoomJoinPage: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                singleButton={confirmModal.singleButton}
+                onConfirm={() => {
+                    confirmModal.onConfirm();
+                    if (confirmModal.singleButton) closeConfirmModal();
+                }}
+                onCancel={closeConfirmModal}
+            />
         </div>
     );
 };
