@@ -17,8 +17,8 @@ interface Props {
     onStartWriting: () => void;
     onUpdateAlbum: (id: string, updates: Partial<CustomAlbum>) => void;
     onDeleteAlbum: (id: string) => void;
-    sortOption: 'name' | 'count' | 'newest' | 'favorites';
-    setSortOption: (option: 'name' | 'count' | 'newest' | 'favorites') => void;
+    sortOption: 'name' | 'count' | 'newest';
+    setSortOption: (option: 'name' | 'count' | 'newest') => void;
     onPostClick: (post: PostData) => void;
     onToggleFavorite: (id: number) => void;
     handleToggleAlbumFavorite: (id: string) => void;
@@ -104,10 +104,7 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             if (sortOption === 'name') return a.name.localeCompare(b.name);
             if (sortOption === 'count') return (stats[b.id].totalCount) - (stats[a.id].totalCount);
             if (sortOption === 'newest') return stats[b.id].lastDate - stats[a.id].lastDate;
-            if (sortOption === 'favorites') {
-                if (a.isFavorite === b.isFavorite) return a.name.localeCompare(b.name);
-                return a.isFavorite ? -1 : 1;
-            }
+
             return 0;
         });
 
@@ -154,13 +151,13 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
                     <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-10 md:h-12 items-center flex-shrink-0">
-                        {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
+                        {(['name', 'newest', 'count'] as const).map(opt => (
                             <button
                                 key={opt}
                                 onClick={() => setSortOption(opt)}
                                 className={`px-2 md:px-3 py-1.5 md:py-3 text-[10px] md:text-xs font-bold rounded-md transition-all whitespace-nowrap ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                             >
-                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
+                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순' }[opt]}
                             </button>
                         ))}
                     </div>

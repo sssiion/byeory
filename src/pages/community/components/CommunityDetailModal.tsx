@@ -16,6 +16,7 @@ interface CommunityDetailModalProps {
     onClose: () => void;
     currentUserId?: number;
     onLikeToggle: (newStatus: boolean) => void;
+    initialView?: 'content' | 'comments'; // ✨ 1. Add initialView prop
 }
 
 const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
@@ -23,7 +24,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     isOpen,
     onClose,
     currentUserId,
-    onLikeToggle
+    onLikeToggle,
+    initialView = 'content' // Default to content
 }) => {
     // Detailed Post Data
     const [postDetail, setPostDetail] = useState<CommunityResponse | null>(null);
@@ -38,6 +40,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const [newMessage, setNewMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const commentsRef = useRef<HTMLDivElement>(null); // ✨ 2. Ref for comments section
+    const inputRef = useRef<HTMLInputElement>(null); // ✨ Ref for input
 
     // Reset state when data changes
     useEffect(() => {
@@ -51,6 +55,17 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             fetchDetail();
         }
     }, [data, isOpen]);
+
+    // ✨ 3. Scroll to comments if initialView is 'comments'
+    useEffect(() => {
+        if (isOpen && initialView === 'comments' && commentsRef.current) {
+            // Slight delay to ensure modal rendering/transition
+            setTimeout(() => {
+                commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                inputRef.current?.focus(); // ✨ Auto focus input
+            }, 300);
+        }
+    }, [isOpen, initialView]);
 
     const fetchDetail = async () => {
         try {
@@ -90,6 +105,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             alert("댓글 작성에 실패했습니다.");
         } finally {
             setIsSubmitting(false);
+            // ✨ Maintain focus after submit
+            setTimeout(() => inputRef.current?.focus(), 100);
         }
     };
 
@@ -238,7 +255,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                     </div>
 
                     {/* ✨ Comments Section */}
-                    <div className="space-y-6 pt-4 border-t theme-border">
+                    {/* Attach ref here */}
+                    <div ref={commentsRef} className="space-y-6 pt-4 border-t theme-border">
                         <h3 className="text-lg font-bold theme-text-primary flex items-center gap-2">
                             댓글 <span className="text-indigo-500">{messages.length}</span>
                         </h3>
@@ -285,6 +303,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                 <div className="flex-shrink-0 p-4 border-t theme-border theme-bg-header bg-opacity-95 backdrop-blur-sm z-10">
                     <form onSubmit={handleMessageSubmit} className="flex gap-2 relative">
                         <input
+                            ref={inputRef}
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
