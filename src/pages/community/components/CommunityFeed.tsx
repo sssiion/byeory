@@ -37,6 +37,13 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
         try {
             const response = await getCommunities(page, 12, currentUserId, selectedTag || undefined);
 
+            console.log("Values from fetchPosts:", {
+                page,
+                last: response.last,
+                empty: response.empty,
+                contentLen: response.content?.length
+            });
+
             // ✨ Filter out private/draft posts
             const publicPosts = response.content.filter(p => p.isPublic);
 
@@ -47,9 +54,18 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
                 return [...prev, ...newPosts];
             });
 
-            setHasMore(!response.last);
+            // Robust check for hasMore
+            const isLast = response.last === undefined
+                ? (response.content.length < 12) // Fallback if 'last' is missing
+                : response.last;
+
+            // If content is empty, it's definitely the last page
+            const isEmpty = response.content.length === 0;
+
+            setHasMore(!isLast && !isEmpty);
         } catch (error) {
             console.error("Failed to fetch communities:", error);
+            setHasMore(false); // ✨ Stop infinite loop on error
         } finally {
             setLoading(false);
         }
@@ -161,8 +177,8 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
                 </div>
             )}
 
-            {!loading && posts.length === 0 && (
-                <div className="text-center py-20 text-gray-400">
+            {!loading && !hasMore && posts.length === 0 && (
+                <div className="text-center py-20 text-gray-600 dark:text-gray-300">
                     <p className="text-xl font-light">아직 등록된 게시글이 없습니다. 첫 글을 작성해보세요!</p>
                 </div>
             )}

@@ -41,6 +41,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const commentsRef = useRef<HTMLDivElement>(null); // ✨ 2. Ref for comments section
+    const inputRef = useRef<HTMLInputElement>(null); // ✨ Ref for input
 
     // Reset state when data changes
     useEffect(() => {
@@ -61,6 +62,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             // Slight delay to ensure modal rendering/transition
             setTimeout(() => {
                 commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                inputRef.current?.focus(); // ✨ Auto focus input
             }, 300);
         }
     }, [isOpen, initialView]);
@@ -103,6 +105,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             alert("댓글 작성에 실패했습니다.");
         } finally {
             setIsSubmitting(false);
+            // ✨ Maintain focus after submit
+            setTimeout(() => inputRef.current?.focus(), 100);
         }
     };
 
@@ -299,6 +303,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                 <div className="flex-shrink-0 p-4 border-t theme-border theme-bg-header bg-opacity-95 backdrop-blur-sm z-10">
                     <form onSubmit={handleMessageSubmit} className="flex gap-2 relative">
                         <input
+                            ref={inputRef}
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
