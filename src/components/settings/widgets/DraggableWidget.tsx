@@ -55,7 +55,15 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
         type: ItemTypes.WIDGET,
         item: () => {
             if (onDragStart) onDragStart();
-            return { id: widget.id, type: widget.type, layout: widget.layout, props: widget.props };
+            const { offsetWidth, offsetHeight } = ref.current || { offsetWidth: 0, offsetHeight: 0 };
+            return {
+                id: widget.id,
+                type: widget.type,
+                layout: widget.layout,
+                props: widget.props,
+                initialWidth: offsetWidth,
+                initialHeight: offsetHeight
+            };
         },
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),

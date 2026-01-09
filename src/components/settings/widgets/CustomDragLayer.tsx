@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { useDragLayer } from 'react-dnd';
-import {WIDGET_COMPONENT_MAP} from "./componentMap.ts";
+import { WIDGET_COMPONENT_MAP } from "./componentMap.ts";
 // 1. 기존 Registry import 제거하고, ComponentMap을 import 하세요.
 
 const layerStyles: React.CSSProperties = {
@@ -47,11 +47,20 @@ export const CustomDragLayer = () => {
             <div style={getItemStyles(initialOffset, currentOffset)}>
                 {/* 3. Lazy 컴포넌트이므로 Suspense가 필수입니다. */}
                 <Suspense fallback={<div className="bg-white/50 w-full h-full" />}>
-                    {WidgetComponent ? (
+                    {itemType === 'MENU_ITEM' ? (
+                        <div className="flex items-center justify-center bg-[var(--bg-card)] rounded-lg shadow-lg border border-[var(--border-color)] opacity-90"
+                            style={{
+                                width: item.initialWidth,
+                                height: item.initialHeight,
+                            }}
+                        >
+                            <span className="font-bold theme-text-primary text-lg">{item.label}</span>
+                        </div>
+                    ) : WidgetComponent ? (
                         /* 드래그 중인 미리보기는 보통 스타일을 좀 다르게 주거나 그대로 보여줍니다 */
                         <div style={{
-                            width: item.w * 100, // 그리드 단위에 맞춰 픽셀 변환 (예시)
-                            height: item.h * 100
+                            width: item.initialWidth || item.w * 100, // 캡처된 크기 사용, 없으면 기존 로직 폴백
+                            height: item.initialHeight || item.h * 100
                         }}>
                             <WidgetComponent {...item.props} />
                         </div>

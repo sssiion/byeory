@@ -15,19 +15,23 @@ interface DraggableMenuItemProps {
     moveMenuItem: (dragIndex: number, hoverIndex: number) => void;
     children: React.ReactNode;
     isEditMode: boolean;
+    label: string; // ✨ Added label prop
 }
 
-const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMenuItem, children, isEditMode }) => {
+const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMenuItem, children, isEditMode, label }) => {
     const ref = useRef<HTMLDivElement>(null);
 
     interface DragItem {
         index: number;
         id: string;
         type: string;
+        label?: string;
+        initialWidth?: number;
+        initialHeight?: number;
     }
 
     const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: any }>({
-        accept: 'MENU_ITEM',
+        accept: 'MENU_ITEM', // String literal matches useDrag type
         collect(monitor) {
             return {
                 handlerId: monitor.getHandlerId(),
@@ -78,7 +82,15 @@ const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMe
     const [{ isDragging }, drag] = useDrag({
         type: 'MENU_ITEM',
         item: () => {
-            return { id, index };
+            // ✨ Capture dimensions
+            const { offsetWidth, offsetHeight } = ref.current || { offsetWidth: 0, offsetHeight: 0 };
+            return {
+                id,
+                index,
+                label, // ✨ Pass label
+                initialWidth: offsetWidth, // ✨ Pass dimensions
+                initialHeight: offsetHeight
+            };
         },
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
@@ -195,6 +207,7 @@ const Navigation: React.FC = () => {
                                 id={item.id}
                                 moveMenuItem={moveMenuItem}
                                 isEditMode={isEditMode}
+                                label={item.name} // ✨ Pass label
                             >
                                 <Link
                                     to={item.path}
@@ -279,6 +292,7 @@ const Navigation: React.FC = () => {
                                 id={item.id}
                                 moveMenuItem={moveMenuItem}
                                 isEditMode={isEditMode}
+                                label={item.name} // ✨ Pass label
                             >
                                 <div className={`flex flex-col items-center justify-center w-full h-full space-y-1 p-2 ${active ? 'theme-text-primary' : 'theme-text-secondary'}`}>
                                     <Link
