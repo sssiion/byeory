@@ -16,6 +16,7 @@ interface CommunityDetailModalProps {
     onClose: () => void;
     currentUserId?: number;
     onLikeToggle: (newStatus: boolean) => void;
+    initialView?: 'content' | 'comments'; // ✨ 1. Add initialView prop
 }
 
 const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
@@ -23,7 +24,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     isOpen,
     onClose,
     currentUserId,
-    onLikeToggle
+    onLikeToggle,
+    initialView = 'content' // Default to content
 }) => {
     // Detailed Post Data
     const [postDetail, setPostDetail] = useState<CommunityResponse | null>(null);
@@ -38,6 +40,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const [newMessage, setNewMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const commentsRef = useRef<HTMLDivElement>(null); // ✨ 2. Ref for comments section
 
     // Reset state when data changes
     useEffect(() => {
@@ -51,6 +54,16 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             fetchDetail();
         }
     }, [data, isOpen]);
+
+    // ✨ 3. Scroll to comments if initialView is 'comments'
+    useEffect(() => {
+        if (isOpen && initialView === 'comments' && commentsRef.current) {
+            // Slight delay to ensure modal rendering/transition
+            setTimeout(() => {
+                commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
+    }, [isOpen, initialView]);
 
     const fetchDetail = async () => {
         try {
@@ -238,7 +251,8 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                     </div>
 
                     {/* ✨ Comments Section */}
-                    <div className="space-y-6 pt-4 border-t theme-border">
+                    {/* Attach ref here */}
+                    <div ref={commentsRef} className="space-y-6 pt-4 border-t theme-border">
                         <h3 className="text-lg font-bold theme-text-primary flex items-center gap-2">
                             댓글 <span className="text-indigo-500">{messages.length}</span>
                         </h3>

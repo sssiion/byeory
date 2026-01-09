@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { CommunityResponse } from '../types';
-import { getCommunities, getCommunitycardDetail } from '../api';
+import { getCommunities, getCommunitycardDetail, toggleCommunityLike } from '../api';
 import CommunityCard from './CommunityCard';
 import CommunityDetailModal from './CommunityDetailModal';
 
@@ -16,6 +16,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
     const [hasMore, setHasMore] = useState(true);
     const [selectedPost, setSelectedPost] = useState<CommunityResponse | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [initialModalView, setInitialModalView] = useState<'content' | 'comments'>('content'); // ✨ New State
 
     const observer = useRef<IntersectionObserver | null>(null);
     const lastElementRef = useCallback((node: HTMLDivElement) => {
@@ -64,10 +65,11 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
         setHasMore(true);
     }, [currentUserId, selectedTag]);
 
-    const handleCardClick = async (post: CommunityResponse) => {
+    const handleCardClick = async (post: CommunityResponse, view: 'content' | 'comments' = 'content') => {
         try {
             const detail = await getCommunitycardDetail(post.postId, currentUserId);
             setSelectedPost(detail);
+            setInitialModalView(view); // ✨ Set initial view (content or comments)
             setIsModalOpen(true);
 
             setPosts(prev => prev.map(p =>
@@ -77,6 +79,37 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
             ));
         } catch (error) {
             console.error("Failed to open detail:", error);
+        }
+    };
+
+    const handleCardLikeClick = async (post: CommunityResponse) => {
+        if (!currentUserId) {
+            alert("로그인이 필요한 서비스입니다.");
+            return;
+        }
+
+        // Optimistic Update
+        const newIsLiked = !post.isLiked;
+        const newCount = newIsLiked ? post.likeCount + 1 : post.likeCount - 1;
+
+        setPosts(prev => prev.map(p => {
+            if (p.postId === post.postId) {
+                return { ...p, isLiked: newIsLiked, likeCount: newCount };
+            }
+            return p;
+        }));
+
+        try {
+            await toggleCommunityLike(post.postId, currentUserId);
+        } catch (error) {
+            console.error("Failed to toggle like:", error);
+            // Revert on error
+            setPosts(prev => prev.map(p => {
+                if (p.postId === post.postId) {
+                    return { ...p, isLiked: !newIsLiked, likeCount: post.likeCount };
+                }
+                return p;
+            }));
         }
     };
 
@@ -97,7 +130,6 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
     return (
         <div className="space-y-8">
             {/* Posts Display */}
-            {/* Posts Display */}
             <div className="flex items-center justify-between mb-6 px-2">
                 <h3 className="text-xl font-bold text-[var(--text-primary)]">
                     탐색 ({posts.length})
@@ -109,7 +141,9 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
                     <div key={`post-${post.postId || 'none'}-${index}`} className="break-inside-avoid mb-5 inline-block w-full">
                         <CommunityCard
                             data={post}
-                            onClick={() => handleCardClick(post)}
+                            onClick={() => handleCardClick(post, 'content')} // Default click opens content
+                            onLike={() => handleCardLikeClick(post)}          // ✨ Like handler
+                            onComment={() => handleCardClick(post, 'comments')} // ✨ Comment handler opens modal at comments
                         />
                     </div>
                 ))}
@@ -140,6 +174,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
                     data={selectedPost}
                     currentUserId={currentUserId}
                     onLikeToggle={handleLikeToggle}
+                    initialView={initialModalView} // ✨ Pass initialView
                 />
             )}
         </div>

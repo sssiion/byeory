@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react'; // useState 추가
+import React, { useEffect, useRef, useState } from 'react'; // useState 추가
 import { Heart, Eye, MessageCircle } from 'lucide-react';
 import type { CommunityResponse } from '../types';
 import MiniPostViewer from "./MiniPostPreview.tsx";
@@ -7,9 +7,11 @@ import { increaseViewCount } from '../api'; // API 함수 import
 interface CommunityCardProps {
     data: CommunityResponse;
     onClick: () => void;
+    onLike?: () => void;
+    onComment?: () => void;
 }
 
-const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
+const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick, onLike, onComment }) => {
     // 🔥 1. 동적 스케일 계산을 위한 상태와 Ref
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1); // 기본 1배율
@@ -62,6 +64,16 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
             increaseViewCount(data.postId);
             setHasViewed(true); // 플래그 설정 (재호출 방지)
         }
+    };
+
+    const handleLikeClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onLike?.();
+    };
+
+    const handleCommentClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onComment?.();
     };
 
     return (
@@ -154,7 +166,10 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
                     {/* 통계 배지 */}
                     <div className="flex items-center gap-1.5 sm:gap-2 bg-black/40 backdrop-blur-md px-2 py-1 sm:px-2.5 sm:py-1 rounded-full border border-white/10 shadow-lg transition-all">
                         {/* 좋아요 */}
-                        <div className={`flex items-center gap-0.5 ${data.isLiked ? 'text-pink-400' : 'text-white'}`}>
+                        <div
+                            onClick={handleLikeClick}
+                            className={`flex items-center gap-0.5 cursor-pointer hover:scale-110 transition-transform ${data.isLiked ? 'text-pink-400' : 'text-white'}`}
+                        >
                             <Heart className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill={data.isLiked ? "currentColor" : "none"} />
                             <span className="text-[9px] sm:text-[10px] font-medium text-white ml-0.5">{data.likeCount}</span>
                         </div>
@@ -162,7 +177,10 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ data, onClick }) => {
                         <div className="w-[1px] h-2 sm:h-2.5 bg-white/20"></div>
 
                         {/* 댓글 */}
-                        <div className="flex items-center gap-0.5 text-white">
+                        <div
+                            onClick={handleCommentClick}
+                            className="flex items-center gap-0.5 text-white cursor-pointer hover:scale-110 transition-transform"
+                        >
                             <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             <span className="text-[9px] sm:text-[10px] font-medium ml-0.5">{data.commentCount || 0}</span>
                         </div>
