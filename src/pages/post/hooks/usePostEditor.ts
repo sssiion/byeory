@@ -499,11 +499,17 @@ export const usePostEditor = () => {
             setTitleStyles(prev => ({ ...prev, color: preset.defaultFontColor }));
         }
 
-        const userStickers = stickers.filter(s => s.id.startsWith('sticker-'));
+        // ✨ Cleanup: Remove any existing template items (tmpl-*) when switching to a simple paper preset
+        setStickers(prev => prev.filter(s => !s.id.startsWith('tmpl-')));
+        setFloatingTexts(prev => prev.filter(t => !t.id.startsWith('tmpl-')));
+        setFloatingImages(prev => prev.filter(i => !i.id.startsWith('tmpl-')));
+
+        // Add preset stickers (if any)
         const presetStickers = (preset.stickers || []).map((s: Sticker) => ({
             ...s,
+            id: `preset-${Date.now()}-${Math.random()}`
         }));
-        setStickers([...userStickers, ...presetStickers]);
+        setStickers(prev => [...prev.filter(s => !s.id.startsWith('tmpl-')), ...presetStickers]);
     };
 
     const applyTemplate = (template: any) => {
@@ -518,8 +524,9 @@ export const usePostEditor = () => {
             color: template.defaultFontColor || '#000000'
         }));
 
+        // ✨ Cleanup: Remove old template items before adding new ones
         setStickers(prev => {
-            const userStickers = prev.filter(s => s.id.startsWith('sticker-'));
+            const userStickers = prev.filter(s => !s.id.startsWith('tmpl-'));
             const newStickers = (template.stickers || []).map((s: any) => ({
                 ...s,
                 id: `tmpl-sticker-${Date.now()}-${Math.random()}`
@@ -528,7 +535,7 @@ export const usePostEditor = () => {
         });
 
         setFloatingTexts(prev => {
-            const userTexts = prev.filter(t => t.id.startsWith('text-'));
+            const userTexts = prev.filter(t => !t.id.startsWith('tmpl-'));
             const newTexts = (template.floatingTexts || []).map((t: any) => ({
                 ...t,
                 id: `tmpl-text-${Date.now()}-${Math.random()}`
@@ -537,7 +544,7 @@ export const usePostEditor = () => {
         });
 
         setFloatingImages(prev => {
-            const userImages = prev.filter(i => i.id.startsWith('fimg-'));
+            const userImages = prev.filter(i => !i.id.startsWith('tmpl-'));
             const newImages = (template.floatingImages || []).map((i: any) => ({
                 ...i,
                 id: `tmpl-fimg-${Date.now()}-${Math.random()}`

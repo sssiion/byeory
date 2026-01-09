@@ -63,7 +63,9 @@ export const MOCK_MARKET_ITEMS: MarketItem[] = [
         price: 2000,
         author: 'StudyWithMe',
         tags: ['공부', '다이어리', '템플릿'],
-        imageUrl: 'https://cdn-icons-png.flaticon.com/512/4021/4021693.png'
+        imageUrl: 'https://cdn-icons-png.flaticon.com/512/4021/4021693.png',
+        // contentJson property is not in interface, so we skip it here.
+        // The backend `MarketDataInitializer` handles the source of truth.
     },
     {
         id: 'sticker_pack_003',

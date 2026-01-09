@@ -289,78 +289,6 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 </Droppable>
                             </DragDropContext>
 
-                            {stickers.map(stk => (
-                                <ResizableItem
-                                    key={stk.id}
-                                    {...stk}
-                                    isSelected={selectedId === stk.id}
-                                    readOnly={viewMode === 'read' || !!stk.locked}
-                                    onSelect={() => onSelect(stk.id, 'sticker')}
-                                    onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
-                                >
-                                    {stk.widgetType ? (
-                                        <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-lg" />}>
-                                            {(() => {
-                                                const Widget = WIDGET_COMPONENT_MAP[stk.widgetType!];
-                                                return Widget ? (
-                                                    <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto">
-                                                        <Widget {...(stk.widgetProps || {})} />
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-400 text-xs">
-                                                        Unknown
-                                                    </div>
-                                                );
-                                            })()}
-                                        </Suspense>
-                                    ) : (
-                                        <img src={stk.url} className="w-full h-full object-contain pointer-events-none select-none" style={{ opacity: stk.opacity }} />
-                                    )}
-                                </ResizableItem>
-                            ))}
-
-                            {floatingTexts.map(txt => (
-                                <ResizableItem
-                                    key={txt.id}
-                                    {...txt}
-                                    isSelected={selectedId === txt.id}
-                                    readOnly={viewMode === 'read' || !!txt.locked}
-                                    onSelect={() => onSelect(txt.id, 'floating')}
-                                    onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
-                                >
-                                    <textarea
-                                        value={txt.text}
-                                        onChange={(e) => onUpdate(txt.id, 'floating', { text: e.target.value })}
-                                        className="w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden"
-                                        style={{
-                                            fontFamily: txt.styles?.fontFamily,
-                                            fontSize: txt.styles?.fontSize,
-                                            fontWeight: txt.styles?.fontWeight || 'normal',
-                                            textAlign: txt.styles?.textAlign as any,
-                                            color: txt.styles?.color,
-                                            backgroundColor: txt.styles?.backgroundColor,
-                                            fontStyle: txt.styles?.fontStyle || 'normal',
-                                            textDecoration: txt.styles?.textDecoration || 'none',
-                                        }}
-                                        readOnly={viewMode === 'read' || !!txt.locked}
-                                    />
-                                </ResizableItem>
-                            ))}
-
-                            {floatingImages.map(img => (
-                                <ResizableItem
-                                    key={img.id}
-                                    {...img}
-                                    isSelected={selectedId === img.id}
-                                    readOnly={viewMode === 'read' || !!img.locked}
-                                    onSelect={() => onSelect(img.id, 'floatingImage')}
-
-                                    onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
-                                >
-                                    <img src={img.url} className="w-full h-full object-cover pointer-events-none rounded-lg select-none" style={{ opacity: img.opacity }} />
-                                </ResizableItem>
-                            ))}
-
                             {viewMode === 'editor' && (
                                 <div className="mt-12 py-8 border-t border-dashed border-gray-200 flex flex-col items-center gap-4 text-gray-500">
                                     <span className="text-sm font-medium opacity-70">어떤 내용을 추가할까요?</span>
@@ -373,6 +301,78 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 </div>
                             )}
                         </div>
+
+                        {stickers.map(stk => (
+                            <ResizableItem
+                                key={stk.id}
+                                {...stk}
+                                isSelected={selectedId === stk.id}
+                                readOnly={viewMode === 'read' || !!stk.locked}
+                                onSelect={() => onSelect(stk.id, 'sticker')}
+                                onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
+                            >
+                                {stk.widgetType ? (
+                                    <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-lg" />}>
+                                        {(() => {
+                                            const Widget = WIDGET_COMPONENT_MAP[stk.widgetType!];
+                                            return Widget ? (
+                                                <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto">
+                                                    <Widget {...(stk.widgetProps || {})} />
+                                                </div>
+                                            ) : (
+                                                <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-400 text-xs">
+                                                    Unknown
+                                                </div>
+                                            );
+                                        })()}
+                                    </Suspense>
+                                ) : (
+                                    <img src={stk.url} className="w-full h-full object-contain pointer-events-none select-none" style={{ opacity: stk.opacity }} />
+                                )}
+                            </ResizableItem>
+                        ))}
+
+                        {floatingTexts.map(txt => (
+                            <ResizableItem
+                                key={txt.id}
+                                {...txt}
+                                isSelected={selectedId === txt.id}
+                                readOnly={viewMode === 'read' || !!txt.locked}
+                                onSelect={() => onSelect(txt.id, 'floating')}
+                                onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
+                            >
+                                <textarea
+                                    value={txt.text}
+                                    onChange={(e) => onUpdate(txt.id, 'floating', { text: e.target.value })}
+                                    className="w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden"
+                                    style={{
+                                        fontFamily: txt.styles?.fontFamily,
+                                        fontSize: txt.styles?.fontSize,
+                                        fontWeight: txt.styles?.fontWeight || 'normal',
+                                        textAlign: txt.styles?.textAlign as any,
+                                        color: txt.styles?.color,
+                                        backgroundColor: txt.styles?.backgroundColor,
+                                        fontStyle: txt.styles?.fontStyle || 'normal',
+                                        textDecoration: txt.styles?.textDecoration || 'none',
+                                    }}
+                                    readOnly={viewMode === 'read' || !!txt.locked}
+                                />
+                            </ResizableItem>
+                        ))}
+
+                        {floatingImages.map(img => (
+                            <ResizableItem
+                                key={img.id}
+                                {...img}
+                                isSelected={selectedId === img.id}
+                                readOnly={viewMode === 'read' || !!img.locked}
+                                onSelect={() => onSelect(img.id, 'floatingImage')}
+
+                                onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
+                            >
+                                <img src={img.url} className="w-full h-full object-cover pointer-events-none rounded-lg select-none" style={{ opacity: img.opacity }} />
+                            </ResizableItem>
+                        ))}
 
                         {/* 하단 툴바 */}
                         {viewMode === 'editor' && selectedId && currentItem && detectedType && (
