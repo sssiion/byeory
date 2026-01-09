@@ -67,7 +67,12 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
         const album = customAlbums.find(a => a.id === editingCoverId);
         if (album) {
-            onUpdateAlbum(album.id, { coverConfig: config });
+            onUpdateAlbum(album.id, {
+                name: album.name,
+                tag: album.tag,
+                parentId: album.parentId,
+                coverConfig: config
+            });
         }
         setEditingCoverId(null);
     };
