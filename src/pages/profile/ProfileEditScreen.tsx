@@ -111,6 +111,12 @@ const ProfileEditScreen: React.FC = () => {
             const file = (e.target as HTMLInputElement).files?.[0];
 
             if (file) {
+                // 파일 크기 체크 (2MB 제한)
+                const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+                if (file.size > maxSize) {
+                    showModal("업로드 실패", "사진 최대 크기는 2MB입니다", 'danger');
+                    return;
+                }
 
                 try {
                     setIsUploading(true); // 업로드 시작 상태 표시
