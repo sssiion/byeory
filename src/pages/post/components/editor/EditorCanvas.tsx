@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle, Suspense } from 'react';
 import ContentBlock from './ContentBlock';
+import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
 import ResizableItem from './ResizableItem';
 import EditorToolbar from './EditorToolbar';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -297,7 +298,24 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                     onSelect={() => onSelect(stk.id, 'sticker')}
                                     onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
                                 >
-                                    <img src={stk.url} className="w-full h-full object-contain pointer-events-none select-none" style={{ opacity: stk.opacity }} />
+                                    {stk.widgetType ? (
+                                        <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-lg" />}>
+                                            {(() => {
+                                                const Widget = WIDGET_COMPONENT_MAP[stk.widgetType!];
+                                                return Widget ? (
+                                                    <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto">
+                                                        <Widget {...(stk.widgetProps || {})} />
+                                                    </div>
+                                                ) : (
+                                                    <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-400 text-xs">
+                                                        Unknown
+                                                    </div>
+                                                );
+                                            })()}
+                                        </Suspense>
+                                    ) : (
+                                        <img src={stk.url} className="w-full h-full object-contain pointer-events-none select-none" style={{ opacity: stk.opacity }} />
+                                    )}
                                 </ResizableItem>
                             ))}
 

@@ -37,7 +37,44 @@ interface Props {
     applyTemplate?: (template: any) => void;
     containerClassName?: string;
     showActionButtons?: boolean;
+    onAddWidgetSticker: (widgetType: string, props?: any) => void; // ✨ New Prop
 }
+
+import { useWidgetRegistry } from '../../../../components/settings/widgets/useWidgetRegistry'; // ✨ Import Registry
+
+// Helper Component for safe image loading
+const WidgetButton = ({ widget, onAdd }: { widget: any, onAdd: (type: string) => void }) => {
+    const [imgError, setImgError] = React.useState(false);
+    const thumbnailUrl = `/thumbnails/${widget.widgetType}.png`;
+
+    return (
+        <div key={widget.widgetType} className="group relative">
+            <button
+                onClick={() => onAdd(widget.widgetType)}
+                className="w-full aspect-square rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:border-[var(--accent-color)] transition-all flex items-center justify-center bg-white shadow-sm overflow-hidden p-1.5"
+            >
+                {!imgError ? (
+                    <img
+                        src={thumbnailUrl}
+                        alt={widget.label}
+                        className="w-full h-full object-contain"
+                        onError={() => setImgError(true)}
+                    />
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-[var(--accent-color)] bg-gradient-to-br from-white to-gray-50">
+                        <span className="text-xl">🧩</span>
+                    </div>
+                )}
+            </button>
+
+            {/* Hover Tooltip */}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                {widget.label}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+            </div>
+        </div>
+    );
+};
 
 const EditorSidebar: React.FC<Props> = ({
     isSaving, onSave, onTempSave, onCancel,
@@ -45,14 +82,18 @@ const EditorSidebar: React.FC<Props> = ({
     rawInput, setRawInput, selectedLayoutId, setSelectedLayoutId,
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
     currentTags, onTagsChange, applyPaperPreset, onSaveAsTemplate,
-    myTemplates = [], applyTemplate, containerClassName = "xl:w-80", showActionButtons = true
+    myTemplates = [], applyTemplate, containerClassName = "xl:w-80", showActionButtons = true,
+    onAddWidgetSticker = (type) => console.warn("onAddWidgetSticker missing", type) // ✨ Destructure with default
 }) => {
     // ... existing ...
 
-    // ... existing ...
+    // ✨ Widget Registry
+    const { registry: widgetRegistry } = useWidgetRegistry();
+    const allWidgets = Object.values(widgetRegistry);
+
     const { isOwned, buyItem, getMarketItem, getPackPrice } = useMarket();
 
-    // ✨ 음성 인식 관련 Hook
+    // ... existing speech recognition code ...
     const {
         transcript,
         listening,
@@ -295,6 +336,23 @@ const EditorSidebar: React.FC<Props> = ({
                         <Save size={14} />
                         템플릿 저장
                     </button>
+                </div>
+            </div>
+
+            {/* ✨ Widgets Section */}
+            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-lg">🧩</span>
+                        위젯
+                    </h3>
+                </div>
+                <div className="p-4">
+                    <div className="grid grid-cols-4 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar">
+                        {allWidgets.map((widget) => (
+                            <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
+                        ))}
+                    </div>
                 </div>
             </div>
 

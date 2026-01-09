@@ -345,6 +345,29 @@ export const usePostEditor = () => {
         }
     };
 
+    // ✨ Widget Sticker 추가
+    const addWidgetSticker = (widgetType: string, widgetProps: any = {}) => {
+        const id = `sticker-${Date.now()}`;
+        const newSticker: Sticker = {
+            id,
+            x: 50, // Center or default pos
+            y: 50,
+            w: 200, // Default size, can be adjusted based on widget config if needed
+            h: 200,
+            rotation: 0,
+            zIndex: stickers.length + floatingTexts.length + floatingImages.length + 1, // Top
+            opacity: 1,
+            widgetType, // 🌟 Widget Type
+            widgetProps, // 🌟 Widget Props
+            url: '', // Widget doesn't use URL
+        };
+        // We need to add it to the list.
+        setStickers((prev) => [...prev, newSticker]);
+
+        // Mark as dirty
+        if (!isDirty) setIsDirty(true);
+    };
+
     // ✨ Interaction Wrappers (Already using setters that trigger dirty if defined above, 
     // but handleUpdate modifies specific items, so it needs to use setBlocks)
     const handleUpdate = (id: string, updates: any) => {
@@ -370,6 +393,8 @@ export const usePostEditor = () => {
         };
         setStickers(prev => [...prev, newSticker]);
     };
+
+
 
     const addFloatingText = () => {
         setFloatingTexts(prev => [...prev, {
@@ -571,7 +596,7 @@ export const usePostEditor = () => {
         selectedLayoutId, setSelectedLayoutId, isAiProcessing, isSaving,
         fileInputRef,
         handleStartWriting, handlePostClick, handleSave, handleAiGenerate,
-        handleUpdate, handleDelete, addSticker, addFloatingText, addFloatingImage,
+        handleUpdate, handleDelete, addSticker, addWidgetSticker, addFloatingText, addFloatingImage,
         handleBlockImageUpload, changeZIndex,
         currentPostId,
         selectedAlbumId, handleAlbumClick,

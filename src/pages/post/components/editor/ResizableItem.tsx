@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { Move } from 'lucide-react'; // ✨ Import Move Icon
 
 interface Props {
     id: string;
@@ -21,7 +22,7 @@ const ResizableItem: React.FC<Props> = ({
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [isRotating, setIsRotating] = useState(false);
-    const elementRef = useRef<HTMLDivElement>(null); // ✨ Ref for current element
+    const elementRef = useRef<HTMLDivElement>(null);
 
     // 드래그 시작 시점의 상태 저장
     const startPos = useRef({
@@ -32,13 +33,14 @@ const ResizableItem: React.FC<Props> = ({
         centerX: 0, centerY: 0 // 회전 중심점
     });
 
-    const handleMouseDown = (e: React.MouseEvent) => {
+    // ✨ Modified: Only trigger drag from the Move Handle
+    const handleMoveStart = (e: React.MouseEvent) => {
         if (readOnly) return;
-        e.stopPropagation(); // 드래그 시작 시 배경 선택 방지
+        e.stopPropagation();
+        e.preventDefault();
         onSelect();
         setIsDragging(true);
 
-        // ✨ Get current pixel values (converts % to px automatically)
         const currentX = elementRef.current?.offsetLeft || 0;
         const currentY = elementRef.current?.offsetTop || 0;
 
@@ -46,17 +48,16 @@ const ResizableItem: React.FC<Props> = ({
             ...startPos.current,
             startX: e.clientX,
             startY: e.clientY,
-            initialX: currentX, // Use pixels
+            initialX: currentX,
             initialY: currentY
         };
     };
 
     const handleResizeStart = (e: React.MouseEvent) => {
         e.stopPropagation();
-        e.preventDefault(); // 텍스트 선택 등 기본 동작 방지
+        e.preventDefault();
         setIsResizing(true);
 
-        // ✨ Get current pixel dimensions
         const currentW = elementRef.current?.offsetWidth || 0;
         const currentH = elementRef.current?.offsetHeight || 0;
 
@@ -74,8 +75,7 @@ const ResizableItem: React.FC<Props> = ({
         e.preventDefault();
         setIsRotating(true);
 
-        // 아이템의 중심점 계산 (회전 각도 계산용)
-        const rect = elementRef.current?.getBoundingClientRect(); // ✨ Use ref
+        const rect = elementRef.current?.getBoundingClientRect();
         if (rect) {
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
@@ -100,18 +100,14 @@ const ResizableItem: React.FC<Props> = ({
                 const deltaX = e.clientX - startPos.current.startX;
                 const deltaY = e.clientY - startPos.current.startY;
 
-                // 가로(w) 뿐만 아니라 세로(h)도 같이 변경되도록 수정
                 onUpdate({
                     w: Math.max(30, startPos.current.initialW + deltaX),
                     h: Math.max(30, startPos.current.initialH + deltaY)
                 });
             } else if (isRotating) {
                 const { centerX, centerY } = startPos.current;
-                // 중심점과 현재 마우스 위치 사이의 각도 계산 (atan2)
                 const radians = Math.atan2(e.clientY - centerY, e.clientX - centerX);
                 const degrees = radians * (180 / Math.PI);
-
-                // 마우스 위치에 따라 직관적으로 회전하도록 +90도 보정
                 onUpdate({ rotation: degrees + 90 });
             }
         };
@@ -135,23 +131,29 @@ const ResizableItem: React.FC<Props> = ({
     return (
         <div
             ref={elementRef}
-            className={`absolute select-none group `}
+            className={`absolute group`}
             style={{
                 left: typeof x === 'number' ? `${x}px` : x,
                 top: typeof y === 'number' ? `${y}px` : y,
                 width: typeof w === 'number' ? `${w}px` : w,
-                height: typeof h === 'number' ? `${h}px` : h, // 높이 값 적용
+                height: typeof h === 'number' ? `${h}px` : h,
                 transform: `rotate(${rotation}deg)`,
                 zIndex: zIndex,
-                cursor: readOnly ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-                touchAction: 'none' // 모바일 터치 대응
+                // ✨ Changed cursor logic: default for content, grabbing only when dragging
+                cursor: readOnly ? 'default' : 'default',
+                touchAction: 'none'
             }}
-            onMouseDown={handleMouseDown}
-            // 클릭 이벤트가 배경(EditorCanvas)으로 전파되어 '선택 해제' 되는 것을 막음
-            onClick={(e) => e.stopPropagation()}
+            // ✨ Click selects the item, but doesn't start drag
+            onClick={(e) => {
+                e.stopPropagation();
+                onSelect();
+            }}
         >
             <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500' : ''}`}>
-                {children}
+                {/* ✨ Enable pointer events for children */}
+                <div className="w-full h-full pointer-events-auto">
+                    {children}
+                </div>
 
                 {isSelected && !readOnly && (
                     <>
@@ -161,13 +163,23 @@ const ResizableItem: React.FC<Props> = ({
                             className="absolute -bottom-3 -right-3 w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-se-resize z-50 shadow-md hover:scale-110 transition"
                             title="크기 조절"
                         />
+
                         {/* 회전 핸들 (상단 중앙) */}
                         <div
                             onMouseDown={handleRotateStart}
-                            className="absolute -top-8 left-1/2 -translate-x-1/2 w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-grab z-50 flex items-center justify-center shadow-md hover:bg-indigo-50 hover:scale-110 transition"
+                            className="absolute -top-8 left-1/2 -translate-x-[20px] w-6 h-6 bg-white border-2 border-indigo-500 rounded-full cursor-grab z-50 flex items-center justify-center shadow-md hover:bg-indigo-50 hover:scale-110 transition"
                             title="회전"
                         >
                             <span className="text-[10px] font-bold text-indigo-700">↻</span>
+                        </div>
+
+                        {/* ✨ 이동 핸들 (회전 핸들 옆) */}
+                        <div
+                            onMouseDown={handleMoveStart}
+                            className="absolute -top-8 left-1/2 translate-x-[6px] w-6 h-6 bg-indigo-500 text-white border-2 border-indigo-500 rounded-full cursor-move z-50 flex items-center justify-center shadow-md hover:bg-indigo-600 hover:scale-110 transition"
+                            title="이동"
+                        >
+                            <Move size={12} strokeWidth={3} />
                         </div>
                     </>
                 )}

@@ -28,7 +28,9 @@ export interface BaseFloatingItem {
 }
 
 export interface Sticker extends BaseFloatingItem {
-    url: string;
+    url?: string;
+    widgetType?: string;
+    widgetProps?: Record<string, any>;
 }
 
 export interface FloatingText extends BaseFloatingItem {

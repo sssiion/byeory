@@ -157,6 +157,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onAddFloatingText={editor.addFloatingText}
                 onAddSticker={editor.addSticker}
                 onAddFloatingImage={editor.addFloatingImage}
+                onAddWidgetSticker={editor.addWidgetSticker} // ✨ Pass Widget Adder (Verified)
                 rawInput={editor.rawInput} setRawInput={editor.setRawInput}
                 selectedLayoutId={editor.selectedLayoutId} setSelectedLayoutId={editor.setSelectedLayoutId}
                 tempImages={editor.tempImages} setTempImages={editor.setTempImages}
