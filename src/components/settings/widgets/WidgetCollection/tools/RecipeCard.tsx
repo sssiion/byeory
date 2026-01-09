@@ -6,11 +6,6 @@ interface RecipeCardProps {
     gridSize?: { w: number; h: number };
 }
 
-export const RecipeCardConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export function RecipeCard({ gridSize }: RecipeCardProps) {
     const [timeLeft, setTimeLeft] = useWidgetStorage('widget-recipe-time', 180); // Default 3 min, synced
     const [isActive, setIsActive] = useWidgetStorage('widget-recipe-active', false);

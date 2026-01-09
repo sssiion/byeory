@@ -2,11 +2,6 @@ import React from 'react';
 import { Flame } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
-export const StreakWidgetConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 interface StreakWidgetProps {
     gridSize?: { w: number; h: number };
 }

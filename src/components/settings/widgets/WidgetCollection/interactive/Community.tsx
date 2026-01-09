@@ -2,11 +2,6 @@ import { WidgetWrapper } from '../../Shared';
 
 // 13. Community Widget (커뮤니티)
 // 13. Community Widget (커뮤니티)
-export const CommunityWidgetConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 // 13. Community Widget (커뮤니티)
 export function CommunityWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const posts = [

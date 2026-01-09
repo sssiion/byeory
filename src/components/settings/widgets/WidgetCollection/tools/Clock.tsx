@@ -3,11 +3,6 @@ import { WidgetWrapper } from '../../Shared';
 import { useWidgetInterval, useWidgetStorage } from '../SDK';
 
 // 14. Clock Widget (시계)
-export const ClockWidgetConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 export function ClockWidget({ gridSize }: { gridSize?: { w: number, h: number } }) {
     const [time, setTime] = useState(new Date());
     const [type, setType] = useWidgetStorage<'digital' | 'analog' | 'flip'>('widget-clock-type', 'analog');

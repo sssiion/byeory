@@ -3,11 +3,6 @@ import { WidgetWrapper } from '../../Shared';
 import { ArrowUpRight, Link2, Database, Settings } from 'lucide-react';
 import { useWidgetStorage } from '../SDK'; // Logic folder is in WidgetCollection/logic, so ../../SDK? No, WidgetCollection/logic -> .. -> WidgetCollection -> SDK. So ../SDK.
 
-export const RelationLinkConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const RelationLink = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     const [data, setData] = useWidgetStorage('relationlink-data', {
         title: 'Project Alpha',

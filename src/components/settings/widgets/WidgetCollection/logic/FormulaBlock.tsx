@@ -3,11 +3,6 @@ import { WidgetWrapper } from '../../Shared';
 import { Terminal, Play, XCircle } from 'lucide-react';
 import { useWidgetStorage } from '../SDK';
 
-export const FormulaBlockConfig = {
-    defaultSize: '2x2',
-    validSizes: [[2, 2]] as [number, number][],
-};
-
 export const FormulaBlock = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     const [code, setCode] = useWidgetStorage('widget-formula-code', 'const a = 10;\nconst b = 20;\nreturn a + b;');
     const [result, setResult] = useState<string | null>(null);

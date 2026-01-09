@@ -9,11 +9,6 @@ interface ComponentProps {
     gridSize?: { w: number; h: number };
 }
 
-export const ChatDiaryConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const ChatDiary = ({ className, style, initialMessages = [], gridSize }: ComponentProps) => {
     const [messages, setMessages] = useState(initialMessages.length > 0 ? initialMessages : [
         { id: 1, text: '오늘 하루는 어땠어?', sender: 'other', time: '09:00' },

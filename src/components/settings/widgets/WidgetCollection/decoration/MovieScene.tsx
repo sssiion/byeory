@@ -2,11 +2,6 @@ import React, { useState } from 'react';
 import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
-export const MovieSceneConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const MovieScene = React.memo(function MovieScene({ src, quote }: { src?: string; quote?: string }) {
     const [data, setData] = useWidgetStorage('moviescene-data', {
         src: src || 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800',

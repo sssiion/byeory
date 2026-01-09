@@ -3,11 +3,6 @@ import { WidgetWrapper } from '../../Shared';
 import { Sparkles, Brain } from 'lucide-react';
 
 // 12. Emotion Analysis (감정 분석)
-export const EmotionAnalysisConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const EmotionAnalysis = memo(function EmotionAnalysis({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const isSmall = (gridSize?.w || 2) < 2 && (gridSize?.h || 2) < 2;
     const [isAnalyzing, setIsAnalyzing] = useState(false);

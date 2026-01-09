@@ -3,11 +3,6 @@ import { Lock } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
 // 4. Time Machine (타임캡슐)
-export const TimeMachineConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const TimeMachine = React.memo(function TimeMachine({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const w = gridSize?.w || 2;
     const h = gridSize?.h || 2;

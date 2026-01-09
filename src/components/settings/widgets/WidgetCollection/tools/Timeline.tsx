@@ -15,11 +15,6 @@ interface TimelineEvent {
     description?: string;
 }
 
-export const TimelineConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const Timeline = ({ className, style }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [events, setEvents] = useWidgetStorage<TimelineEvent[]>('widget-timeline-events', [
         { id: 1, date: '2025.12.27', title: '프로젝트 시작', description: '위젯 만들기' },

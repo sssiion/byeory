@@ -2,11 +2,6 @@ import React, { useState } from 'react';
 import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
-export const TicketStubConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 export const TicketStub = ({ title: initialTitle = 'Movie Night', date: initialDate = '24.12.24', seat: initialSeat = 'H12', gridSize }: { title?: string, date?: string, seat?: string, gridSize?: { w: number; h: number } }) => {
     const [data, setData] = useWidgetStorage('ticketstub-data', {
         title: initialTitle,

@@ -1,10 +1,5 @@
 import React from 'react';
 
-export const FeatureCardConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export function FeatureCard({ title = "Feature", description, icon, gridSize: _ }: { title?: string, description?: string, icon?: React.ReactNode, gridSize?: { w: number; h: number } }) {
     return (
         <div className="theme-bg-card theme-border border rounded-xl p-6 shadow-sm transition-colors duration-300 h-full flex flex-col">

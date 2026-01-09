@@ -14,11 +14,6 @@ const COLORS = ['bg-red-700', 'bg-blue-800', 'bg-green-800', 'bg-amber-900', 'bg
 
 
 
-export const BookshelfConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 2], [4, 2]] as [number, number][],
-};
-
 interface BookshelfProps {
     gridSize?: { w: number; h: number };
 }

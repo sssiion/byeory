@@ -3,11 +3,6 @@ import { WidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
-export const FavoriteCharacterConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const FavoriteCharacter = React.memo(function FavoriteCharacter({ src, name, gridSize }: { src?: string; name?: string; gridSize?: { w: number; h: number } }) {
     const [data, setData] = useWidgetStorage('character-data', {
         src: src || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',

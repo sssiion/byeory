@@ -13,11 +13,6 @@ interface DreamLogData {
 }
 
 // --- 3. Dream Log (꿈 기록장) ---
-export const DreamLogConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 interface DreamLogProps {
     onUpdate?: (data: DreamLogData) => void;
     logs?: DreamLogEntry[];

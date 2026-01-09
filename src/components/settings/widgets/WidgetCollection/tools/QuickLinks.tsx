@@ -2,11 +2,6 @@ import React from 'react';
 import { Calendar, Image as ImageIcon, User, Link, Youtube, Github, Mail, Search } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
 
-export const QuickLinksConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 interface QuickLinksProps {
     gridSize?: { w: number; h: number };
 }

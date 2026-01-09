@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Rss, ExternalLink, RefreshCw } from 'lucide-react';
 import { useWidgetStorage } from '../SDK';
 
-export const RSSReaderConfig = {
-    defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3], [3, 2], [3, 3], [4, 2], [4, 3]] as [number, number][],
-};
-
 export function RSSReader({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [url, setUrl] = useWidgetStorage('widget-rss-url', '');
     const [feed, setFeed] = useState<any[]>([]);

@@ -5,11 +5,6 @@ import { WidgetWrapper } from '../../Shared';
 
 // 5. Photo Gallery (내 사진들)
 // 5. Photo Gallery (내 사진들)
-export const PhotoGalleryConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 2]] as [number, number][],
-};
-
 interface PhotoGalleryProps {
     gridSize?: { w: number; h: number };
 }
@@ -49,11 +44,6 @@ export const PhotoGallery = React.memo(function PhotoGallery({ gridSize }: Photo
     );
 });
 
-export const PolaroidConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0 }: { src: string; date: string; rotation?: number; gridSize?: { w: number; h: number } }) {
     return (
         <div className="w-full h-full flex items-center justify-center p-2">
@@ -72,11 +62,6 @@ export const Polaroid = React.memo(function Polaroid({ src, date, rotation = 0 }
     );
 });
 
-export const InstantBoothConfig = {
-    defaultSize: '1x2',
-    validSizes: [[1, 2], [2, 1], [1, 4]] as [number, number][],
-};
-
 export const InstantBooth = React.memo(function InstantBooth({ images, date, gridSize }: { images: string[]; date: string; gridSize?: { w: number; h: number } }) {
     const isWide = (gridSize?.w || 1) > (gridSize?.h || 1);
 
@@ -93,11 +78,6 @@ export const InstantBooth = React.memo(function InstantBooth({ images, date, gri
         </div>
     );
 });
-
-export const FilmStripConfig = {
-    defaultSize: '4x2',
-    validSizes: [[1, 2], [2, 1], [2, 2], [4, 1], [4, 2]] as [number, number][],
-};
 
 export const FilmStrip = React.memo(function FilmStrip({ images, gridSize }: { images: string[]; gridSize?: { w: number; h: number } }) {
     const isTall = (gridSize?.h || 1) > (gridSize?.w || 1);

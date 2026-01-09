@@ -3,11 +3,6 @@ import { BookOpen, Settings } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 
-export const BookCoverConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 // --- 7. Book Cover (읽는 책)
 export const BookCover = React.memo(function BookCover() {
     const [data, setData] = useWidgetStorage('bookcover-data', {

@@ -5,11 +5,6 @@ import { useWidgetStorage } from '../SDK';
 // [DB Connection Needed] Notes should be synced.
 // Future: Note { id, content, color, position, updatedAt }
 
-export const ScrapNoteConfig = {
-    defaultSize: '2x2',
-    validSizes: [[2, 2]] as [number, number][],
-};
-
 export function ScrapNote({ text: initialText = '', gridSize }: { text?: string; gridSize?: { w: number; h: number } }) {
     const [text, setText] = useWidgetStorage('widget-scrap-note', initialText);
     const [copied, setCopied] = useState(false);

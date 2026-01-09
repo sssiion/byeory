@@ -2,11 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { WidgetWrapper } from '../Common';
 import { TreePine } from 'lucide-react';
 
-export const SnowGlobeConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 2]] as [number, number][],
-};
-
 export function SnowGlobe({ gridSize }: { gridSize?: { w: number; h: number } }) {
     // Responsive logic: removed manual scale. CSS handles it.
 

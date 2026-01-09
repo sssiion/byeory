@@ -44,11 +44,6 @@ const SimpleConfetti = ({ active, onComplete }: { active: boolean; onComplete: (
 };
 
 // --- 1. Switch Board (똑딱이)
-export const SwitchBoardConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 2], [4, 2]] as [number, number][],
-};
-
 export const SwitchBoard = ({ gridSize }: { gridSize?: { w: number; h: number } }) => {
     // Default to 1x1 if undefined
     const w = gridSize?.w || 1;

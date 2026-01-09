@@ -3,11 +3,6 @@ import { WidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 
 // --- 9. Daily Stamp (참잘했어요)
-export const DailyStampConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
-};
-
 export function DailyStamp({ gridSize }: { gridSize?: { w: number, h: number } }) {
     // stamps array of 'YYYY-MM-DD'
     const [stamps, setStamps] = useWidgetStorage<string[]>('widget-daily-stamps', []);

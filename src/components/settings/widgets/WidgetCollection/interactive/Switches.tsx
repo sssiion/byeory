@@ -7,11 +7,6 @@ interface ComponentProps {
     style?: React.CSSProperties;
 }
 
-export const SwitchesConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const Switches = ({ className, style, gridSize }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [states, setStates] = useState([false, true, false, false]);
 

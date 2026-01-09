@@ -2,11 +2,6 @@ import React from 'react';
 import { WidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 
-export const CandleConfig = {
-    defaultSize: '1x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const Candle = React.memo(function Candle({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const [isOn, setIsOn] = useWidgetStorage('candle-ison', true);
 

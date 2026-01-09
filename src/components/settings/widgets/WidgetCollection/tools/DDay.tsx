@@ -13,11 +13,6 @@ interface DDayItem {
 }
 
 // 15. D-Day List (디데이 리스트)
-export const DDayListConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 interface DDayListProps {
     gridSize?: { w: number; h: number };
 }
@@ -109,11 +104,6 @@ interface DDayData {
 }
 
 // --- 6. D-Day Balloon (풍선 디데이) ---
-export const DDayBalloonConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
-};
-
 interface DDayBalloonProps {
     onUpdate?: (data: DDayData) => void;
     targetDate?: string;

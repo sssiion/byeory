@@ -2,11 +2,6 @@ import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 import { Sigma, BarChart3 } from 'lucide-react';
 
-export const RollupConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 2]] as [number, number][],
-};
-
 export const Rollup = ({ style, gridSize }: { style?: React.CSSProperties, gridSize?: { w: number; h: number } }) => {
     const isSmall = (gridSize?.w || 2) < 2;
 

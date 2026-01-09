@@ -4,11 +4,6 @@ import { useWidgetStorage } from '../SDK';
 
 type WeatherType = 'sun' | 'rain' | 'cloud' | 'snow';
 
-export const WeatherWidgetConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
-};
-
 // 10. Weather Widget (날씨)
 // 10. Weather Widget (날씨)
 export function WeatherWidget({ gridSize }: { gridSize?: { w: number, h: number } }) {

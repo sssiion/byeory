@@ -2,11 +2,6 @@ import React, { useState } from 'react';
 import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
-export const NeonSignConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const NeonSign = React.memo(function NeonSign({ text: initialText, color: initialColor = '#ff00ff', gridSize }: { text?: string; color?: string; gridSize?: { w: number; h: number } }) {
     const [data, setData] = useWidgetStorage('neonsign-data', {
         text: initialText || 'OPEN',

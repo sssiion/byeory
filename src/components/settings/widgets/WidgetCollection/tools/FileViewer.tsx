@@ -2,11 +2,6 @@ import React from 'react';
 import { FileText, FileArchive, Upload, Eye } from 'lucide-react';
 import { useWidgetStorage } from '../SDK';
 
-export const FileViewerConfig = {
-    defaultSize: '2x1',
-    validSizes: [[2, 1], [2, 2]] as [number, number][],
-};
-
 export function FileViewer({ gridSize }: { gridSize?: { w: number; h: number } }) {
     // Persist mock file state
     const [fileState, setFileState] = useWidgetStorage('widget-file-viewer', { type: 'none' as 'pdf' | 'zip' | 'none', name: '' });

@@ -24,11 +24,6 @@ const DEFAULT_TAGS = [
     { text: 'Space', value: 2 },
 ];
 
-export const TagCloudConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const TagCloud = ({ className, style, initialTags = DEFAULT_TAGS, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const [tags, setTags] = useWidgetStorage('widget-tagcloud-tags', initialTags);
 

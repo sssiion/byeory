@@ -2,11 +2,6 @@ import React, { useState } from 'react';
 import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
-export const TextScrollerConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 1], [4, 1]] as [number, number][],
-};
-
 export const TextScroller = React.memo(({ text: initialText = 'HELLO WORLD', gridSize: _ }: { text?: string, gridSize?: { w: number; h: number } }) => {
     const [text, setText] = useWidgetStorage('textscroller-text', initialText);
     const [color, setColor] = useWidgetStorage('textscroller-color', '#00ff00');

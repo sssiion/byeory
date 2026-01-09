@@ -1,11 +1,6 @@
 import React from 'react';
 import { WidgetWrapper } from '../../Shared';
 
-export const StatsWidgetConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
-};
-
 interface StatsWidgetProps {
     gridSize?: { w: number; h: number };
 }

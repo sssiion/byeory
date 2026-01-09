@@ -65,10 +65,6 @@ const LocalizedLens = () => {
     return null;
 };
 
-export const MagnifierConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
 
 export const Magnifier = React.memo(({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     return (

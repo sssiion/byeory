@@ -167,10 +167,6 @@ const PortalEffect = ({ onClose }: PortalEffectProps) => {
     );
 };
 
-export const HighlighterConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
-};
 
 export const Highlighter = ({ className, style, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     return (

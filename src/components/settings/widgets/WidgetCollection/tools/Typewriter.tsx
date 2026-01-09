@@ -5,11 +5,6 @@ interface TypewriterProps {
     gridSize?: { w: number; h: number };
 }
 
-export const TypewriterConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2], [2, 3]] as [number, number][],
-};
-
 export function Typewriter({ gridSize }: TypewriterProps) {
     const [text, setText] = useWidgetStorage('widget-typewriter-text', '');
 

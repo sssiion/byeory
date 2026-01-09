@@ -2,11 +2,6 @@ import { WidgetWrapper } from '../Common';
 import { useWidgetStorage } from '../SDK';
 
 // --- 4. Dessert Case (간식 진열대) ---
-export const DessertCaseConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 // --- 4. Dessert Case (간식 진열대) ---
 export function DessertCase({ gridSize }: { gridSize?: { w: number; h: number } }) {
     const desserts = ['🍩', '🍪', '🍰', '🧁', '🍮', '🍭', '🍫', '🍦'];

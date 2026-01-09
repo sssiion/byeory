@@ -6,11 +6,6 @@ interface MovieTicketProps {
     gridSize?: { w: number; h: number };
 }
 
-export const MovieTicketConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 export function MovieTicket({ gridSize }: MovieTicketProps) {
     const [title, setTitle] = useState(() => localStorage.getItem('movie_title') || '');
     const [date, setDate] = useState(() => localStorage.getItem('movie_date') || '');

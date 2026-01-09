@@ -7,11 +7,6 @@ interface OceanWaveProps {
     gridSize?: { w: number; h: number };
 }
 
-export const OceanWaveConfig = {
-    defaultSize: '2x1',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 1], [3, 2], [4, 1], [4, 2]] as [number, number][],
-};
-
 export function OceanWave({ gridSize: _gridSize }: OceanWaveProps) {
     // 0: Auto, 1: Day, 2: Night
     const [mode, setMode] = useWidgetStorage('ocean-mode', 0);

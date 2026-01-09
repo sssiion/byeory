@@ -3,11 +3,6 @@ import { Zap } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 
 // --- 5. Battery Widget (내 에너지)
-export const BatteryWidgetConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1], [2, 1]] as [number, number][],
-};
-
 interface BatteryWidgetProps {
     gridSize?: { w: number; h: number };
 }

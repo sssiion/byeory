@@ -67,11 +67,6 @@ const UNIT_CATEGORIES = {
 
 const API_KEY = import.meta.env.VITE_EXCHANGE_RATE_API_KEY;
 
-export const UnitConverterConfig = {
-    defaultSize: '2x2',
-    validSizes: [[2, 2]] as [number, number][],
-};
-
 interface UnitConverterProps {
     gridSize?: { w: number; h: number };
 }

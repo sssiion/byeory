@@ -7,11 +7,6 @@ interface ReceiptPrinterProps {
     gridSize?: { w: number; h: number };
 }
 
-export const ReceiptPrinterConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export function ReceiptPrinter({ gridSize }: ReceiptPrinterProps) {
     const today = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });

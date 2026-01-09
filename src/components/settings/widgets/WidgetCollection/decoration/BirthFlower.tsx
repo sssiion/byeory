@@ -19,11 +19,6 @@ const FLOWERS: Record<number, { name: string; lang: string; color: string }> = {
     12: { name: 'Narcissus', lang: 'Hope', color: 'text-yellow-200' },
 };
 
-export const BirthFlowerConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 interface BirthFlowerProps {
     gridSize?: { w: number; h: number };
 }

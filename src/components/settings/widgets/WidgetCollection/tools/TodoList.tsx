@@ -5,11 +5,6 @@ import { WidgetWrapper } from '../../Shared';
 import { useSharedTodo } from '../../../../Todo/useSharedTodo';
 import type { Todo } from '../../../../Todo/types';
 
-export const TodoListConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [2, 1], [2, 2]] as [number, number][],
-};
-
 interface TodoListWidgetProps {
     gridSize?: { w: number; h: number };
 }

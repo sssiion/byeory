@@ -6,11 +6,6 @@ interface LPPlayerProps {
     gridSize?: { w: number; h: number };
 }
 
-export const LPPlayerConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export function LPPlayer({ gridSize }: LPPlayerProps) {
     const [isPlaying, setIsPlaying] = useState(false);
 

@@ -28,11 +28,6 @@ const ScientificBtn = ({ label, fn, onClick }: ScientificBtnProps) => (
     </button>
 );
 
-export const CalculatorConfig = {
-    defaultSize: '2x2',
-    validSizes: [[2, 2], [2, 3]] as [number, number][],
-};
-
 export function Calculator({ mode: initialMode = 'basic', updateLayout, gridSize }: CalculatorProps) {
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');

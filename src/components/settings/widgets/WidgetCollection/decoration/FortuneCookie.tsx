@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 
-export const FortuneCookieConfig = {
-    defaultSize: '1x1',
-    validSizes: [[1, 1]] as [number, number][],
-};
-
 // --- 3. Fortune Cookie (포춘 쿠키)
 export function FortuneCookie() {
     const [isCracked, setIsCracked] = useState(false);

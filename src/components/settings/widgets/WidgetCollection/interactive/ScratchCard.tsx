@@ -9,11 +9,6 @@ interface ComponentProps {
     imageSrc?: string;
 }
 
-export const ScratchCardConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]] as [number, number][],
-};
-
 export const ScratchCard = ({ className, style, text = "Lucky Day!", imageSrc, gridSize: _ }: ComponentProps & { gridSize?: { w: number; h: number } }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isScratched, setIsScratched] = useState(false);

@@ -1,11 +1,6 @@
 import { useState, useRef, useMemo, useLayoutEffect } from 'react';
 import { WidgetWrapper } from '../Common';
 
-export const BubbleWrapConfig = {
-    defaultSize: '2x2',
-    validSizes: [[1, 1], [1, 2], [2, 1], [2, 2], [3, 3], [4, 4], [2, 4]] as [number, number][],
-};
-
 export function BubbleWrap() {
     const [popped, setPopped] = useState<Set<number>>(new Set());
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
