@@ -39,9 +39,8 @@ const MoodChart = ({ moods }: { moods: MoodItem[] }) => {
       <div className="relative w-48 h-48">
         <svg viewBox="0 0 40 40" className="w-full h-full transform -rotate-90">
           {moods.map((mood, idx) => {
-            const strokeDasharray = `${
-              (mood.percentage / 100) * circumference
-            } ${circumference}`;
+            const strokeDasharray = `${(mood.percentage / 100) * circumference
+              } ${circumference}`;
             const strokeDashoffset = -(
               (accumulatedPercent / 100) *
               circumference
@@ -124,9 +123,8 @@ const WordMindMap = ({ words }: { words: WordItem[] }) => {
       {words.map((word, idx) => (
         <span
           key={idx}
-          className={`font-bold transition-all duration-500 hover:scale-110 cursor-default ${
-            textColors[idx % textColors.length]
-          }`}
+          className={`font-bold transition-all duration-500 hover:scale-110 cursor-default ${textColors[idx % textColors.length]
+            }`}
           style={{
             fontSize: `${getSize(word.value)}rem`,
             opacity: 0.7 + (word.value / maxVal) * 0.3, // 빈도 높으면 더 진하게
@@ -163,7 +161,7 @@ function AnalysisPage() {
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const closeConfirmModal = () => {
@@ -224,9 +222,16 @@ function AnalysisPage() {
     }
 
     try {
+      const savedTags = localStorage.getItem('excludedTags');
+      const excludedTags = savedTags ? JSON.parse(savedTags) : [];
+
       const response = await fetch(url, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ excludedTags })
       });
 
       if (response.ok) {
@@ -275,11 +280,10 @@ function AnalysisPage() {
           <div className="flex items-center gap-2 theme-bg-card p-1 rounded-xl shadow-sm border theme-border">
             <button
               onClick={() => setFilterMode("ALL")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterMode === "ALL"
-                  ? "theme-btn"
-                  : "theme-text-secondary hover:theme-bg-card-secondary"
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filterMode === "ALL"
+                ? "theme-btn"
+                : "theme-text-secondary hover:theme-bg-card-secondary"
+                }`}
             >
               All Posts
             </button>
@@ -287,11 +291,10 @@ function AnalysisPage() {
             <div className="flex items-center relative">
               <button
                 onClick={() => setFilterMode("MONTH")}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                  filterMode === "MONTH"
-                    ? "theme-btn"
-                    : "theme-text-secondary hover:theme-bg-card-secondary"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${filterMode === "MONTH"
+                  ? "theme-btn"
+                  : "theme-text-secondary hover:theme-bg-card-secondary"
+                  }`}
               >
                 <Calendar className="w-3 h-3" />
                 <span>Monthly</span>
@@ -328,7 +331,7 @@ function AnalysisPage() {
                   <h2 className="text-sm font-bold text-orange-500 tracking-wide uppercase">
                     나는 어떤 사람인가요?
                   </h2>
-                  {data.digitalSelf.map((sent, idx) => (
+                  {(data.digitalSelf || []).map((sent, idx) => (
                     <p
                       key={idx}
                       className="theme-text-primary font-medium leading-relaxed"
@@ -340,7 +343,7 @@ function AnalysisPage() {
 
                 {/* Key Characteristics (Chips) */}
                 <div className="flex flex-wrap justify-center gap-2 pt-2">
-                  {data.characteristics.map((char, idx) => (
+                  {(data.characteristics || []).map((char, idx) => (
                     <span
                       key={idx}
                       className="px-4 py-1.5 rounded-full bg-orange-50 text-orange-700 text-sm font-semibold border border-orange-100"
@@ -359,13 +362,13 @@ function AnalysisPage() {
                 Mood Analytics
               </h3>
               <div className="theme-bg-card-secondary rounded-2xl p-6">
-                <MoodChart moods={data.moods} />
+                <MoodChart moods={data.moods || []} />
               </div>
               <p className="text-center theme-text-secondary text-sm mt-4">
                 {filterMode === "MONTH" ? "이번 달" : "전체 기간"} 동안 가장
                 많이 느낀 감정은{" "}
                 <strong className="theme-text-primary">
-                  {data.moods[0]?.mood}
+                  {data.moods?.[0]?.mood || "없음"}
                 </strong>{" "}
                 입니다.
               </p>
@@ -376,7 +379,7 @@ function AnalysisPage() {
               <h3 className="font-bold theme-text-primary mb-4 px-2">
                 Word Mind Map
               </h3>
-              <WordMindMap words={data.wordCloud} />
+              <WordMindMap words={data.wordCloud || []} />
             </section>
           </>
         ) : (
