@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Navigation from '../../components/Header/Navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Image as ImageIcon, Clock, ChevronDown, RefreshCw } from "lucide-react";
+import { User, Bell, Lock, Download, LogOut, BarChart3, Calendar, Shield, Image as ImageIcon, Clock, ChevronDown, RefreshCw, Heart } from "lucide-react";
 import PinInputModal from '../../components/Security/PinInputModal';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
@@ -19,6 +19,9 @@ function ProfilePage() {
         phone?: string;
         gender?: string;
         bio?: string;
+        totalEntries?: number;
+        streakDays?: number;
+        receivedLikes?: number;
     } | null>(null);
 
     const [provider, setProvider] = useState<string>('LOCAL');
@@ -307,12 +310,7 @@ function ProfilePage() {
     const userName = profile?.nickname || profile?.name || '';
     const userEmail = profile?.email || '';
 
-    // Stats (Initialize to 0 as there is no API for this yet)
-    const stats = {
-        totalEntries: 0,
-        streakDays: 0,
-        exchangeRooms: 0
-    };
+
 
     const handleLogout = () => {
         logout();
@@ -350,22 +348,22 @@ function ProfilePage() {
                             <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: 'var(--bg-solid)' }}>
                                 <Calendar className="w-5 h-5 theme-icon" />
                             </div>
-                            <div className="text-2xl font-bold mb-1 theme-text-primary">{stats.totalEntries}</div>
+                            <div className="text-2xl font-bold mb-1 theme-text-primary">{profile?.totalEntries || 0}</div>
                             <p className="text-xs theme-text-secondary">작성한 일기</p>
                         </div>
                         <div className="rounded-2xl p-4 shadow-sm border text-center theme-bg-card theme-border">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: 'var(--bg-solid)' }}>
                                 <BarChart3 className="w-5 h-5 theme-icon" />
                             </div>
-                            <div className="text-2xl font-bold mb-1 theme-text-primary">{stats.streakDays}</div>
+                            <div className="text-2xl font-bold mb-1 theme-text-primary">{profile?.streakDays || 0}</div>
                             <p className="text-xs theme-text-secondary">연속 작성일</p>
                         </div>
                         <div className="rounded-2xl p-4 shadow-sm border text-center theme-bg-card theme-border">
                             <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2" style={{ backgroundColor: 'var(--bg-solid)' }}>
-                                <User className="w-5 h-5 theme-icon" />
+                                <Heart className="w-5 h-5 theme-icon text-red-500 fill-red-500" />
                             </div>
-                            <div className="text-2xl font-bold mb-1 theme-text-primary">{stats.exchangeRooms}</div>
-                            <p className="text-xs theme-text-secondary">교환일기</p>
+                            <div className="text-2xl font-bold mb-1 theme-text-primary">{profile?.receivedLikes || 0}</div>
+                            <p className="text-xs theme-text-secondary">받은 좋아요</p>
                         </div>
                     </div>
 
