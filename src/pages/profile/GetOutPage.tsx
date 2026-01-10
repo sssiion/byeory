@@ -6,7 +6,7 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const GetOutPage: React.FC = () => {
     const navigate = useNavigate();
-    const { logout } = useAuth(); // user is no longer needed for verification
+    const { logout } = useAuth();
     const [inputConfirmation, setInputConfirmation] = useState("");
 
     // Confirmation Modal State
@@ -31,15 +31,14 @@ const GetOutPage: React.FC = () => {
     const handleDelete = async () => {
         if (inputConfirmation !== "탈퇴합니다") return;
 
-        // Custom Confirmation Logic
         setConfirmModal({
             isOpen: true,
             title: "정말 떠나시나요?",
             message: "정말로 탈퇴하시겠습니까? 돌이킬 수 없습니다.",
             type: 'danger',
-            singleButton: false, // Two buttons for confirmation
+            singleButton: false,
             onConfirm: async () => {
-                closeConfirmModal(); // Close modal first
+                closeConfirmModal();
                 await executeDelete();
             }
         });
@@ -63,7 +62,7 @@ const GetOutPage: React.FC = () => {
                     type: 'success',
                     singleButton: true,
                     onConfirm: () => {
-                        logout(); // Clears local storage
+                        logout();
                         navigate('/');
                     }
                 });

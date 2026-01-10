@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import Navigation from '../../components/Header/Navigation';
+import Navigation from '../../components/header/Navigation';
 import { Globe, Search, X } from 'lucide-react'; // Settings 아이콘 추가 (선택사항)
-import CommunityFeed from './components/CommunityFeed';
-import { fetchMyProfile } from './api';
+import CommunityFeed from '../../components/community/components/CommunityFeed';
+import { fetchMyProfile } from '../../components/community/api';
 
 const Community: React.FC = () => {
     const [userId, setUserId] = useState<number | undefined>(undefined);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [recentTags, setRecentTags] = useState<string[]>([]);
-    const [isAuthChecking, setIsAuthChecking] = useState(true); // ✨ Auth Check State
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
 
     // 1. 수정 모드 상태 추가
     const [isEditMode, setIsEditMode] = useState(false);
@@ -24,7 +24,7 @@ const Community: React.FC = () => {
             } catch (error) {
                 console.error("Auth check failed:", error);
             } finally {
-                setIsAuthChecking(false); // ✨ Finished checking
+                setIsAuthChecking(false);
             }
         };
         const savedTags = localStorage.getItem('community_recent_tags');
@@ -50,10 +50,6 @@ const Community: React.FC = () => {
     };
 
     const handleTagClick = (tag: string) => {
-        // 수정 모드일 때는 태그 클릭(검색) 방지하고 삭제만 가능하게 할지,
-        // 혹은 둘 다 가능하게 할지 선택 사항이지만, 보통은 수정모드여도 클릭은 되거나 막습니다.
-        // 여기서는 클릭 기능 유지하되, 수정모드가 아닐 때만 토글되게 하는 것이 자연스러울 수 있으나
-        // 요청하신 기능(X표시 제어)에 집중하여 클릭은 유지합니다.
         if (selectedTag === tag) {
             setSelectedTag(null);
         } else {

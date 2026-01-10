@@ -1,80 +1,110 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useCredits } from '../context/CreditContext';
-import { STICKERS } from '../pages/post/constants';
+import { STICKERS } from '../components/post/constants';
 
+const API_BASE_URL = 'http://localhost:8080/api/market';
+
+export interface MarketItem {
+    id: string;
+    title: string;
+    price: number;
+    description: string;
+    tags: string[];
+    imageUrl: string;
+    type: string;
+    author: string;
+    sellerId?: string;
+    status: string;
+    createdAt: string;
+    salesCount: number;
+    referenceId?: string;
+    averageRating?: number;
+    reviewCount?: number;
+    isBackend?: boolean;
+    isVirtual?: boolean;
+    purchasedAt?: string;
+}
+
+// 백엔드 응답을 프론트엔드 모델로 매핑하는 헬퍼 함수
+const mapBackendItemToFrontend = (i: any): MarketItem => {
+    let content = { description: '', tags: [], imageUrl: '' };
+    try {
+        if (i.contentJson) {
+            content = JSON.parse(i.contentJson);
+        }
+    } catch (e) {
+        console.warn('Failed to parse contentJson for item', i.id);
+    }
+
+    return {
+        id: String(i.id),
+        title: i.name,
+        price: i.price,
+        description: content.description || '',
+        tags: content.tags || [],
+        imageUrl: content.imageUrl || '',
+        type: i.category,
+        author: i.sellerName,
+        sellerId: i.sellerId ? String(i.sellerId) : undefined,
+        status: i.status,
+        createdAt: i.createdAt,
+        salesCount: i.salesCount || 0,
+        referenceId: i.referenceId,
+        averageRating: i.averageRating,
+        reviewCount: i.reviewCount,
+        purchasedAt: i.transactionDate, // 구매 시점에만 존재
+        isBackend: true
+    };
+};
 
 export const useMarket = () => {
     const { credits, refreshCredits, userId } = useCredits();
-    const [purchasedItems, setPurchasedItems] = useState<any[]>([]);
-    const [sellingItems, setSellingItems] = useState<any[]>([]);
-    const [marketItems, setMarketItems] = useState<any[]>([]);
+
+    // 데이터 상태
+    const [purchasedItems, setPurchasedItems] = useState<MarketItem[]>([]);
+    const [sellingItems, setSellingItems] = useState<MarketItem[]>([]);
+    const [marketItems, setMarketItems] = useState<MarketItem[]>([]);
     const [wishlistItems, setWishlistItems] = useState<string[]>([]);
-    const [wishlistDetails, setWishlistDetails] = useState<any[]>([]);
+    const [wishlistDetails, setWishlistDetails] = useState<MarketItem[]>([]);
+
+    // 필터 및 정렬 상태
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [keyword, setKeyword] = useState('');
     const [sort, setSort] = useState<'popular' | 'latest' | 'price_low' | 'price_high'>('popular');
     const [totalCount, setTotalCount] = useState(0);
-
     const [sellerId, setSellerId] = useState<string | null>(null);
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [category, setCategory] = useState<string>('all');
+    const [isFree, setIsFree] = useState(false);
 
-    // Function to fetch data from backend
-    const refreshMarket = useCallback(async (options: { page?: number, keyword?: string, isLoadMore?: boolean, newSort?: 'popular' | 'latest' | 'price_low' | 'price_high', sellerId?: string | null, isFree?: boolean, category?: string } = {}) => {
+    // --- 사용자 데이터 조회 (구매, 판매, 위시리스트) ---
+    const fetchUserData = useCallback(async () => {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
-        const targetPage = options.page !== undefined ? options.page : 0;
-        const targetKeyword = options.keyword !== undefined ? options.keyword : keyword;
-        const targetSort = options.newSort !== undefined ? options.newSort : sort;
-        const targetSellerId = options.sellerId !== undefined ? options.sellerId : sellerId;
-        const targetCategory = options.category;
-        const isLoadMore = options.isLoadMore || false;
-
-        if (!isLoadMore) {
-            setPage(0);
-        }
-
         try {
-            // 1. Fetch Purchased Items
-            let backendPurchased: any[] = [];
-            const purchasedRes = await fetch('http://localhost:8080/api/market/purchased', {
+            // 1. 구매 내역 상세 조회 (팩 포함)
+            const purchasedRes = await fetch(`${API_BASE_URL}/purchased`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (purchasedRes.ok) {
                 const items = await purchasedRes.json();
 
-                // Process items and expand packs immediately to keep them grouped
-                backendPurchased = items.flatMap((i: any) => {
-                    const mainItem = {
-                        id: String(i.id),
-                        title: i.name,
-                        price: i.price,
-                        description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                        tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                        imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                        type: i.category,
-                        author: i.sellerName,
-                        purchasedAt: i.transactionDate,
-                        status: i.status,
-                        createdAt: i.createdAt,
-                        salesCount: i.salesCount || 0,
-                        averageRating: i.averageRating,
-                        reviewCount: i.reviewCount,
-                        referenceId: i.referenceId,
-                        isBackend: true
-                    };
+                // 팩 상품일 경우, 포함된 가상 스티커들도 목록에 추가
+                const expandedItems = items.flatMap((i: any) => {
+                    const mainItem = mapBackendItemToFrontend(i);
+                    const virtualItems: MarketItem[] = [];
 
-                    const virtualItems: any[] = [];
                     if (mainItem.referenceId) {
                         const packContents = STICKERS.filter(s => s.packId === mainItem.referenceId);
                         packContents.forEach(sticker => {
                             virtualItems.push({
-                                id: sticker.id, // Virtual ID
+                                id: sticker.id,
                                 title: sticker.name || '포함된 스티커',
                                 imageUrl: sticker.url,
                                 price: 0,
-                                type: 'sticker', // Distinct type?
+                                type: 'sticker',
                                 author: mainItem.author,
                                 purchasedAt: mainItem.purchasedAt,
                                 status: 'OWNED',
@@ -82,272 +112,197 @@ export const useMarket = () => {
                                 isVirtual: true,
                                 description: `${mainItem.title}에 포함됨`,
                                 tags: ['Pack Content'],
-                                // Inherit Pack Rating so "New" badge disappears and ratings show up in History
                                 averageRating: mainItem.averageRating,
-                                reviewCount: mainItem.reviewCount
+                                reviewCount: mainItem.reviewCount,
+                                createdAt: mainItem.createdAt,
+                                salesCount: mainItem.salesCount
                             });
                         });
                     }
-
                     return [mainItem, ...virtualItems];
                 });
 
-                // Deduplicate: If an item exists as both "Real Purchase" and "Virtual Pack Content",
-                // prefer the Virtual one because it has the correct grouping and rating inheritance.
-                const uniqueItems = backendPurchased.filter((item, _, self) => {
+                // 가상 아이템과 실제 구매 아이템 중 가상 아이템 우선 (중복 제거)
+                const uniqueItems = expandedItems.filter((item: MarketItem, _: number, self: MarketItem[]) => {
                     if (!item.isVirtual && item.referenceId) {
-                        const hasVirtualVersion = self.some(other => other.isVirtual && other.referenceId === item.referenceId);
-                        if (hasVirtualVersion) return false;
+                        const hasVirtual = self.some(other => other.isVirtual && other.referenceId === item.referenceId);
+                        if (hasVirtual) return false;
                     }
                     return true;
                 });
-
                 setPurchasedItems(uniqueItems);
             }
 
-            // 2. Fetch My Selling Items
-            let currentSellingItems: any[] = [];
-
-            const sellingRes = await fetch('http://localhost:8080/api/market/my-items', {
+            // 2. 내 판매 목록 조회
+            const sellingRes = await fetch(`${API_BASE_URL}/my-items`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (sellingRes.ok) {
                 const items = await sellingRes.json();
-                const backendSelling = items.map((i: any) => ({
-                    id: String(i.id),
-                    title: i.name,
-                    price: i.price,
-                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                    type: i.category,
-                    author: i.sellerName,
-                    status: i.status,
-                    createdAt: i.createdAt,
-                    salesCount: i.salesCount || 0,
-                    referenceId: i.referenceId,
-                    averageRating: i.averageRating,
-                    reviewCount: i.reviewCount,
-                    isBackend: true
-                }));
-                currentSellingItems = backendSelling;
-                setSellingItems(backendSelling);
+                setSellingItems(items.map(mapBackendItemToFrontend));
             }
 
-            // 2.5 Fetch Wishlist
-            const wishRes = await fetch('http://localhost:8080/api/market/wishlist', {
+            // 3. 위시리스트 조회
+            const wishRes = await fetch(`${API_BASE_URL}/wishlist`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (wishRes.ok) {
-                const wItems = await wishRes.json();
-                const mappedWishlist = wItems.map((i: any) => ({
-                    id: String(i.id),
-                    title: i.name,
-                    price: i.price,
-                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                    type: i.category,
-                    author: i.sellerName,
-                    status: i.status || 'ON_SALE',
-                    referenceId: i.referenceId,
-                    salesCount: i.salesCount || 0,
-                    isBackend: true
-                }));
-                setWishlistDetails(mappedWishlist);
-                setWishlistItems(mappedWishlist.map((i: any) => i.id));
+                const items = await wishRes.json();
+                const mapped = items.map(mapBackendItemToFrontend);
+                setWishlistDetails(mapped);
+                setWishlistItems(mapped.map((i: MarketItem) => i.id));
             }
 
-            // 3. Fetch All Market Items
-            let sortParam = 'createdAt,desc';
-            switch (targetSort) {
-                case 'popular': sortParam = 'salesCount,desc'; break;
-                case 'latest': sortParam = 'createdAt,desc'; break;
-                case 'price_low': sortParam = 'price,asc'; break;
-                case 'price_high': sortParam = 'price,desc'; break;
-            }
+        } catch (e) {
+            console.error("Failed to fetch user market data", e);
+        }
+    }, [userId]);
 
-            const query = new URLSearchParams({
-                page: String(targetPage),
-                size: '12',
-                sort: sortParam
-            });
+    // --- 마켓 피드 조회 ---
+    const fetchMarketFeed = useCallback(async (isLoadMore = false) => {
+        const token = localStorage.getItem('accessToken');
 
-            if (targetKeyword) {
-                query.append('keyword', targetKeyword);
-            }
+        const targetPage = isLoadMore ? page + 1 : 0;
+        if (!isLoadMore) setPage(0);
 
-            if (selectedTags.length > 0) {
-                selectedTags.forEach(t => query.append('tags', t));
-            }
+        let sortParam = 'salesCount,desc';
+        if (sort === 'latest') sortParam = 'createdAt,desc';
+        if (sort === 'price_low') sortParam = 'price,asc';
+        if (sort === 'price_high') sortParam = 'price,desc';
 
-            if (options.isFree) {
-                query.append('isFree', 'true');
-            }
+        const query = new URLSearchParams({
+            page: String(targetPage),
+            size: '12',
+            sort: sortParam
+        });
 
-            if (targetCategory && targetCategory !== 'all') {
-                query.append('category', targetCategory);
-            }
+        if (keyword) query.append('keyword', keyword);
+        if (sellerId) query.append('sellerId', sellerId);
+        if (selectedTags.length > 0) selectedTags.forEach(t => query.append('tags', t));
+        if (category && category !== 'all') query.append('category', category);
+        if (isFree) query.append('isFree', 'true');
 
-            if (targetSellerId) {
-                query.append('sellerId', targetSellerId);
-            }
-
-            const marketRes = await fetch(`http://localhost:8080/api/market/items?${query.toString()}`, {
+        try {
+            const res = await fetch(`${API_BASE_URL}/items?${query.toString()}`, {
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
-            if (marketRes.ok) {
-                const data = await marketRes.json();
-                // Check for nested page object (PagingAndSortingRepository format) or flat format
+
+            if (res.ok) {
+                const data = await res.json();
                 let total = data.page?.totalElements ?? data.totalElements ?? 0;
 
-                // ✨ Subtract user's own items from total count calculation
-                if (userId && currentSellingItems.length > 0) {
-                    const myMatching = currentSellingItems.filter(i => {
-                        if (i.status !== 'ON_SALE') return false;
-                        if (targetCategory && targetCategory !== 'all' && i.type !== targetCategory) return false;
-                        if (targetKeyword && !i.title.toLowerCase().includes(targetKeyword.toLowerCase())) return false;
-                        return true;
-                    });
-                    total = Math.max(0, total - myMatching.length);
-                }
-
                 setTotalCount(total);
-                const items = data.content;
-                const backendItems = items.map((i: any) => ({
-                    id: String(i.id),
-                    title: i.name,
-                    price: i.price,
-                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                    type: i.category,
-                    author: i.sellerName,
-                    sellerId: i.sellerId,
-                    status: i.status,
-                    createdAt: i.createdAt,
-                    salesCount: i.salesCount || 0,
-                    referenceId: i.referenceId,
-                    averageRating: i.averageRating,
-                    reviewCount: i.reviewCount,
-                    isBackend: true
-                }));
 
-                // Filter out own items logic (optional, but requested behavior is view by seller)
-                let finalItems = userId
-                    ? backendItems.filter((i: any) => String(i.sellerId) !== String(userId))
-                    : backendItems;
+                const fetchedItems = data.content.map(mapBackendItemToFrontend);
 
-                if (targetSellerId && String(targetSellerId) === String(userId)) {
-                    // Allow seeing own items if explicitly filtering by self
-                    finalItems = backendItems.filter((i: any) => String(i.sellerId) === String(userId));
+                // 본인 상품 제외 또는 필터링 로직
+                let visibleItems = fetchedItems;
+                if (userId) {
+                    if (sellerId === String(userId)) {
+                        // 내 상점 보기 모드
+                        visibleItems = fetchedItems.filter((i: MarketItem) => String(i.sellerId) === String(userId));
+                    } else {
+                        // 일반 피드 (내 상품 숨김)
+                        visibleItems = fetchedItems.filter((i: MarketItem) => String(i.sellerId) !== String(userId));
+                    }
                 }
 
                 if (isLoadMore) {
                     setMarketItems(prev => {
                         const existingIds = new Set(prev.map(p => p.id));
-                        const newUnique = finalItems.filter((i: any) => !existingIds.has(i.id));
+                        const newUnique = visibleItems.filter((i: MarketItem) => !existingIds.has(i.id));
                         return [...prev, ...newUnique];
                     });
+                    setPage(targetPage);
                 } else {
-                    setMarketItems(finalItems);
+                    setMarketItems(visibleItems);
                 }
                 setHasMore(!data.last);
-                if (isLoadMore) {
-                    setPage(targetPage);
-                }
             }
         } catch (e) {
-            console.error("Failed to fetch market data", e);
+            console.error("Failed to fetch market feed", e);
         }
-    }, [userId, keyword, sort, sellerId, selectedTags]);
+    }, [page, sort, keyword, sellerId, selectedTags, category, isFree, userId, sellingItems.length]);
+
+
+    // --- 초기 로드 및 효과 Hooks ---
+
+    // 1. 사용자 데이터 로드
+    useEffect(() => {
+        fetchUserData();
+    }, [fetchUserData]);
+
+    // 2. 피드 데이터 조건 변경 시 로드
+    useEffect(() => {
+        fetchMarketFeed(false);
+    }, [sort, keyword, sellerId, selectedTags, category, isFree]); // page is handled in loadMore 함수에서 처리
+
+    // 통합 새로고침 함수
+    const refreshMarket = useCallback(async (options: { isLoadMore?: boolean } = {}) => {
+        if (options.isLoadMore) {
+            await fetchMarketFeed(true);
+        } else {
+            await Promise.all([fetchUserData(), fetchMarketFeed(false)]);
+        }
+    }, [fetchUserData, fetchMarketFeed]);
+
+
+    // --- 액션 핸들러 ---
 
     const loadMore = useCallback(() => {
         if (!hasMore) return;
-        refreshMarket({ page: page + 1, isLoadMore: true });
-    }, [hasMore, page, refreshMarket]);
+        fetchMarketFeed(true);
+    }, [hasMore, fetchMarketFeed]);
 
-    const filterBySeller = useCallback((newSellerId: string | null) => {
-        setSellerId(newSellerId);
-        setKeyword(''); // Reset keyword when filtering by seller
+    const filterBySeller = useCallback((id: string | null) => {
+        setSellerId(id);
+        setKeyword('');
+        setPage(0);
     }, []);
 
     const filterByTag = useCallback((tag: string | null) => {
-        if (tag === null) {
-            setSelectedTags([]);
-        } else {
-            setSelectedTags(prev => {
-                const newTags = prev.includes(tag)
-                    ? prev.filter(t => t !== tag)
-                    : [...prev, tag];
-                return newTags;
-            });
-        }
+        if (tag === null) setSelectedTags([]);
+        else setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
         setKeyword('');
+        setPage(0);
     }, []);
 
     const search = useCallback((kw: string) => {
         setKeyword(kw);
         setSellerId(null);
         setSelectedTags([]);
+        setPage(0);
     }, []);
 
-    const changeSort = useCallback((newSort: 'popular' | 'latest' | 'price_low' | 'price_high') => {
-        setSort(newSort);
-    }, []);
+    const buyItem = useCallback(async (itemId: string, cost: number) => {
+        if (credits < cost) return false;
+        const token = localStorage.getItem('accessToken');
+        if (!token) return false;
 
-    useEffect(() => {
-        refreshMarket();
-    }, [refreshMarket]);
-
-    useEffect(() => {
-        // Fetch Wishlist IDs
-        const fetchWishlist = async () => {
-            const token = localStorage.getItem('accessToken');
-            if (!token) return;
-            try {
-                const res = await fetch('http://localhost:8080/api/market/wishlist/ids', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const ids = await res.json();
-                    setWishlistItems(ids.map(String));
-                }
-            } catch (e) {
-                console.error("Failed to fetch wishlist", e);
+        try {
+            let url = `${API_BASE_URL}/buy/${itemId}`;
+            if (isNaN(Number(itemId))) { // 레퍼런스 ID 구매 (팩 등)
+                url = `${API_BASE_URL}/buy/ref/${itemId}`;
             }
-        };
-        fetchWishlist();
-    }, []);
 
-    const isOwned = useCallback((itemId: string) => {
-        let checkId = String(itemId);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-        // If ID is numeric (DB ID), try to resolve to Reference ID from market items
-        if (!isNaN(Number(checkId))) {
-            const item = marketItems.find(m => String(m.id) === checkId);
-            if (item && item.referenceId) {
-                checkId = item.referenceId;
+            if (response.ok) {
+                await fetchUserData(); // 소유권 갱신
+                await refreshCredits(); // 크레딧 갱신
+                return true;
+            } else {
+                alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
+                return false;
             }
+        } catch (e) {
+            console.error(e);
+            return false;
         }
-
-        // 1. Direct ownership
-        if (purchasedItems.some(item => item.id === checkId || item.referenceId === checkId)) {
-            return true;
-        }
-
-        // 2. Pack ownership (Check if this item is part of a pack I own)
-        const stickerDef = STICKERS.find(s => s.id === checkId);
-        if (stickerDef && stickerDef.packId) {
-            return purchasedItems.some(item => item.id === String(stickerDef.packId) || item.referenceId === String(stickerDef.packId));
-        }
-
-        return false;
-    }, [purchasedItems, marketItems]);
-
-    const isWishlisted = useCallback((itemId: string) => {
-        return wishlistItems.includes(itemId);
-    }, [wishlistItems]);
+    }, [credits, refreshCredits, fetchUserData]);
 
     const toggleWishlist = useCallback(async (itemId: string) => {
         const token = localStorage.getItem('accessToken');
@@ -355,13 +310,11 @@ export const useMarket = () => {
             alert("로그인이 필요합니다.");
             return;
         }
-
         try {
-            const res = await fetch(`http://localhost:8080/api/market/wishlist/${itemId}`, {
+            const res = await fetch(`${API_BASE_URL}/wishlist/${itemId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (res.ok) {
                 const data = await res.json();
                 setWishlistItems(prev => {
@@ -391,7 +344,7 @@ export const useMarket = () => {
                 referenceId: item.originalId?.toString() || item.id?.toString()
             };
 
-            const response = await fetch('http://localhost:8080/api/market/items', {
+            const response = await fetch(`${API_BASE_URL}/items`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -401,8 +354,7 @@ export const useMarket = () => {
             });
 
             if (response.ok) {
-                await refreshMarket();
-                await refreshCredits();
+                await Promise.all([fetchUserData(), fetchMarketFeed(false), refreshCredits()]);
             } else {
                 alert("아이템 등록 실패");
             }
@@ -410,21 +362,17 @@ export const useMarket = () => {
             console.error(e);
             alert("아이템 등록 중 오류 발생");
         }
-    }, [refreshMarket, refreshCredits]);
+    }, [fetchUserData, fetchMarketFeed, refreshCredits]);
 
     const updateItem = useCallback(async (itemId: string, itemData: any) => {
         const token = localStorage.getItem('accessToken');
-        if (!token) {
-            alert('로그인이 필요합니다.');
-            return false;
-        }
+        if (!token) { alert('로그인이 필요합니다.'); return false; }
 
         try {
             const body = {
                 name: itemData.title,
                 price: itemData.price,
                 category: itemData.type,
-                // referenceId: itemData.referenceId, // Usually not updated
                 contentJson: JSON.stringify({
                     description: itemData.description,
                     tags: itemData.tags,
@@ -432,9 +380,7 @@ export const useMarket = () => {
                 })
             };
 
-            alert(`DEBUG OUT: Sending Update to Backend\nItemID: ${itemId}\nPayload Image: ${itemData.imageUrl}`);
-
-            const response = await fetch(`http://localhost:8080/api/market/items/${itemId}`, {
+            const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -444,33 +390,7 @@ export const useMarket = () => {
             });
 
             if (response.ok) {
-                // Reload selling items
-                const res = await fetch('http://localhost:8080/api/market/my-items', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const items = await res.json();
-
-                    // Verify if it came back
-                    const updatedBackendItem = items.find((i: any) => String(i.id) === String(itemId));
-                    const updatedJson = updatedBackendItem?.contentJson ? JSON.parse(updatedBackendItem.contentJson) : {};
-                    alert(`DEBUG IN: Refreshed from Backend\nSaved Image: ${updatedJson.imageUrl}`);
-
-                    const selling = items.map((i: any) => ({
-                        id: String(i.id),
-                        title: i.name,
-                        price: i.price,
-                        description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                        tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                        imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                        type: i.category,
-                        author: i.sellerName,
-                        salesCount: i.salesCount,
-                        status: i.status,
-                        referenceId: i.referenceId
-                    }));
-                    setSellingItems(selling);
-                }
+                await fetchUserData();
                 return true;
             } else {
                 const errorText = await response.text();
@@ -482,58 +402,41 @@ export const useMarket = () => {
             alert('수정 중 오류가 발생했습니다.');
             return false;
         }
-    }, []);
+    }, [fetchUserData]);
 
     const cancelItem = useCallback(async (itemId: string) => {
-        if (!isNaN(Number(itemId))) {
-            const token = localStorage.getItem('accessToken');
-            if (!token) return;
-            try {
-                const response = await fetch(`http://localhost:8080/api/market/cancel/${itemId}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    await refreshMarket();
-                } else {
-                    alert("판매 취소 실패");
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }, [refreshMarket]);
-
-    const buyItem = useCallback(async (itemId: string, cost: number) => {
-        if (credits < cost) return false;
-
         const token = localStorage.getItem('accessToken');
-        if (!token) return false;
-
+        if (!token) return;
         try {
-            let url = `http://localhost:8080/api/market/buy/${itemId}`;
-            if (isNaN(Number(itemId))) {
-                url = `http://localhost:8080/api/market/buy/ref/${itemId}`;
-            }
-
-            const response = await fetch(url, {
+            const response = await fetch(`${API_BASE_URL}/cancel/${itemId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
             if (response.ok) {
-                await refreshMarket();
-                await refreshCredits();
-                return true;
+                await Promise.all([fetchUserData(), fetchMarketFeed(false)]);
             } else {
-                alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
-                return false;
+                alert("판매 취소 실패");
             }
         } catch (e) {
             console.error(e);
-            return false;
         }
-    }, [credits, refreshMarket, refreshCredits]);
+    }, [fetchUserData, fetchMarketFeed]);
+
+    const isOwned = useCallback((itemId: string) => {
+        let checkId = String(itemId);
+        // 직접 ID 체크
+        if (purchasedItems.some(i => i.id === checkId || i.referenceId === checkId)) return true;
+
+        // 팩 포함 여부 체크
+        const stickerDef = STICKERS.find(s => s.id === checkId);
+        if (stickerDef && stickerDef.packId) {
+            const packId = String(stickerDef.packId);
+            return purchasedItems.some(i => i.id === packId || i.referenceId === packId);
+        }
+        return false;
+    }, [purchasedItems]);
+
+    const isWishlisted = useCallback((itemId: string) => wishlistItems.includes(String(itemId)), [wishlistItems]);
 
     const getPackPrice = useCallback((packId: string, originalPrice: number) => {
         const packStickers = STICKERS.filter(s => s.packId === packId);
@@ -547,27 +450,12 @@ export const useMarket = () => {
         const token = localStorage.getItem('accessToken');
         if (!token) return null;
         try {
-            const res = await fetch(`http://localhost:8080/api/market/items/${itemId}`, {
+            const res = await fetch(`${API_BASE_URL}/items/${itemId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const i = await res.json();
-                return {
-                    id: String(i.id),
-                    title: i.name,
-                    price: i.price,
-                    description: i.contentJson ? JSON.parse(i.contentJson).description : '',
-                    tags: i.contentJson ? JSON.parse(i.contentJson).tags : [],
-                    imageUrl: i.contentJson ? JSON.parse(i.contentJson).imageUrl : '',
-                    type: i.category,
-                    author: i.sellerName,
-                    status: i.status,
-                    createdAt: i.createdAt,
-                    salesCount: i.salesCount || 0,
-                    referenceId: i.referenceId,
-                    averageRating: i.averageRating,
-                    reviewCount: i.reviewCount
-                };
+                return mapBackendItemToFrontend(i);
             }
             return null;
         } catch (e) {
@@ -576,37 +464,49 @@ export const useMarket = () => {
         }
     }, []);
 
-    // This block is placed here based on the instruction's context for deduplication and selling items.
-    // The actual refreshMarket function would likely be a useCallback at the top level of the component.
-
-
-
-    return {
+    return useMemo(() => ({
+        // 데이터
         marketItems,
         purchasedItems,
         sellingItems,
         wishlistItems,
         wishlistDetails,
-        isOwned,
-        isWishlisted,
-        toggleWishlist,
-        buyItem,
-        registerItem,
-        cancelItem,
-        getPackPrice,
-        getMarketItem,
-        loadMore,
-        search,
-        changeSort,
-        sort,
-        filterBySeller,
-        sellerId,
-        filterByTag,
-        selectedTags,
+        totalCount,
         hasMore,
         isSearching: !!keyword,
-        updateItem,
+
+        // 필터 및 검색
+        sort,
+        changeSort: setSort,
+        keyword,
+        search,
+        sellerId,
+        filterBySeller,
+        selectedTags,
+        filterByTag,
+        category,
+        filterByCategory: setCategory,
+        isFree,
+        filterByFree: setIsFree,
+
+        // 액션
         refreshMarket,
-        totalCount
-    };
+        loadMore,
+        buyItem,
+        registerItem,
+        updateItem,
+        cancelItem,
+        toggleWishlist,
+
+        // 헬퍼
+        isOwned,
+        isWishlisted,
+        getPackPrice,
+        getMarketItem
+    }), [
+        marketItems, purchasedItems, sellingItems, wishlistItems, wishlistDetails,
+        totalCount, hasMore, keyword, sort, sellerId, selectedTags, category, isFree,
+        refreshMarket, loadMore, buyItem, registerItem, updateItem, cancelItem, toggleWishlist,
+        isOwned, isWishlisted, getPackPrice, getMarketItem, search, filterBySeller, filterByTag
+    ]);
 };

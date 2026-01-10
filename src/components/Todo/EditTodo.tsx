@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Trash2, Calendar, Clock } from 'lucide-react';
-import type { Todo } from './types';
+import type { Todo } from '../../types/todo';
 
 interface TodoModalProps {
   onClose: () => void;

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Navigation from '../../components/Header/Navigation';
+import Navigation from '../../components/header/Navigation';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-const PasswordChangeScreen: React.FC = () => {
+const PasswordChangePage: React.FC = () => {
     const navigate = useNavigate();
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -318,4 +318,4 @@ const PasswordChangeScreen: React.FC = () => {
     );
 }
 
-export default PasswordChangeScreen;
+export default PasswordChangePage;

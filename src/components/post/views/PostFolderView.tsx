@@ -62,7 +62,7 @@ interface Props {
     showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
-const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh, showConfirmModal }) => {
+const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh, showConfirmModal }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
     const [isCycleModalOpen, setIsCycleModalOpen] = useState(false); // ✨ New Cycle Modal State
@@ -678,4 +678,4 @@ const PostFolderPage: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     );
 };
 
-export default PostFolderPage;
+export default PostFolderView;

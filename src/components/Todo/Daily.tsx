@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import type { Todo } from './types';
+import type { Todo } from '../../types/todo';
 import { TodoItem } from './CheckTodo';
 import { TodoModal } from './EditTodo';
 
@@ -25,8 +25,6 @@ export function DailyView({
     onDateChange,
     isReadOnly = false,
 }: DailyViewProps) {
-    // const [currentDate, setCurrentDate] = useState(new Date()); // Removed internal state
-
     // 모달 관련 상태
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingTodo, setEditingTodo] = useState<Todo | null>(null);

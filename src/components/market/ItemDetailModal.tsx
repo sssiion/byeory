@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Heart, ShoppingBag, Star, User, Trash2 } from 'lucide-react';
 import { useCredits } from '../../context/CreditContext';
-import type { MarketItem } from '../../data/mockMarketItems';
+import type { MarketItem } from '../../types/market';
 import ConfirmationModal from '../common/ConfirmationModal';
 
 interface ItemDetailModalProps {
@@ -86,7 +86,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         try {
             const headers: HeadersInit = {};
             if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
+                headers['Authorization'] = `Bearer ${token} `;
             }
 
             const res = await fetch(`http://localhost:8080/api/market/reviews/${targetId}`, {

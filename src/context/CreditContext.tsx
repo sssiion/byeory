@@ -7,15 +7,7 @@ import React, {
   useMemo,
 } from "react";
 
-export interface DailyQuest {
-  id: string;
-  description: string;
-  reward: number;
-  isCompleted: boolean;
-  isClaimable: boolean;
-  type: "login" | "time" | "widget" | "post";
-  targetValue?: number;
-}
+import type { DailyQuest } from '../types/credit';
 
 interface CreditContextType {
   userId: string | null;
@@ -141,10 +133,10 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
             const saved = parsed.find((p: DailyQuest) => p.id === def.id);
             return saved
               ? {
-                  ...def,
-                  isCompleted: saved.isCompleted,
-                  isClaimable: saved.isClaimable,
-                }
+                ...def,
+                isCompleted: saved.isCompleted,
+                isClaimable: saved.isClaimable,
+              }
               : def;
           })
         );
@@ -244,7 +236,7 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount }),
+          body: JSON.stringify({ amount, reason }),
         });
         refreshCredits();
       } catch (e) {

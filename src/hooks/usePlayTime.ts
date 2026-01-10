@@ -6,7 +6,7 @@ const API_BASE_URL = 'http://localhost:8080/api/user';
 const SESSION_STORAGE_KEY = 'session_playtime_seconds';
 
 export const usePlayTime = () => {
-    // Initialize from sessionStorage to survive refreshes
+    // 새로고침 시에도 유지되도록 세션 스토리지에서 초기화
     const [playTime, setPlayTime] = useState<number>(() => {
         const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
         return stored ? parseInt(stored, 10) : 0;
@@ -15,17 +15,14 @@ export const usePlayTime = () => {
     const { isLoggedIn } = useAuth();
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Save to sessionStorage whenever playTime changes
+    // 플레이 타임 변경 시 세션 스토리지에 자동 저장
     useEffect(() => {
         if (playTime > 0) {
             sessionStorage.setItem(SESSION_STORAGE_KEY, playTime.toString());
         }
     }, [playTime]);
 
-    // Note: We removed the auto-cleanup on !isLoggedIn here to prevent race conditions on page refresh.
-    // Instead, we will explicitly clear sessionStorage in the logout function in AuthContext.
-
-    // 1. Heartbeat Request (POST /api/user/heartbeat) - Background Process
+    // 1. 하트비트 전송 (백그라운드 접속 시간 누적)
     const sendHeartbeat = useCallback(async () => {
         if (!isLoggedIn) return;
 
@@ -38,26 +35,22 @@ export const usePlayTime = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            // Background sync success
         } catch (error) {
             console.error('Heartbeat failed:', error);
         }
     }, [isLoggedIn]);
 
-    // 2. Heartbeat Loop (Every 60 seconds)
+    // 2. 하트비트 주기적 실행 (60초마다)
     useEffect(() => {
         if (!isLoggedIn) return;
 
-        // Execute heartbeat regardless of visibility (it's "Background" info)
-        // Or should we only send heartbeat if active? 
-        // User said: "백엔드에 보내거나 받는 자료는 분 단위로 누적 접속시간을 체크하는 것이고, 백그라운드 정보임"
-        // Usually heartbeats are sent while the session is alive.
-        const heartbeatInterval = setInterval(sendHeartbeat, 60000); // 60 seconds
+        // 백그라운드에서도 접속 시간을 누적하기 위해 주기적으로 실행
+        const heartbeatInterval = setInterval(sendHeartbeat, 60000);
 
         return () => clearInterval(heartbeatInterval);
     }, [isLoggedIn, sendHeartbeat]);
 
-    // 3. Session Timer Loop (1s) - Only when Visible
+    // 3. 화면 표시용 타이머 (1초 단위, 활성화된 탭에서만 동작)
     useEffect(() => {
         if (!isLoggedIn) return;
 
@@ -83,7 +76,7 @@ export const usePlayTime = () => {
             }
         };
 
-        // Initial check
+        // 초기 실행: 페이지가 보일 때 타이머 시작
         if (document.visibilityState === 'visible') {
             startTimer();
         }

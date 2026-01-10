@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export function useIsMobile(breakpoint: number = 768) {
-    // Initialize with the current window width to avoid hydration mismatch blinking
-    // (Assuming client-side only for this project, otherwise checks needed)
+    // 반응형 감지 시스템
     const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < breakpoint : false));
 
     useEffect(() => {
@@ -10,7 +9,6 @@ export function useIsMobile(breakpoint: number = 768) {
             setIsMobile(window.innerWidth < breakpoint);
         };
 
-        // Listener
         window.addEventListener('resize', checkIsMobile);
 
         return () => window.removeEventListener('resize', checkIsMobile);

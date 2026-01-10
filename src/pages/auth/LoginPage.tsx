@@ -17,12 +17,10 @@ function LoginPage() {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Login using the entered email
         if (email && password) {
             const success = await localLogin(email, password);
             if (success) {
-                await refreshCredits(); // Refresh credits on login
-                // Check if profile setup is done
+                await refreshCredits();
                 const isSetup = localStorage.getItem('isProfileSetupCompleted');
                 navigate(isSetup === 'true' ? (location.state?.from || '/') : '/setup-profile');
             }
@@ -117,8 +115,7 @@ function LoginPage() {
                             onSuccess={async (credential) => {
                                 const success = await socialLogin(credential);
                                 if (success) {
-                                    await refreshCredits(); // Refresh credits
-                                    // Check if profile setup is done
+                                    await refreshCredits();
                                     const isSetup = localStorage.getItem('isProfileSetupCompleted');
                                     navigate(isSetup === 'true' ? (location.state?.from || '/') : '/setup-profile');
                                 } else {

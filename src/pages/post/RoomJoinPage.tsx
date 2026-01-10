@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Users, Lock, ArrowRight, Loader } from 'lucide-react';
-import { joinRoomApi } from '../api';
-import ConfirmationModal from '../../../components/common/ConfirmationModal';
+import { joinRoomApi } from '../../components/post/api';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const RoomJoinPage: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
@@ -40,7 +40,6 @@ const RoomJoinPage: React.FC = () => {
         });
     };
 
-    // ✨ Check for Token on Mount
     React.useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -55,11 +54,9 @@ const RoomJoinPage: React.FC = () => {
     const handleJoin = async () => {
         if (!roomId) return;
 
-        // ✨ Check for Token first
         const token = localStorage.getItem('accessToken');
         if (!token) {
             setError("로그인 후 다시 이용해주세요.");
-            // Optionally redirect to login after a delay or show a login button
             setTimeout(() => navigate('/login'), 1500);
             return;
         }
@@ -70,10 +67,8 @@ const RoomJoinPage: React.FC = () => {
             await joinRoomApi(roomId, password);
             showModal("입장 완료", "모임에 입장했습니다!", 'success', () => navigate('/post'));
         } catch (err: any) {
-            // ✨ Check if error is related to Auth (401/403 often come as failures)
-            // Or just use the user's requested message if it seems like a generic failure
             if (err.message === "모임방 입장에 실패했습니다.") {
-                setError("로그인 후 다시 이용해주세요."); // As requested fall-back or specific override
+                setError("로그인 후 다시 이용해주세요.");
             } else {
                 setError(err.message || "입장에 실패했습니다. 비밀번호를 확인해주세요.");
             }

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchCycleDetailApi, passTurnApi, saveCycleContentApi, type RoomCycle } from '../roomCycleApi';
-import RollingPaperView from '../components/RollingPaperView';
-import ExchangeDiaryView from '../components/ExchangeDiaryView';
+import { fetchCycleDetailApi, passTurnApi, saveCycleContentApi, type RoomCycle } from '../../components/post/api/roomCycle';
+import RollingPaperView from '../../components/post/components/RollingPaperView';
+import ExchangeDiaryView from '../../components/post/components/ExchangeDiaryView';
 import { ArrowLeft, Loader } from 'lucide-react';
-import Navigation from '../../../components/Header/Navigation';
-import ConfirmationModal from '../../../components/common/ConfirmationModal';
+import Navigation from '../../components/header/Navigation';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const RoomCyclePage: React.FC = () => {
     const { cycleId } = useParams<{ cycleId: string }>();
@@ -51,18 +51,15 @@ const RoomCyclePage: React.FC = () => {
         try {
             const data = await fetchCycleDetailApi(cycleId);
 
-            // Client-side verification for isMyTurn
-            // Sometimes backend might return false, so we double check with JWT email
             try {
                 const token = localStorage.getItem('accessToken');
                 if (token) {
                     const payload = JSON.parse(atob(token.split('.')[1]));
-                    const myEmail = payload.sub || payload.email; // 'sub' is standard, checking both just in case
+                    const myEmail = payload.sub || payload.email;
 
                     if (myEmail && data.members) {
                         const currentMember = data.members.find(m => (m.order ?? m.turnOrder) === data.currentTurnOrder);
                         if (currentMember && currentMember.email === myEmail) {
-                            // Client-side override applied
                             data.isMyTurn = true;
                         }
                     }
@@ -87,10 +84,7 @@ const RoomCyclePage: React.FC = () => {
     const handlePassTurn = async (content?: string) => {
         if (!cycleId) return;
         try {
-            // If content is provided (e.g. from Exchange Diary), save it first
             if (content) {
-                // For Exchange Diary, we store it as raw content for now or structured JSON
-                // The API expects 'data: any'
                 await saveCycleContentApi(cycleId, typeof content === 'string' ? JSON.parse(content) : content);
             }
 
@@ -131,7 +125,6 @@ const RoomCyclePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-[var(--bg-main)] flex flex-col">
             <Navigation />
-            {/* Nav (Only visible if not in full-screen editor mode which might want to hide it, but for now safe to show) */}
             <div className="p-4 flex items-center gap-4">
                 <button onClick={handleBack} className="p-2 hover:bg-[var(--bg-card-secondary)] rounded-full transition-colors">
                     <ArrowLeft size={24} className="text-[var(--text-primary)]" />

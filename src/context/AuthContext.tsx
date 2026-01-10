@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import ForcedPinInputModal from '../components/Security/ForcedPinInputModal';
+import ForcedPinInputModal from '../components/security/ForcedPinInputModal';
+import { authService } from '../services/authService';
+import { pinService } from '../services/pinService';
 
 interface AuthContextType {
     isLoggedIn: boolean;
@@ -38,29 +40,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const triggerPinFlow = async (token: string) => {
         try {
             // 1. Check status first to know if locked
-            const statusRes = await fetch('http://localhost:8080/api/pin/status', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
             let locked = false;
-            if (statusRes.ok) {
-                const status = await statusRes.json();
+            try {
+                const status = await authService.checkPinStatus(token);
                 locked = status.locked;
-            }
+            } catch { /* ignore error, assume not locked or handle logically */ }
 
             // 2. Check if PIN is set
-            const checkRes = await fetch('http://localhost:8080/api/pin/check', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (checkRes.ok) {
-                const isPinSet = await checkRes.json();
-                if (isPinSet === true) {
-                    const isVerified = sessionStorage.getItem('pin_verified') === 'true';
-                    if (!isVerified) {
-                        setIsPinLocked(locked);
-                        setShowPinModal(true);
-                    }
+            const isPinSet = await authService.checkPinSet(token);
+            if (isPinSet === true) {
+                const isVerified = sessionStorage.getItem('pin_verified') === 'true';
+                if (!isVerified) {
+                    setIsPinLocked(locked);
+                    setShowPinModal(true);
                 }
             }
         } catch (err) {
@@ -115,15 +107,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!token) return false;
 
         try {
-            const response = await fetch('http://localhost:8080/api/pin/check', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const isPinSet = await response.json();
-                return isPinSet === true;
-            }
+            const isPinSet = await authService.checkPinSet(token);
+            return isPinSet === true;
         } catch (error) {
             console.error("Failed to check PIN status:", error);
         }
@@ -179,26 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 providerId
             };
 
-            const response = await fetch('http://localhost:8080/auth/social-login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(loginData),
-            });
-
-            if (!response.ok) {
-                console.error(`Social login failed with status: ${response.status}`);
-                try {
-                    const errorText = await response.text();
-                    console.error("Error response:", errorText);
-                } catch (e) {
-                    console.error("Could not read error response");
-                }
-                return false;
-            }
-
-            const data = await response.json();
+            const data = await authService.socialLogin(loginData);
 
             if (data.accessToken) {
                 localStorage.setItem('accessToken', data.accessToken);
@@ -207,10 +173,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 // Verify profile status
                 try {
-                    const profileRes = await fetch('http://localhost:8080/api/user/profile', {
-                        headers: { 'Authorization': `Bearer ${data.accessToken}` }
-                    });
-                    if (profileRes.ok) {
+                    const isProfileSet = await authService.verifyProfile(data.accessToken);
+                    if (isProfileSet) {
                         localStorage.setItem('isProfileSetupCompleted', 'true');
                         // Clear temp profile data if setup is complete
                         localStorage.removeItem('temp_social_profile');
@@ -235,79 +199,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.error("Login failed: No access token received");
                 return false;
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Social login error:", error);
+            if (error.status) {
+                try {
+                    const errorText = await error.text();
+                    console.error("Error response:", errorText);
+                } catch { }
+            }
             return false;
         }
     };
 
     const localLogin = async (email: string, password: string): Promise<boolean> => {
-        // ... (existing logic) ...
         try {
-            const response = await fetch('http://localhost:8080/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
+            const data = await authService.localLogin(email, password);
 
-            if (response.ok) {
-                const data = await response.json();
+            if (data.accessToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                // Clear potential stale data first
+                localStorage.removeItem('isProfileSetupCompleted');
 
-                if (data.accessToken) {
-                    localStorage.setItem('accessToken', data.accessToken);
-                    // Clear potential stale data first
-                    localStorage.removeItem('isProfileSetupCompleted');
-
-                    // Verify profile status
-                    try {
-                        const profileRes = await fetch('http://localhost:8080/api/user/profile', {
-                            headers: { 'Authorization': `Bearer ${data.accessToken}` }
-                        });
-                        if (profileRes.ok) {
-                            localStorage.setItem('isProfileSetupCompleted', 'true');
-                        }
-                    } catch (e) {
-                        console.error("Profile check failed", e);
-                    }
-
-                    setLoginState(email);
-
-                    // Initialize PIN flow (checks if locked or set)
-                    await triggerPinFlow(data.accessToken);
-
-                    return true;
-                } else {
-                    console.error("Login failed: No access token received");
-                    alert("로그인 실패: 인증 토큰을 받지 못했습니다.");
-                    return false;
-                }
-            } else if (response.status === 404) {
-                alert("가입되지 않은 이메일입니다.");
-                return false;
-            } else if (response.status === 401) {
-                alert("비밀번호가 틀렸습니다.");
-                return false;
-            } else {
-                // Try to parse error message if possible, otherwise use default
+                // Verify profile status
                 try {
-                    const data = await response.json();
+                    const isProfileSet = await authService.verifyProfile(data.accessToken);
+                    if (isProfileSet) {
+                        localStorage.setItem('isProfileSetupCompleted', 'true');
+                    }
+                } catch (e) {
+                    console.error("Profile check failed", e);
+                }
+
+                setLoginState(email);
+
+                // Initialize PIN flow (checks if locked or set)
+                await triggerPinFlow(data.accessToken);
+
+                return true;
+            } else {
+                alert("로그인 실패: 인증 토큰을 받지 못했습니다.");
+                return false;
+            }
+        } catch (error: any) {
+            console.error("Local login error:", error);
+            if (error.status === 404) {
+                alert("가입되지 않은 이메일입니다.");
+            } else if (error.status === 401) {
+                alert("비밀번호가 틀렸습니다.");
+            } else {
+                try {
+                    const data = await error.json();
                     alert("로그인 실패: " + (data.message || "이메일 또는 비밀번호를 확인하세요."));
                 } catch {
                     alert("로그인 실패: 이메일 또는 비밀번호를 확인하세요.");
                 }
-                return false;
             }
-        } catch (error) {
-            console.error("Local login error:", error);
-            alert("로그인 중 오류가 발생했습니다.");
             return false;
         }
     };
 
     const signup = async (email: string, password: string): Promise<boolean> => {
-        // ... (existing logic) ...
         try {
             const joinData = {
                 email,
@@ -315,28 +266,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 provider: "LOCAL"
             };
 
-            const response = await fetch('http://localhost:8080/auth/join', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(joinData),
-            });
+            await authService.join(joinData);
+            return true;
 
-            if (response.ok) {
-                return true;
-            } else if (response.status === 409) {
-                alert("이미 존재하는 계정입니다.");
-                return false;
-            } else {
-                const data = await response.json().catch(() => ({}));
-                alert("회원가입 실패: " + (data.message || "다시 시도해주세요."));
-                return false;
-            }
-
-        } catch (error) {
+        } catch (error: any) {
             console.error("Signup error:", error);
-            alert("회원가입 중 오류가 발생했습니다.");
+            if (error.status === 409) {
+                alert("이미 존재하는 계정입니다.");
+            } else {
+                try {
+                    const data = await error.json();
+                    alert("회원가입 실패: " + (data.message || "다시 시도해주세요."));
+                } catch {
+                    alert("회원가입 실패: 다시 시도해주세요.");
+                }
+            }
             return false;
         }
     };
@@ -360,9 +304,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Clear session specific items
         sessionStorage.removeItem('session_playtime_seconds');
-
-        // Note: We intentionally DO NOT clear 'theme', 'fontFamily', 'showSessionTimer', etc.
-        // so that settings persist across logins.
     };
 
     const handlePinSubmit = async (pin: string): Promise<string | null> => {
@@ -370,50 +311,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!token) return "로그인이 필요합니다.";
 
         try {
-            const response = await fetch('http://localhost:8080/api/pin/verify', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ pin })
-            });
-
-            if (response.ok) {
-                const isCorrect = await response.json();
+            try {
+                const isCorrect = await pinService.verifyPin(token, pin);
                 if (isCorrect === true) {
                     setShowPinModal(false);
                     setIsPinLocked(false);
                     sessionStorage.setItem('pin_verified', 'true'); // Mark as verified for this session
                     return null;
                 } else {
-                    // Fetch status to get fail count and lock status
-                    const statusRes = await fetch('http://localhost:8080/api/pin/status', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (statusRes.ok) {
-                        const status = await statusRes.json();
-                        if (status.locked) {
-                            setIsPinLocked(true);
-                        }
-                        return `PIN 번호가 일치하지 않습니다. (${status.failureCount}/5)`;
-                    }
-
+                    // Logic flow: backend returns boolean true if correct.
+                    // If incorrect, it might throw 400 or just return false? 
+                    // Original code assumed fetch OK -> true/false.
+                    // New service throws if !ok.
                     return 'PIN 번호가 일치하지 않습니다.';
                 }
-            } else {
-                // If 400 or other error, check if it's because it's locked
-                const statusRes = await fetch('http://localhost:8080/api/pin/status', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (statusRes.ok) {
-                    const status = await statusRes.json();
+            } catch (error: any) {
+                // Check status if verification failed (likely wrong PIN or locked)
+                try {
+                    const status = await pinService.getStatus(token);
                     if (status.locked) {
                         setIsPinLocked(true);
                         return `PIN 입력 횟수를 초과하여 계정이 잠겼습니다. (${status.failureCount}/5)`;
                     }
-                }
+                    if (status.failureCount > 0) {
+                        return `PIN 번호가 일치하지 않습니다. (${status.failureCount}/5)`;
+                    }
+                } catch { }
+
                 return '본인 인증에 실패했습니다.';
             }
         } catch (error) {
@@ -427,15 +351,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!token) return "로그인이 필요합니다.";
 
         try {
-            const response = await fetch('http://localhost:8080/api/pin/unlock-request', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                return null; // Success
+            const success = await pinService.requestUnlock(token);
+            if (success) {
+                return null;
             } else {
                 return "인증코드 발송에 실패했습니다.";
             }
@@ -450,21 +368,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!token) return "로그인이 필요합니다.";
 
         try {
-            const response = await fetch('http://localhost:8080/api/pin/unlock', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ code })
-            });
-
-            if (response.ok) {
+            try {
+                await pinService.verifyUnlockCode(token, code);
                 setShowPinModal(false);
                 setIsPinLocked(false);
-                sessionStorage.setItem('pin_verified', 'true'); // PIN is deleted/disabled, mark session as free
+                sessionStorage.setItem('pin_verified', 'true');
                 return null;
-            } else {
+            } catch {
                 return "유효하지 않은 인증코드입니다.";
             }
         } catch (error) {

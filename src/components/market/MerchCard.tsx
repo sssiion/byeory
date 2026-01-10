@@ -1,6 +1,6 @@
 import React from 'react';
 import { Coins, Heart, ShoppingBag, Star } from 'lucide-react';
-import type { MarketItem } from '../../data/mockMarketItems';
+import type { MarketItem } from '../../types/market';
 import { useCredits } from '../../context/CreditContext';
 
 interface MerchCardProps {

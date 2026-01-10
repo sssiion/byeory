@@ -10,7 +10,7 @@ interface Props {
     editor: ReturnType<typeof usePostEditor>;
 }
 
-const PostViewPage: React.FC<Props> = ({ editor }) => {
+const PostReadView: React.FC<Props> = ({ editor }) => {
     // ✨ Breadcrumb Logic
     const breadcrumbs = useBreadcrumbs(editor.selectedAlbumId, editor.customAlbums, (id) => id && editor.handleAlbumClick(id), '내 앨범', false);
 
@@ -87,4 +87,4 @@ const PostViewPage: React.FC<Props> = ({ editor }) => {
     );
 };
 
-export default PostViewPage;
+export default PostReadView;

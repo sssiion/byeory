@@ -8,7 +8,7 @@ interface Props {
     onPostClick: (post: PostData) => void;
 }
 
-const PostListPage: React.FC<Props> = ({ posts, onStartWriting, onPostClick }) => {
+const PostListView: React.FC<Props> = ({ posts, onStartWriting, onPostClick }) => {
     return (
         <div>
             <div className="flex justify-between items-center mb-8">
@@ -36,4 +36,4 @@ const PostListPage: React.FC<Props> = ({ posts, onStartWriting, onPostClick }) =
     );
 };
 
-export default PostListPage;
+export default PostListView;

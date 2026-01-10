@@ -4,17 +4,17 @@ import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import MainPage from './pages/MainPage'
 import PostPage from './pages/post/PostPage'
 import TodoPage from './pages/todo/TodoPage'
-import InviteAcceptPage from './pages/post/pages/InviteAcceptPage';
-import RoomJoinPage from './pages/post/pages/RoomJoinPage';
+import InviteAcceptPage from './pages/post/InviteAcceptPage';
+import RoomJoinPage from './pages/post/RoomJoinPage';
 import CommunityPage from './pages/community/CommunityPage';
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 
 import { ThemeProvider } from './context/ThemeContext';
 import MarketPage from './pages/market/MarketPage'
 
-import ProfilePage from './pages/profile/ProfilePage'
-import ProfileEditScreen from './pages/profile/ProfileEditScreen';
-import PasswordChangeScreen from './pages/profile/PasswordChangeScreen';
+import ProfilePage from './pages/profile/My/ProfilePage'
+import ProfileEditPage from './pages/profile/My/ProfileEditPage';
+import PasswordChangePage from './pages/profile/PasswordChangePage';
 import GetOutPage from './pages/profile/GetOutPage';
 import InitialProfileSetup from './pages/auth/InitialProfileSetup';
 import ChargePage from './pages/payment/ChargePage';
@@ -129,7 +129,7 @@ if (savedManualBtnTextColor) {
 
 import WelcomePage from './pages/WelcomePage';
 import AnalysisPage from "./pages/profile/analysis/AnalysisPage.tsx";
-import RoomCyclePage from './pages/post/pages/RoomCyclePage';
+import RoomCyclePage from './pages/post/RoomCyclePage';
 
 const RootRouting = () => {
   const token = localStorage.getItem('accessToken');
@@ -168,8 +168,8 @@ createRoot(document.getElementById('root')!).render(
                       <Route path="/community" element={<CommunityPage />} />
                       <Route path="/market" element={<MarketPage />} />
                       <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="/profile/edit" element={<ProfileEditScreen />} />
-                      <Route path="/profile/password" element={<PasswordChangeScreen />} />
+                      <Route path="/profile/edit" element={<ProfileEditPage />} />
+                      <Route path="/profile/password" element={<PasswordChangePage />} />
                       <Route path="/profile/delete" element={<GetOutPage />} />
                       <Route path="/setup-profile" element={<InitialProfileSetup />} />
                       <Route path="/profile/analysis" element={<AnalysisPage />} />

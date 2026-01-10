@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Calendar, Smile, Phone, FileText, Camera, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Navigation from '../../components/Header/Navigation';
-import { uploadImageToSupabase, deleteOldImage } from "../post/api.ts";
-import ConfirmationModal from '../../components/common/ConfirmationModal';
+import Navigation from '../../../components/header/Navigation';
+import { uploadImageToSupabase, deleteOldImage } from "../../../components/post/api";
+import ConfirmationModal from '../../../components/common/ConfirmationModal';
 
-const ProfileEditScreen: React.FC = () => {
+const ProfileEditPage: React.FC = () => {
     const navigate = useNavigate();
 
     const [name, setName] = useState("");
@@ -119,17 +119,17 @@ const ProfileEditScreen: React.FC = () => {
                 }
 
                 try {
-                    setIsUploading(true); // 업로드 시작 상태 표시
-                    // [STEP 1] 기존 이미지가 있다면 삭제! (이 부분이 추가되었습니다)
+                    setIsUploading(true);
+                    // 기존 이미지가 있다면 삭제
                     if (profilePhoto) {
                         await deleteOldImage(profilePhoto);
                     }
-                    // 1. Supabase 업로드 함수 호출
+                    // Supabase 업로드 함수 호출
                     const uploadedUrl = await uploadImageToSupabase(file);
 
-                    // 2. 업로드 성공 시 상태 업데이트
+                    // 업로드 성공 시 상태 업데이트
                     if (uploadedUrl) {
-                        setProfilePhoto(uploadedUrl); // Supabase에서 받은 공개 URL 저장
+                        setProfilePhoto(uploadedUrl);
                     } else {
                         console.error("이미지 업로드 실패");
                         showModal("업로드 실패", "이미지 업로드에 실패했습니다.", 'danger');
@@ -137,7 +137,7 @@ const ProfileEditScreen: React.FC = () => {
                 } catch (error) {
                     console.error("업로드 중 에러 발생:", error);
                 } finally {
-                    setIsUploading(false); // 성공/실패 여부와 관계없이 로딩 종료
+                    setIsUploading(false);
                 }
 
             }
@@ -442,4 +442,4 @@ const ProfileEditScreen: React.FC = () => {
     );
 }
 
-export default ProfileEditScreen;
+export default ProfileEditPage;

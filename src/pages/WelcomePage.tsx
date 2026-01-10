@@ -16,7 +16,6 @@ const WelcomePage: React.FC = () => {
         document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Simple fade-in animation on mount
     const elementsRef = useRef<(HTMLDivElement | null)[]>([]);
 
     useEffect(() => {
@@ -42,7 +41,6 @@ const WelcomePage: React.FC = () => {
 
     return (
         <div className="h-screen overflow-y-auto bg-slate-50 dark:bg-slate-900 transition-colors duration-500 font-sans show-scrollbar">
-            {/* Hero Section */}
             {/* Hero Section */}
             <section className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none opacity-30 dark:opacity-10">

@@ -25,7 +25,7 @@ interface Props {
     showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
-const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onUpdateAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite, showConfirmModal }) => {
+const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onCreateAlbum, onStartWriting, onUpdateAlbum, onDeleteAlbum, sortOption, setSortOption, handleToggleAlbumFavorite, showConfirmModal }) => {
     // Key now refers to Album ID
     const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -303,4 +303,4 @@ const PostAlbumPage: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     );
 };
 
-export default PostAlbumPage;
+export default PostAlbumView;

@@ -27,7 +27,7 @@ const ChargePage: React.FC = () => {
                 await refreshCredits();
 
                 alert(`충전 완료! 🎉\n총 ${(option.amount + option.bonus).toLocaleString()} 크레딧이 성공적으로 충전되었습니다.`);
-                navigate(-1); // Go back to where user came from (Market or Quest)
+                navigate(-1);
             } catch (e) {
                 console.error(e);
                 alert('충전 처리 중 오류가 발생했습니다.');

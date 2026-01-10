@@ -4,8 +4,6 @@ import EditorSidebar from '../components/editor/EditorSidebar';
 import { usePostEditor } from '../hooks/usePostEditor';
 
 import SavePostModal from '../components/SavePostModal';
-
-
 import { domToPng } from 'modern-screenshot';
 import { uploadImageToSupabase } from '../api';
 
@@ -14,7 +12,7 @@ interface Props {
     handleImagesUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
+const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
     const canvasRef = React.useRef<HTMLDivElement>(null);
 
@@ -34,25 +32,33 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     };
 
     const handleSaveAsTemplateWrapper = async () => {
-        // ✨ Auto-Generate Thumbnail (Synced with CreatePage)
+        // ✨ Auto-Generate Thumbnail
         if (canvasRef.current) {
             try {
                 const dataUrl = await domToPng(canvasRef.current, {
                     scale: 0.5,
-                    // backgroundColor: '#ffffff',
+                    // backgroundColor: '#ffffff', // Removed to allow background images/colors to show
                 });
 
                 if (dataUrl) {
                     const blob = await (await fetch(dataUrl)).blob();
                     const file = new File([blob], `tmpl-${Date.now()}.png`, { type: "image/png" });
                     const url = await uploadImageToSupabase(file);
+
+                    if (url) {
+                        // alert(`Debug: 썸네일 생성 성공!\nURL: ${url}`);
+                    } else {
+                        // alert(`Debug: 썸네일 업로드 실패 (Supabase Error)`);
+                    }
+
                     editor.handleSaveAsTemplate(url || undefined);
                 } else {
+                    // alert("Debug: 썸네일 캡처 데이터 없음");
                     editor.handleSaveAsTemplate();
                 }
             } catch (e: any) {
                 console.warn("Thumbnail capture failed", e);
-                // alert(`Error: ${e?.message}`);
+                // alert(`Debug Error: ${e?.message}`);
                 editor.handleSaveAsTemplate();
             }
         } else {
@@ -64,7 +70,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
         <div className="flex flex-col xl:flex-row h-auto min-h-[85vh] gap-6 relative">
             {/* 메인 캔버스 */}
             <EditorCanvas
-                ref={canvasRef} // ✨ Pass Ref
+                ref={canvasRef}
                 title={editor.title} setTitle={editor.setTitle}
                 titleStyles={editor.titleStyles}
                 viewMode={'editor'}
@@ -86,7 +92,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     editor.setSelectedId(null);
                     editor.setSelectedType(null);
                 }}
-                paperStyles={editor.paperStyles} // ✨ Pass Styles
+                paperStyles={editor.paperStyles}
             />
 
             {/* 오른쪽 사이드바 */}
@@ -121,43 +127,13 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                             true
                         );
                     }
-                }} // ✨ Temp Save Handler
-                onCancel={() => {
-                    const proceed = () => {
-                        // ✨ Cancel Logic: Smart Navigation
-                        // If it's a draft (Temp Save), go back to List (Album/Folder)
-                        // If it's a published post (Edit), go back to Read Mode
-                        const isDraft = editor.currentTags.includes('임시저장');
-
-                        if (editor.currentPostId && !isDraft) {
-                            editor.setViewMode('read');
-                        } else {
-                            // Draft or New Post -> Go to Album/Folder
-                            if (editor.selectedAlbumId && editor.selectedAlbumId !== '__all__' && editor.selectedAlbumId !== '__others__') {
-                                editor.setViewMode('folder');
-                            } else {
-                                editor.setViewMode('album');
-                            }
-                        }
-                    };
-
-                    // ✨ Check Dirty
-                    if (editor.isDirty) {
-                        editor.showConfirmModal(
-                            "나가기 확인",
-                            "작성 중인 내용이 저장되지 않았습니다. 정말 나가시겠습니까?",
-                            "danger",
-                            proceed
-                        );
-                    } else {
-                        proceed();
-                    }
                 }}
+                onCancel={() => editor.setViewMode('album')}
                 onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
                 onAddFloatingText={editor.addFloatingText}
                 onAddSticker={editor.addSticker}
                 onAddFloatingImage={editor.addFloatingImage}
-                onAddWidgetSticker={editor.addWidgetSticker} // ✨ Pass Widget Adder (Verified)
+                onAddWidgetSticker={editor.addWidgetSticker} // ✨ Pass Widget Adder
                 rawInput={editor.rawInput} setRawInput={editor.setRawInput}
                 selectedLayoutId={editor.selectedLayoutId} setSelectedLayoutId={editor.setSelectedLayoutId}
                 tempImages={editor.tempImages} setTempImages={editor.setTempImages}
@@ -171,6 +147,7 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 applyTemplate={editor.applyTemplate}
             />
 
+            {/* ✨ 저장 위치 선택 모달 */}
             <SavePostModal
                 isOpen={isSaveModalOpen}
                 onClose={() => setIsSaveModalOpen(false)}
@@ -194,4 +171,4 @@ const PostEditorPage: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     );
 };
 
-export default PostEditorPage;
+export default PostCreateView;

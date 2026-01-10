@@ -6,7 +6,7 @@ import { useCredits } from '../../context/CreditContext';
 import { useMenu } from '../settings/menu/MenuSettings';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayTime } from '../../hooks';
-import DailyQuestModal from '../Credit/DailyQuestModal'; // Import Modal
+import DailyQuestModal from '../credit/DailyQuestModal';
 import { useDrag, useDrop } from 'react-dnd';
 
 interface DraggableMenuItemProps {

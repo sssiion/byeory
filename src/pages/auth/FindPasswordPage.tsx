@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowRight, CheckCircle, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 function FindPasswordPage() {
-    // Steps: 'email' -> 'verify' -> 'reset' -> 'complete'
     const [step, setStep] = useState<'email' | 'verify' | 'reset' | 'complete'>('email');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -12,11 +11,11 @@ function FindPasswordPage() {
     const [code, setCode] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [resetToken, setResetToken] = useState(''); // Token received after verification
+    const [resetToken, setResetToken] = useState('');
 
     // UI States
     const [showPassword, setShowPassword] = useState(false);
-    const [timer, setTimer] = useState(180); // 3 minutes for code verification
+    const [timer, setTimer] = useState(180); // 3min
 
     useEffect(() => {
         let interval: any;
@@ -54,7 +53,6 @@ function FindPasswordPage() {
             } else if (response.status === 404) {
                 alert('가입되지 않은 이메일입니다.');
             } else if (response.status === 400 && data.code === 'SOCIAL_ACCOUNT') {
-                // Backend should return a specific code or message for social accounts
                 alert('Google 소셜 로그인으로 가입된 계정입니다.\nGoogle 로그인을 이용해주세요.');
             } else {
                 alert(data.message || '인증번호 전송에 실패했습니다.');
@@ -82,7 +80,6 @@ function FindPasswordPage() {
             const data = await response.json().catch(() => ({}));
 
             if (response.ok) {
-                // Assuming backend returns a temporary reset token to permit password change
                 if (data.resetToken) {
                     setResetToken(data.resetToken);
                 }
@@ -115,7 +112,7 @@ function FindPasswordPage() {
                 body: JSON.stringify({
                     email,
                     password,
-                    resetToken // Include token if backend requires it for security
+                    resetToken
                 }),
             });
 

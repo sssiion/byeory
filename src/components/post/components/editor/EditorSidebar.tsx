@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
-import { useMarket } from '../../../../hooks/useMarket';
+import { useMarket } from '../../../../hooks';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Coins, Check, Clock, PlayCircle, ShoppingBag, PenTool, Wallet } from 'lucide-react';
-import { useCredits, type DailyQuest } from '../../context/CreditContext';
+import { useCredits } from '../../context/CreditContext';
+import type { DailyQuest } from '../../types/credit';
 import { useNavigate } from 'react-router-dom';
 
 interface DailyQuestModalProps {

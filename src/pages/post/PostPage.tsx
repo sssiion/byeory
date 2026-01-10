@@ -1,29 +1,27 @@
 import React, { useState } from 'react';
-import Navigation from '../../components/Header/Navigation';
-import { usePostEditor } from './hooks/usePostEditor';
+import Navigation from '../../components/header/Navigation';
+import { usePostEditor } from '../../components/post/hooks/usePostEditor';
 
-import PostViewPage from './pages/PostViewPage';
-import PostEditorPage from './pages/PostEditorPage';
-import PostCreatePage from './pages/PostCreatePage';
+import PostReadView from '../../components/post/views/PostReadView';
+import PostEditorView from '../../components/post/views/PostEditorView';
+import PostCreateView from '../../components/post/views/PostCreateView';
 
-import PostAlbumPage from './pages/PostAlbumPage';
-import PostFolderPage from './pages/PostFolderPage';
-import CreateAlbumModal from './components/CreateAlbumModal';
+import PostAlbumView from '../../components/post/views/PostAlbumView';
+import PostFolderView from '../../components/post/views/PostFolderView';
+import CreateAlbumModal from '../../components/post/components/CreateAlbumModal';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const Post: React.FC = () => {
     // Custom Hook 사용
     const editor = usePostEditor();
-    const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false); // 앨범 생성 모달 상태
+    const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
 
-    // ✨ View Changed -> Auto Refresh Data (Counts, Post Lists)
     React.useEffect(() => {
         if (editor.viewMode === 'album' || editor.viewMode === 'folder') {
             editor.refreshPosts();
         }
     }, [editor.viewMode]);
 
-    // ✨ Listen for Post Tab Click (Navigation)
     React.useEffect(() => {
         const handlePostTabClick = () => {
             if (editor.viewMode === 'editor') {
@@ -49,13 +47,11 @@ const Post: React.FC = () => {
         return () => window.removeEventListener('post-tab-click', handlePostTabClick);
     }, [editor.viewMode, editor.setViewMode, editor.isDirty, editor.showConfirmModal]);
 
-    // ✨ Prevent Accidental Refresh / Close in Editor Mode
     React.useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (editor.viewMode === 'editor' && editor.isDirty) {
-                // Prevent default behavior to trigger browser dialog
                 e.preventDefault();
-                e.returnValue = ''; // Required for Chrome
+                e.returnValue = '';
             }
         };
 
@@ -63,7 +59,6 @@ const Post: React.FC = () => {
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [editor.viewMode, editor.isDirty]);
 
-    // 이미지 업로드 핸들러 (Hook -> Component 전달용)
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
@@ -77,12 +72,9 @@ const Post: React.FC = () => {
     const filteredPosts = (editor.selectedAlbumId === null || editor.selectedAlbumId === '__others__')
         ? editor.posts.filter(p => !p.albumIds || p.albumIds.length === 0)
         : editor.posts.filter(p => {
-            // ✨ All Records view: Show ALL posts
             if (editor.selectedAlbumId === '__all__') return true;
 
-            // Priority: ID match
             if (p.albumIds?.includes(editor.selectedAlbumId!)) return true;
-            // Fallback: Legacy Tag match (only if no IDs present on post)
             if (!p.albumIds || p.albumIds.length === 0) {
                 const targetAlbum = editor.customAlbums.find(a => a.id === editor.selectedAlbumId);
                 if (targetAlbum?.tag && p.tags?.includes(targetAlbum.tag)) return true;
@@ -98,7 +90,7 @@ const Post: React.FC = () => {
                 {/* 상단 헤더 버튼 (리스트/앨범/폴더 뷰일 때만 표시) */}
                 {/* 1) 앨범 뷰 (기본) */}
                 {editor.viewMode === 'album' && (
-                    <PostAlbumPage
+                    <PostAlbumView
                         posts={editor.posts}
                         customAlbums={editor.customAlbums}
                         onAlbumClick={editor.handleAlbumClick}
@@ -123,7 +115,7 @@ const Post: React.FC = () => {
 
                 {/* 2) 폴더 뷰 (앨범 상세) */}
                 {editor.viewMode === 'folder' && (
-                    <PostFolderPage
+                    <PostFolderView
                         albumId={editor.selectedAlbumId}
                         posts={filteredPosts}
                         allPosts={editor.posts}
@@ -138,13 +130,13 @@ const Post: React.FC = () => {
                             const post = editor.posts.find(p => p.id === id);
                             if (post) editor.handleToggleFavorite(post);
                         }}
-                        onMovePost={() => { }} // Disabled for now
+                        onMovePost={() => { }}
                         onRefresh={editor.refreshPosts}
                         showConfirmModal={editor.showConfirmModal}
                     />
                 )}
 
-                {/* 3) 리스트 뷰 (전체 보기용 - 필요 시 사용)
+                {/* 3) 리스트 뷰
                 {editor.viewMode === 'list' && (
                     <PostListPage
                         posts={editor.posts}
@@ -155,21 +147,20 @@ const Post: React.FC = () => {
 
                 {/* 4) 읽기 모드 */}
                 {editor.viewMode === 'read' && (
-                    <PostViewPage editor={editor} />
+                    <PostReadView editor={editor} />
                 )}
 
                 {/* 5) 작성(Create) 모드 */}
                 {editor.viewMode === 'editor' && !editor.currentPostId && (
-                    <PostCreatePage editor={editor} handleImagesUpload={handleImagesUpload} />
+                    <PostCreateView editor={editor} handleImagesUpload={handleImagesUpload} />
                 )}
 
                 {/* 6) 수정(Edit) 모드 */}
                 {editor.viewMode === 'editor' && editor.currentPostId && (
-                    <PostEditorPage editor={editor} handleImagesUpload={handleImagesUpload} />
+                    <PostEditorView editor={editor} handleImagesUpload={handleImagesUpload} />
                 )}
             </div>
 
-            {/* 앨범 생성 모달 */}
             {/* 앨범 생성 모달 */}
             <CreateAlbumModal
                 isOpen={isAlbumModalOpen}
@@ -177,9 +168,7 @@ const Post: React.FC = () => {
                 albums={editor.customAlbums}
                 showConfirmModal={editor.showConfirmModal}
                 onSave={(name, tag, parentId, type, roomConfig, coverConfig) => {
-                    // Convert single tag to array for the hook
                     const tags = tag ? [tag] : [];
-                    // Ensure parentId is string or undefined (modal gives string | null)
                     const pId = parentId || undefined;
 
                     editor.handleCreateAlbum(name, tags, pId, type, roomConfig, coverConfig);

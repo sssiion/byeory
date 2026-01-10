@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDragLayer } from 'react-dnd';
 
-const SCROLL_ZONE_SIZE = 150; // Increased zone size as requested
+const SCROLL_ZONE_SIZE = 150;
 const MAX_SCROLL_SPEED = 15;
 
 export function useAutoScroll() {

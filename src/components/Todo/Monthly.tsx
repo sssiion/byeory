@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useDrag, useDrop } from 'react-dnd';
-import type { Todo } from './types';
+import type { Todo } from '../../types/todo';
 import { TodoItem } from './CheckTodo';
 import { TodoModal } from './EditTodo';
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Sparkles, RefreshCw, Calendar } from "lucide-react";
-import Navigation from "../../../components/Header/Navigation";
+import Navigation from '../../../components/header/Navigation';
 import ConfirmationModal from "../../../components/common/ConfirmationModal";
 
 // --- 타입 정의 (JSON 구조에 맞춤) ---
@@ -173,28 +173,22 @@ function AnalysisPage() {
     if (!token) return;
 
     try {
-      // GET 요청 (백엔드에서 단순히 저장된 JSON을 내려준다고 가정)
-      // *실제 구현 시: DB에 저장된 필드 그대로 가져옴
       const response = await fetch("http://localhost:8080/api/persona", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok && response.status !== 204) {
         const json = await response.json();
-        // 백엔드에서 analysisResult 문자열 안에 JSON이 들어있다면 파싱 필요
-        // 여기서는 백엔드가 analysisResult 내용을 파싱해서 주거나,
-        // 클라이언트가 analysisResult 문자열을 파싱한다고 가정:
         if (typeof json.analysisResult === "string") {
           try {
             const parsed = JSON.parse(json.analysisResult);
             setData(parsed);
           } catch (e) {
-            // 구버전 데이터(단순 텍스트)일 경우 처리
             console.warn("Legacy data format");
             setData(null);
           }
         } else {
-          setData(json); // 이미 구조화된 경우
+          setData(json);
         }
       } else {
         setData(null);

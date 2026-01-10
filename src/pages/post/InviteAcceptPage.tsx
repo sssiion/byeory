@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Users } from 'lucide-react';
-import type { CustomAlbum } from '../types';
+import type { CustomAlbum } from '../../components/post/types';
 
 const InviteAcceptPage: React.FC = () => {
     const { code } = useParams<{ code: string }>();
@@ -18,12 +18,7 @@ const InviteAcceptPage: React.FC = () => {
         const loadRoom = async () => {
             setIsLoading(true);
             try {
-                // Determine if we can fetch the album.
-                // Note: If the backend requires membership to fetch details, this might fail for new users.
-                // However, usually 'invite code' implies some public access or we assume fetchAlbumApi handles it.
-                // Since this is 'InviteAccept', strictly speaking, we might not be able to see details until we join.
-                // But without a 'Join' API, we will attempt to fetch. 
-                const api = await import('../api');
+                const api = await import('../../components/post/api');
                 const album = await api.fetchAlbumApi(code);
 
                 if (album) {
@@ -43,16 +38,11 @@ const InviteAcceptPage: React.FC = () => {
     const handleJoin = async () => {
         if (!targetRoom) return;
 
-        // ✨ Validate Password Client-Side (if roomConfig is visible) 
-        // OR try to access contents to verify.
-        // Since we don't have a 'join' endpoint, we simulate success if password matches config.
         if (targetRoom.roomConfig?.password && targetRoom.roomConfig.password !== password) {
             setError("비밀번호가 일치하지 않습니다.");
             return;
         }
 
-        // Just redirect. If backend supports 'access on view', this works.
-        // If it needs explicit join, we are limited by backend constraints but complying with 'no local storage'.
         navigate('/post#album/' + targetRoom.id);
     };
 

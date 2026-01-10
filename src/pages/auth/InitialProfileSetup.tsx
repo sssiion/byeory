@@ -9,7 +9,7 @@ import {
   Phone,
   FileText,
 } from "lucide-react";
-import { uploadImageToSupabase } from "../post/api.ts";
+import { uploadImageToSupabase } from "../../components/post/api";
 
 const InitialProfileSetup: React.FC = () => {
   const navigate = useNavigate();
@@ -33,17 +33,17 @@ const InitialProfileSetup: React.FC = () => {
         if (data.nickname) setNickname(data.nickname);
         if (data.profileImage) setProfilePhoto(data.profileImage);
 
-        // Map Gender (Naver: M/F/U -> Local: male/female/unspecified)
+        // 성별 검증
         if (data.gender === "M") setGender("male");
         else if (data.gender === "F") setGender("female");
         else setGender("unspecified");
 
-        // Map Birthday (Naver: birthyear="1990", birthday="01-01" -> 1990-01-01)
+        // 생일 검증
         if (data.birthyear && data.birthday) {
           setBirthDate(`${data.birthyear}-${data.birthday}`);
         }
 
-        // Map Phone (Naver: 010-0000-0000 -> keep as is but remove non-digits for formatting if needed, but current state stores formatted)
+        // 번호 검증
         if (data.mobile) setPhone(data.mobile);
       } catch (e) {
         console.error("Failed to parse temp profile data", e);
@@ -62,7 +62,7 @@ const InitialProfileSetup: React.FC = () => {
 
       if (file) {
         // 파일 크기 체크 (2MB 제한)
-        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+        const maxSize = 2 * 1024 * 1024;
         if (file.size > maxSize) {
           alert("사진 최대 크기는 2MB입니다");
           return;
@@ -76,15 +76,14 @@ const InitialProfileSetup: React.FC = () => {
 
           // 2. 업로드 성공 시 상태 업데이트
           if (uploadedUrl) {
-            setProfilePhoto(uploadedUrl); // Supabase에서 받은 공개 URL 저장
+            setProfilePhoto(uploadedUrl);
           } else {
             console.error("이미지 업로드 실패");
-            // 필요하다면 여기에 에러 알림 추가 (예: alert("업로드 실패"))
           }
         } catch (error) {
           console.error("업로드 중 에러 발생:", error);
         } finally {
-          setIsUploading(false); // 성공/실패 여부와 관계없이 로딩 종료
+          setIsUploading(false);
         }
       }
     };
@@ -155,7 +154,6 @@ const InitialProfileSetup: React.FC = () => {
 
       if (response.ok) {
         localStorage.setItem("isProfileSetupCompleted", "true");
-        // Force a reload or simply navigate to ensure all contexts (like Auth/Theme) refresh if needed
         navigate("/home", { replace: true });
         window.location.reload();
       } else if (response.status === 409) {
@@ -314,9 +312,8 @@ const InitialProfileSetup: React.FC = () => {
                 style={{
                   width: "calc((100% - 8px) / 3)",
                   left: "4px",
-                  transform: `translateX(${
-                    ["male", "female", "unspecified"].indexOf(gender) * 100
-                  }%)`,
+                  transform: `translateX(${["male", "female", "unspecified"].indexOf(gender) * 100
+                    }%)`,
                 }}
               />
               {["male", "female", "unspecified"].map((g) => (
@@ -324,11 +321,10 @@ const InitialProfileSetup: React.FC = () => {
                   key={g}
                   type="button"
                   onClick={() => setGender(g)}
-                  className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    gender === g
-                      ? "text-[var(--btn-text)]"
-                      : "theme-text-secondary hover:theme-text-primary"
-                  }`}
+                  className={`relative z-10 flex-1 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${gender === g
+                    ? "text-[var(--btn-text)]"
+                    : "theme-text-secondary hover:theme-text-primary"
+                    }`}
                 >
                   {g === "male" ? "남성" : g === "female" ? "여성" : "비공개"}
                 </button>

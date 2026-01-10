@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import Navigation from '../../components/Header/Navigation';
-import { DailyView } from '../../components/Todo/Daily';
-import { WeeklyView } from '../../components/Todo/Weekly';
-import { MonthlyView } from '../../components/Todo/Monthly';
-import type { Todo, Post } from '../../components/Todo/types';
-import { useSharedTodo } from '../../components/Todo/useSharedTodo';
+import Navigation from '../../components/header/Navigation';
+import { DailyView } from '../../components/todo/Daily';
+import { WeeklyView } from '../../components/todo/Weekly';
+import { MonthlyView } from '../../components/todo/Monthly';
+import type { Todo, Post } from '../../types/todo';
+import { useSharedTodo } from '../../components/todo/useSharedTodo';
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 type AppMode = 'todo' | 'post';
@@ -18,7 +18,6 @@ const TodoPage: React.FC = () => {
     // Shared Todo context
     const { todos: sharedTodos, addTodo, updateTodo, deleteTodo, toggleTodo } = useSharedTodo();
 
-    // Fetch posts when in Post mode and date (month) changes
     useEffect(() => {
         if (appMode === 'post') {
             const year = currentDate.getFullYear();
@@ -50,31 +49,11 @@ const TodoPage: React.FC = () => {
 
     const transformPostsToTodos = (posts: Post[]): Todo[] => {
         return posts.map(post => {
-            // "2026-01-08T09:58" format
-            // We need to parse this carefully to match local date expectations if needed,
-            // but standard Date parsing usually works for ISO-like strings.
-            // Component logic expects YYYY-MM-DD string for startDate/endDate usually.
-
-            // However, DailyView/WeeklyView logic often creates Date objects from these strings.
-            // Let's use the full string which includes time. The components should handle it.
-            // If components expect strictly YYYY-MM-DD, we might need to substring.
-            // types.ts says startDate: string.
-            // Let's keep the T format if components can handle parsing `new Date(string)`.
-            // Looking at Weekly.tsx -> `parseLocalDate` splits by `-`. It might fail with `T`.
-            // Let's check `parseLocalDate` in Weekly.tsx again.
-            // const [year, month, day] = dateStr.split("-").map(Number);
-            // If dateStr is "2026-01-08T09:58", split('-') gives ["2026", "01", "08T09:58"].
-            // Number("08T09:58") will be NaN.
-            // So we MUST strictly format to YYYY-MM-DD for startDate/endDate.
-
             const dateObj = new Date(post.createdAt);
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
             const day = String(dateObj.getDate()).padStart(2, '0');
             const dateStr = `${year}-${month}-${day}`;
-
-            // Extract time for display if needed, but Todo type has startTime/endTime optional.
-            // Let's fill them.
             const hours = String(dateObj.getHours()).padStart(2, '0');
             const minutes = String(dateObj.getMinutes()).padStart(2, '0');
             const timeStr = `${hours}:${minutes}`;
