@@ -75,7 +75,7 @@ export const generateBlogContent = async (topic: string, layoutId: string, tempI
     const layout = LAYOUT_PRESETS.find(l => l.id === layoutId) || LAYOUT_PRESETS[0];
     const structureTemplate = JSON.stringify(layout.structure);
 
-    const MODEL_NAME = "gemma-3-12b-it";
+    const MODEL_NAME = "gemini-2.5-flash";
 
     const prompt = `
         역할: 너는 사용자가 입력한 텍스트를 보기 좋게 다듬어서 배치해주는 '텍스트 편집자'야.
