@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SettingsModal from '../settings/Settings';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, Settings, Coins } from 'lucide-react';
+import { Settings, Coins, Palette } from 'lucide-react';
 import { useCredits } from '../../context/CreditContext';
 import { useMenu } from '../settings/menu/MenuSettings';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayTime } from '../../hooks';
-import DailyQuestModal from '../credit/DailyQuestModal';
+import DailyQuestModal from '../Credit/DailyQuestModal';
 import { useDrag, useDrop } from 'react-dnd';
+import { useHeaderSettings } from '../../hooks/useHeaderSettings';
 
 interface DraggableMenuItemProps {
     id: string;
@@ -15,7 +16,7 @@ interface DraggableMenuItemProps {
     moveMenuItem: (dragIndex: number, hoverIndex: number) => void;
     children: React.ReactNode;
     isEditMode: boolean;
-    label: string; // ✨ Added label prop
+    label: string; // 라벨 추가
 }
 
 const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMenuItem, children, isEditMode, label }) => {
@@ -31,7 +32,7 @@ const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMe
     }
 
     const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: any }>({
-        accept: 'MENU_ITEM', // String literal matches useDrag type
+        accept: 'MENU_ITEM',
         collect(monitor) {
             return {
                 handlerId: monitor.getHandlerId(),
@@ -44,25 +45,25 @@ const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMe
             const dragIndex = item.index;
             const hoverIndex = index;
 
-            // Don't replace items with themselves
+            // 자기 자신과는 교체하지 않음
             if (dragIndex === hoverIndex) {
                 return;
             }
 
-            // Determine rectangle on screen
+            // 화면상 사각형 위치 계산
             const hoverBoundingRect = ref.current?.getBoundingClientRect();
 
-            // Get vertical middle
+            // 수직 중앙 계산
             const hoverMiddleX =
                 (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
 
-            // Determine mouse position
+            // 마우스 위치 결정
             const clientOffset = monitor.getClientOffset();
 
-            // Get pixels to the left
+            // 왼쪽 픽셀 계산
             const hoverClientX = (clientOffset as any).x - hoverBoundingRect.left;
 
-            // Only perform the move when the mouse has crossed half of the items width
+            // 마우스가 아이템 너비의 절반을 넘었을 때만 이동 수행
             if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
                 return;
             }
@@ -71,10 +72,10 @@ const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMe
                 return;
             }
 
-            // Time to actually perform the action
+            // 실제 이동 수행
             moveMenuItem(dragIndex, hoverIndex);
 
-            // Note: we're mutating the monitor item here!
+            // 모니터 아이템 변경
             item.index = hoverIndex;
         },
     });
@@ -82,13 +83,13 @@ const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMe
     const [{ isDragging }, drag] = useDrag({
         type: 'MENU_ITEM',
         item: () => {
-            // ✨ Capture dimensions
+            // 크기 캡처
             const { offsetWidth, offsetHeight } = ref.current || { offsetWidth: 0, offsetHeight: 0 };
             return {
                 id,
                 index,
-                label, // ✨ Pass label
-                initialWidth: offsetWidth, // ✨ Pass dimensions
+                label, // 라벨 전달
+                initialWidth: offsetWidth, // 크기 전달
                 initialHeight: offsetHeight
             };
         },
@@ -98,8 +99,7 @@ const DraggableMenuItem: React.FC<DraggableMenuItemProps> = ({ id, index, moveMe
         canDrag: isEditMode,
     });
 
-    // Provide a proper handle or just drag the whole item.
-    // For mobile touch, we usually want to drag the whole item.
+    // 드래그 앤 드롭 연결
     drag(drop(ref));
 
     const opacity = isDragging ? 0.3 : 1;
@@ -123,16 +123,16 @@ const Navigation: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [isQuestModalOpen, setIsQuestModalOpen] = useState(false); // Modal State
+    const [isQuestModalOpen, setIsQuestModalOpen] = useState(false); // 모달 상태
     const { isLoggedIn } = useAuth();
     const { credits } = useCredits();
 
-    // Menu Context
+    // 메뉴 컨텍스트
     const { menuItems, isEditMode, setIsEditMode, moveMenuItem } = useMenu();
 
     const [settingsInitialView, setSettingsInitialView] = useState<'main' | 'theme' | 'custom' | 'defaultPage' | 'widget'>('main');
 
-    // Listen for custom event to open settings
+    // 설정 모달 열기 커스텀 이벤트 리스너
     React.useEffect(() => {
         const handleOpenSettings = (e: CustomEvent) => {
             const view = e.detail?.view || 'main';
@@ -149,29 +149,15 @@ const Navigation: React.FC = () => {
         return location.pathname.startsWith(path);
     };
 
-    // Playtime Timer Logic
+    // 헤더 설정 훅 사용 (Timer, Credit)
+    const { settings } = useHeaderSettings();
+    // settings.showTimer, settings.showCredit 사용
+
     const playTime = usePlayTime();
     const [formattedPlayTime, setFormattedPlayTime] = useState<string>('');
-    const [showTimer, setShowTimer] = useState(false);
 
     useEffect(() => {
-        const checkTimerSetting = () => {
-            const saved = localStorage.getItem('showSessionTimer') === 'true';
-            setShowTimer(saved);
-        };
-
-        checkTimerSetting();
-
-        const handleTimerChange = (e: CustomEvent) => {
-            setShowTimer(e.detail.show);
-        };
-
-        window.addEventListener('session-timer-change', handleTimerChange as EventListener);
-        return () => window.removeEventListener('session-timer-change', handleTimerChange as EventListener);
-    }, []);
-
-    useEffect(() => {
-        if (!showTimer) {
+        if (!settings.showTimer) {
             setFormattedPlayTime('');
             return;
         }
@@ -183,13 +169,13 @@ const Navigation: React.FC = () => {
         setFormattedPlayTime(
             `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
         );
-    }, [showTimer, playTime]);
+    }, [settings.showTimer, playTime]);
 
     return (
         <>
-            {/* Top Header */}
+            {/* 상단 헤더 */}
             <header className={`sticky top-0 z-50 flex h-16 md:h-20 md:grid md:grid-cols-3 justify-between items-center px-4 md:px-6 py-0 theme-bg-header shadow-sm border-b theme-border transition-colors duration-300`}>
-                {/* Logo */}
+                {/* 로고 */}
                 <div
                     className={`flex items-center justify-self-start ${isEditMode ? 'cursor-default opacity-50' : 'cursor-pointer'}`}
                     onClick={() => !isEditMode && navigate('/')}
@@ -197,7 +183,7 @@ const Navigation: React.FC = () => {
                     <img src="/logo.png" alt="Logo" className="w-18 md:w-20" />
                 </div>
 
-                {/* Desktop Center Navigation */}
+                {/* 데스크탑 중앙 네비게이션 */}
                 <nav className="hidden md:flex items-center justify-center justify-self-center">
                     {menuItems.map((item, index) => {
                         return (
@@ -207,7 +193,7 @@ const Navigation: React.FC = () => {
                                 id={item.id}
                                 moveMenuItem={moveMenuItem}
                                 isEditMode={isEditMode}
-                                label={item.name} // ✨ Pass label
+                                label={item.name} // 라벨 전달
                             >
                                 <Link
                                     to={item.path}
@@ -216,7 +202,7 @@ const Navigation: React.FC = () => {
                                             e.preventDefault();
                                             return;
                                         }
-                                        // ✨ Custom logic for Post tab: Dispatch event if already on /post
+                                        // 게시판 탭 클릭 시 커스텀 로직: 이미 /post에 있다면 이벤트 발생
                                         if (item.path === '/post' && isActive('/post')) {
                                             e.preventDefault();
                                             window.dispatchEvent(new CustomEvent('post-tab-click'));
@@ -234,52 +220,57 @@ const Navigation: React.FC = () => {
                     })}
                 </nav>
 
-                {/* Right Icons */}
+                {/* 우측 아이콘 */}
                 <div className="flex items-center space-x-2 md:space-x-4 theme-text-secondary justify-self-end">
-                    {showTimer && formattedPlayTime && (
+                    {settings.showTimer && formattedPlayTime && (
                         <div className={`font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap ${isEditMode ? 'opacity-50 cursor-not-allowed select-none' : ''}`}>
                             {formattedPlayTime}
                         </div>
                     )}
 
-                    <div
-                        className={`flex items-center space-x-1 font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap transition-transform ${isEditMode
-                            ? 'opacity-50 cursor-not-allowed select-none'
-                            : 'cursor-pointer hover:scale-105 active:scale-95'
-                            }`}
-                        title="Daily Quests & Rewards"
-                        onClick={() => !isEditMode && setIsQuestModalOpen(true)}
-                    >
-                        <Coins className="w-3 h-3 md:w-4 md:h-4 text-yellow-500 fill-yellow-500/20" />
-                        <span>{credits.toLocaleString()}</span>
-                    </div>
+                    {settings.showCredit && (
+                        <div
+                            className={`flex items-center space-x-1 font-mono text-xs md:text-sm font-medium mr-2 theme-text-primary bg-[var(--bg-secondary)] px-2 md:px-3 py-1 md:py-1.5 rounded-full border theme-border whitespace-nowrap transition-transform ${isEditMode
+                                ? 'opacity-50 cursor-not-allowed select-none'
+                                : 'cursor-pointer hover:scale-105 active:scale-95'
+                                }`}
+                            title="Daily Quests & Rewards"
+                            onClick={() => !isEditMode && setIsQuestModalOpen(true)}
+                        >
+                            <Coins className="w-3 h-3 md:w-4 md:h-4 text-yellow-500 fill-yellow-500/20" />
+                            <span>{credits.toLocaleString()}</span>
+                        </div>
+                    )}
 
-                    <button
-                        className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => {
-                            if (isEditMode) return;
-                            isLoggedIn ? navigate('/profile') : navigate('/login');
-                        }}
-                        disabled={isEditMode}
-                        title={isLoggedIn ? "프로필" : "로그인"}
-                    >
-                        {isLoggedIn ? <User className="w-5 h-5 md:w-6 md:h-6" /> : <User className="w-5 h-5 md:w-6 md:h-6" />}
-                    </button>
-                    <button
-                        className={`p-2 hover:bg-black/5 rounded-full transition-colors ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        onClick={() => {
-                            if (isEditMode) return;
-                            setSettingsInitialView('main');
-                            setIsSettingsOpen(true);
-                        }}
-                        disabled={isEditMode}
-                    >
-                        <Settings className="w-5 h-5 md:w-6 md:h-6" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            className={`p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors w-10 h-10 flex items-center justify-center ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={() => {
+                                if (isEditMode) return;
+                                setSettingsInitialView('main');
+                                setIsSettingsOpen(true);
+                            }}
+                            disabled={isEditMode}
+                            title="설정"
+                        >
+                            <Palette className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+                        <button
+                            className={`p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors w-10 h-10 flex items-center justify-center ${isEditMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={() => {
+                                if (isEditMode) return;
+                                isLoggedIn ? navigate('/profile') : navigate('/login');
+                            }}
+                            disabled={isEditMode}
+                            title={isLoggedIn ? "프로필" : "로그인"}
+                        >
+                            <Settings className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            {/* Mobile Bottom Navigation */}
+            {/* 모바일 하단 네비게이션 */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 theme-bg-header border-t theme-border z-50 pb-safe transition-colors duration-300">
                 <div className="flex justify-around items-center h-16 w-full">
                     {menuItems.map((item, index) => {
@@ -292,7 +283,7 @@ const Navigation: React.FC = () => {
                                 id={item.id}
                                 moveMenuItem={moveMenuItem}
                                 isEditMode={isEditMode}
-                                label={item.name} // ✨ Pass label
+                                label={item.name} // 라벨 전달
                             >
                                 <div className={`flex flex-col items-center justify-center w-full h-full space-y-1 p-2 ${active ? 'theme-text-primary' : 'theme-text-secondary'}`}>
                                     <Link
@@ -327,7 +318,7 @@ const Navigation: React.FC = () => {
                     navigate('/home');
                 }}
             />
-            {/* Daily Quest Modal */}
+            {/* 일일 퀘스트 모달 */}
             <DailyQuestModal
                 isOpen={isQuestModalOpen}
                 onClose={() => setIsQuestModalOpen(false)}

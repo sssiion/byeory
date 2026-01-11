@@ -10,6 +10,7 @@ import ProfileHeader from "../../../components/profile/ProfileHeader";
 import ProfileStats from "../../../components/profile/ProfileStats";
 import ProfileMenu from "../../../components/profile/ProfileMenu";
 import SessionSettings from "../../../components/profile/security/SessionSettings";
+import CreditSettings from "../../../components/profile/security/CreditSettings";
 import PinSettings from "../../../components/profile/security/PinSettings";
 import TagSettings from "../../../components/profile/security/TagSettings";
 
@@ -45,7 +46,7 @@ function ProfilePage() {
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const closeConfirmModal = () => {
@@ -124,6 +125,7 @@ function ProfilePage() {
             </h3>
 
             <SessionSettings />
+            <CreditSettings />
 
             <PinSettings
               confirmModal={setConfirmModal}
