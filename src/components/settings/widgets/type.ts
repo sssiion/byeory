@@ -25,6 +25,7 @@ export interface WidgetDefinition {
     validSizes: number[][];  // 예: [[1, 1], [2, 1]]
     defaultProps: Record<string, any>;
     isSystem: boolean;
+    thumbnail?: string; // 썸네일 경로
 }
 
 // 프론트엔드에서 최종적으로 사용할 구조 (DB 정보 + 실제 컴포넌트)

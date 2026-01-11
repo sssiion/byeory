@@ -6,11 +6,10 @@ import React, { lazy } from 'react';
 // Vite의 정적 분석을 위해 모든 import 경로를 풀어서 작성해야 합니다.
 export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
-    // System
+    // System (Deprecated / Moved)
     // ======================================================================
-    'welcome': lazy(() => import('./WidgetCollection/system/Welcome.tsx').then(m => ({ default: m.WelcomeWidget }))),
-    'theme-guide': lazy(() => import('./WidgetCollection/system/ThemeGuide.tsx').then(m => ({ default: m.ThemeGuideWidget }))),
-    'feature-card': lazy(() => import('./WidgetCollection/system/FeatureCard.tsx').then(m => ({ default: m.FeatureCard }))),
+    // 'welcome' moved to Utility
+    // 'theme-guide', 'feature-card' deleted
     'my-persona': lazy(() => import('./WidgetCollection/system/MyPersona.tsx').then(m => ({ default: m.MyPersona }))),
 
     // ======================================================================
@@ -39,6 +38,7 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
     // Utility
     // ======================================================================
+    'welcome': lazy(() => import('./WidgetCollection/system/Welcome.tsx').then(m => ({ default: m.WelcomeWidget }))),
     'todo-list': lazy(() => import('./WidgetCollection/tools/TodoList.tsx').then(m => ({ default: m.TodoListWidget }))),
     'weather': lazy(() => import('./WidgetCollection/tools/Weather.tsx').then(m => ({ default: m.WeatherWidget }))),
     'notification': lazy(() => import('./WidgetCollection/tools/Notification.tsx').then(m => ({ default: m.NotificationSet }))),

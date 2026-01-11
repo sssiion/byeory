@@ -41,7 +41,8 @@ const MainPage: React.FC = () => {
         updateLayout,
         handleUpdateWidgetData,
         onCellHover,
-        ensureMobileConstraints
+        ensureMobileConstraints,
+        addWidgets // 추가
     } = useDashboardLogic(isMobile);
 
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
@@ -219,6 +220,7 @@ const MainPage: React.FC = () => {
                             <div className="flex-1 min-h-0 flex flex-col relative">
                                 <WidgetGallery
                                     onSelect={(item) => addWidget(item, setIsCatalogOpen)}
+                                    onMultiSelect={(items) => addWidgets(items, setIsCatalogOpen)}
                                     onEdit={(data) => {
                                         setEditingWidgetData(data);
                                         setIsBuilderOpen(true);

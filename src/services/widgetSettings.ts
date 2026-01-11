@@ -22,6 +22,10 @@ export const getWidgetSettings = async (): Promise<WidgetInstance[] | null> => {
     const data = await response.json();
     const rawWidgets = data.widget as any[];
 
+    if (!rawWidgets) {
+        return null; // Return null if date.widget is null/undefined
+    }
+
     // Transform backend data to match WidgetInstance interface (Backward compatibility)
     return rawWidgets.map(w => {
         if (!w.layout) {

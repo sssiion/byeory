@@ -9,8 +9,8 @@ const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
     { id: 'w-1', type: 'welcome', layout: { x: 1, y: 1, w: 4, h: 1 } },
     { id: 'w-2', type: 'todo-list', layout: { x: 1, y: 2, w: 2, h: 2 } },
     { id: 'w-3', type: 'ocean-wave', layout: { x: 3, y: 2, w: 2, h: 1 } },
-    { id: 'w-4', type: 'physics-box', layout: { x: 3, y: 3, w: 1, h: 1 } },
-    { id: 'w-5', type: 'scratch-card', layout: { x: 4, y: 3, w: 1, h: 1 } },
+    { id: 'w-4', type: 'scratch-card', layout: { x: 3, y: 3, w: 1, h: 1 } },
+    { id: 'w-5', type: 'physics-box', layout: { x: 4, y: 3, w: 1, h: 1 } },
 ];
 
 export const useDashboardLogic = (isMobile: boolean) => {
@@ -18,48 +18,40 @@ export const useDashboardLogic = (isMobile: boolean) => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
+    const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
+        const savedWidgets = localStorage.getItem('my_dashboard_widgets_v3');
+        if (savedWidgets) {
+            try { return JSON.parse(savedWidgets); } catch (e) { return DEFAULT_WIDGETS_V3; }
+        }
+        return DEFAULT_WIDGETS_V3;
+    });
 
-    // Default initial state
-    const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS_V3);
-
-    const [gridSize, setGridSize] = useState<{ cols: number; rows: number }>(DEFAULT_GRID_SIZE);
+    const [gridSize, setGridSize] = useState<{ cols: number; rows: number }>(() => {
+        const savedGrid = localStorage.getItem('my_dashboard_grid_size_v4');
+        if (savedGrid) {
+            try { return JSON.parse(savedGrid); } catch (e) { return DEFAULT_GRID_SIZE; }
+        }
+        return DEFAULT_GRID_SIZE;
+    });
 
     const [widgetSnapshot, setWidgetSnapshot] = useState<WidgetInstance[] | null>(null);
     const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Load from API on mount
+    // Save to LC
     useEffect(() => {
-        const loadWidgets = async () => {
-            // Try to load from API
-            const { getWidgetSettings } = await import('../../../services/widgetSettings');
-            const savedWidgets = await getWidgetSettings();
+        localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
+        localStorage.setItem('my_dashboard_grid_size_v4', JSON.stringify(gridSize));
+    }, [widgets, gridSize]);
 
-            if (savedWidgets && savedWidgets.length > 0) {
-                setWidgets(savedWidgets);
-            }
-            setIsLoaded(true);
-        };
-        loadWidgets();
-    }, []);
-
-    // Save to API when widgets change (Debounced to prevent too many requests)
+    // Snapshot for Cancel
     useEffect(() => {
-        if (!isLoaded) return; // Don't save initial default overwrite
-
-        const saveWidgets = async () => {
-            const { updateWidgetSettings } = await import('../../../services/widgetSettings');
-            try {
-                await updateWidgetSettings(widgets);
-            } catch (e) {
-                console.error("Failed to save widgets", e);
-            }
-        };
-
-        const timeoutId = setTimeout(saveWidgets, 1000); // 1s debounce
-        return () => clearTimeout(timeoutId);
-    }, [widgets, isLoaded]);
+        if (isWidgetEditMode && widgetSnapshot === null) {
+            setWidgetSnapshot(JSON.parse(JSON.stringify(widgets)));
+        } else if (!isWidgetEditMode) {
+            setWidgetSnapshot(null);
+        }
+    }, [isWidgetEditMode, widgetSnapshot, widgets]);
 
     // Resize grid height automatically
     useEffect(() => {
@@ -83,87 +75,116 @@ export const useDashboardLogic = (isMobile: boolean) => {
         }
     }, [searchParams, setSearchParams]);
 
-    // Capture snapshot when entering edit mode
-    useEffect(() => {
-        if (isWidgetEditMode) {
-            setWidgetSnapshot(JSON.parse(JSON.stringify(widgets))); // Deep copy
-        } else {
-            setWidgetSnapshot(null);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isWidgetEditMode]); // Only run when mode toggle changes, use current widgets as initial state
+    const addWidgets = (items: any[], setIsCatalogOpen: (open: boolean) => void) => {
+        setWidgets(prevWidgets => {
+            let currentWidgets = [...prevWidgets];
+
+            items.forEach(item => {
+                let type: string;
+                let w = 1, h = 1;
+                let initialProps = {};
+
+                if (typeof item === 'object' && item !== null && (item.widgetType || item.type)) {
+                    if (item.widgetType) {
+                        type = item.widgetType;
+                    } else {
+                        type = item.type;
+                    }
+
+                    if (type === 'custom-block' || type === 'custom') {
+                        const savedWidget = item;
+                        const sizeStr = savedWidget.defaultSize || '1x1';
+                        const [wStr, hStr] = sizeStr.split('x');
+                        w = parseInt(wStr, 10) || 2;
+                        h = parseInt(hStr, 10) || 2;
+                        initialProps = {
+                            type: savedWidget.type,
+                            content: JSON.parse(JSON.stringify(savedWidget.content || {})),
+                            styles: JSON.parse(JSON.stringify(savedWidget.styles || {})),
+                            title: savedWidget.name
+                        };
+                    } else {
+                        const registryItem = registry[type];
+                        if (!registryItem) {
+                            console.error(`Unknown widget type: ${type}`);
+                            return;
+                        }
+                        if (registryItem.defaultSize) {
+                            const [wStr, hStr] = registryItem.defaultSize.split('x');
+                            w = parseInt(wStr, 10) || 1;
+                            h = parseInt(hStr, 10) || 1;
+                        } else if (item.validSizes && item.validSizes.length > 0) {
+                            const [vw, vh] = item.validSizes[0];
+                            w = vw;
+                            h = vh;
+                        }
+
+                        initialProps = registryItem.defaultProps ? JSON.parse(JSON.stringify(registryItem.defaultProps)) : {};
+                    }
+                } else if (typeof item === 'string') {
+                    type = item;
+                    const registryItem = registry[type];
+                    if (!registryItem) {
+                        console.error(`Unknown widget type: ${type}`);
+                        return;
+                    }
+                    if (registryItem.defaultSize) {
+                        const [wStr, hStr] = registryItem.defaultSize.split('x');
+                        w = parseInt(wStr, 10) || 1;
+                        h = parseInt(hStr, 10) || 1;
+                    }
+                    initialProps = registryItem.defaultProps ? JSON.parse(JSON.stringify(registryItem.defaultProps)) : {};
+                } else {
+                    return;
+                }
+
+                if (w > gridSize.cols) w = gridSize.cols;
+
+                let targetX = 1;
+                let targetY = 1;
+                let found = false;
+                const currentMaxY = currentWidgets.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), 1);
+
+                for (let y = 1; y <= currentMaxY + h; y++) {
+                    for (let x = 1; x <= gridSize.cols - w + 1; x++) {
+                        const hasCollision = currentWidgets.some(existing => {
+                            const e = existing.layout;
+                            return (
+                                x < e.x + e.w &&
+                                x + w > e.x &&
+                                y < e.y + e.h &&
+                                y + h > e.y
+                            );
+                        });
+
+                        if (!hasCollision) {
+                            targetX = x;
+                            targetY = y;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) break;
+                }
+
+                const newWidget: WidgetInstance = {
+                    id: `w-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                    type: type,
+                    props: initialProps,
+                    layout: { x: targetX, y: targetY, w, h }
+                };
+
+                currentWidgets.push(newWidget);
+            });
+
+            return currentWidgets;
+        });
+
+        setIsCatalogOpen(false);
+    };
 
     const addWidget = (item: any, setIsCatalogOpen: (open: boolean) => void) => {
-        let type: string;
-        let w = 1, h = 1;
-        let initialProps = {};
-
-        if (typeof item === 'object' && item !== null) {
-            const savedWidget = item;
-            type = 'custom-block';
-            const sizeStr = savedWidget.defaultSize || '1x1';
-            const [wStr, hStr] = sizeStr.split('x');
-            w = parseInt(wStr, 10) || 2;
-            h = parseInt(hStr, 10) || 2;
-            initialProps = {
-                type: savedWidget.type,
-                content: JSON.parse(JSON.stringify(savedWidget.content || {})),
-                styles: JSON.parse(JSON.stringify(savedWidget.styles || {})),
-                title: savedWidget.name
-            };
-        } else {
-            type = item as string;
-            const registryItem = registry[type];
-            if (!registryItem) {
-                console.error(`Unknown widget type: ${type}`);
-                return;
-            }
-            if (registryItem.defaultSize) {
-                const [wStr, hStr] = registryItem.defaultSize.split('x');
-                w = parseInt(wStr, 10) || 1;
-                h = parseInt(hStr, 10) || 1;
-            }
-            initialProps = registryItem.defaultProps ? JSON.parse(JSON.stringify(registryItem.defaultProps)) : {};
-        }
-
-        if (w > gridSize.cols) w = gridSize.cols;
-
-        let targetX = 1;
-        let targetY = 1;
-        let found = false;
-        const currentMaxY = widgets.reduce((max: number, w: WidgetInstance) => Math.max(max, w.layout.y + w.layout.h), 1);
-
-        for (let y = 1; y <= currentMaxY + h; y++) {
-            for (let x = 1; x <= gridSize.cols - w + 1; x++) {
-                const hasCollision = widgets.some(existing => {
-                    const e = existing.layout;
-                    return (
-                        x < e.x + e.w &&
-                        x + w > e.x &&
-                        y < e.y + e.h &&
-                        y + h > e.y
-                    );
-                });
-
-                if (!hasCollision) {
-                    targetX = x;
-                    targetY = y;
-                    found = true;
-                    break;
-                }
-            }
-            if (found) break;
-        }
-
-        const newWidget: WidgetInstance = {
-            id: `w-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-            type: type,
-            props: initialProps,
-            layout: { x: targetX, y: targetY, w, h }
-        };
-
-        setWidgets(prev => [...prev, newWidget]);
-        setIsCatalogOpen(false);
+        addWidgets([item], setIsCatalogOpen);
     };
 
     const removeWidget = (id: string) => {
@@ -171,7 +192,7 @@ export const useDashboardLogic = (isMobile: boolean) => {
     };
 
     const resetWidgets = () => {
-        setWidgets(DEFAULT_WIDGETS_V3);
+        setWidgets([]);
         setGridSize(DEFAULT_GRID_SIZE);
     };
 
@@ -293,6 +314,7 @@ export const useDashboardLogic = (isMobile: boolean) => {
         layoutPreview, setLayoutPreview,
         isDragging, setIsDragging,
         registry,
+        addWidgets,
         addWidget,
         removeWidget,
         resetWidgets,
