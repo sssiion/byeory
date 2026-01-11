@@ -83,6 +83,16 @@ export const useDashboardLogic = (isMobile: boolean) => {
         }
     }, [searchParams, setSearchParams]);
 
+    // Capture snapshot when entering edit mode
+    useEffect(() => {
+        if (isWidgetEditMode) {
+            setWidgetSnapshot(JSON.parse(JSON.stringify(widgets))); // Deep copy
+        } else {
+            setWidgetSnapshot(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isWidgetEditMode]); // Only run when mode toggle changes, use current widgets as initial state
+
     const addWidget = (item: any, setIsCatalogOpen: (open: boolean) => void) => {
         let type: string;
         let w = 1, h = 1;
