@@ -10,7 +10,6 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
     // 'welcome' moved to Utility
     // 'theme-guide', 'feature-card' deleted
-    'my-persona': lazy(() => import('./WidgetCollection/system/MyPersona.tsx').then(m => ({ default: m.MyPersona }))),
 
     // ======================================================================
     // Data & Logic
@@ -23,16 +22,6 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
     // Diary & Emotion
     // ======================================================================
-    'ai-diary': lazy(() => import('./WidgetCollection/diary/AIDiary.tsx').then(m => ({ default: m.AIDiary }))),
-    'daily-diary': lazy(() => import('./WidgetCollection/diary/DailyDiary.tsx').then(m => ({ default: m.DailyDiary }))),
-    'random-diary': lazy(() => import('./WidgetCollection/diary/RandomDiary.tsx').then(m => ({ default: m.RandomDiary }))),
-    'exchange-diary': lazy(() => import('./WidgetCollection/diary/ExchangeDiary.tsx').then(m => ({ default: m.ExchangeDiary }))),
-    'past-today': lazy(() => import('./WidgetCollection/diary/PastToday.tsx').then(m => ({ default: m.PastToday }))),
-    'emotion-analysis': lazy(() => import('./WidgetCollection/diary/EmotionAnalysis.tsx').then(m => ({ default: m.EmotionAnalysis }))),
-    'compliment-jar': lazy(() => import('./WidgetCollection/diary/ComplimentJar.tsx').then(m => ({ default: m.ComplimentJar }))),
-    'emotional-weather': lazy(() => import('./WidgetCollection/diary/EmotionalWeather.tsx').then(m => ({ default: m.EmotionalWeather }))),
-    'dream-log': lazy(() => import('./WidgetCollection/diary/DreamLog.tsx').then(m => ({ default: m.DreamLog }))),
-    'daily-stamp': lazy(() => import('./WidgetCollection/diary/DailyStamp.tsx').then(m => ({ default: m.DailyStamp }))),
     'chat-diary': lazy(() => import('./WidgetCollection/diary/ChatDiary.tsx').then(m => ({ default: m.ChatDiary }))),
 
     // ======================================================================
