@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import type {WidgetConfig, WidgetDefinition} from "./type.ts";
-import {WIDGET_COMPONENT_MAP} from "./componentMap.ts";
+import type { WidgetConfig, WidgetDefinition } from "./type.ts";
+import { WIDGET_COMPONENT_MAP } from "./componentMap.ts";
 
-// 🌟 [변경 1] 백엔드 주소 상수 정의 (다른 파일에 있다면 import 해서 쓰셔도 됩니다)
+// 백엔드 주소 상수 정의
 const BASE_URL = 'http://localhost:8080';
 const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -21,11 +21,10 @@ export const useWidgetRegistry = (userId?: number) => {
         const fetchWidgets = async () => {
             try {
                 const params = userId ? { userId } : {};
-                // 🌟 [추가 2] 헤더 가져오기
+                // 헤더 가져오기
                 const headers = getAuthHeaders();
-                // 🌟 [변경 2] 전체 URL(Full URL)을 적어줍니다.
-                // 이제 Vite 서버(5173)가 아니라 백엔드(8080)로 바로 꽂힙니다.
-                // 🌟 [추가 3] axios 요청에 headers 포함
+                // 전체 URL(Full URL)을 적어줍니다.
+                // axios 요청에 headers 포함
                 const response = await axios.get<WidgetDefinition[]>(`${BASE_URL}/api/widgets`, {
                     params,
                     headers // 여기에 헤더 추가
@@ -53,6 +52,15 @@ export const useWidgetRegistry = (userId?: number) => {
                         };
                     }
                 });
+
+                // 타임머신 / 웰컴 위젯 등 강제 사이즈 설정 (백엔드 반영 전 임시)
+                if (mergedRegistry['time-machine']) {
+                    // 1x1 사이즈 추가
+                    const currentSizes = mergedRegistry['time-machine'].validSizes || [];
+                    if (!currentSizes.some(([w, h]) => w === 1 && h === 1)) {
+                        mergedRegistry['time-machine'].validSizes = [[1, 1], ...currentSizes];
+                    }
+                }
 
                 setRegistry(mergedRegistry);
             } catch (err) {

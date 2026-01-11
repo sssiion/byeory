@@ -49,8 +49,8 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
         return (
             <div className="h-full w-full flex flex-col items-center justify-center p-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm overflow-hidden text-center cursor-pointer hover:bg-white transition-colors"
                 onClick={() => navigate('/profile')}>
-                <span className="text-[8px] text-gray-400 font-bold uppercase mb-1">HELLO</span>
-                <span className="text-xs font-bold text-blue-500 truncate max-w-full">{displayName}</span>
+                <span className="text-[10px] text-gray-400 font-bold uppercase mb-0.5 tracking-wider">HELLO</span>
+                <span className="text-sm font-bold text-blue-500 truncate max-w-full leading-tight">{displayName}</span>
             </div>
         );
     }

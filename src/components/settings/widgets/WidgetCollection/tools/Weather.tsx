@@ -58,12 +58,12 @@ export function WeatherWidget({ gridSize }: { gridSize?: { w: number, h: number 
     if (isSmall) {
         return (
             <WidgetWrapper className={`${current.bg} cursor-pointer`} onClick={nextWeather}>
-                <div className="flex flex-col items-center justify-center h-full gap-0.5">
-                    <div className="w-8 h-8 filter drop-shadow-md">
+                <div className="flex flex-col items-center justify-center h-full">
+                    <div className="w-14 h-14 filter drop-shadow-md -mb-2">
                         {current.icon}
                     </div>
-                    <span className={`text-lg font-bold ${current.text} drop-shadow-sm`}>{current.temp}</span>
-                    <span className={`text-[9px] opacity-80 ${current.text}`}>{current.desc}</span>
+                    <span className={`text-3xl font-bold ${current.text} drop-shadow-sm leading-none`}>{current.temp}</span>
+                    <span className={`text-xs opacity-80 ${current.text} mt-1`}>{current.desc}</span>
                 </div>
             </WidgetWrapper>
         );

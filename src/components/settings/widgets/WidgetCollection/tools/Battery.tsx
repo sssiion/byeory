@@ -2,65 +2,51 @@ import React, { useState } from 'react';
 import { Zap } from 'lucide-react';
 import { WidgetWrapper } from '../Common';
 
-// --- 5. Battery Widget (내 에너지)
+// --- 5. Battery Widget (Classic Simple Design)
 interface BatteryWidgetProps {
     gridSize?: { w: number; h: number };
 }
 
-export const BatteryWidget = React.memo(function BatteryWidget({ gridSize }: BatteryWidgetProps) {
+export const BatteryWidget = React.memo(function BatteryWidget() {
     const [level, setLevel] = useState(50);
-    const isSmall = (gridSize?.w || 2) < 2;
 
-    // Small View (1x1)
-    if (isSmall) {
-        return (
-            <WidgetWrapper className="bg-gray-50 dark:bg-gray-800/50">
-                <div className="flex flex-col items-center justify-center h-full relative cursor-pointer" onClick={() => setLevel(prev => prev >= 100 ? 0 : prev + 10)}>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                        <Zap size={48} className={level < 20 ? 'text-red-500' : 'text-yellow-500'} fill="currentColor" />
-                    </div>
+    // 색상 상태 (단순함 유지)
+    const barColor = 'bg-amber-400';
+    const iconColor = 'text-amber-500';
 
-                    <div className="relative z-10 flex flex-col items-center">
-                        <Zap size={24} className={`mb-1 ${level < 20 ? 'text-red-500' : level > 80 ? 'text-green-500' : 'text-yellow-500'}`} fill="currentColor" />
-                        <span className="text-2xl font-black text-gray-700 dark:text-gray-200">{level}%</span>
-                    </div>
-
-                    <div className="absolute bottom-1 w-full px-2">
-                        <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div
-                                className={`h-full transition-all duration-300 ${level < 20 ? 'bg-red-400' : level < 60 ? 'bg-yellow-400' : 'bg-green-400'}`}
-                                style={{ width: `${level}%` }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </WidgetWrapper>
-        );
-    }
-
-    // Medium/Large View
     return (
-        <WidgetWrapper className="bg-gray-50 dark:bg-gray-800/50">
-            <div className="flex flex-col items-center gap-2 w-full px-2">
-                <div className="flex items-center gap-1 font-mono text-xs font-bold text-gray-600 dark:text-gray-300">
-                    <Zap size={14} className={level < 20 ? 'text-red-500' : 'text-yellow-500'} fill="currentColor" />
-                    {level}%
+        <WidgetWrapper className="!bg-white border-none p-0">
+            {/* 전체 컨테이너를 h-full로 잡고 flex로 정중앙 정렬 */}
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                {/* 상단: 아이콘 + 텍스트 */}
+                <div className="flex items-center gap-1.5 mt-1">
+                    <Zap size={18} className={`${iconColor} fill-current`} />
+                    <span className="text-lg font-bold text-gray-700">
+                        {level}%
+                    </span>
                 </div>
-                <div className="relative w-full h-8 border-2 border-gray-300 dark:border-gray-600 rounded-lg p-0.5 flex items-center">
+
+                {/* 중간: 배터리 인디케이터 */}
+                <div className="relative w-[90%] h-10 border-4 border-gray-200 rounded-xl p-1 flex items-center shrink-0">
                     <div
-                        className={`h-full rounded-md transition-all duration-300 ${level < 20 ? 'bg-red-400' : level < 60 ? 'bg-yellow-400' : 'bg-green-400'}`}
+                        className={`h-full rounded-md transition-all duration-300 ${barColor}`}
                         style={{ width: `${level}%` }}
                     />
-                    <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-1 h-3 bg-gray-300 dark:bg-gray-600 rounded-r-sm"></div>
+                    {/* 배터리 꼭지 */}
+                    <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-1.5 h-4 bg-gray-200 rounded-r-sm" />
                 </div>
-                <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={level}
-                    onChange={(e) => setLevel(Number(e.target.value))}
-                    className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[var(--btn-bg)]"
-                />
+
+                {/* 하단: 슬라이더 */}
+                <div className="w-[90%] px-1 pb-1">
+                    <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={level}
+                        onChange={(e) => setLevel(Number(e.target.value))}
+                        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 block"
+                    />
+                </div>
             </div>
         </WidgetWrapper>
     );

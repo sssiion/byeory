@@ -11,21 +11,21 @@ const WIDGET_TYPES = [
     'ai-diary', 'daily-diary', 'random-diary', 'exchange-diary', 'past-today',
     'my-persona', 'emotion-analysis', 'compliment-jar', 'emotional-weather', 'dream-log', 'daily-stamp',
     // Utility
-    'time-machine', 'todo-list', 'weather', 'notification', 'clock', 'dday', 'dday-balloon',
-    'quick-links', 'streak', 'stats', 'battery', 'worry-shredder', 'scrap-note',
-    'biorhythm', 'meditation-timer', 'mandalart', 'recipe-card', 'fandom-calendar', 'worry-doll',
+    'time-machine', 'todo-list', 'weather', 'notification', 'clock',
+    'streak', 'battery', 'worry-shredder', 'scrap-note',
+    'recipe-card', 'worry-doll',
     // Decoration
     'photo-gallery', 'polaroid', 'instant-booth', 'film-strip', 'ocean-wave',
     'movie-ticket', 'bookshelf', 'stamp-collection', 'sky-map', 'birth-flower', 'receipt-printer', 'weather-stickers',
     // Tools
-    'unit-converter', 'calculator', 'markdown-viewer', 'random-picker', 'ladder-game', 'map-pin', 'rss-reader', 'file-viewer',
+    'unit-converter', 'calculator', 'random-picker', 'map-pin', 'rss-reader',
     // Interactive
     'community', 'moon-phase', 'switch-board', 'fortune-cookie', 'ootd', 'book-cover', 'bubble-wrap', 'transparent',
     // Static
     'favorite-char', 'color-chip', 'color-palette', 'movie-scene', 'ticket', 'neon', 'candle', 'text-scroller', 'window-view', 'payphone', 'typewriter',
     'digital-plant', 'dessert-case', 'cat-chaser', 'snow-globe', 'lp-player', 'asmr-mixer', 'bonfire',
     // New
-    'chat-diary', 'tag-cloud', 'timeline', 'scratch-card', 'switches'
+    'chat-diary', 'tag-cloud', 'scratch-card', 'switches'
 ];
 
 (async () => {

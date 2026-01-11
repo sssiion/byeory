@@ -38,7 +38,7 @@ export const getDefaultContent = (type: BlockType) => {
                 ]
             };
 
-        case 'counter': // D-Day로 사용
+        case 'counter':
             return {
                 title: '여름 휴가',
                 date: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0] // 일주일 뒤
@@ -50,7 +50,7 @@ export const getDefaultContent = (type: BlockType) => {
         // 5. 다단 컬럼 (기본 2단)
         case 'columns':
             return {
-                layout: [ [], [] ] // 2단이 기본, 각각 빈 배열
+                layout: [[], []] // 2단이 기본, 각각 빈 배열
             };
 
         // 6. 아코디언 (제목 + 숨겨진 긴 본문)

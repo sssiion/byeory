@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight, ArrowDownUp } from 'lucide-react';
 import { useWidgetStorage } from '../SDK';
 
 const UNIT_CATEGORIES = {
@@ -53,8 +53,6 @@ const UNIT_CATEGORIES = {
             EUR: '유로 (EUR)',
             CNY: '중국 위안 (CNY)',
         },
-        // Base rate is roughly relative to USD (1 USD = 1) - Just default initial values
-        // Will be updated by API if available
         rates: {
             USD: 1,
             KRW: 1445,
@@ -72,6 +70,9 @@ interface UnitConverterProps {
 }
 
 export function UnitConverter({ gridSize }: UnitConverterProps) {
+    const isNarrow = gridSize ? gridSize.w === 1 : false;
+    const isShort = gridSize ? gridSize.h === 1 : false;
+
     // Persist user selection
     const [settings, setSettings] = useWidgetStorage('widget-unit-converter', {
         category: 'length' as keyof typeof UNIT_CATEGORIES,
@@ -79,11 +80,9 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
         toUnit: 'cm'
     });
 
-    // Derived state setters for compatibility with existing code structure
     const category = settings.category;
     const fromUnit = settings.fromUnit;
     const toUnit = settings.toUnit;
-
 
     const setFromUnit = (u: string) => setSettings({ ...settings, fromUnit: u });
     const setToUnit = (u: string) => setSettings({ ...settings, toUnit: u });
@@ -99,7 +98,6 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
 
         if (updatedCache) {
             const { timestamp, data } = JSON.parse(updatedCache);
-            // Cache valid for 12 hours
             if (Date.now() - timestamp < 12 * 60 * 60 * 1000) {
                 setRates(data.conversion_rates);
                 setLastUpdated(new Date(timestamp).toLocaleTimeString());
@@ -108,8 +106,7 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
         }
 
         if (!API_KEY || API_KEY === 'YOUR_KEY_HERE') {
-            console.warn('Exchange Rate API Key is missing. Using default rates.');
-            setRates(UNIT_CATEGORIES.currency.rates); // Fallback to hardcoded
+            setRates(UNIT_CATEGORIES.currency.rates);
             return;
         }
 
@@ -125,8 +122,7 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
                 setLastUpdated(new Date().toLocaleTimeString());
             }
         } catch (e) {
-            console.error("Failed to fetch rates", e);
-            setRates(UNIT_CATEGORIES.currency.rates); // Fallback
+            setRates(UNIT_CATEGORIES.currency.rates);
         }
     };
 
@@ -141,13 +137,9 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
 
         const baseValue = num / rates[from];
         const result = baseValue * rates[to];
-
-        // Simply set string
         setToValue(parseFloat(result.toFixed(6)).toString());
     };
 
-    // Initial setup handled by storage/state init.
-    // When category changes via user input, we should update units.
     const handleCategoryChange = (c: keyof typeof UNIT_CATEGORIES) => {
         const cat = UNIT_CATEGORIES[c];
         const units = Object.keys(cat.units);
@@ -165,36 +157,109 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
         }
     };
 
-    // Load rates on mount if currency
     useEffect(() => {
         if (category === 'currency') fetchCurrencyRates();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Recalculate when inputs change
     useEffect(() => {
         calculate(fromValue, fromUnit, toUnit);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fromValue, fromUnit, toUnit, rates]);
 
     const handleSwap = () => {
         const tempUnit = fromUnit;
         setFromUnit(toUnit);
         setToUnit(tempUnit);
-
-        // We set input to the calculated output to "continue" conversion
         setFromValue(toValue);
     };
 
+    // Compact Layout for 2x1 (Short but Wide)
+    if (isShort && !isNarrow) {
+        return (
+            <div className="h-full flex flex-col px-4 py-3 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">
+                {/* Compact Header */}
+                <div className="flex gap-2 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+                    {Object.entries(UNIT_CATEGORIES).map(([key, info]) => (
+                        <button
+                            key={key}
+                            onClick={() => handleCategoryChange(key as any)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors flex-shrink-0
+                                ${category === key
+                                    ? 'theme-bg-primary text-white'
+                                    : 'theme-bg-card-secondary theme-text-secondary hover:theme-text-primary'
+                                }`}
+                        >
+                            {info.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Horizontal Content */}
+                <div className="flex-1 flex items-center gap-2">
+                    {/* From */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 border-b border-[var(--border-color)] p-1.5 focus-within:border-[var(--btn-bg)] transition-colors">
+                            <input
+                                type="number"
+                                value={fromValue}
+                                onChange={(e) => setFromValue(e.target.value)}
+                                className="flex-1 bg-transparent text-sm font-mono outline-none theme-text-primary w-full min-w-0"
+                            />
+                            <select
+                                value={fromUnit}
+                                onChange={(e) => setFromUnit(e.target.value)}
+                                className="bg-transparent theme-text-secondary text-xs font-bold outline-none border-none py-0 max-w-[50px] text-right"
+                            >
+                                {Object.entries(UNIT_CATEGORIES[category].units).map(([u]) => (
+                                    <option key={u} value={u} className="text-gray-900 dark:text-gray-100">{u}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Swap */}
+                    <button
+                        onClick={handleSwap}
+                        className="p-1.5 rounded-full theme-bg-card border theme-border shadow-sm hover:scale-110 transition-transform theme-text-secondary hover:theme-text-primary flex-shrink-0"
+                    >
+                        <ArrowLeftRight size={12} />
+                    </button>
+
+                    {/* To */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 border-b border-[var(--border-color)] p-1.5">
+                            <input
+                                type="text"
+                                readOnly
+                                value={toValue}
+                                className="flex-1 bg-transparent text-sm font-mono outline-none theme-text-primary w-full min-w-0"
+                            />
+                            <select
+                                value={toUnit}
+                                onChange={(e) => setToUnit(e.target.value)}
+                                className="bg-transparent theme-text-secondary text-xs font-bold outline-none border-none py-0 max-w-[50px] text-right"
+                            >
+                                {Object.entries(UNIT_CATEGORIES[category].units).map(([u]) => (
+                                    <option key={u} value={u} className="text-gray-900 dark:text-gray-100">{u}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Default Layout (2x2) or Narrow Layout (1x2)
     return (
-        <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border">
-            {/* Header / Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+        <div className="h-full flex flex-col p-4 theme-bg-card rounded-xl shadow-sm border theme-border overflow-hidden">
+
+            {/* Category Selector */}
+            <div className={`flex gap-2 mb-4 scrollbar-hide ${isNarrow ? 'overflow-x-auto pb-1' : 'overflow-x-auto pb-2'}`}>
                 {Object.entries(UNIT_CATEGORIES).map(([key, info]) => (
                     <button
                         key={key}
                         onClick={() => handleCategoryChange(key as any)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors flex-shrink-0
                             ${category === key
                                 ? 'theme-bg-primary text-white'
                                 : 'theme-bg-card-secondary theme-text-secondary hover:theme-text-primary'
@@ -205,12 +270,13 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
                 ))}
             </div>
 
-            {/* Content */}
-            <div className="flex-1 flex flex-col gap-4 justify-center">
-                {/* From */}
-                <div className="relative">
-                    <label className="text-xs theme-text-secondary mb-1 block font-bold">From</label>
-                    <div className="flex gap-2">
+            {/* Content Area */}
+            <div className={`flex-1 flex ${isNarrow ? 'flex-col gap-2' : 'flex-col gap-4 justify-center'}`}>
+
+                {/* From Group */}
+                <div className="relative group">
+                    <label className="text-[10px] theme-text-secondary mb-1 block font-bold uppercase tracking-wider">From</label>
+                    <div className={`flex ${isNarrow ? 'flex-col' : 'flex-row'} gap-2`}>
                         <input
                             type="number"
                             value={fromValue}
@@ -220,29 +286,29 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
                         <select
                             value={fromUnit}
                             onChange={(e) => setFromUnit(e.target.value)}
-                            className="w-24 bg-transparent theme-text-primary text-sm font-bold outline-none border-b-2 border-transparent focus:border-[var(--btn-bg)] transition-colors text-right"
+                            className={`${isNarrow ? 'w-full text-left bg-transparent border-b' : 'w-24 text-right bg-transparent border-b-2'} theme-text-primary text-sm font-bold outline-none border-transparent focus:border-[var(--btn-bg)] transition-colors py-1`}
                         >
                             {Object.entries(UNIT_CATEGORIES[category].units).map(([u]) => (
-                                <option key={u} value={u}>{u}</option>
+                                <option key={u} value={u} className="text-gray-900 dark:text-gray-100">{u}</option>
                             ))}
                         </select>
                     </div>
                 </div>
 
-                {/* Swap Button */}
-                <div className="flex justify-center -my-2 z-10">
+                {/* Swap Action */}
+                <div className={`flex justify-center z-10 ${isNarrow ? 'py-1' : '-my-2'}`}>
                     <button
                         onClick={handleSwap}
                         className="p-2 rounded-full theme-bg-card border theme-border shadow-sm hover:scale-110 transition-transform theme-text-secondary hover:theme-text-primary"
                     >
-                        <ArrowLeftRight size={16} />
+                        {isNarrow ? <ArrowDownUp size={14} /> : <ArrowLeftRight size={16} />}
                     </button>
                 </div>
 
-                {/* To */}
-                <div className="relative">
-                    <label className="text-xs theme-text-secondary mb-1 block font-bold">To</label>
-                    <div className="flex gap-2">
+                {/* To Group */}
+                <div className="relative group">
+                    <label className="text-[10px] theme-text-secondary mb-1 block font-bold uppercase tracking-wider">To</label>
+                    <div className={`flex ${isNarrow ? 'flex-col' : 'flex-row'} gap-2`}>
                         <input
                             type="text"
                             readOnly
@@ -252,20 +318,19 @@ export function UnitConverter({ gridSize }: UnitConverterProps) {
                         <select
                             value={toUnit}
                             onChange={(e) => setToUnit(e.target.value)}
-                            className="w-24 bg-transparent theme-text-primary text-sm font-bold outline-none border-b-2 border-transparent focus:border-[var(--btn-bg)] transition-colors text-right"
+                            className={`${isNarrow ? 'w-full text-left bg-transparent border-b' : 'w-24 text-right bg-transparent border-b-2'} theme-text-primary text-sm font-bold outline-none border-transparent focus:border-[var(--btn-bg)] transition-colors py-1`}
                         >
                             {Object.entries(UNIT_CATEGORIES[category].units).map(([u]) => (
-                                <option key={u} value={u}>{u}</option>
+                                <option key={u} value={u} className="text-gray-900 dark:text-gray-100">{u}</option>
                             ))}
                         </select>
                     </div>
                 </div>
 
-                {/* Info */}
-                {category === 'currency' && (
+                {/* Info Footer */}
+                {category === 'currency' && !isNarrow && (
                     <div className="text-[10px] theme-text-secondary text-center mt-2">
-                        {lastUpdated ? `업데이트: ${lastUpdated}` : '기본 환율 사용 중'}
-                        {(!API_KEY || API_KEY === 'YOUR_KEY_HERE') && <span className="block text-red-400">API 키 미설정</span>}
+                        {lastUpdated ? `Updated: ${lastUpdated}` : 'Standard Rates'}
                     </div>
                 )}
             </div>
