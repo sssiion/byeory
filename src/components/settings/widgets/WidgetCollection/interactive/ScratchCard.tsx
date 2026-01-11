@@ -94,14 +94,18 @@ export const ScratchCard = ({ className, style, text = "Lucky Day!", imageSrc, g
                     className="absolute inset-0 w-full h-full cursor-pointer z-10 touch-none"
                     onMouseMove={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
+                        const scaleX = e.currentTarget.width / rect.width;
+                        const scaleY = e.currentTarget.height / rect.height;
+                        const x = (e.clientX - rect.left) * scaleX;
+                        const y = (e.clientY - rect.top) * scaleY;
                         if (e.buttons === 1) scratch(x, y);
                     }}
                     onMouseDown={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
+                        const scaleX = e.currentTarget.width / rect.width;
+                        const scaleY = e.currentTarget.height / rect.height;
+                        const x = (e.clientX - rect.left) * scaleX;
+                        const y = (e.clientY - rect.top) * scaleY;
                         scratch(x, y);
                     }}
                     style={{ opacity: isScratched ? 1 : 1 }} // Keep it visible until fully cleared

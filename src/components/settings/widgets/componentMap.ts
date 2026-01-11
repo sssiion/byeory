@@ -15,9 +15,6 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // Data & Logic
     // ======================================================================
     'formula-block': lazy(() => import('./WidgetCollection/logic/FormulaBlock.tsx').then(m => ({ default: m.FormulaBlock }))),
-    'relation-link': lazy(() => import('./WidgetCollection/logic/RelationLink.tsx').then(m => ({ default: m.RelationLink }))),
-    'rollup': lazy(() => import('./WidgetCollection/logic/Rollup.tsx').then(m => ({ default: m.Rollup }))),
-    'property-toggle': lazy(() => import('./WidgetCollection/logic/PropertyToggle.tsx').then(m => ({ default: m.PropertyToggle }))),
 
     // ======================================================================
     // Diary & Emotion
@@ -71,7 +68,6 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     'neon': lazy(() => import('./WidgetCollection/decoration/NeonSign.tsx').then(m => ({ default: m.NeonSign }))),
     'candle': lazy(() => import('./WidgetCollection/decoration/Candle.tsx').then(m => ({ default: m.Candle }))),
     'text-scroller': lazy(() => import('./WidgetCollection/decoration/TextScroller.tsx').then(m => ({ default: m.TextScroller }))),
-    'payphone': lazy(() => import('./WidgetCollection/decoration/Payphone.tsx').then(m => ({ default: m.Payphone }))),
     'ocean-wave': lazy(() => import('./WidgetCollection/decoration/OceanWave.tsx').then(m => ({ default: m.OceanWave }))),
     'movie-ticket': lazy(() => import('./WidgetCollection/decoration/MovieTicket.tsx').then(m => ({ default: m.MovieTicket }))),
     'bookshelf': lazy(() => import('./WidgetCollection/decoration/Bookshelf.tsx').then(m => ({ default: m.Bookshelf }))),
@@ -84,12 +80,10 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
     // Interactive
     // ======================================================================
-    'digital-plant': lazy(() => import('./WidgetCollection/interactive/DigitalPlant.tsx').then(m => ({ default: m.DigitalPlant }))),
     'dessert-case': lazy(() => import('./WidgetCollection/interactive/DessertCase.tsx').then(m => ({ default: m.DessertCase }))),
     'cat-chaser': lazy(() => import('./WidgetCollection/interactive/CatChaser.tsx').then(m => ({ default: m.CatChaser }))),
     'snow-globe': lazy(() => import('./WidgetCollection/interactive/SnowGlobe.tsx').then(m => ({ default: m.SnowGlobe }))),
     'lp-player': lazy(() => import('./WidgetCollection/interactive/LPPlayer.tsx').then(m => ({ default: m.LPPlayer }))),
-    'asmr-mixer': lazy(() => import('./WidgetCollection/interactive/ASMRMixer.tsx').then(m => ({ default: m.ASMRMixer }))),
     'bonfire': lazy(() => import('./WidgetCollection/interactive/Bonfire.tsx').then(m => ({ default: m.Bonfire }))),
     'community': lazy(() => import('./WidgetCollection/interactive/Community.tsx').then(m => ({ default: m.CommunityWidget }))),
     'time-machine': lazy(() => import('./WidgetCollection/interactive/TimeMachine.tsx').then(m => ({ default: m.TimeMachine }))),
