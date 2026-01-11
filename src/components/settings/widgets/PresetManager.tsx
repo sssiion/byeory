@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, FolderOpen, Plus, X, Check, RefreshCw } from 'lucide-react';
-import type { WidgetInstance } from "./type.ts";
+import type { WidgetInstance } from "./type";
+import { getPresets, createPreset, deletePreset, updatePreset, type WidgetPreset } from '../../../services/widgetSettings';
 
-interface WidgetPreset {
-    id: string;
-    name: string;
-    createdAt: number;
-    widgets: WidgetInstance[];
-    gridSize: { cols: number; rows: number };
-}
+// ... interface WidgetPreset (remove local definition if imported, or keep compatible)
 
 interface PresetManagerProps {
     currentWidgets: WidgetInstance[];
@@ -16,8 +11,6 @@ interface PresetManagerProps {
     onLoad: (widgets: WidgetInstance[], gridSize: { cols: number; rows: number }) => void;
     onClose: () => void;
 }
-
-const STORAGE_KEY = 'my_dashboard_presets';
 
 export const PresetManager: React.FC<PresetManagerProps> = ({
     currentWidgets,
@@ -30,64 +23,54 @@ export const PresetManager: React.FC<PresetManagerProps> = ({
     const [newPresetName, setNewPresetName] = useState('');
 
     useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            try {
-                setPresets(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to load presets", e);
-            }
-        }
+        loadPresets();
     }, []);
 
-    const savePresets = (newPresets: WidgetPreset[]) => {
-        setPresets(newPresets);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newPresets));
+    const loadPresets = async () => {
+        try {
+            const data = await getPresets();
+            setPresets(data);
+        } catch (e) {
+            console.error("Failed to load presets", e);
+        }
     };
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!newPresetName.trim()) return;
-
-        const newPreset: WidgetPreset = {
-            id: crypto.randomUUID(),
-            name: newPresetName.trim(),
-            createdAt: Date.now(),
-            widgets: currentWidgets,
-            gridSize: currentGridSize
-        };
-
-        const updated = [newPreset, ...presets];
-        savePresets(updated);
-        setNewPresetName('');
-        setIsCreating(false);
+        try {
+            await createPreset(newPresetName.trim(), currentWidgets, currentGridSize);
+            await loadPresets();
+            setNewPresetName('');
+            setIsCreating(false);
+        } catch (e) {
+            console.error("Failed to create preset", e);
+        }
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: number) => {
         if (confirm('정말 삭제하시겠습니까?')) {
-            const updated = presets.filter(p => p.id !== id);
-            savePresets(updated);
+            try {
+                await deletePreset(id);
+                await loadPresets();
+            } catch (e) {
+                console.error("Failed to delete preset", e);
+            }
         }
     };
 
-    const handleOverwrite = (id: string) => {
+    const handleOverwrite = async (id: number) => {
         if (confirm('현재 배치로 이 프리셋을 덮어쓰시겠습니까?')) {
-            const updated = presets.map(p => {
-                if (p.id === id) {
-                    return {
-                        ...p,
-                        widgets: currentWidgets,
-                        gridSize: currentGridSize,
-                        createdAt: Date.now()
-                    };
-                }
-                return p;
-            });
-            savePresets(updated);
+            try {
+                await updatePreset(id, currentWidgets, currentGridSize);
+                await loadPresets();
+            } catch (e) {
+                console.error("Failed to update preset", e);
+            }
         }
     };
 
-    const formatDate = (ts: number) => {
-        return new Date(ts).toLocaleDateString() + ' ' + new Date(ts).toLocaleTimeString();
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString();
     };
 
     return (

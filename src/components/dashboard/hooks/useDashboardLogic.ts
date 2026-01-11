@@ -9,8 +9,8 @@ const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
     { id: 'w-1', type: 'welcome', layout: { x: 1, y: 1, w: 4, h: 1 } },
     { id: 'w-2', type: 'todo-list', layout: { x: 1, y: 2, w: 2, h: 2 } },
     { id: 'w-3', type: 'ocean-wave', layout: { x: 3, y: 2, w: 2, h: 1 } },
-    { id: 'w-4', type: 'scratch-card', layout: { x: 3, y: 3, w: 1, h: 1 } },
-    { id: 'w-5', type: 'physics-box', layout: { x: 4, y: 3, w: 1, h: 1 } },
+    { id: 'w-4', type: 'physics-box', layout: { x: 3, y: 3, w: 1, h: 1 } },
+    { id: 'w-5', type: 'scratch-card', layout: { x: 4, y: 3, w: 1, h: 1 } },
 ];
 
 export const useDashboardLogic = (isMobile: boolean) => {
@@ -18,40 +18,48 @@ export const useDashboardLogic = (isMobile: boolean) => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
-    const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
-        const savedWidgets = localStorage.getItem('my_dashboard_widgets_v3');
-        if (savedWidgets) {
-            try { return JSON.parse(savedWidgets); } catch (e) { return DEFAULT_WIDGETS_V3; }
-        }
-        return DEFAULT_WIDGETS_V3;
-    });
 
-    const [gridSize, setGridSize] = useState<{ cols: number; rows: number }>(() => {
-        const savedGrid = localStorage.getItem('my_dashboard_grid_size_v4');
-        if (savedGrid) {
-            try { return JSON.parse(savedGrid); } catch (e) { return DEFAULT_GRID_SIZE; }
-        }
-        return DEFAULT_GRID_SIZE;
-    });
+    // Default initial state
+    const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS_V3);
+
+    const [gridSize, setGridSize] = useState<{ cols: number; rows: number }>(DEFAULT_GRID_SIZE);
 
     const [widgetSnapshot, setWidgetSnapshot] = useState<WidgetInstance[] | null>(null);
     const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
 
-    // Save to LC
+    // Load from API on mount
     useEffect(() => {
-        localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
-        localStorage.setItem('my_dashboard_grid_size_v4', JSON.stringify(gridSize));
-    }, [widgets, gridSize]);
+        const loadWidgets = async () => {
+            // Try to load from API
+            const { getWidgetSettings } = await import('../../../services/widgetSettings');
+            const savedWidgets = await getWidgetSettings();
 
-    // Snapshot for Cancel
+            if (savedWidgets && savedWidgets.length > 0) {
+                setWidgets(savedWidgets);
+            }
+            setIsLoaded(true);
+        };
+        loadWidgets();
+    }, []);
+
+    // Save to API when widgets change (Debounced to prevent too many requests)
     useEffect(() => {
-        if (isWidgetEditMode && widgetSnapshot === null) {
-            setWidgetSnapshot(JSON.parse(JSON.stringify(widgets)));
-        } else if (!isWidgetEditMode) {
-            setWidgetSnapshot(null);
-        }
-    }, [isWidgetEditMode, widgetSnapshot, widgets]);
+        if (!isLoaded) return; // Don't save initial default overwrite
+
+        const saveWidgets = async () => {
+            const { updateWidgetSettings } = await import('../../../services/widgetSettings');
+            try {
+                await updateWidgetSettings(widgets);
+            } catch (e) {
+                console.error("Failed to save widgets", e);
+            }
+        };
+
+        const timeoutId = setTimeout(saveWidgets, 1000); // 1s debounce
+        return () => clearTimeout(timeoutId);
+    }, [widgets, isLoaded]);
 
     // Resize grid height automatically
     useEffect(() => {
@@ -153,7 +161,7 @@ export const useDashboardLogic = (isMobile: boolean) => {
     };
 
     const resetWidgets = () => {
-        setWidgets([]);
+        setWidgets(DEFAULT_WIDGETS_V3);
         setGridSize(DEFAULT_GRID_SIZE);
     };
 
