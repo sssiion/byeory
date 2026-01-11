@@ -1,12 +1,12 @@
 import React, { useRef, useState, useEffect, Suspense } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { getEmptyImage } from 'react-dnd-html5-backend';
-import { Maximize2, HelpCircle } from 'lucide-react';
+import { HelpCircle, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BlockRenderer from "./customwidget/components/BlockRenderer"; // .tsx 제거
 import { useCredits } from '../../../context/CreditContext';
-import type {WidgetConfig, WidgetInstance} from "./type.ts";
-import {WIDGET_COMPONENT_MAP} from "./componentMap.ts";
+import type { WidgetConfig, WidgetInstance } from "./type.ts";
+import { WIDGET_COMPONENT_MAP } from "./componentMap.ts";
 
 
 interface DraggableWidgetProps {
@@ -31,21 +31,21 @@ const ItemTypes = {
 };
 
 export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
-                                                                    widget,
-                                                                    registry,
-                                                                    isEditMode,
-                                                                    removeWidget,
-                                                                    updateLayout,
-                                                                    onDragStart,
-                                                                    onDragEnd,
-                                                                    onHover,
-                                                                    onDrop,
-                                                                    isMobile = false,
-                                                                    isSelected = false,
-                                                                    onSelect,
-                                                                    onShowInfo,
-                                                                    onUpdateWidget
-                                                                }) => {
+    widget,
+    registry,
+    isEditMode,
+    removeWidget,
+    updateLayout,
+    onDragStart,
+    onDragEnd,
+    onHover,
+    onDrop,
+    isMobile = false,
+    isSelected = false,
+    onSelect,
+    onShowInfo,
+    onUpdateWidget
+}) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
 
@@ -156,8 +156,8 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             ref={ref}
             className={`global-physics-widget relative group rounded-2xl transition-colors duration-200 
                 ${isTransparent
-                ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
-                : 'theme-bg-card shadow-sm hover:shadow-md'} 
+                    ? (isEditMode ? 'bg-white/10 border-2 border-dashed border-white/30' : '')
+                    : 'theme-bg-card shadow-sm hover:shadow-md'} 
                 ${(isEditMode && !isMobile) ? 'cursor-move ring-2 ring-[var(--btn-bg)] ring-offset-2 overflow-visible' : 'overflow-hidden'}
                 ${isDragging ? 'pointer-events-none' : ''}
                 ${(isMobile && isSelected && isEditMode) ? 'ring-2 ring-[var(--btn-bg)] ring-offset-2' : ''}
@@ -222,89 +222,133 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     className={`absolute inset-0 bg-black/10 backdrop-blur-[1px] rounded-2xl flex flex-col items-center justify-center transition-opacity border-2 border-[var(--btn-bg)] z-20 gap-2 pointer-events-auto
                     ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}
                 `}>
-                    {/* Info Button */}
-                    {isEditMode && (
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onShowInfo?.();
-                            }}
-                            className="absolute top-2 right-2 p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-black/70 backdrop-blur-sm transition-colors shadow-sm"
-                            title="Information"
-                        >
-                            <HelpCircle size={14} />
-                        </button>
-                    )}
-
-                    {/* Size Control */}
-                    {registryItem.category !== 'Global' && (
-                        <div className="relative size-menu-container">
+                    {/* Top Right Controls */}
+                    <div className="absolute top-2 right-2 flex gap-2">
+                        {/* Info Button */}
+                        {onShowInfo && ( // Only show if onShowInfo prop exists
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowSizeMenu(!showSizeMenu);
+                                    onShowInfo?.();
                                 }}
-                                className="bg-[var(--bg-card)] text-[var(--text-primary)] px-3 py-1.5 rounded-full shadow-lg text-xs font-bold flex items-center gap-1 hover:bg-[var(--bg-card-secondary)]"
+                                className="p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-black/70 backdrop-blur-sm transition-colors shadow-sm"
+                                title="Information"
                             >
-                                <Maximize2 size={12} /> Size
+                                <HelpCircle size={14} />
                             </button>
+                        )}
 
-                            {showSizeMenu && (
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-2 z-[100] w-36 grid grid-cols-2 gap-1 animate-in zoom-in duration-200 max-h-60 overflow-y-auto custom-scrollbar">
-                                    {(registryItem.validSizes || [
-                                        [1, 1], [2, 1], [3, 1],
-                                        [1, 2], [2, 2], [3, 2],
-                                        [2, 3], [3, 3], [4, 2]
-                                    ]).filter(([cw, ch]: [number, number]) => {
-                                        if (isMobile) {
-                                            if (cw > 2) return false;
-                                            if (ch > 2) return false;
-                                            // Mobile specific filters...
-                                            if (widget.type === 'welcome') {
-                                                if (cw === 1 && ch === 2) return false;
-                                                if (ch > 2) return false;
+                        {/* Remove Button (Trash Icon) */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeWidget(widget.id);
+                            }}
+                            className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-500 text-white backdrop-blur-sm transition-colors shadow-sm"
+                            title="Remove Widget"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
+
+                    {/* Resize Handle */}
+                    {registryItem.category !== 'Global' && (
+                        <div
+                            className="absolute bottom-2 right-2 p-2 cursor-nwse-resize touch-none text-white/80 hover:text-white transition-colors"
+                            onPointerDown={(e) => {
+                                e.stopPropagation(); // Prevent drag start
+                                e.preventDefault(); // Prevent text selection
+
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const originalW = w;
+                                const originalH = h;
+                                const element = ref.current;
+                                if (!element) return;
+
+                                const rect = element.getBoundingClientRect();
+                                const cellWidth = rect.width / w;
+                                const cellHeight = rect.height / h;
+
+                                const handlePointerMove = (moveEvent: PointerEvent) => {
+                                    const dx = moveEvent.clientX - startX;
+                                    const dy = moveEvent.clientY - startY;
+
+                                    const gridDx = Math.round(dx / cellWidth);
+                                    const gridDy = Math.round(dy / cellHeight);
+
+                                    let newW = Math.max(1, originalW + gridDx);
+                                    let newH = Math.max(1, originalH + gridDy);
+
+                                    // Valid Sizes Filtering
+                                    const validSizes = registryItem?.validSizes;
+                                    if (validSizes) {
+                                        // Find closest valid size
+                                        let bestSize = [newW, newH];
+                                        let minDistance = Infinity;
+
+                                        validSizes.forEach(([vw, vh]) => {
+                                            // Apply mobile constraints if needed
+                                            if (isMobile) {
+                                                if (vw > 2) return;
+                                                // Specific widget constraints...
+                                                if (widget.type === 'welcome' && (vw === 1 && vh === 2)) return;
+                                                if (widget.type === 'ootd' && vh !== 2) return;
+                                                if (widget.type === 'chat-diary' && vw !== 2) return;
+                                                if (widget.type === 'asmr-mixer' && vw !== 2) return;
+                                                if (widget.type === 'random-picker' && vw === 1 && vh === 1) return;
                                             }
-                                            if (widget.type === 'ootd' && ch !== 2) return false;
-                                            if (widget.type === 'chat-diary' && cw !== 2) return false;
-                                            if (widget.type === 'asmr-mixer' && cw !== 2) return false;
-                                            if (widget.type === 'random-picker' && cw === 1 && ch === 1) return false;
-                                        }
-                                        return true;
-                                    }).map(([cw, ch]: [number, number]) => (
-                                        <button
-                                            key={`${cw}x${ch}`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                updateLayout(widget.id, { w: cw, h: ch });
-                                                // LocalStorage Config Logic
-                                                try {
-                                                    const key = `widget-config-${widget.type}`;
-                                                    const existing = localStorage.getItem(key);
-                                                    const config = existing ? JSON.parse(existing) : {};
-                                                    const newConfig = { ...config, defaultSize: `${cw}x${ch}` };
-                                                    localStorage.setItem(key, JSON.stringify(newConfig));
-                                                } catch (e) { console.warn(e); }
-                                                setShowSizeMenu(false);
-                                            }}
-                                            className={`text-[10px] p-2 rounded hover:bg-[var(--bg-card-secondary)] border transition-colors ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
-                                        >
-                                            {cw}x{ch}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+
+                                            // Simple distance metric
+                                            const dist = Math.sqrt(Math.pow(vw - newW, 2) + Math.pow(vh - newH, 2));
+                                            if (dist < minDistance) {
+                                                minDistance = dist;
+                                                bestSize = [vw, vh];
+                                            }
+                                        });
+
+                                        // If dragging significantly, snap to the best candidate
+                                        // To prevent jumping, only switch if we are strictly closer or sufficiently moved
+                                        newW = bestSize[0];
+                                        newH = bestSize[1];
+                                    }
+
+                                    // Local constraints
+                                    if (isMobile && newW > 2) newW = 2; // Hard constraint for mobile width
+
+                                    if (newW !== w || newH !== h) {
+                                        updateLayout(widget.id, { w: newW, h: newH });
+
+                                        // Update Local Config
+                                        try {
+                                            const key = `widget-config-${widget.type}`;
+                                            const existing = localStorage.getItem(key);
+                                            const config = existing ? JSON.parse(existing) : {};
+                                            const newConfig = { ...config, defaultSize: `${newW}x${newH}` };
+                                            localStorage.setItem(key, JSON.stringify(newConfig));
+                                        } catch (e) { console.warn(e); }
+                                    }
+                                };
+
+                                const handlePointerUp = () => {
+                                    window.removeEventListener('pointermove', handlePointerMove);
+                                    window.removeEventListener('pointerup', handlePointerUp);
+                                };
+
+                                window.addEventListener('pointermove', handlePointerMove);
+                                window.addEventListener('pointerup', handlePointerUp);
+                            }}
+                        >
+                            {/* Custom Resize Icon */}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v6" />
+                                <path d="M21 21h-6" />
+                                <path d="M21 21l-9-9" />
+                                <path d="M3 21h6" strokeOpacity="0.5" />
+                                <path d="M9 21v-6" strokeOpacity="0.5" />
+                            </svg>
                         </div>
                     )}
-
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            removeWidget(widget.id);
-                        }}
-                        className="bg-red-500 text-white px-3 py-1.5 rounded-full shadow-lg text-xs font-bold hover:bg-red-600 hover:scale-105 transition-transform"
-                    >
-                        Remove
-                    </button>
                 </div>
             )}
         </motion.div>
