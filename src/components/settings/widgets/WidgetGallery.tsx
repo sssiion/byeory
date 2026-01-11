@@ -9,14 +9,16 @@ interface WidgetGalleryProps {
     onSelect: (widgetType: string) => void; // 문자열(ID)을 넘기도록 수정
     onMultiSelect?: (items: WidgetConfig[]) => void; // 다중 선택 처리를 위한 prop 추가
     onEdit?: (data: WidgetConfig) => void; // MainPage에서 onEdit도 넘겨주고 있으므로 추가
+    onCreate?: () => void; // 커스텀 위젯 만들기 버튼 동작
 }
 
-export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit }: WidgetGalleryProps) => {
+export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: WidgetGalleryProps) => {
     // 훅을 통해 DB에서 위젯 정보를 가져옴
     const { registry, isLoading, error } = useWidgetRegistry();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedWidgets, setSelectedWidgets] = useState<WidgetConfig[]>([]); // 장바구니 상태
-    const [expandedCategories, setExpandedCategories] = useState<string[]>([]); // 아코디언 상태
+    // 기본적으로 'My Saved' (커스텀 위젯) 카테고리는 펼쳐둠
+    const [expandedCategories, setExpandedCategories] = useState<string[]>(['My Saved']);
 
     const handleCardClick = (widget: WidgetConfig) => {
         setSelectedWidgets(prev => [...prev, widget]);
@@ -61,6 +63,7 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit }: WidgetGallery
 
     // 카테고리 순서 정의
     const CATEGORY_ORDER = [
+        'My Saved', // 커스텀 위젯이 최상단 (Utility 위)
         'Utility',
         'Diary & Emotion',
         'Interactive',
@@ -84,9 +87,13 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit }: WidgetGallery
     useEffect(() => {
         if (searchTerm) {
             const categoriesWithResults = Object.keys(groupedWidgets);
-            setExpandedCategories(categoriesWithResults);
+            // 검색 시에는 모든 결과 카테고리를 펼침, 'My Saved'는 원래 펼쳐져 있을 수 있음
+            setExpandedCategories(prev => {
+                const unique = new Set([...prev, ...categoriesWithResults]);
+                return Array.from(unique);
+            });
         } else {
-            setExpandedCategories([]); // 검색어 지우면 다시 모두 접기
+            setExpandedCategories(['My Saved']); // 검색어 지우면 기본 상태로 리셋 ('My Saved'만 오픈)
         }
     }, [searchTerm, widgets.length]);
 
@@ -174,26 +181,63 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit }: WidgetGallery
             {/* 스크롤 가능한 위젯 목록 영역 */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-20 flex flex-col gap-4">
                 {CATEGORY_ORDER.map((category) => {
-                    const categoryWidgets = groupedWidgets[category];
-                    if (!categoryWidgets || categoryWidgets.length === 0) return null;
+                    // 'My Saved' 카테고리를 항상 렌더링하도록 하되, 위젯이 없어도 빈 배열로 처리할지는 선택.
+                    // 요구사항: "커스텀 위젯" 섹션이 존재해야 함. 위젯이 없어도 '만들기' 버튼을 보여주기 위해 렌더링 필요할 수 있음.
+                    // 하지만 현재 로직은 위젯 없으면 null 리턴. 'My Saved'는 예외처리 필요.
 
-                    const isExpanded = expandedCategories.includes(category);
+                    let categoryWidgets = groupedWidgets[category];
+                    const isCustomWidgetSection = category === 'My Saved';
+
+                    if (isCustomWidgetSection && !categoryWidgets) {
+                        categoryWidgets = []; // 커스텀 위젯 섹션은 비어있어도 보여줌 (만들기 버튼 때문)
+                    } else if (!categoryWidgets || categoryWidgets.length === 0) {
+                        return null;
+                    }
+
+                    // 커스텀 위젯 섹션 조건: 3개 이하면 항상 펼침(접을 수 없음), 3개 초과면 접을 수 있음
+                    // 기본적으로는 펼쳐져 있음 (initial state 'My Saved')
+                    const isFoldable = !isCustomWidgetSection || categoryWidgets.length > 3;
+                    const forcedExpanded = isCustomWidgetSection && categoryWidgets.length <= 3;
+
+                    const isExpanded = forcedExpanded || expandedCategories.includes(category);
+
+                    const displayName = isCustomWidgetSection ? "커스텀 위젯" : category;
 
                     return (
                         <div key={category} className="bg-[var(--bg-card-secondary)] rounded-2xl border border-[var(--border-color)]">
                             <button
-                                onClick={() => toggleCategory(category)}
-                                className="w-full px-6 py-4 flex items-center justify-between hover:bg-[var(--bg-card)] transition-colors rounded-2xl"
+                                onClick={() => {
+                                    if (isFoldable) toggleCategory(category);
+                                }}
+                                className={`w-full px-6 py-4 flex items-center justify-between transition-colors rounded-2xl ${isFoldable ? 'hover:bg-[var(--bg-card)] cursor-pointer' : 'cursor-default'}`}
                             >
                                 <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-3">
                                     <span className={`w-1.5 h-6 rounded-full bg-[var(--btn-bg)] inline-block transition-transform duration-300 ${isExpanded ? 'scale-y-100' : 'scale-y-75 opacity-50'}`}></span>
-                                    {category}
+                                    {displayName}
                                     <span className="text-xs font-normal text-[var(--text-secondary)] ml-2 bg-[var(--bg-card)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
                                         {categoryWidgets.length}
                                     </span>
                                 </h2>
-                                <div className={`text-[var(--text-secondary)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                    <ChevronDown size={20} />
+
+                                <div className="flex items-center gap-3">
+                                    {isCustomWidgetSection && onCreate && (
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // 아코디언 토글 방지
+                                                onCreate();
+                                            }}
+                                            className="px-3 py-1.5 bg-[var(--btn-bg)] hover:brightness-110 text-white text-xs font-bold rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
+                                        >
+                                            <span className="text-lg leading-none">+</span>
+                                            만들기
+                                        </div>
+                                    )}
+
+                                    {isFoldable && (
+                                        <div className={`text-[var(--text-secondary)] transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                                            <ChevronDown size={20} />
+                                        </div>
+                                    )}
                                 </div>
                             </button>
 
@@ -207,80 +251,87 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit }: WidgetGallery
                                         style={{ overflow: "hidden" }}
                                     >
                                         <div className="p-6 pt-0 border-t border-[var(--border-color)]/30">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
-                                                {categoryWidgets.map((widget) => {
-                                                    // 현재 장바구니에 이 위젯이 몇 개 담겼는지 카운트
-                                                    const selectedCount = selectedWidgets.filter(w => w.widgetType === widget.widgetType).length;
+                                            {categoryWidgets.length === 0 ? (
+                                                <div className="py-8 text-center text-[var(--text-secondary)] text-sm opacity-70">
+                                                    아직 만들어진 위젯이 없습니다.<br />
+                                                    '만들기' 버튼을 눌러 나만의 위젯을 만들어보세요!
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+                                                    {categoryWidgets.map((widget) => {
+                                                        // 현재 장바구니에 이 위젯이 몇 개 담겼는지 카운트
+                                                        const selectedCount = selectedWidgets.filter(w => w.widgetType === widget.widgetType).length;
 
-                                                    return (
-                                                        <div
-                                                            key={widget.widgetType}
-                                                            className={`border rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 shadow-sm group flex flex-col relative
+                                                        return (
+                                                            <div
+                                                                key={widget.widgetType}
+                                                                className={`border rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 shadow-sm group flex flex-col relative
                                                                 ${selectedCount > 0
-                                                                    ? 'border-[var(--btn-bg)] bg-[var(--bg-card)] ring-1 ring-[var(--btn-bg)]'
-                                                                    : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-secondary)]'}`}
-                                                            onClick={() => handleCardClick(widget)}
-                                                        >
-                                                            {/* 선택된 개수 뱃지 */}
-                                                            {selectedCount > 0 && (
-                                                                <div className="absolute top-3 right-3 bg-[var(--btn-bg)] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200 z-10">
-                                                                    {selectedCount}
-                                                                </div>
-                                                            )}
-
-                                                            {widget.thumbnail && (
-                                                                <div className="w-full bg-[var(--bg-card-secondary)] rounded-lg mb-4 overflow-hidden border border-[var(--border-color)] flex items-center justify-center">
-                                                                    <img
-                                                                        src={widget.thumbnail}
-                                                                        alt={widget.label}
-                                                                        className="w-full h-auto object-contain max-h-48"
-                                                                        onError={(e) => {
-                                                                            (e.target as HTMLImageElement).style.display = 'none'; // 이미지 로드 실패 시 숨김
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            <div className="w-full flex justify-between items-start mb-2">
-                                                                <h3 className="font-bold text-lg text-[var(--text-primary)] w-full">{widget.label}</h3>
-
-                                                                {/* 편집 가능한 위젯인 경우 Edit 버튼 표시 (onEdit이 있을 때만) */}
-                                                                {onEdit && !widget.isSystem && (
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation(); // 부모 클릭 방지
-                                                                            onEdit(widget);
-                                                                        }}
-                                                                        className="text-xs px-2 py-1 bg-[var(--bg-card-secondary)] rounded hover:brightness-95 text-[var(--text-secondary)] border border-[var(--border-color)] transition-all z-20"
-                                                                    >
-                                                                        Edit
-                                                                    </button>
+                                                                        ? 'border-[var(--btn-bg)] bg-[var(--bg-card)] ring-1 ring-[var(--btn-bg)]'
+                                                                        : 'border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-card-secondary)]'}`}
+                                                                onClick={() => handleCardClick(widget)}
+                                                            >
+                                                                {/* 선택된 개수 뱃지 */}
+                                                                {selectedCount > 0 && (
+                                                                    <div className="absolute top-3 right-3 bg-[var(--btn-bg)] text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200 z-10">
+                                                                        {selectedCount}
+                                                                    </div>
                                                                 )}
-                                                            </div>
 
-                                                            <p className="text-sm text-[var(--text-secondary)] mb-3 line-clamp-2 h-10 w-full text-left">
-                                                                {widget.description}
-                                                            </p>
+                                                                {widget.thumbnail && (
+                                                                    <div className="w-full bg-[var(--bg-card-secondary)] rounded-lg mb-4 overflow-hidden border border-[var(--border-color)] flex items-center justify-center">
+                                                                        <img
+                                                                            src={widget.thumbnail}
+                                                                            alt={widget.label}
+                                                                            className="w-full h-auto object-contain max-h-48"
+                                                                            onError={(e) => {
+                                                                                (e.target as HTMLImageElement).style.display = 'none'; // 이미지 로드 실패 시 숨김
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <div className="w-full flex justify-between items-start mb-2">
+                                                                    <h3 className="font-bold text-lg text-[var(--text-primary)] w-full">{widget.label}</h3>
 
-                                                            <div className="flex gap-2 text-xs flex-wrap w-full justify-start">
-                                                                {widget.validSizes && widget.validSizes.length > 5 ? (
-                                                                    <span className="px-2 py-1 bg-[var(--bg-card-secondary)] text-[var(--btn-bg)] rounded border border-[var(--border-color)] font-medium opacity-90">
-                                                                        다양한 크기
-                                                                    </span>
-                                                                ) : (
-                                                                    (widget.validSizes || [[1, 1]]).map(([w, h], idx) => (
-                                                                        <span
-                                                                            key={idx}
-                                                                            className="px-2 py-1 bg-[var(--bg-card-secondary)] text-[var(--btn-bg)] rounded border border-[var(--border-color)] font-medium opacity-90"
+                                                                    {/* 편집 가능한 위젯인 경우 Edit 버튼 표시 (onEdit이 있을 때만) */}
+                                                                    {onEdit && !widget.isSystem && (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation(); // 부모 클릭 방지
+                                                                                onEdit(widget);
+                                                                            }}
+                                                                            className="text-xs px-2 py-1 bg-[var(--bg-card-secondary)] rounded hover:brightness-95 text-[var(--text-secondary)] border border-[var(--border-color)] transition-all z-20"
                                                                         >
-                                                                            {w}x{h}
+                                                                            Edit
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+
+                                                                <p className="text-sm text-[var(--text-secondary)] mb-3 line-clamp-2 h-10 w-full text-left">
+                                                                    {widget.description}
+                                                                </p>
+
+                                                                <div className="flex gap-2 text-xs flex-wrap w-full justify-start">
+                                                                    {widget.validSizes && widget.validSizes.length > 5 ? (
+                                                                        <span className="px-2 py-1 bg-[var(--bg-card-secondary)] text-[var(--btn-bg)] rounded border border-[var(--border-color)] font-medium opacity-90">
+                                                                            다양한 크기
                                                                         </span>
-                                                                    ))
-                                                                )}
+                                                                    ) : (
+                                                                        (widget.validSizes || [[1, 1]]).map(([w, h], idx) => (
+                                                                            <span
+                                                                                key={idx}
+                                                                                className="px-2 py-1 bg-[var(--bg-card-secondary)] text-[var(--btn-bg)] rounded border border-[var(--border-color)] font-medium opacity-90"
+                                                                            >
+                                                                                {w}x{h}
+                                                                            </span>
+                                                                        ))
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     </motion.div>
                                 )}

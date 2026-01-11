@@ -34,6 +34,7 @@ export interface WidgetInfoProps {
         category: string;
         description?: string;
         defaultSize?: string;
+        validSizes?: number[][]; // Added validSizes
         isSaved?: boolean;
         data?: any;
     };
@@ -54,6 +55,7 @@ const CATEGORY_TRANSLATIONS: Record<string, string> = {
     'Interactive': '인터랙티브',
     'Tool': '도구',
     'Global': '글로벌 효과',
+    'Uncategorized': '기타',
 };
 
 export const WidgetInfoModal: React.FC<WidgetInfoProps> = ({
@@ -102,13 +104,25 @@ export const WidgetInfoModal: React.FC<WidgetInfoProps> = ({
                         </div>
                         <div className="bg-[var(--bg-card-secondary)] rounded-lg p-2.5">
                             <span className="text-[10px] text-[var(--text-secondary)] block mb-0.5">
-                                {widget.isSaved ? "Saved Date" : "Size"}
+                                {widget.isSaved ? "Saved Date" : "Available Sizes"}
                             </span>
-                            <span className="text-xs font-medium text-[var(--text-primary)] font-mono">
-                                {widget.isSaved
-                                    ? (typeof widget.description === 'string' ? widget.description.replace('저장된 날짜: ', '') : '-')
-                                    : widget.defaultSize || 'Free'}
-                            </span>
+
+                            {widget.isSaved ? (
+                                <span className="text-xs font-medium text-[var(--text-primary)] font-mono">
+                                    {typeof widget.description === 'string' ? widget.description.replace('저장된 날짜: ', '') : '-'}
+                                </span>
+                            ) : (
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                    {(widget.validSizes || [[1, 1]]).map(([w, h], idx) => (
+                                        <span
+                                            key={idx}
+                                            className="px-1.5 py-0.5 bg-[var(--bg-card)] text-[var(--btn-bg)] rounded border border-[var(--border-color)] text-[10px] font-bold shadow-sm"
+                                        >
+                                            {w}x{h}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 

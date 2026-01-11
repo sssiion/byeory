@@ -226,6 +226,11 @@ const MainPage: React.FC = () => {
                                         setIsBuilderOpen(true);
                                         setIsCatalogOpen(false);
                                     }}
+                                    onCreate={() => {
+                                        setEditingWidgetData(null); // Create mode
+                                        setIsBuilderOpen(true);
+                                        setIsCatalogOpen(false);
+                                    }}
                                 />
                             </div>
                         </div>
