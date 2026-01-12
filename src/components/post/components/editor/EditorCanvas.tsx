@@ -223,6 +223,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
                 // ✨ Check blocks (standard content)
                 blocks.forEach(blk => {
+
                     if (checkIntersection(blk.id, 0, 0, 0, 0)) { // x,y,w,h are placeholders, checkIntersection will use DOM rect
                         newSelectedIds.push(blk.id);
                     }
@@ -365,7 +366,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
                         {/* 헤더 */}
                         <div
-                            className={`sticky top-0 bg-transparent border-b p-5 flex justify-between items-start gap-4 transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
+                            className={`sticky top-0 bg-transparent border-b flex justify-between items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
                             style={{ zIndex: titleStyles.zIndex || 20 }}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -378,7 +379,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                     onChange={e => setTitle(e.target.value)}
                                     placeholder="제목을 입력하세요"
                                     readOnly={viewMode === 'read'}
-                                    className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0"
+                                    className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0 h-25 pl-5"
                                     style={{
                                         ...titleStyles,
                                         fontSize: titleStyles.fontSize || '30px',
