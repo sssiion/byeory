@@ -89,24 +89,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     const s = block.styles || {};
     const imgHeight = s.imageHeight || '300px';
 
-    // ✨ 마이크 버튼 렌더링 헬퍼
-    const renderMicButton = () => {
-        if (readOnly) return null;
-        return (
-            <button
-                onClick={toggleRecording}
-                className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center
-                    ${isRecordingHere && listening
-                        ? 'bg-red-100 text-red-600 animate-pulse ring-2 ring-red-200'
-                        : 'bg-transparent text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'
-                    }
-                `}
-                title={listening ? "음성 인식 중지" : "음성으로 입력하기"}
-            >
-                {isRecordingHere && listening ? <MicOff size={18} /> : <Mic size={18} />}
-            </button>
-        );
-    };
+
 
     // 이미지 영역 렌더링 함수
     const renderImageArea = (url: string | undefined, index: number, isFull: boolean = false) => {
@@ -139,7 +122,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                         )}
                     </>
                 ) : (
-                    <div className="text-gray-400 hover:text-indigo-500 text-center select-none"> {/* ✨ select-none */}
+                    <div className="text-gray-400 hover:text-indigo-500 text-center select-none">
                         <span className="text-2xl block mb-1">📷</span>
                         <span className="text-xs font-bold">사진 추가</span>
                     </div>
@@ -150,7 +133,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     };
 
     return (
-        <div className={`group relative mb-6 flex gap-6 items-start p-2 -ml-2 rounded-xl transition ${readOnly ? '' : `hover:bg-gray-50 ${isSelected ? 'bg-gray-50' : ''}`}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
+        <div className={`group relative mb-6 flex gap-6 items-start rounded-xl transition ${readOnly ? '' : `hover:bg-gray-50 ${isSelected ? 'bg-gray-50' : ''}`}`} onClick={(e) => { e.stopPropagation(); if (!readOnly) onSelect(); }}>
 
             {!readOnly && (
                 <>
@@ -163,6 +146,20 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                     >
                         <GripVertical size={20} />
                     </div>
+
+                    {/* ✨ 마이크 버튼 (좌측 사이드바, 드래그 핸들 아래) */}
+                    <button
+                        onClick={toggleRecording}
+                        className={`absolute -left-10 top-9 p-1.5 rounded transition-all duration-200 flex items-center justify-center z-50
+                            ${isRecordingHere && listening
+                                ? 'bg-red-100 text-red-600 animate-pulse ring-2 ring-red-200 opacity-100'
+                                : 'bg-transparent text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100'
+                            }
+                        `}
+                        title={listening ? "음성 인식 중지" : "음성으로 입력하기"}
+                    >
+                        {isRecordingHere && listening ? <MicOff size={18} /> : <Mic size={18} />}
+                    </button>
 
                     {/* 삭제 버튼 (선택 안 될 때만 표시) */}
                     {!isSelected && (
@@ -202,7 +199,6 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                     <div className="w-full md:w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
                     <div className="w-full md:flex-1 min-w-0 md:pt-2 relative">
                         <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
-                        {renderMicButton()}
                     </div>
                 </div>
             )}
@@ -214,7 +210,6 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                     {/* Actually, standard responsive 'Image Right' often becomes 'Image Top' or 'Image Bottom'. Let's stick to 'Text Top' (natural flow) for now. */}
                     <div className="w-full md:flex-1 min-w-0 md:pt-2 relative order-2 md:order-1">
                         <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
-                        {renderMicButton()}
                     </div>
                     <div className="w-full md:w-1/2 flex-shrink-0 order-1 md:order-2">{renderImageArea(block.imageUrl, 1, true)}</div>
                 </div>
@@ -223,7 +218,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {/* 5. 글만 */}
             {block.type === 'paragraph' && (
                 <div className="w-full">
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{
+                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className={`w-full block bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[75px] border-2 transition-colors rounded-lg ${isSelected ? 'border-indigo-200' : 'border-transparent'}`} style={{
                         fontFamily: block.styles?.fontFamily,
                         fontSize: block.styles?.fontSize || '18px',
                         textAlign: block.styles?.textAlign as any || 'left',
@@ -232,9 +227,8 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                         fontStyle: block.styles?.fontStyle || 'normal',
                         textDecoration: block.styles?.textDecoration || 'none',
                         backgroundColor: block.styles?.backgroundColor || 'transparent',
-                        borderRadius: '4px' // 배경색이 있을 때 보기 좋게
+
                     }} />
-                    {renderMicButton()}
                 </div>
             )}
         </div>

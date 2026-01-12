@@ -6,7 +6,7 @@ import EditorToolbar from './EditorToolbar';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
-import { Image as ImageIcon, Type, Trash2, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft } from 'lucide-react';
+import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft } from 'lucide-react';
 
 interface Props {
     title: string;
@@ -420,7 +420,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                     opacity: snapshot.isDragging ? 0.8 : 1,
                                                                     zIndex: snapshot.isDragging ? 100 : ((block as any).zIndex || 'auto')
                                                                 }}
-                                                                className={`relative group transition-shadow duration-200 ${isFocused ? 'ring-2 ring-indigo-200 rounded-lg pl-2' : ''}`}
+                                                                className={`relative group transition-shadow duration-200 ${isFocused ? 'rounded-xl' : ''}`}
                                                                 onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') onSelect(block.id, 'block', e.shiftKey); }}
                                                             >
                                                                 <ContentBlock
@@ -437,7 +437,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                 {viewMode === 'editor' && isFocused && (
                                                                     <>
                                                                         {!block.locked && (
-                                                                            <div className="absolute -right-14 top-[-10px] h-full flex flex-col justify-start pt-2 gap-2 z-30">
+                                                                            <div className="absolute -right-14 top-0 h-full flex flex-col justify-center gap-2 z-30">
                                                                                 <div className="flex flex-col gap-1 bg-white/80 backdrop-blur rounded-lg shadow-sm p-1 border">
                                                                                     <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'up'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowUp size={16} /></button>
                                                                                     <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'down'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowDown size={16} /></button>
@@ -445,7 +445,6 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                                 {canSwap && (
                                                                                     <button onClick={(e) => { e.stopPropagation(); handleSwapLayout(block.id); }} className="p-2 bg-white border shadow-md rounded-full text-indigo-600 hover:bg-indigo-50 transition flex items-center justify-center ring-1 ring-indigo-100"><ArrowRightLeft size={18} /></button>
                                                                                 )}
-                                                                                <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 bg-white border shadow-md rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center mt-2 ring-1 ring-red-50"><Trash2 size={18} /></button>
                                                                             </div>
                                                                         )}
 
