@@ -5,12 +5,13 @@ import MarketLayout from '../../components/market/MarketLayout';
 import ItemDetailModal from '../../components/market/ItemDetailModal';
 import SellModal from '../../components/market/SellModal';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import ScrollToTopButton from '../../components/common/ScrollToTopButton';
 import { useCredits } from '../../context/CreditContext';
 import { type MarketItem } from '../../types/market';
 
 import { useMarket } from '../../hooks';
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
-import { fetchMyPostTemplatesApi, uploadImageToSupabase, fetchPostTemplateById, createPostTemplateApi } from '../../components/post/api';
+import { fetchMyPostTemplatesApi, uploadImageToSupabase } from '../../components/post/api';
 import { STICKERS } from '../../components/post/constants';
 
 import MarketHeader from '../../components/market/components/MarketHeader';
@@ -47,24 +48,29 @@ const Market: React.FC = () => {
         totalCount,
         changeSort,
         wishlistItems,
-        wishlistDetails,
         filterByCategory,
-        filterByFree
+        filterByFree,
+        updateItemInState,
+        wishlistDetails
     } = useMarket();
 
-    const [activeTab, setActiveTab] = useState<'all' | 'start_pack' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history' | 'free'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'package' | 'sticker' | 'template_widget' | 'template_post' | 'myshop' | 'wishlist' | 'history' | 'free'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [hideOwned, setHideOwned] = useState(false);
+    const [isFreeFilter, setIsFreeFilter] = useState(false);
     const shouldSkipSearch = React.useRef(false);
 
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        const isFree = activeTab === 'free';
+        const isFree = isFreeFilter;
         let category: string = 'all';
 
-        if (['sticker', 'template_widget', 'template_post', 'start_pack'].includes(activeTab)) {
+        if (['sticker', 'template_widget', 'template_post'].includes(activeTab)) {
             category = activeTab;
+        } else if (activeTab === 'package') {
+            // Fetch ALL because some 'packages' are categorized as 'stickers' in Backend
+            category = 'all';
         }
 
         if (activeTab === 'myshop' || activeTab === 'history') {
@@ -75,7 +81,7 @@ const Market: React.FC = () => {
             filterByCategory(category);
             filterByFree(isFree);
         }
-    }, [activeTab, filterByCategory, filterByFree]);
+    }, [activeTab, filterByCategory, filterByFree, isFreeFilter]);
 
     // Debounce Search
     useEffect(() => {
@@ -118,8 +124,10 @@ const Market: React.FC = () => {
         }));
 
         const formattedTemplates = apiTemplates
-            .filter(t => !t.tags?.includes('acquired'))
+            // Exclude acquired/purchased templates (prevent resell loop)
+            .filter(t => !t.tags?.includes('acquired') && !t.sourceMarketItemId)
             .map(t => ({
+                ...t, // Spread all original template data (stickers, floatingTexts, styles, etc.)
                 id: t.id,
                 title: t.name,
                 type: 'template_post',
@@ -159,12 +167,15 @@ const Market: React.FC = () => {
         onConfirm: () => void;
         type?: 'info' | 'danger' | 'success';
         singleButton?: boolean;
+        confirmText?: string;
+        cancelText?: string;
     }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
 
     const handleBuy = (item: MarketItem) => {
         if (isOwned(item.id)) return;
 
-        const effectivePrice = getPackPrice(item.id, item.price);
+        // Use referenceId if available (for packs) to correctly calculate discounts based on owned components
+        const effectivePrice = getPackPrice(item.referenceId || item.id, item.price);
 
         if (credits < effectivePrice) {
             setConfirmation({
@@ -189,50 +200,40 @@ const Market: React.FC = () => {
             singleButton: false,
             onConfirm: async () => {
                 setConfirmation(prev => ({ ...prev, isOpen: false }));
-                const success = await buyItem(item.id, effectivePrice);
+                setConfirmation(prev => ({ ...prev, isOpen: false }));
+                const success = await buyItem(item.id, effectivePrice, item);
 
-                if (success && ['template_post', 'TEMPLATE_POST'].includes(item.type) && (item as any).referenceId) {
-                    try {
-                        const original = await fetchPostTemplateById((item as any).referenceId);
-                        if (original) {
-                            await createPostTemplateApi({
-                                name: original.name,
-                                paperId: original.paperId || 'default',
-                                styles: original.styles,
-                                defaultFontColor: original.defaultFontColor,
-                                stickers: original.stickers || [],
-                                floatingTexts: original.floatingTexts || [],
-                                floatingImages: original.floatingImages || [],
-                                thumbnailUrl: original.thumbnailUrl,
-                                tags: ['acquired']
-                            });
-                        }
-                    } catch (e) {
-                        console.error("Failed to clone purchased template", e);
-                    }
+                // Manual template cloning removed (Backend handles it)
+
+                if (success) {
+                    setConfirmation({
+                        isOpen: true,
+                        title: '구매 완료! 🎉',
+                        message: `'${item.title}' 구매가 완료되었습니다.\n보관함 또는 구매 내역에서 확인할 수 있습니다.`,
+                        type: 'success',
+                        singleButton: false,
+                        confirmText: '구매 내역 보기',
+                        cancelText: '닫기',
+                        onConfirm: () => {
+                            setConfirmation(prev => ({ ...prev, isOpen: false }));
+                            setSelectedItem(null); // Close the detail modal
+                            setActiveTab('history'); // Navigate to history
+                        },
+                    });
+                    // Override cancel button text behavior via a custom prop?
+                    // ConfirmationModal might strictly be confirm/cancel.
+                    // Let's check ConfirmationModal, but usually confirm is the primary action.
+                    // We will treat "Check History" as confirm.
+                } else {
+                    setConfirmation({
+                        isOpen: true,
+                        title: '구매 실패',
+                        message: '크레딧이 부족하거나 오류가 발생했습니다.',
+                        type: 'danger',
+                        singleButton: true,
+                        onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
+                    });
                 }
-
-                setTimeout(() => {
-                    if (success) {
-                        setConfirmation({
-                            isOpen: true,
-                            title: '구매 완료! 🎉',
-                            message: `'${item.title}' 구매가 완료되었습니다.\n[나의 템플릿] 보관함에 추가되었습니다.`,
-                            type: 'success',
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
-                    } else {
-                        setConfirmation({
-                            isOpen: true,
-                            title: '구매 실패',
-                            message: '크레딧이 부족하거나 오류가 발생했습니다.',
-                            type: 'danger',
-                            singleButton: true,
-                            onConfirm: () => setConfirmation(prev => ({ ...prev, isOpen: false }))
-                        });
-                    }
-                }, 200);
             }
         });
     };
@@ -264,6 +265,8 @@ const Market: React.FC = () => {
             }
         }
 
+
+
         if (isEditMode) {
             const success = await updateItem(sellModalItem.id, {
                 ...sellModalItem,
@@ -291,43 +294,45 @@ const Market: React.FC = () => {
         setIsEditMode(false);
     };
 
-    const allMarketItems = [...marketItems];
-
+    // Filter logic
     const filteredItems = useMemo(() => {
-        const sourceItems = activeTab === 'wishlist' ? wishlistDetails : allMarketItems;
+        if (activeTab === 'wishlist') {
+            return wishlistDetails || [];
+        }
 
-        return sourceItems.filter((item: any) => {
-            if (hideOwned && isOwned(item.id)) return false;
+        // 0. Tab-based Strict Filtering (Client Side)
+        // Because Backend categories might be mixed (e.g. Sticker Packs are 'stickers' in DB but mapped to 'package' in Frontend)
+        let items = marketItems;
 
-            let matchesTab = false;
-            if (activeTab === 'wishlist') {
-                matchesTab = true;
-            } else if (activeTab === 'history' || activeTab === 'myshop') {
-                return false;
-            } else if (activeTab === 'all') {
-                matchesTab = true;
-            } else if (activeTab === 'free') {
-                matchesTab = Number(item.price) === 0;
-            } else {
-                matchesTab = item.type === activeTab;
-            }
+        if (activeTab === 'package') {
+            items = items.filter(item => String(item.type).toLowerCase() === 'package' || String(item.type).toLowerCase() === 'start_pack');
+        } else if (activeTab === 'sticker') {
+            items = items.filter(item => String(item.type).toLowerCase() === 'sticker');
+        } else if (activeTab === 'template_widget') {
+            items = items.filter(item => String(item.type).toLowerCase() === 'template_widget');
+        } else if (activeTab === 'template_post') {
+            items = items.filter(item => String(item.type).toLowerCase() === 'template_post');
+        }
 
-            if (!matchesTab) return false;
+        // 1. Base Filter: Removed (We rely on 'Hide Owned' toggle instead)
 
-            if (!searchTerm) return true;
+        // 2. Hide Owned Filter (User Toggle)
+        if (hideOwned) {
+            items = items.filter(item => !isOwned(item.id));
+        }
 
-            const tags = item.tags || [];
-            const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-
-            return matchesSearch;
-        });
-    }, [allMarketItems, wishlistDetails, activeTab, isWishlisted, searchTerm, hideOwned, isOwned]);
+        return items;
+    }, [marketItems, hideOwned, isOwned, activeTab, wishlistDetails]);
 
     return (
         <MarketLayout header={<Navigation />}>
             <div className="flex flex-col gap-8 pb-20">
-                <MarketHeader />
+                <MarketHeader
+                    onMyShopClick={() => setActiveTab('myshop')}
+                    isMyShopActive={activeTab === 'myshop'}
+                    onHistoryClick={() => setActiveTab('history')}
+                    isHistoryActive={activeTab === 'history'}
+                />
 
                 <MarketTabs
                     activeTab={activeTab}
@@ -338,20 +343,30 @@ const Market: React.FC = () => {
 
                 {activeTab !== 'myshop' && activeTab !== 'history' && (
                     <MarketFilterBar
-                        totalCount={activeTab === 'wishlist' ? wishlistItems.length : totalCount}
+                        totalCount={activeTab === 'package' ? filteredItems.length : (activeTab === 'wishlist' ? wishlistItems.length : totalCount)}
                         sellerId={sellerId}
+                        sellerName={sellerId ? marketItems.find(i => String(i.sellerId) === String(sellerId))?.author : null}
                         filterBySeller={filterBySeller}
                         selectedTags={selectedTags}
                         filterByTag={filterByTag}
+                        keyword={searchTerm}
+                        onClearSearch={() => {
+                            setSearchTerm('');
+                            search('');
+                        }}
                         onClearAll={() => {
                             shouldSkipSearch.current = true;
                             setSearchTerm('');
                             filterByTag(null);
+                            filterBySeller(null);
+                            search('');
                         }}
                         hideOwned={hideOwned}
                         setHideOwned={setHideOwned}
                         sort={sort}
                         changeSort={changeSort}
+                        isFree={isFreeFilter}
+                        setIsFree={setIsFreeFilter}
                     />
                 )}
 
@@ -359,6 +374,8 @@ const Market: React.FC = () => {
                     <MarketHistoryView
                         purchasedItems={purchasedItems}
                         setSelectedItem={setSelectedItem}
+                        onToggleWishlist={(item) => toggleWishlist(item as any)}
+                        isWishlisted={isWishlisted}
                     />
                 ) : activeTab === 'myshop' ? (
                     <MarketMyShopView
@@ -370,17 +387,16 @@ const Market: React.FC = () => {
                 ) : (
                     <MarketProductGrid
                         filteredItems={filteredItems}
-                        marketItems={marketItems}
-                        purchasedItems={purchasedItems}
-                        activeTab={activeTab}
-                        onBuy={handleBuy}
-                        toggleWishlist={toggleWishlist}
-                        isOwned={isOwned}
-                        isWishlisted={isWishlisted}
                         setSelectedItem={setSelectedItem}
-                        getPackPrice={getPackPrice}
                         hasMore={hasMore}
                         loadMore={loadMore}
+                        onBuy={handleBuy}
+                        getPackPrice={getPackPrice}
+                        isOwned={isOwned}
+                        toggleWishlist={(item) => toggleWishlist(item as any)}
+                        isWishlisted={isWishlisted}
+                        marketItems={marketItems}
+                        purchasedItems={purchasedItems}
                     />
                 )}
             </div>
@@ -390,24 +406,31 @@ const Market: React.FC = () => {
                     item={selectedItem}
                     onClose={() => setSelectedItem(null)}
                     onBuy={handleBuy}
-                    onToggleWishlist={() => toggleWishlist(selectedItem.id)}
+                    onToggleWishlist={(item) => toggleWishlist(item as any)}
                     isOwned={isOwned(selectedItem.id)}
                     isWishlisted={isWishlisted(selectedItem.id)}
-                    effectivePrice={getPackPrice(selectedItem.id, selectedItem.price)}
+                    effectivePrice={getPackPrice(selectedItem.referenceId || selectedItem.id, selectedItem.price)}
                     initialTab={selectedItem.initialTab}
-                    onFilterBySeller={(id: string) => filterBySeller(id)}
-                    onSearchTag={(tag: string) => filterByTag(tag)}
+                    onFilterBySeller={filterBySeller}
+                    onSearchTag={filterByTag}
                     reviewTargetId={(() => {
+                        if (!selectedItem.referenceId) return undefined;
                         const stickerDef = STICKERS.find(s => s.id === selectedItem.referenceId);
                         if (stickerDef && stickerDef.packId) {
-                            let packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
-                            if (!packItem) {
-                                packItem = purchasedItems.find(p => p.referenceId === stickerDef.packId);
-                            }
+                            const packItem = marketItems.find(m => m.referenceId === stickerDef.packId) ||
+                                purchasedItems.find(p => p.referenceId === stickerDef.packId);
                             if (packItem) return packItem.id;
                         }
+                        // Prevent passing non-numeric IDs (like "cat_1") to backend
+                        // If selectedItem.id is numeric, use it (handled by ItemDetailModal default)
+                        // So we return undefined here to let ItemDetailModal fall back to item.id
                         return undefined;
                     })()}
+                    onReviewChange={(itemId, newStats) => {
+                        updateItemInState(itemId, newStats);
+                        setSelectedItem((prev: any) => prev ? { ...prev, ...newStats } : null);
+                    }}
+                    marketItems={marketItems}
                 />
             )}
             {sellModalItem && (
@@ -425,8 +448,10 @@ const Market: React.FC = () => {
                 onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
                 type={confirmation.type || 'info'}
                 singleButton={confirmation.singleButton}
-                confirmText={confirmation.singleButton ? "확인" : "구매하기"}
+                confirmText={confirmation.confirmText || (confirmation.singleButton ? "확인" : "구매하기")}
+                cancelText={confirmation.cancelText || "취소"}
             />
+            <ScrollToTopButton />
         </MarketLayout>
     );
 };

@@ -75,8 +75,9 @@ const MarketMyShopView: React.FC<MarketMyShopViewProps> = ({
                                                 (item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
                                                     (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
                                                         (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
-                                                            (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
-                                                                item.type
+                                                            (item.type as string).toLowerCase() === 'package' ? '패키지' :
+                                                                (item.type as string).toLowerCase() === 'start_pack' ? '패키지' :
+                                                                    item.type
                                             )}
                                         </div>
                                         <div>
@@ -142,8 +143,9 @@ const MarketMyShopView: React.FC<MarketMyShopViewProps> = ({
                                         item.type === 'template_widget' ? '위젯 템플릿' :
                                             item.type === 'sticker' ? '스티커' :
                                                 item.type === 'template_post' ? '게시물 템플릿' :
-                                                    item.type === 'start_pack' ? '스타터 팩' :
-                                                        '로컬 아이템'
+                                                    item.type === 'package' ? '패키지' :
+                                                        item.type === 'start_pack' ? '패키지' :
+                                                            '로컬 아이템'
                                     )}
                                 </div>
                                 <div>

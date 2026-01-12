@@ -5,9 +5,11 @@ import MerchCard from '../MerchCard';
 interface MarketHistoryViewProps {
     purchasedItems: any[];
     setSelectedItem: (item: any) => void;
+    onToggleWishlist: (item: any) => void;
+    isWishlisted: (itemId: string) => boolean;
 }
 
-const MarketHistoryView: React.FC<MarketHistoryViewProps> = ({ purchasedItems, setSelectedItem }) => {
+const MarketHistoryView: React.FC<MarketHistoryViewProps> = ({ purchasedItems, setSelectedItem, onToggleWishlist, isWishlisted }) => {
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 animate-in fade-in slide-in-from-bottom-4">
             {purchasedItems.length === 0 ? (
@@ -25,6 +27,8 @@ const MarketHistoryView: React.FC<MarketHistoryViewProps> = ({ purchasedItems, s
                         effectivePrice={item.price}
                         onClick={() => setSelectedItem(item)}
                         onClickRating={() => setSelectedItem({ ...item, initialTab: 'reviews' })} // Enable review click
+                        onToggleWishlist={() => onToggleWishlist(item)}
+                        isWishlisted={isWishlisted(item.id)}
                     />
                 ))
             )}

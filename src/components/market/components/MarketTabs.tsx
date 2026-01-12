@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Heart, FolderOpen } from 'lucide-react';
+import { Search, Heart } from 'lucide-react';
+
 
 interface MarketTabsProps {
     activeTab: string;
@@ -10,24 +11,68 @@ interface MarketTabsProps {
 
 const TABS = [
     { id: 'all', label: '전체' },
-    { id: 'free', label: '무료' },
-    { id: 'start_pack', label: '⭐ 스타터 팩' },
+    { id: 'wishlist', label: '찜 목록', icon: Heart },
+    { id: 'package', label: '📦 패키지' },
     { id: 'sticker', label: '스티커' },
     { id: 'template_widget', label: '위젯 템플릿' },
     { id: 'template_post', label: '게시물 템플릿' },
-    { id: 'wishlist', label: '찜 목록', icon: Heart },
-    { id: 'myshop', label: '내 상점', icon: FolderOpen },
-    { id: 'history', label: '구매 내역' }
 ];
 
 const MarketTabs: React.FC<MarketTabsProps> = ({ activeTab, setActiveTab, searchTerm, setSearchTerm }) => {
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = React.useState(false);
+    const [startX, setStartX] = React.useState(0);
+    const [scrollLeft, setScrollLeft] = React.useState(0);
+    const [dragMoved, setDragMoved] = React.useState(false);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!scrollRef.current) return;
+        setIsDragging(true);
+        setDragMoved(false);
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeft(scrollRef.current.scrollLeft);
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !scrollRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 1.5; // Scroll multiplier
+        if (Math.abs(walk) > 5) {
+            setDragMoved(true);
+        }
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+    };
+
     return (
-        <div className="flex flex-col md:flex-row gap-4 sticky top-16 md:top-20 z-40 py-4 -mx-4 px-4 transition-all mt-4 theme-bg-header backdrop-blur-xl md:items-center">
-            <div className="flex overflow-x-auto py-2 gap-3 flex-1 scrollbar-hide px-1">
+        <div className="flex flex-col md:flex-row gap-4 sticky top-16 md:top-20 z-40 py-4 -mx-4 px-4 transition-all mt-4 theme-bg-header backdrop-blur-xl md:items-center overflow-hidden">
+            <div
+                ref={scrollRef}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+                className={`flex overflow-x-auto py-2 gap-3 flex-1 scrollbar-hide px-1 select-none active:cursor-grabbing ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            >
                 {TABS.map(tab => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => {
+                            if (dragMoved) return; // Ignore click if we were dragging
+                            if (activeTab === tab.id) {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            } else {
+                                setActiveTab(tab.id);
+                            }
+                        }}
                         className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2
                                     ${activeTab === tab.id
                                 ? 'bg-[var(--btn-bg)] text-white shadow-md transform scale-105 ml-1'

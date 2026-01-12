@@ -12,9 +12,10 @@ interface MerchCardProps {
     effectivePrice?: number;
     onClick?: () => void;
     onClickRating?: () => void;
+    isMyItem?: boolean;
 }
 
-const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, onClick, onClickRating }) => {
+const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, onClick, onClickRating, isMyItem }) => {
     const { credits } = useCredits();
     const currentPrice = effectivePrice !== undefined ? effectivePrice : item.price;
     const canAfford = credits >= currentPrice;
@@ -69,8 +70,9 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                         {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
                             (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
                                 (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
-                                    (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
-                                        (item.type as string).replace('_', ' ')}
+                                    (item.type as string).toLowerCase() === 'package' ? '패키지' :
+                                        (item.type as string).toLowerCase() === 'start_pack' ? '패키지' :
+                                            (item.type as string).replace('_', ' ')}
                     </span>
                 </div>
             </div>
@@ -119,19 +121,29 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                     })()}
 
                     <div className="flex flex-col items-end gap-0.5 ml-auto">
-                        {isDiscounted && !isOwned && (
-                            <span className="text-[10px] text-red-400 line-through decoration-red-400/50">
-                                {item.price.toLocaleString()} C
-                            </span>
-                        )}
-                        {Number(currentPrice) === 0 ? (
-                            <div className={`font-bold ${isOwned ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}`}>
-                                무료
-                            </div>
+                        {!isOwned && !isMyItem ? (
+                            <>
+                                {isDiscounted && (
+                                    <span className="text-[10px] text-red-400 line-through decoration-red-400/50">
+                                        {item.price.toLocaleString()} C
+                                    </span>
+                                )}
+                                {Number(currentPrice) === 0 ? (
+                                    <div className={`font-bold text-[var(--text-primary)]`}>
+                                        무료
+                                    </div>
+                                ) : (
+                                    <div className={`flex items-center gap-1.5 font-bold ${isDiscounted ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
+                                        <Coins className={`w-4 h-4 ${isDiscounted ? 'text-red-500' : 'text-yellow-500'}`} />
+                                        {Number(currentPrice).toLocaleString()}
+                                    </div>
+                                )}
+                            </>
                         ) : (
-                            <div className={`flex items-center gap-1.5 font-bold ${isDiscounted && !isOwned ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
-                                <Coins className={`w-4 h-4 ${isDiscounted && !isOwned ? 'text-red-500' : 'text-yellow-500'}`} />
-                                {Number(currentPrice).toLocaleString()}
+                            // Show Original Price for Owned/My Items (Neutral Color)
+                            <div className={`flex items-center gap-1.5 font-bold text-[var(--text-secondary)] opacity-70`}>
+                                <Coins className="w-4 h-4 text-[var(--text-secondary)]" />
+                                {Number(item.price) === 0 ? '무료' : Number(item.price).toLocaleString()}
                             </div>
                         )}
                     </div>
@@ -142,19 +154,23 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                         e.stopPropagation();
                         onBuy(item);
                     }}
-                    disabled={isOwned}
+                    disabled={isOwned || isMyItem}
                     className={`mt-4 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all 
                         ${isOwned
                             ? 'bg-green-500/10 text-green-600 border border-green-500/20 cursor-default'
-                            : Number(currentPrice) === 0
-                                ? 'bg-[var(--btn-bg)] text-white hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
-                                : canAfford
-                                    ? 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
-                                    : 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
+                            : isMyItem
+                                ? 'bg-[var(--bg-card-secondary)] text-[var(--text-disabled)] border border-[var(--border-color)] cursor-default'
+                                : Number(currentPrice) === 0
+                                    ? 'bg-[var(--btn-bg)] text-white hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
+                                    : canAfford
+                                        ? 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110 active:scale-95 shadow-md hover:shadow-lg'
+                                        : 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 active:scale-95'
                         }`}
                 >
                     {isOwned ? (
                         '보유중'
+                    ) : isMyItem ? (
+                        <span className="text-[var(--text-secondary)]">내 상품</span>
                     ) : (
                         <>
                             <ShoppingBag className="w-4 h-4" />

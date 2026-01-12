@@ -1,17 +1,22 @@
 import React from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, User, Tag, Search } from 'lucide-react';
 
 interface MarketFilterBarProps {
     totalCount: number;
     sellerId: string | null;
+    sellerName?: string | null;
     filterBySeller: (id: string | null) => void;
     selectedTags: string[];
     filterByTag: (tag: string | null) => void;
+    keyword?: string;
+    onClearSearch?: () => void;
     onClearAll: () => void;
     hideOwned: boolean;
     setHideOwned: (hide: boolean) => void;
     sort: string;
     changeSort: (sort: any) => void;
+    isFree?: boolean;
+    setIsFree?: (isFree: boolean) => void;
 }
 
 const SORT_OPTIONS = [
@@ -24,84 +29,145 @@ const SORT_OPTIONS = [
 const MarketFilterBar: React.FC<MarketFilterBarProps> = ({
     totalCount,
     sellerId,
+    sellerName,
     filterBySeller,
     selectedTags,
     filterByTag,
+    keyword,
+    onClearSearch,
     onClearAll,
     hideOwned,
     setHideOwned,
     sort,
-    changeSort
+    changeSort,
+    isFree,
+    setIsFree
 }) => {
+    const hasActiveFilters = sellerId || selectedTags.length > 0 || (keyword && keyword.trim() !== '');
+
     return (
-        <div className="flex flex-col gap-2 -mb-4 px-2">
-            {sellerId && (
-                <div className="flex items-center gap-2">
-                    <p className="text-[var(--text-secondary)]">
-                        나만의 디지털 아이템을 거래해보세요 <span className="text-sm font-semibold opacity-70 ml-2">(Total {totalCount})</span>
-                    </p>
-                    <button
-                        onClick={() => filterBySeller(null)}
-                        className="flex items-center gap-1 px-2 py-1 bg-[var(--btn-bg)] text-white text-xs font-bold rounded-full hover:brightness-110"
-                    >
-                        <span>필터 해제</span>
-                        <X size={12} />
-                    </button>
-                </div>
-            )}
-            {selectedTags.length > 0 && (
-                <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs font-bold text-[var(--text-secondary)] mr-1">태그:</span>
-                    {selectedTags.map(tag => (
-                        <div key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm font-medium animate-in fade-in zoom-in duration-200">
-                            <span>#{tag}</span>
-                            <button
-                                onClick={() => filterByTag(tag)}
-                                className="hover:bg-purple-200 rounded-full p-0.5 transition-colors"
+        <div className="flex flex-col gap-4 px-2">
+            {/* Active Filters Display */}
+            {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-3 py-1 border-b border-[var(--border-color)] pb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <span className="text-[10px] font-black text-[var(--text-secondary)] flex items-center gap-1.5 uppercase tracking-widest opacity-60">
+                        적용된 필터
+                    </span>
+
+                    <div className="flex flex-wrap gap-2">
+                        {/* Keyword Chip */}
+                        {keyword && keyword.trim() !== '' && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-card-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-full text-sm font-bold shadow-sm">
+                                <Search size={14} className="text-[var(--text-secondary)]" />
+                                <span>검색: "{keyword}"</span>
+                                <button
+                                    onClick={onClearSearch}
+                                    className="hover:bg-[var(--border-color)] rounded-full p-0.5 transition-colors"
+                                    title="검색 초기화"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Seller Chip */}
+                        {sellerId && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--btn-bg)] text-white rounded-full text-sm font-bold shadow-sm transition-all hover:brightness-110">
+                                <User size={14} />
+                                <span>판매자: {sellerName || sellerId}</span>
+                                <button
+                                    onClick={() => filterBySeller(null)}
+                                    className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                                    title="판매자 필터 해제"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Tag Chips */}
+                        {selectedTags.map(tag => (
+                            <div
+                                key={tag}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-card-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-full text-sm font-bold shadow-sm animate-in zoom-in duration-200"
                             >
-                                <X size={12} />
-                            </button>
-                        </div>
-                    ))}
+                                <Tag size={14} className="text-[var(--btn-bg)]" />
+                                <span>#{tag}</span>
+                                <button
+                                    onClick={() => filterByTag(tag)}
+                                    className="hover:bg-[var(--border-color)] rounded-full p-0.5 transition-colors"
+                                    title="태그 해제"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
                     <button
                         onClick={onClearAll}
-                        className="text-xs text-gray-500 hover:text-gray-700 underline ml-1"
+                        className="text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--btn-bg)] underline-offset-4 hover:underline transition-all ml-auto"
                     >
-                        전체 해제
+                        모든 필터 초기화
                     </button>
                 </div>
             )}
 
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-2 gap-3 md:gap-0">
-                <span className="text-sm font-bold text-[var(--text-secondary)]">
-                    총 {totalCount}개의 아이템
-                </span>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-black text-[var(--text-primary)]">
+                        {totalCount.toLocaleString()}
+                    </span>
+                    <span className="text-sm font-bold text-[var(--text-secondary)] tracking-tight">
+                        개의 상품이 있습니다
+                    </span>
+                </div>
 
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
-                    {/* Hide Owned Toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer select-none group shrink-0">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${hideOwned ? 'bg-[var(--btn-bg)] border-[var(--btn-bg)]' : 'border-[var(--text-secondary)] group-hover:border-[var(--text-primary)]'}`}>
-                            {hideOwned && <Check size={12} className="text-white" />}
-                        </div>
-                        <input
-                            type="checkbox"
-                            checked={hideOwned}
-                            onChange={(e) => setHideOwned(e.target.checked)}
-                            className="hidden"
-                        />
-                        <span className={`text-xs font-bold ${hideOwned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>보유 상품 숨기기</span>
-                    </label>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto">
+                    {/* Toggles Group */}
+                    <div className="flex items-center gap-5 shrink-0">
+                        {/* Free Only Toggle */}
+                        {setIsFree && (
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${isFree ? 'bg-[var(--btn-bg)] border-[var(--btn-bg)] shadow-sm' : 'border-[var(--border-color)] group-hover:border-[var(--text-secondary)]'}`}>
+                                    {isFree && <Check size={14} className="text-white stroke-[3px]" />}
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    checked={isFree}
+                                    onChange={(e) => setIsFree(e.target.checked)}
+                                    className="hidden"
+                                />
+                                <span className={`text-sm font-bold transition-colors ${isFree ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>무료 상품</span>
+                            </label>
+                        )}
 
-                    <div className="hidden sm:block h-4 w-[1px] bg-[var(--border-color)]"></div>
+                        {/* Hide Owned Toggle */}
+                        <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${hideOwned ? 'bg-[var(--btn-bg)] border-[var(--btn-bg)] shadow-sm' : 'border-[var(--border-color)] group-hover:border-[var(--text-secondary)]'}`}>
+                                {hideOwned && <Check size={14} className="text-white stroke-[3px]" />}
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={hideOwned}
+                                onChange={(e) => setHideOwned(e.target.checked)}
+                                className="hidden"
+                            />
+                            <span className={`text-sm font-bold transition-colors ${hideOwned ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}>보유 상품 숨기기</span>
+                        </label>
+                    </div>
 
-                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <div className="hidden sm:block h-6 w-px bg-[var(--border-color)] opacity-50"></div>
+
+                    {/* Sort Buttons */}
+                    <div className="flex items-center p-1 bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-xl w-full sm:w-auto overflow-x-auto scrollbar-hide">
                         {SORT_OPTIONS.map(opt => (
                             <button
                                 key={opt.id}
                                 onClick={() => changeSort(opt.id)}
-                                className={`flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${sort === opt.id
-                                    ? 'bg-[var(--btn-bg)] text-white'
-                                    : 'text-[var(--text-secondary)] bg-[var(--bg-card)] sm:bg-transparent border sm:border-0 border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)]'
+                                className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap ${sort === opt.id
+                                    ? 'bg-[var(--btn-bg)] text-white shadow-sm'
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                     }`}
                             >
                                 {opt.label}

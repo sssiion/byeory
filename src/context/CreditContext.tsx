@@ -230,17 +230,23 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = localStorage.getItem("accessToken");
       if (!token) return;
       try {
-        await fetch("http://localhost:8080/api/credits/add", {
+        const response = await fetch("http://localhost:8080/api/credits/add", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount, reason }),
+          body: JSON.stringify({ amount }), // Backend expects Map<String, Long>
         });
-        refreshCredits();
+
+        if (!response.ok) {
+          throw new Error(`Failed to add credits: ${response.status}`);
+        }
+
+        await refreshCredits();
       } catch (e) {
         console.error("Failed to add credits", e);
+        throw e;
       }
     },
     [refreshCredits]

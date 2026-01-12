@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { X, Heart, ShoppingBag, Star, User, Trash2 } from 'lucide-react';
 import { useCredits } from '../../context/CreditContext';
 import type { MarketItem } from '../../types/market';
+import { STICKERS } from '../post/constants';
 import ConfirmationModal from '../common/ConfirmationModal';
+
+const API_BASE_URL = 'http://localhost:8080/api';
 
 interface ItemDetailModalProps {
     item: MarketItem;
@@ -16,10 +19,12 @@ interface ItemDetailModalProps {
     onFilterBySeller?: (sellerId: string) => void;
     onSearchTag?: (tag: string) => void;
     reviewTargetId?: string; // New prop for redirected reviews
+    onReviewChange?: (itemId: string, newStats: { averageRating: number, reviewCount: number }) => void;
+    marketItems?: MarketItem[]; // For looking up parent packs
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
-    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag, reviewTargetId
+    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag, reviewTargetId, onReviewChange, marketItems
 }) => {
     const { userId } = useCredits();
     const [activeTab, setActiveTab] = useState<'details' | 'reviews'>(initialTab);
@@ -81,7 +86,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
     const fetchReviews = async () => {
         const token = localStorage.getItem('accessToken');
-        const targetId = reviewTargetId || item.id; // Use redirected ID if available
+        const targetId = reviewTargetId || item.id;
 
         try {
             const headers: HeadersInit = {};
@@ -89,14 +94,13 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 headers['Authorization'] = `Bearer ${token} `;
             }
 
-            const res = await fetch(`http://localhost:8080/api/market/reviews/${targetId}`, {
+            const res = await fetch(`${API_BASE_URL}/market/reviews/${targetId}`, {
                 headers
             });
             if (res.ok) {
                 const data = await res.json();
-                // Sort: My review first, then by Id desc (newest)
+                // Sort
                 data.sort((a: any, b: any) => {
-                    // Check if a or b is my review. ReviewResponse userId is number, context userId is string
                     const isMyReviewA = String(a.userId) === String(userId);
                     const isMyReviewB = String(b.userId) === String(userId);
                     if (isMyReviewA && !isMyReviewB) return -1;
@@ -104,10 +108,12 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     return b.id - a.id;
                 });
                 setReviews(data);
+                return data; // Return data for stats calculation
             }
         } catch (e) {
             console.error("Failed to fetch reviews", e);
         }
+        return null;
     };
 
     const handlePostReview = async () => {
@@ -126,7 +132,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
         setIsSubmitting(true);
         try {
-            const res = await fetch('http://localhost:8080/api/market/reviews', {
+            const res = await fetch(`${API_BASE_URL}/market/reviews`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -144,6 +150,16 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 setNewReviewContent('');
                 setNewRating(5);
                 showAlert('리뷰 등록 완료', "소중한 리뷰가 등록되었습니다!", 'success');
+
+                // Calculate new stats locally or wait for re-fetch (simplest is calculate from updated list but we need to fetch first)
+                // fetchReviews above already updated 'reviews' state? No, async await.
+                // We need to get the updated list to calculate stats.
+                const updatedReviews = await fetchReviews();
+                if (updatedReviews && onReviewChange) {
+                    const count = updatedReviews.length;
+                    const avg = updatedReviews.reduce((acc: number, r: any) => acc + r.rating, 0) / count;
+                    onReviewChange(item.id, { averageRating: avg, reviewCount: count });
+                }
             } else {
                 const errorText = await res.text();
                 if (res.status === 400 || res.status === 409) {
@@ -172,7 +188,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 if (!token) return;
 
                 try {
-                    const res = await fetch(`http://localhost:8080/api/market/reviews/${reviewId}`, {
+                    const res = await fetch(`${API_BASE_URL}/market/reviews/${reviewId}`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -187,6 +203,17 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         // Let's just refresh. Or show success alert.
                         // setTimeout to prevent modal collision or just show success.
                         setTimeout(() => showAlert('삭제 완료', '리뷰가 삭제되었습니다.', 'success'), 300);
+
+                        const updatedReviews = await fetchReviews();
+                        if (updatedReviews && onReviewChange) {
+                            const count = updatedReviews.length;
+                            const avg = count > 0 ? updatedReviews.reduce((acc: number, r: any) => acc + r.rating, 0) / count : 0;
+                            onReviewChange(item.id, { averageRating: avg, reviewCount: count });
+                        } else if (onReviewChange) {
+                            // If no reviews left or fetch fail?
+                            // Assuming fetchReviews returns updated list
+                            onReviewChange(item.id, { averageRating: 0, reviewCount: 0 });
+                        }
                     } else {
                         showAlert('삭제 실패', '리뷰 삭제에 실패했습니다.', 'danger');
                     }
@@ -197,6 +224,25 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             }
         });
     };
+
+    // Pack Recommendation Logic
+    const packRecommendation = React.useMemo(() => {
+        if (!item || !marketItems) return null;
+        // Check if this item is a sticker in a pack
+        // Use referenceId (backend ID) or id
+        const targetId = item.referenceId || item.id;
+        const stickerDef = STICKERS.find(s => s.id === String(targetId));
+
+        if (stickerDef && stickerDef.packId) {
+            // Find the pack locally
+            // Note: Pack Items in marketItems have referenceId === packId (e.g. 'cat_pack')
+            const packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
+            // If checking fails, maybe check ID? Logic suggests referenceId.
+            return packItem;
+        }
+        return null;
+    }, [item, marketItems]);
+
 
     if (!item) return null;
 
@@ -260,8 +306,9 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                 {(item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
                                     (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
                                         (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
-                                            (item.type as string).toLowerCase() === 'start_pack' ? '스타터 팩' :
-                                                (item.type as string)?.replace('_', ' ')}
+                                            (item.type as string).toLowerCase() === 'package' ? '패키지' :
+                                                (item.type as string).toLowerCase() === 'start_pack' ? '패키지' :
+                                                    (item.type as string)?.replace('_', ' ')}
                             </span>
                             {/* Dynamic Header Stats */}
                             <div
@@ -419,55 +466,101 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="p-4 md:p-6 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex items-center gap-4 sticky bottom-0 z-20">
-                        <div className="flex flex-col">
-                            {effectivePrice < item.price && (
-                                <span className="text-xs text-red-500 line-through decoration-red-500/50">
-                                    {Number(item.price).toLocaleString()} C
-                                </span>
+                    <div className="p-4 md:p-6 border-t border-[var(--border-color)] bg-[var(--bg-card)] flex flex-col sticky bottom-0 z-20 gap-3">
+                        {/* Pack Recommendation Alert */}
+                        {packRecommendation && !isOwned && (
+                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex items-center justify-between animate-in slide-in-from-bottom-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl">💡</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-bold text-yellow-600 dark:text-yellow-400">절약 팁</span>
+                                        <span className="text-sm text-[var(--text-primary)]">
+                                            이 아이템은 <span className="font-bold">'{packRecommendation.title}'</span>에 포함되어 있어요!
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        // Close current and open Pack (Parent needs to handle selection change?)
+                                        // Since we don't have setSelectedItem here, we can't easily switch.
+                                        // But we can Close and rely on user finding it? OR pass onSelect prop?
+                                        // Best approach: Just Inform. Or if we pass 'onSelect', use it.
+                                        // For now, simple text is MVP. 
+                                        // Actually User requested "Guide/Warn".
+
+                                        // Let's assume we want to view it. We need a way to switch item.
+                                        // Since ItemDetailModal is controlled by 'selectedItem' in parent, 
+                                        // we'd need onSelect(item).
+                                        // For now let's just show the message clearly.
+                                    }}
+                                    className="hidden px-3 py-1 bg-yellow-500 text-white text-xs font-bold rounded-lg hover:bg-yellow-600 transition-colors"
+                                >
+                                    팩 보기
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-4">
+                            {!isOwned && String(item.sellerId) !== String(userId) ? (
+                                <div className="flex flex-col">
+                                    {Number(effectivePrice) < Number(item.price) && (
+                                        <span className="text-xs text-red-500 line-through decoration-red-500/50">
+                                            {Number(item.price).toLocaleString()} C
+                                        </span>
+                                    )}
+                                    <span className={`text-2xl font-black ${(Number(effectivePrice) < Number(item.price) && Number(effectivePrice) > 0) || Number(effectivePrice) === 0 ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
+                                        {Number(effectivePrice) === 0 ? '무료' : `${Number(effectivePrice).toLocaleString()} C`}
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col opacity-60">
+                                    <span className="text-xs text-[var(--text-secondary)] font-medium">정가</span>
+                                    <span className="text-2xl font-black text-[var(--text-secondary)]">
+                                        {Number(item.price) === 0 ? '무료' : `${Number(item.price).toLocaleString()} C`}
+                                    </span>
+                                </div>
                             )}
-                            <span className={`text-2xl font-black ${Number(effectivePrice) < Number(item.price) || Number(effectivePrice) === 0 ? 'text-red-500' : 'text-[var(--text-primary)]'}`}>
-                                {Number(effectivePrice) === 0 ? '무료' : `${Number(effectivePrice).toLocaleString()} C`}
-                            </span>
-                        </div>
 
-                        <div className="flex-1 flex gap-3">
-                            <button
-                                onClick={() => onToggleWishlist(item)}
-                                className={`p-4 rounded-xl border-2 transition-colors ${isWishlisted
-                                    ? 'border-red-500/20 bg-red-500/10 text-red-500'
-                                    : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--btn-bg)]'
-                                    }`}
-                            >
-                                <Heart className={`w-6 h-6 ${isWishlisted ? 'fill-current' : ''}`} />
-                            </button>
-                            <button
-                                onClick={() => onBuy(item)}
-                                disabled={isOwned}
-                                className={`flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-2 text-lg shadow-lg transition-all transform active:scale-95
+                            <div className="flex-1 flex gap-3">
+                                <button
+                                    onClick={() => onToggleWishlist(item)}
+                                    className={`p-4 rounded-xl border-2 transition-colors ${isWishlisted
+                                        ? 'border-red-500/20 bg-red-500/10 text-red-500'
+                                        : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--btn-bg)]'
+                                        }`}
+                                >
+                                    <Heart className={`w-6 h-6 ${isWishlisted ? 'fill-current' : ''}`} />
+                                </button>
+                                <button
+                                    onClick={() => onBuy(item)}
+                                    disabled={isOwned || String(item.sellerId) === String(userId)}
+                                    className={`flex-1 py-4 rounded-xl font-bold flex items-center justify-center gap-2 text-lg shadow-lg transition-all transform active:scale-95
                                     ${isOwned
-                                        ? 'bg-green-500/10 text-green-600 border border-green-500/20 cursor-default shadow-none'
-                                        : 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110'
-                                    }`}
-                            >
-                                {isOwned ? '보유중' : (Number(effectivePrice) === 0 ? '무료로 받기' : '구매하기')}
-                            </button>
+                                            ? 'bg-green-500/10 text-green-600 border border-green-500/20 cursor-default shadow-none'
+                                            : String(item.sellerId) === String(userId)
+                                                ? 'bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] border border-[var(--border-color)] cursor-default'
+                                                : 'bg-[var(--btn-bg)] text-[var(--btn-text)] hover:brightness-110'
+                                        }`}
+                                >
+                                    {isOwned ? '보유중' : String(item.sellerId) === String(userId) ? '내 상품' : (Number(effectivePrice) === 0 ? '무료로 받기' : '구매하기')}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </div >
-            </div>
+                    </div >
+                </div>
 
-            {/* Confirmation Alert */}
-            <ConfirmationModal
-                isOpen={confirmation.isOpen}
-                title={confirmation.title}
-                message={confirmation.message}
-                type={confirmation.type}
-                onConfirm={confirmation.onConfirm}
-                onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
-                singleButton={confirmation.singleButton}
-                confirmText="확인"
-            />
+                {/* Confirmation Alert */}
+                <ConfirmationModal
+                    isOpen={confirmation.isOpen}
+                    title={confirmation.title}
+                    message={confirmation.message}
+                    type={confirmation.type}
+                    onConfirm={confirmation.onConfirm}
+                    onCancel={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                    singleButton={confirmation.singleButton}
+                    confirmText="확인"
+                />
+            </div>
         </div>
     );
 };

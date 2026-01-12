@@ -1,17 +1,19 @@
 export interface MarketItem {
     id: string;
-    type: 'sticker' | 'template_widget' | 'template_post';
+    type: string; // Broadened from union to string to support 'start_pack' etc.
     title: string;
     description: string;
     price: number;
-    imageUrl?: string;
+    imageUrl: string;
     author: string;
     tags: string[];
     averageRating?: number;
     reviewCount?: number;
-    createdAt?: string;
-    sellerId?: string | number;
+    createdAt: string;
+    sellerId?: string;
     referenceId?: string;
-    salesCount?: number;
+    salesCount: number;
     isAlreadySelling?: boolean;
+    status: string; // Added to match useMarket usage
+    isVirtual?: boolean;
 }

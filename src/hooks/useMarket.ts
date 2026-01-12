@@ -36,14 +36,19 @@ const mapBackendItemToFrontend = (i: any): MarketItem => {
         console.warn('Failed to parse contentJson for item', i.id);
     }
 
+    // Check if this item is a known pack based on STICKERS constant
+    const knownPackIds = new Set(STICKERS.map(s => s.packId).filter(Boolean));
+    // Determine type: if it's explicitly 'start_pack' or 'package' OR if its referenceId is a known pack ID, treat as 'package'
+    const isPack = ['start_pack', 'package', 'PACKAGE'].includes(i.category) || (i.referenceId && knownPackIds.has(String(i.referenceId)));
+
     return {
         id: String(i.id),
         title: i.name,
         price: i.price,
-        description: content.description || '',
-        tags: content.tags || [],
-        imageUrl: content.imageUrl || '',
-        type: i.category,
+        description: i.description || content.description || '',
+        tags: i.tags || content.tags || [],
+        imageUrl: i.imageUrl || content.imageUrl || (content as any).thumbnailUrl || '', // Fallback to thumbnailUrl for Templates
+        type: isPack ? 'package' : i.category,
         author: i.sellerName,
         sellerId: i.sellerId ? String(i.sellerId) : undefined,
         status: i.status,
@@ -58,7 +63,7 @@ const mapBackendItemToFrontend = (i: any): MarketItem => {
 };
 
 export const useMarket = () => {
-    const { credits, refreshCredits, userId } = useCredits();
+    const { credits, refreshCredits, userId, addCredits } = useCredits();
 
     // 데이터 상태
     const [purchasedItems, setPurchasedItems] = useState<MarketItem[]>([]);
@@ -103,7 +108,7 @@ export const useMarket = () => {
                                 id: sticker.id,
                                 title: sticker.name || '포함된 스티커',
                                 imageUrl: sticker.url,
-                                price: 0,
+                                price: sticker.price || 0, // Show original individual price
                                 type: 'sticker',
                                 author: mainItem.author,
                                 purchasedAt: mainItem.purchasedAt,
@@ -197,14 +202,9 @@ export const useMarket = () => {
 
                 // 본인 상품 제외 또는 필터링 로직
                 let visibleItems = fetchedItems;
-                if (userId) {
-                    if (sellerId === String(userId)) {
-                        // 내 상점 보기 모드
-                        visibleItems = fetchedItems.filter((i: MarketItem) => String(i.sellerId) === String(userId));
-                    } else {
-                        // 일반 피드 (내 상품 숨김)
-                        visibleItems = fetchedItems.filter((i: MarketItem) => String(i.sellerId) !== String(userId));
-                    }
+                if (userId && sellerId === String(userId)) {
+                    // 내 상점 보기 모드일 때만 필터링 (일반 피드는 내 물건도 표시)
+                    visibleItems = fetchedItems.filter((i: MarketItem) => String(i.sellerId) === String(userId));
                 }
 
                 if (isLoadMore) {
@@ -274,42 +274,15 @@ export const useMarket = () => {
         setPage(0);
     }, []);
 
-    const buyItem = useCallback(async (itemId: string, cost: number) => {
-        if (credits < cost) return false;
-        const token = localStorage.getItem('accessToken');
-        if (!token) return false;
-
-        try {
-            let url = `${API_BASE_URL}/buy/${itemId}`;
-            if (isNaN(Number(itemId))) { // 레퍼런스 ID 구매 (팩 등)
-                url = `${API_BASE_URL}/buy/ref/${itemId}`;
-            }
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                await fetchUserData(); // 소유권 갱신
-                await refreshCredits(); // 크레딧 갱신
-                return true;
-            } else {
-                alert("구매 실패 (이미 판매되었거나 오류가 발생했습니다)");
-                return false;
-            }
-        } catch (e) {
-            console.error(e);
-            return false;
-        }
-    }, [credits, refreshCredits, fetchUserData]);
-
-    const toggleWishlist = useCallback(async (itemId: string) => {
+    const toggleWishlist = useCallback(async (itemOrId: string | MarketItem) => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
             alert("로그인이 필요합니다.");
             return;
         }
+
+        const itemId = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
+
         try {
             const res = await fetch(`${API_BASE_URL}/wishlist/${itemId}`, {
                 method: 'POST',
@@ -318,13 +291,50 @@ export const useMarket = () => {
             if (res.ok) {
                 const data = await res.json();
                 setWishlistItems(prev => {
-                    if (data.added) return [...prev, String(itemId)];
+                    const isAdded = data.added;
+                    if (isAdded) return [...prev, String(itemId)];
                     return prev.filter(id => id !== String(itemId));
+                });
+
+                // details 업데이트 (위시리스트 탭 즉시 반영용)
+                setWishlistDetails(prev => {
+                    if (data.added) {
+                        // 1. 넘겨받은 파라미터가 객체라면 우선적으로 사용
+                        if (typeof itemOrId !== 'string') {
+                            return [...prev, itemOrId];
+                        }
+
+                        // 2. 문자열이라면 기존 리스트에서 탐색
+                        const itemToAdd = marketItems.find(i => String(i.id) === String(itemId)) ||
+                            purchasedItems.find(i => String(i.id) === String(itemId)) ||
+                            sellingItems.find(i => String(i.id) === String(itemId));
+
+                        if (itemToAdd) {
+                            return [...prev, itemToAdd];
+                        }
+                        // 3. 그래도 없으면 리스트 갱신 필요 (여기서는 생략)
+                        return prev;
+                    } else {
+                        return prev.filter(item => String(item.id) !== String(itemId));
+                    }
                 });
             }
         } catch (e) {
             console.error("Failed to toggle wishlist", e);
         }
+    }, [marketItems, purchasedItems, sellingItems]);
+
+    const updateItemInState = useCallback((itemId: string, updates: Partial<MarketItem>) => {
+        setMarketItems(prev => prev.map(item =>
+            String(item.id) === String(itemId) ? { ...item, ...updates } : item
+        ));
+        // 필요한 경우 sellingItems, wishlistDetails 등도 업데이트
+        setSellingItems(prev => prev.map(item =>
+            String(item.id) === String(itemId) ? { ...item, ...updates } : item
+        ));
+        setWishlistDetails(prev => prev.map(item =>
+            String(item.id) === String(itemId) ? { ...item, ...updates } : item
+        ));
     }, []);
 
     const registerItem = useCallback(async (item: any) => {
@@ -332,17 +342,44 @@ export const useMarket = () => {
         if (!token) return;
 
         try {
+            let contentJson = '';
+
+            // Handle Templates specifically (Backend requires PostTemplateDto structure in contentJson)
+            if (['template_post', 'TEMPLATE_POST'].includes(item.type)) {
+                contentJson = JSON.stringify({
+                    // Required DTO fields
+                    name: item.name || item.title, // Template Name
+                    styles: item.styles || {},
+                    defaultFontColor: item.defaultFontColor || '#000000',
+                    stickers: (item.stickers || []).map((s: any) => {
+                        const { widgetType, ...safeSticker } = s;
+                        return safeSticker;
+                    }),
+                    floatingTexts: item.floatingTexts || [],
+                    floatingImages: item.floatingImages || [],
+                    thumbnailUrl: item.imageUrl,
+                    tags: item.tags || []
+                    // Note: 'description' and 'paperId' are OMITTED as backend DTO throws UnrecognizedPropertyException
+                });
+            } else {
+                // Standard Item (Sticker, Widget, etc.)
+                contentJson = JSON.stringify({
+                    description: item.description,
+                    imageUrl: item.imageUrl,
+                    tags: item.tags
+                });
+            }
+
             const payload = {
                 name: item.title,
                 price: item.price,
                 category: item.type || 'sticker',
-                contentJson: JSON.stringify({
-                    description: item.description,
-                    imageUrl: item.imageUrl,
-                    tags: item.tags
-                }),
+                description: item.description,
+                imageUrl: item.imageUrl, // Added top-level imageUrl
+                contentJson: contentJson,
                 referenceId: item.originalId?.toString() || item.id?.toString()
             };
+
 
             const response = await fetch(`${API_BASE_URL}/items`, {
                 method: 'POST',
@@ -373,8 +410,8 @@ export const useMarket = () => {
                 name: itemData.title,
                 price: itemData.price,
                 category: itemData.type,
+                description: itemData.description,
                 contentJson: JSON.stringify({
-                    description: itemData.description,
                     tags: itemData.tags,
                     imageUrl: itemData.imageUrl || ''
                 })
@@ -423,18 +460,44 @@ export const useMarket = () => {
     }, [fetchUserData, fetchMarketFeed]);
 
     const isOwned = useCallback((itemId: string) => {
-        let checkId = String(itemId);
-        // 직접 ID 체크
-        if (purchasedItems.some(i => i.id === checkId || i.referenceId === checkId)) return true;
+        const checkId = String(itemId);
 
-        // 팩 포함 여부 체크
-        const stickerDef = STICKERS.find(s => s.id === checkId);
-        if (stickerDef && stickerDef.packId) {
-            const packId = String(stickerDef.packId);
-            return purchasedItems.some(i => i.id === packId || i.referenceId === packId);
+        // 1. Direct ID check
+        if (purchasedItems.some(i => String(i.id) === checkId)) return true;
+
+        // 2. Reference ID check (Stable identity)
+        const itemDef = marketItems.find(i => String(i.id) === checkId) ||
+            sellingItems.find(i => String(i.id) === checkId) ||
+            wishlistDetails.find(i => String(i.id) === checkId);
+
+        const refId = itemDef?.referenceId || checkId; // If looking up by refId directly
+
+        // Check if we own any item with this referenceId
+        // We match if BOTH are system items (sticker/pack) OR BOTH are templates
+        // This prevents ID collision between different types
+        const targetIsTemplate = itemDef ? ['template_post', 'TEMPLATE_POST'].includes(itemDef.type) : false;
+
+        if (purchasedItems.some(p => {
+            const pRefId = String(p.referenceId);
+            const pId = String(p.id);
+            const isRefMatch = pRefId === refId || pId === refId;
+            if (!isRefMatch) return false;
+
+            // Type safety check
+            const pIsTemplate = ['template_post', 'TEMPLATE_POST'].includes(p.type);
+            return pIsTemplate === targetIsTemplate;
+        })) {
+            return true;
         }
+
+        // 3. Parent Pack check (if this is a component sticker)
+        const stickerDef = STICKERS.find(s => s.id === refId);
+        if (stickerDef && stickerDef.packId) {
+            if (purchasedItems.some(i => String(i.referenceId) === stickerDef.packId)) return true;
+        }
+
         return false;
-    }, [purchasedItems]);
+    }, [purchasedItems, marketItems, sellingItems, wishlistDetails]);
 
     const isWishlisted = useCallback((itemId: string) => wishlistItems.includes(String(itemId)), [wishlistItems]);
 
@@ -445,6 +508,183 @@ export const useMarket = () => {
         const ownedValue = ownedStickers.reduce((sum, s) => sum + (s.price || 0), 0);
         return Math.max(0, originalPrice - ownedValue);
     }, [isOwned]);
+
+    const buyItem = useCallback(async (itemId: string, cost: number, itemObject?: MarketItem) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return false;
+
+        // 1. Identify Target Item & Reference (Pack Logic)
+        const targetItem = itemObject ||
+            marketItems.find(i => String(i.id) === String(itemId)) ||
+            sellingItems.find(i => String(i.id) === String(itemId)) ||
+            wishlistDetails.find(i => String(i.id) === String(itemId));
+
+        const packId = targetItem?.referenceId;
+        const packStickers = packId ? STICKERS.filter(s => s.packId === packId) : [];
+
+        // 2. Pre-flight Check: Already Owned? (Full Pack or Single Item)
+        if (isOwned(itemId)) {
+            alert("이미 보유한 아이템입니다.");
+            return false;
+        }
+
+        // 3. Logic Branch: Pack Purchase (System Packs Only)
+        // Only trigger 'Pack Logic' if it is actually a defined System Pack
+        const isSystemPack = packId && packStickers.length > 0 && STICKERS.some(s => s.packId === packId);
+
+        if (isSystemPack) {
+            const unownedComponents = packStickers.filter(s => !isOwned(s.id));
+
+            if (unownedComponents.length === 0) {
+                alert("이미 모든 구성품을 보유하고 있습니다.");
+                return true;
+            }
+
+            // Discount Injection Strategy (Pre-Purchase Grant):
+            // 1. Calculate the Discount Amount = PackPrice - TargetPrice (Owned Value).
+            // 2. Grant this amount to the user BEFORE purchase.
+            // 3. Buy the PACK item directly (at full price).
+            // Result: User pays Full Price from wallet, but a grant was just given. Net Cost = Target Price.
+
+            // 1. Calculate Owned Value
+            const ownedStickers = packStickers.filter(s => isOwned(s.id));
+            const ownedValue = ownedStickers.reduce((sum, s) => sum + (s.price || 0), 0);
+
+            // 2. Identify Pack Item & Prices
+            const packOriginalPrice = targetItem?.price || cost + ownedValue; // Heuristic fallback
+
+            const targetDiscountedPrice = Math.max(0, packOriginalPrice - ownedValue);
+            const discountGrantAmount = Math.max(0, ownedValue); // We grant back the value of what they own
+
+            // 3. User Balance Check (Net Price check)
+            if (credits < targetDiscountedPrice) {
+                alert(`크레딧이 부족합니다. (필요: ${targetDiscountedPrice})`);
+                return false;
+            }
+
+            // 4. Inject Discount Credits
+            if (discountGrantAmount > 0) {
+                try {
+                    await addCredits(discountGrantAmount, "Pack Completion Discount");
+                } catch (e) {
+                    console.error("Failed to inject discount", e);
+                    alert("할인 적용 중 오류가 발생했습니다.");
+                    return false;
+                }
+            }
+
+            // 5. Execute Purchase (Pack Item)
+            // Use referenceId (packId) for purchase if available, or itemId
+            const purchaseTargetId = targetItem?.referenceId || itemId;
+            let buyUrl = `${API_BASE_URL}/buy/ref/${purchaseTargetId}`;
+
+            // Fallback: If it's a real item ID, use /buy/ID. Reference ID usually implies Special/Pack.
+            if (!targetItem?.referenceId && !isNaN(Number(itemId))) {
+                buyUrl = `${API_BASE_URL}/buy/${itemId}`;
+            }
+
+            try {
+                // Send standard request (Backend charges full PackPrice)
+                const res = await fetch(buyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ price: packOriginalPrice })
+                });
+
+                if (res.ok) {
+                    alert(`구매 완료! (세트 완성 할인 적용)\n${discountGrantAmount} 크레딧 할인이 적용되어 ${targetDiscountedPrice} 크레딧만 사용되었습니다.`);
+                    await fetchUserData();
+                    await refreshCredits();
+                    return true;
+                } else {
+                    // Purchase Failed - ROLLBACK Grant
+
+                    const errorText = await res.text();
+
+                    if (discountGrantAmount > 0) {
+                        try {
+                            await addCredits(-discountGrantAmount, "Rollback Discount");
+                        } catch (rollbackError) {
+
+                        }
+                    }
+                    alert(`구매 실패: ${errorText}`);
+                    return false;
+                }
+            } catch (e) {
+                console.error("Error buying pack", e);
+                // Rollback on network error too
+                if (discountGrantAmount > 0) {
+                    await addCredits(-discountGrantAmount, "Rollback Discount");
+                }
+                return false;
+            }
+
+        } else {
+            // Standard Single Item / User Item Purchase
+            const finalCost = cost;
+            // Diagnostic logging
+
+
+            if (userId && targetItem?.sellerId && String(userId) === String(targetItem.sellerId)) {
+                alert("자신의 상품은 구매할 수 없습니다.");
+                return false;
+            }
+
+            if (credits < finalCost) {
+                alert("크레딧이 부족합니다.");
+                return false;
+            }
+
+            let url = '';
+            // Strategy: Use specific Listing ID by default for User Items.
+            // Only use Ref for strictly defined System Items if needed.
+            // Templates (User Items) must be bought by Listing ID.
+            url = `${API_BASE_URL}/buy/${itemId}`;
+
+            // Remove query params to avoid conflicts. Send data in Body only.
+            // url += `?price=${Math.max(0, finalCost)}&amount=1`; 
+
+            const payload = {
+                price: Math.max(0, finalCost),
+                amount: 1, // Quantity is 1
+                finalPrice: Math.max(0, finalCost),
+                paymentAmount: Math.max(0, finalCost)
+                // referenceId & category removed: Backend should identify item by ID (19). 
+                // Sending them might trigger incorrect "System Item" or "Original Post" validation logic.
+            };
+
+
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    await fetchUserData();
+                    await refreshCredits();
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    console.error(`Purchase Failed: Status ${response.status}`);
+                    alert(`구매 실패 (${response.status}): ${errorText || '알 수 없는 오류'}`);
+                    return false;
+                }
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+        }
+    }, [credits, refreshCredits, fetchUserData, isOwned, marketItems, sellingItems, wishlistDetails, addCredits]);
 
     const getMarketItem = useCallback(async (itemId: string) => {
         const token = localStorage.getItem('accessToken');
@@ -497,6 +737,7 @@ export const useMarket = () => {
         updateItem,
         cancelItem,
         toggleWishlist,
+        updateItemInState,
 
         // 헬퍼
         isOwned,
