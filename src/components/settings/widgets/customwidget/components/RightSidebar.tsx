@@ -18,9 +18,10 @@ import { getLabelByType } from '../utils';
 interface Props {
     selectedBlock: WidgetBlock | undefined;
     onUpdateBlock: (id: string, updates: any) => void;
+    onClose?: () => void;
 }
 
-const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock }) => {
+const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock, onClose }) => {
 
     if (!selectedBlock) return <EmptyState />;
 
@@ -95,11 +96,16 @@ const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock }) => {
     };
 
     return (
-        <aside className="w-80 bg-[var(--bg-card)] border-l border-[var(--border-color)] flex flex-col text-sm h-full">
-            <div className="p-4 border-b border-[var(--border-color)]">
+        <aside className="w-80 bg-white/80 backdrop-blur-md border-l border-[var(--border-color)] flex flex-col text-sm h-full max-md:w-full">
+            <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
                 <h2 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
                     <Settings2 size={16} /> {getLabelByType(type)} 설정
                 </h2>
+                {onClose && (
+                    <button onClick={onClose} className="p-1 hover:bg-[var(--bg-card-secondary)] rounded md:hidden">
+                        <XCircle size={20} className="text-[var(--text-secondary)]" />
+                    </button>
+                )}
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-[var(--border-color)]">
@@ -1460,7 +1466,7 @@ const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock }) => {
 
 // UI 컴포넌트들
 const EmptyState = () => (
-    <aside className="w-80 bg-[var(--bg-card)] border-l border-[var(--border-color)] flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-2">
+    <aside className="w-80 h-full bg-white/80 backdrop-blur-md border-l border-[var(--border-color)] flex flex-col items-center justify-center text-[var(--text-secondary)] space-y-2">
         <p className="text-center text-sm">캔버스에서 블록을 선택하세요</p>
     </aside>
 );

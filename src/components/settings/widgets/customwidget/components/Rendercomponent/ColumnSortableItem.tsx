@@ -21,15 +21,15 @@ interface ColumnSortableItemProps {
 
 const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
 
-                                                                   child,
-                                                                   columnContainerId,
-                                                                   selectedBlockId,
-                                                                   onSelectBlock,
-                                                                   onRemoveBlock,
-                                                                   activeContainer,
-                                                                   onSetActiveContainer,
-                                                                   onUpdateBlock
-                                                               }) => {
+    child,
+    columnContainerId,
+    selectedBlockId,
+    onSelectBlock,
+    onRemoveBlock,
+    activeContainer,
+    onSetActiveContainer,
+    onUpdateBlock
+}) => {
     // 2️⃣ useSortable 훅 사용
     const {
         attributes,
@@ -48,7 +48,7 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
     const style: React.CSSProperties = {
         transform: CSS.Translate.toString(transform),
         transition,
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.4 : 1, // 드래그 시 반투명
         zIndex: isDragging ? 9999 : 'auto',
     };
 
@@ -61,26 +61,29 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
                 onSelectBlock(child.id);
             }}
             className={`
-                relative group rounded border bg-white p-2 flex gap-2 transition-none w-full
+                relative group rounded border bg-white flex flex-col transition-none w-full overflow-hidden
                 ${selectedBlockId === child.id
-                ? 'border-indigo-500 ring-1 ring-indigo-200'
-                : 'border-gray-200'
-            }
+                    ? 'border-indigo-500 ring-1 ring-indigo-200'
+                    : 'border-gray-200'
+                }
                 ${isDragging ? 'bg-indigo-50 border-dashed' : ''}
             `}
             {...attributes}
         >
-            {/* 드래그 핸들 */}
+            {/* 드래그 핸들 (Top Overlay) */}
             <div
                 {...listeners}
-                className="drag-handle text-gray-300 hover:text-gray-600 cursor-grab active:cursor-grabbing pt-1 flex-shrink-0"
+                className={`
+                    absolute top-0 left-0 w-full h-3 z-20 cursor-grab active:cursor-grabbing flex justify-center items-start
+                    transition-opacity duration-200
+                    ${isDragging ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-100/50'}
+                `}
             >
-                <GripVertical size={12} />
+                <div className="w-6 h-1 bg-gray-300 rounded-full mt-1" />
             </div>
 
             {/* 실제 콘텐츠 렌더링 */}
-            <div className="flex-1 min-w-0">
-                {/* 3️⃣ BlockRenderer에 필요한 props를 명시적으로 전달합니다 */}
+            <div className="flex-1 min-w-0 w-full pt-2"> {/* pt-2로 핸들 영역 확보 */}
                 <BlockRenderer
                     block={child}
                     selectedBlockId={selectedBlockId}
@@ -99,7 +102,7 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
                         e.stopPropagation();
                         onRemoveBlock(child.id);
                     }}
-                    className="absolute -right-2 -top-2 bg-red-500 text-white p-1 rounded-full shadow-sm hover:scale-110 z-20 group-has-[.drag-handle:hover]:hidden"
+                    className="absolute -right-2 -top-2 bg-red-500 text-white p-1 rounded-full shadow-sm hover:scale-110 z-30 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                     <Trash2 size={12} />
                 </button>

@@ -4,6 +4,9 @@ import type { WidgetConfig, WidgetDefinition } from "./type.ts";
 import { WIDGET_COMPONENT_MAP } from "./componentMap.ts";
 
 // 백엔드 주소 상수 정의
+import { getMyWidgets } from './customwidget/widgetApi.ts';
+
+// 백엔드 주소 상수 정의
 const BASE_URL = 'http://localhost:8080';
 const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
@@ -21,37 +24,62 @@ export const useWidgetRegistry = (userId?: number) => {
         const fetchWidgets = async () => {
             try {
                 const params = userId ? { userId } : {};
-                // 헤더 가져오기
                 const headers = getAuthHeaders();
-                // 전체 URL(Full URL)을 적어줍니다.
-                // axios 요청에 headers 포함
-                const response = await axios.get<WidgetDefinition[]>(`${BASE_URL}/api/widgets`, {
-                    params,
-                    headers // 여기에 헤더 추가
-                });
-                const widgetDefinitions = response.data;
 
-                // 방어 코드 (배열 체크)
-                if (!Array.isArray(widgetDefinitions)) {
-                    console.error('서버 응답이 배열이 아닙니다:', widgetDefinitions);
-                    setRegistry({});
-                    setIsLoading(false);
-                    return;
-                }
+                // 1. 기본 위젯 정의 가져오기 (병렬 처리)
+                const [standardRes, customRes] = await Promise.allSettled([
+                    axios.get<WidgetDefinition[]>(`${BASE_URL}/api/widgets`, { params, headers }),
+                    getMyWidgets() // 2. 커스텀 위젯 가져오기
+                ]);
 
-                // 데이터 병합 로직
+
+                // 데이터 병합용 객체
                 const mergedRegistry: Record<string, WidgetConfig> = {};
 
-                widgetDefinitions.forEach((def) => {
-                    const Component = WIDGET_COMPONENT_MAP[def.widgetType];
+                // A. 표준 위젯 처리
+                if (standardRes.status === 'fulfilled' && Array.isArray(standardRes.value.data)) {
+                    standardRes.value.data.forEach((def) => {
+                        const Component = WIDGET_COMPONENT_MAP[def.widgetType];
+                        if (Component) {
+                            mergedRegistry[def.widgetType] = { ...def, component: Component };
+                        }
+                    });
+                } else {
+                    console.error('표준 위젯 로드 실패 또는 데이터 형식 오류');
+                }
 
-                    if (Component) {
-                        mergedRegistry[def.widgetType] = {
-                            ...def,
-                            component: Component,
-                        };
-                    }
-                });
+                // B. 커스텀 위젯 처리 (표준 위젯 기반)
+                if (customRes.status === 'fulfilled' && Array.isArray(customRes.value)) {
+                    customRes.value.forEach((item: any) => {
+                        // 커스텀 위젯의 원본 타입(예: 'todo-list')으로 컴포넌트 찾기
+                        const baseType = item.type;
+                        const Component = WIDGET_COMPONENT_MAP[baseType];
+
+                        // 컴포넌트가 존재하는 경우에만 등록
+                        if (Component) {
+                            // 고유 ID 생성 (예: 'custom-123')
+                            const customType = `custom-${item.id}`;
+
+                            mergedRegistry[customType] = {
+                                id: item.id,
+                                widgetType: customType, // 고유 식별자
+                                label: item.name || '제목 없음',
+                                description: `Custom ${baseType} widget`,
+                                category: 'My Saved', // 커스텀 위젯 카테고리 고정
+                                keywords: ['custom', baseType],
+                                defaultSize: '1x1', // 기본값 (필요 시 layout에서 가져오기)
+                                validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
+                                defaultProps: {
+                                    content: item.content, // 저장된 콘텐츠
+                                    styles: item.styles    // 저장된 스타일
+                                },
+                                isSystem: false,
+                                thumbnail: undefined, // 썸네일이 있다면 item.thumbnail
+                                component: Component,
+                            };
+                        }
+                    });
+                }
 
                 // 타임머신 / 웰컴 위젯 등 강제 사이즈 설정 (백엔드 반영 전 임시)
                 if (mergedRegistry['time-machine']) {

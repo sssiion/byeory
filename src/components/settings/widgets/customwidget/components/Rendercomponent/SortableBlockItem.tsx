@@ -57,7 +57,7 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
             ref={setNodeRef}
             style={style}
             {...attributes}
-            className="outline-none relative mb-2" // mb-2: 블록 간 간격 확보
+            className="outline-none relative" // mb-2 제거: 컴팩트한 간격
         >
             {/* 🔥 핵심 수정 사항 🔥
                1. maxHeight="100%" 제거: 높이를 자유롭게 늘릴 수 있게 함
@@ -71,8 +71,8 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                 maxWidth="100%"
                 bounds={boundaryElement || undefined}
                 // 최소 크기 제한 (너무 작아져서 핸들이 사라지는 것 방지)
-                minWidth={100}
-                minHeight={50}
+                minWidth={50}
+                minHeight={20}
 
                 size={{
                     width: layout.w,
@@ -122,24 +122,29 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                         onSelectBlock(block.id);
                     }}
                     className={`
-                        relative group rounded-lg transition-all border-2 flex items-stretch h-full overflow-hidden
+                        relative group rounded-lg transition-all border-2 h-full overflow-hidden
                         ${isSelected
                             ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30'
                             : 'border-transparent hover:border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] bg-transparent'
                         }
                     `}
                 >
-                    {/* 드래그 핸들 (Grip) */}
+                    {/* 드래그 핸들 (Grip) -> 상단 오버레이 */}
                     <div
                         {...listeners}
-                        className="flex items-center justify-center px-2 cursor-grab active:cursor-grabbing text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex-shrink-0"
+                        className={`
+                            absolute top-0 left-0 w-full h-3 z-20 cursor-grab active:cursor-grabbing flex justify-center items-start
+                            transition-opacity duration-200
+                            ${isSelected || isDragging ? 'opacity-100 bg-indigo-500/10' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-100/50'}
+                        `}
                     >
-                        <GripVertical size={16} />
+                        {/* 핸들 아이콘을 작고 얇게 표시 */}
+                        <div className="w-8 h-1 bg-gray-300 rounded-full mt-1 group-hover:bg-gray-400" />
                     </div>
 
                     {/* 컨텐츠 영역 (BlockRenderer) */}
                     {/* min-w-0와 h-full을 주어 부모 크기 변화에 따라 컨텐츠도 같이 변하게 함 */}
-                    <div className="flex-1 min-w-0 h-full ">
+                    <div className="w-full h-full pt-2"> {/* pt-2: 상단 핸들영역 살짝 확보 or 0으로 해서 완전 겹치게 가능 */}
                         <BlockRenderer
                             block={block}
                             selectedBlockId={selectedBlockId}

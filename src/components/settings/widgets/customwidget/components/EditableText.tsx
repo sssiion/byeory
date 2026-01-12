@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface EditableTextProps {
     text: string;
-    tagName: 'h1' | 'h2' | 'h3' | 'p' | 'div';
+    tagName: 'h1' | 'h2' | 'h3' | 'p' | 'div' | 'span';
     className?: string;
     style?: React.CSSProperties;
     onUpdate: (newText: string) => void;
@@ -10,13 +10,13 @@ interface EditableTextProps {
 }
 
 export const EditableText: React.FC<EditableTextProps> = ({
-                                                              text,
-                                                              tagName: Tag,
-                                                              className,
-                                                              style,
-                                                              onUpdate,
-                                                              placeholder
-                                                          }) => {
+    text,
+    tagName: Tag,
+    className,
+    style,
+    onUpdate,
+    placeholder
+}) => {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(text);
     const inputRef = useRef<HTMLTextAreaElement>(null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     // 카테고리 대표 아이콘
     Type, Layout, Sparkles, Activity, PieChart, Wrench, GraduationCap, MousePointer2,
@@ -12,16 +12,18 @@ import {
 import type { BlockType } from '../types';
 import { BLOCK_COSTS } from '../constants';
 
+// 카테고리 타입 정의
+export type Category = 'text' | 'structure' | 'visual' | 'effect' | 'data' | 'util' | 'study' | 'interaction';
+
 interface Props {
+    activeTab: Category;
+    setActiveTab: (tab: Category) => void;
     onAddBlock: (type: BlockType) => void;
     remainingCapacity: number;
 }
 
-// 카테고리 타입 정의
-type Category = 'text' | 'structure' | 'visual' | 'effect' | 'data' | 'util' | 'study' | 'interaction';
+const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, remainingCapacity }) => {
 
-const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity }) => {
-    const [activeTab, setActiveTab] = useState<Category>('text');
 
     // 헬퍼: 버튼 렌더링
     const renderBtn = (icon: React.ReactNode, label: string, type: BlockType) => {
@@ -56,10 +58,10 @@ const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity }) => {
     };
 
     return (
-        <aside className="h-full flex bg-[var(--bg-card)] border-r border-[var(--border-color)]">
+        <aside className="h-full flex bg-white/80 backdrop-blur-md border-r border-[var(--border-color)]">
 
             {/* 1. 1단계: 카테고리 탭 (아이콘 메뉴) */}
-            <div className="w-16 flex flex-col items-center py-4 gap-2 border-r border-[var(--border-color)] bg-[var(--bg-card-secondary)]">
+            <div className="w-16 h-full flex flex-col items-center py-4 gap-2 border-r border-[var(--border-color)] bg-white/50 overflow-y-auto scrollbar-hide">
                 <TabButton
                     active={activeTab === 'text'}
                     onClick={() => setActiveTab('text')}
@@ -112,27 +114,27 @@ const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity }) => {
             </div>
 
             {/* 2. 2단계: 선택된 카테고리의 기능 목록 (스크롤 영역) */}
-            <div className="w-60 flex flex-col">
+            <div className="w-52 h-full flex flex-col max-md:flex-1">
                 {/* 상단: 남은 용량 표시 */}
-                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card)]">
-                    <div className="flex justify-between text-xs text-[var(--text-secondary)] mb-2">
-                        <span className="font-bold">남은 공간</span>
-                        <span className={remainingCapacity < 2 ? 'text-red-400 font-bold' : 'text-indigo-400 font-mono'}>
+                <div className="p-2 border-b border-[var(--border-color)] bg-transparent">
+                    <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                        <span className="font-bold whitespace-nowrap">남은 공간</span>
+                        <div className="flex-1 h-1.5 bg-[var(--bg-card-secondary)] rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-300 ${remainingCapacity < 2 ? 'bg-red-500' : 'bg-indigo-500'}`}
+                                style={{ width: `${Math.min(100, remainingCapacity * 10)}%` }}
+                            ></div>
+                        </div>
+                        <span className={`whitespace-nowrap ${remainingCapacity < 2 ? 'text-red-400 font-bold' : 'text-indigo-400 font-mono'}`}>
                             {remainingCapacity.toFixed(1)}
                         </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-[var(--bg-card-secondary)] rounded-full overflow-hidden">
-                        <div
-                            className={`h-full transition-all duration-300 ${remainingCapacity < 2 ? 'bg-red-500' : 'bg-indigo-500'}`}
-                            style={{ width: `${Math.min(100, remainingCapacity * 10)}%` }}
-                        ></div>
                     </div>
                 </div>
 
                 {/* 기능 버튼 목록 */}
                 <div className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-[var(--border-color)] scrollbar-track-transparent">
                     <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3 px-1">
-                        {getCategoryTitle(activeTab)}
+                        {/* {getCategoryTitle(activeTab)} */}
                     </h3>
 
                     <div className="space-y-1">

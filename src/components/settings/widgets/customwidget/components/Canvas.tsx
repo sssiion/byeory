@@ -28,8 +28,7 @@ interface Props {
     selectedBlockId: string | null;
     onSelectBlock: (id: string | null) => void;
     onRemoveBlock: (id: string) => void;
-    usedCapacity: number;
-    maxCapacity: number;
+
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
     onUpdateBlock: (id: string, updates: any) => void; // ✅ 캔버스 직접 수정을 위해 필수
@@ -44,8 +43,7 @@ const Canvas: React.FC<Props> = (props) => {
         selectedBlockId,
         onSelectBlock,
         onRemoveBlock,
-        usedCapacity,
-        maxCapacity,
+
         activeContainer,
         onSetActiveContainer,
         onUpdateBlock,
@@ -55,8 +53,7 @@ const Canvas: React.FC<Props> = (props) => {
 
     const [activeId, setActiveId] = useState<string | null>(null);
 
-    const usagePercent = Math.min(100, (usedCapacity / maxCapacity) * 100);
-    const isFull = usagePercent >= 100;
+
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -80,28 +77,18 @@ const Canvas: React.FC<Props> = (props) => {
     };
 
     return (
-        <main className="flex-1 bg-[var(--bg-primary)] relative flex flex-col items-center pt-16 p-8 overflow-auto gap-8">
-            {/* 상단 스토리지 게이지 */}
-            <div className="bg-[var(--bg-card-secondary)] px-5 py-2.5 rounded-full flex items-center gap-4 shadow-xl border border-[var(--border-color)] sticky top-0 z-30">
-                <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Storage</span>
-                <div className="w-40 h-1.5 bg-[var(--bg-card)] rounded-full overflow-hidden">
-                    <div
-                        className={`h-full transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1) ${isFull ? 'bg-red-500' : 'bg-indigo-500'
-                            }`}
-                        style={{ width: `${usagePercent}%` }}
-                    />
-                </div>
-                <span className={`text-xs font-mono font-bold ${isFull ? 'text-red-400' : 'text-[var(--text-secondary)]'}`}>
-                    {usedCapacity} / {maxCapacity}
-                </span>
-            </div>
-
+        <main className="flex-1 bg-[var(--bg-primary)] relative flex flex-col items-center pt-12 p-4 overflow-auto gap-1">
             {/* 메인 캔버스 영역 */}
-            <div className="relative group/canvas">
+            <div className="relative group/canvas w-full max-w-full flex justify-center flex-1 ">
                 <div
                     id="canvas-boundary"
-                    className=" bg-[var(--bg-card)] rounded-[2.5rem] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
-                    style={{ width: currentSize.w, height: currentSize.h, padding: '24px' }}
+                    className="bg-[var(--bg-card)] rounded-[24px] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
+                    style={{
+                        width: `${currentSize.w}px`,
+                        height: `${currentSize.h}px`,
+                        maxWidth: '100%', // 모바일 화면보다 클 경우를 대비
+                        padding: '12px',
+                    }}
                     onClick={() => {
                         onSelectBlock(null);
                         onSetActiveContainer(null);
@@ -114,11 +101,12 @@ const Canvas: React.FC<Props> = (props) => {
                         onDragOver={onDragOver}
                         onDragEnd={handleDragEndLocal}
                     >
-                        <div ref={setNodeRef} className="flex-1 flex flex-col gap-3 min-h-full">
+                        <div ref={setNodeRef} className="flex-1 flex flex-col gap-0 min-h-full">
                             {blocks.length === 0 ? (
-                                <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-color)] rounded-[1.5rem] bg-[var(--bg-card-secondary)]/50 transition-colors group-hover/canvas:bg-[var(--bg-card-secondary)]">
+                                <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-card-secondary)]/50 transition-colors group-hover/canvas:bg-[var(--bg-card-secondary)]">
                                     <Smartphone size={40} className="mb-3 opacity-20" />
-                                    <p className="text-sm font-semibold opacity-40">좌측에서 기능을 클릭하세요.</p>
+                                    <p className="text-sm font-semibold opacity-40 max-md:hidden">좌측에서 기능 선택</p>
+                                    <p className="text-sm font-semibold opacity-40 md:hidden">아래에서 기능 선택</p>
                                 </div>
                             ) : (
                                 <SortableContext

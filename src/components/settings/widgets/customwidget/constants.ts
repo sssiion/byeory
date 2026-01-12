@@ -3,10 +3,10 @@ import type { WidgetSize } from './types';
 
 // 1. 위젯 사이즈별 최대 용량 (Capacity)
 export const WIDGET_SIZES: Record<string, WidgetSize & { capacity: number }> = {
-    '2x1': { w: 340, h: 160, label: 'Small (2x1)', capacity: 4 },   // 작음: 텍스트 4줄 정도
-    '2x2': { w: 340, h: 340, label: 'Square (2x2)', capacity: 10 }, // 중간: 텍스트 10줄 정도
-    '4x2': { w: 700, h: 340, label: 'Wide (4x2)', capacity: 10 },   // 와이드: 높이는 중간과 같음
-    '4x4': { w: 700, h: 700, label: 'Large (4x4)', capacity: 22 },  // 대형
+    '1x1': { w: 160, h: 160, label: '1x1', capacity: 4 },  // 정사각형 (작음)
+    '1x2': { w: 160, h: 340, label: '1x2', capacity: 6 },  // 모바일: 세로로 김
+    '2x1': { w: 340, h: 160, label: '2x1', capacity: 4 },   // 작음: 텍스트 4줄 정도
+    '2x2': { w: 340, h: 340, label: '2x2', capacity: 10 }, // 중간: 텍스트 10줄 정도
 };
 
 // 2. 블록 타입별 비용 (Cost)
@@ -49,5 +49,5 @@ export const BLOCK_COSTS: Record<string, number> = {
     'zip-viewer': 2, 'rss-reader': 3, 'link-bookmark': 2, 'pdf-viewer': 4,
     'export-button': 1,
 
-    'flash-card': 2, 'mind-map': 5, 'code-sandbox': 4, 'word-book': 3, 'book-info': 2, 'movie-ticket':2,
+    'flash-card': 2, 'mind-map': 5, 'code-sandbox': 4, 'word-book': 3, 'book-info': 2, 'movie-ticket': 2,
 };

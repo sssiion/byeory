@@ -64,7 +64,8 @@ export type Flashcard = {
 };
 
 export interface WidgetSize {
-
+    w: number;
+    h: number;
     label: string;
 }
 export interface BlockLayout {

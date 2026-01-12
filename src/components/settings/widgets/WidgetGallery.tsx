@@ -4,6 +4,9 @@ import type { WidgetConfig } from "./type.ts";
 import { X, Check, ChevronDown } from 'lucide-react'; // Icon imports
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { getMyWidgets } from './customwidget/widgetApi.ts'; // Import API
+import { WIDGET_COMPONENT_MAP } from "./componentMap.ts"; // Import Component Map
+
 // MainPage에서 넘겨주는 props 이름(onSelect, onEdit)과 일치시킵니다.
 interface WidgetGalleryProps {
     onSelect: (widgetType: string) => void; // 문자열(ID)을 넘기도록 수정
@@ -14,7 +17,62 @@ interface WidgetGalleryProps {
 
 export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: WidgetGalleryProps) => {
     // 훅을 통해 DB에서 위젯 정보를 가져옴
-    const { registry, isLoading, error } = useWidgetRegistry();
+    const { registry, isLoading: isRegistryLoading, error } = useWidgetRegistry();
+    const [customWidgets, setCustomWidgets] = useState<WidgetConfig[]>([]);
+    const [isCustomLoading, setIsCustomLoading] = useState(true);
+
+    // 🌟 [NEW] 커스텀 위젯 직접 Fetching
+    useEffect(() => {
+        const fetchCustomWidgets = async () => {
+            try {
+                const data = await getMyWidgets();
+                if (Array.isArray(data)) {
+                    const refinedConfigs: WidgetConfig[] = data.map((item: any) => {
+                        const baseType = item.type;
+                        let Component = WIDGET_COMPONENT_MAP[baseType];
+
+                        // 'custom-block' 폴백 처리
+                        if (!Component && baseType === 'custom-block') {
+                            Component = () => (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-50 text-xs text-gray-400 border border-dashed border-gray-200 rounded">
+                                    Custom Block
+                                </div>
+                            );
+                        }
+
+                        if (!Component) return null;
+
+                        return {
+                            id: item.id,
+                            widgetType: `custom-${item.id}`,
+                            label: item.name || '제목 없음',
+                            description: `Custom ${baseType} widget`,
+                            category: 'My Saved',
+                            keywords: ['custom', baseType],
+                            defaultSize: item.defaultSize || '1x1',
+                            validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
+                            defaultProps: {
+                                content: item.content,
+                                styles: item.styles
+                            },
+                            isSystem: false,
+                            thumbnail: undefined,
+                            component: Component,
+                        } as WidgetConfig;
+                    }).filter((w): w is WidgetConfig => w !== null);
+
+                    setCustomWidgets(refinedConfigs);
+                }
+            } catch (e) {
+                console.error("Failed to load custom widgets in Gallery:", e);
+            } finally {
+                setIsCustomLoading(false);
+            }
+        };
+
+        fetchCustomWidgets();
+    }, []);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedWidgets, setSelectedWidgets] = useState<WidgetConfig[]>([]); // 장바구니 상태
     // 기본적으로 'My Saved' (커스텀 위젯) 카테고리는 펼쳐둠
@@ -49,8 +107,11 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
         );
     };
 
-    // registry 객체를 배열로 변환 (Safe access)
-    const allWidgets = registry ? Object.values(registry) : [];
+    // registry 객체를 배열로 변환 + 커스텀 위젯 합치기
+    const allWidgets = [
+        ...(registry ? Object.values(registry) : []),
+        ...customWidgets
+    ];
 
     // 검색어 필터링
     const widgets = allWidgets.filter(widget => {
@@ -98,6 +159,7 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
     }, [searchTerm, widgets.length]);
 
     // Render Logic with Early Returns
+    const isLoading = isRegistryLoading || isCustomLoading;
     if (isLoading) {
         return <div className="p-4 text-center text-gray-500">위젯 목록을 불러오는 중...</div>;
     }
