@@ -120,7 +120,33 @@ export const useDashboardLogic = (isMobile: boolean) => {
                         type = item.type;
                     }
 
-                    if (type === 'custom-block' || type === 'custom') {
+                    // 🌟 [Modified] 커스텀 위젯 처리 (Gallery에서 넘어온 custom-* 타입 처리)
+                    if (type.startsWith('custom-')) {
+                        // 1. 기본 타입 복원 (Gallery에서 keywords[1]에 baseType 저장함)
+                        const baseType = item.keywords?.[1] || 'custom-block';
+                        type = baseType; // 인스턴스 타입은 원본 타입(예: custom-block, todo-list)으로 설정
+
+                        // 2. 사이즈 파싱
+                        const sizeStr = item.defaultSize || '1x1';
+                        const [wStr, hStr] = sizeStr.split('x');
+                        w = parseInt(wStr, 10) || 1;
+                        h = parseInt(hStr, 10) || 1;
+
+                        // 3. Props 설정
+                        if (item.defaultProps) {
+                            initialProps = JSON.parse(JSON.stringify(item.defaultProps));
+                        } else {
+                            // Fallback for raw data
+                            initialProps = {
+                                type: baseType,
+                                content: JSON.parse(JSON.stringify(item.content || {})),
+                                styles: JSON.parse(JSON.stringify(item.styles || {})),
+                                title: item.name || item.label
+                            };
+                        }
+                    }
+                    else if (type === 'custom-block' || type === 'custom') {
+                        // 기존 로직 (Raw data directly from builder or legacy)
                         const savedWidget = item;
                         const sizeStr = savedWidget.defaultSize || '1x1';
                         const [wStr, hStr] = sizeStr.split('x');

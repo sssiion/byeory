@@ -70,16 +70,16 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
             `}
             {...attributes}
         >
-            {/* 드래그 핸들 (Top Overlay) */}
+            {/* 드래그 핸들 (Top Overlay) - Invisible but functional */}
             <div
                 {...listeners}
                 className={`
                     absolute top-0 left-0 w-full h-3 z-20 cursor-grab active:cursor-grabbing flex justify-center items-start
                     transition-opacity duration-200
-                    ${isDragging ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-100/50'}
+                    ${isDragging ? 'opacity-0' : 'opacity-0 group-hover:opacity-100 bg-transparent'}
                 `}
             >
-                <div className="w-6 h-1 bg-gray-300 rounded-full mt-1" />
+                <div className="w-6 h-1 bg-transparent rounded-full mt-1" />
             </div>
 
             {/* 실제 콘텐츠 렌더링 */}

@@ -87,7 +87,7 @@ const Canvas: React.FC<Props> = (props) => {
                         width: `${currentSize.w}px`,
                         height: `${currentSize.h}px`,
                         maxWidth: '100%', // 모바일 화면보다 클 경우를 대비
-                        padding: '12px',
+                        padding: '0px', // 🌟 [수정] 패딩 제거 (컨텐츠 꽉 채우기)
                     }}
                     onClick={() => {
                         onSelectBlock(null);

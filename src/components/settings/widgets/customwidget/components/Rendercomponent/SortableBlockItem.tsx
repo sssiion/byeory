@@ -88,14 +88,14 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                         }
                     });
                 }}
-                // 선택되었을 때만 핸들 활성화
+                // 선택되었을 때만 핸들 활성화 (단, 링크 북마크 위젯은 고정 크기)
                 enable={{
                     top: false,
-                    right: isSelected,
-                    bottom: isSelected,
+                    right: isSelected && block.type !== 'link-bookmark',
+                    bottom: isSelected && block.type !== 'link-bookmark',
                     left: false,
                     topRight: false,
-                    bottomRight: isSelected,
+                    bottomRight: isSelected && block.type !== 'link-bookmark',
                     bottomLeft: false,
                     topLeft: false,
                 }}
@@ -129,22 +129,22 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                         }
                     `}
                 >
-                    {/* 드래그 핸들 (Grip) -> 상단 오버레이 */}
+                    {/* 드래그 핸들 (Grip) -> 상단 오버레이 (Invisible but functional) */}
                     <div
                         {...listeners}
                         className={`
-                            absolute top-0 left-0 w-full h-3 z-20 cursor-grab active:cursor-grabbing flex justify-center items-start
-                            transition-opacity duration-200
-                            ${isSelected || isDragging ? 'opacity-100 bg-indigo-500/10' : 'opacity-0 group-hover:opacity-100 hover:bg-gray-100/50'}
-                        `}
+                                absolute top-0 left-0 w-full h-3 z-20 cursor-grab active:cursor-grabbing flex justify-center items-start
+                                transition-opacity duration-200
+                                ${isSelected || isDragging ? 'opacity-100 bg-transparent' : 'opacity-0 group-hover:opacity-100 bg-transparent'}
+                            `}
                     >
-                        {/* 핸들 아이콘을 작고 얇게 표시 */}
-                        <div className="w-8 h-1 bg-gray-300 rounded-full mt-1 group-hover:bg-gray-400" />
+                        {/* 핸들 아이콘/표시기 제거 (투명 처리) */}
+                        <div className="w-8 h-1 bg-transparent rounded-full mt-1" />
                     </div>
 
                     {/* 컨텐츠 영역 (BlockRenderer) */}
                     {/* min-w-0와 h-full을 주어 부모 크기 변화에 따라 컨텐츠도 같이 변하게 함 */}
-                    <div className="w-full h-full pt-2"> {/* pt-2: 상단 핸들영역 살짝 확보 or 0으로 해서 완전 겹치게 가능 */}
+                    <div className="w-full h-full p-0"> {/* 🌟 [수정] pt-2 제거, p-0으로 설정 */}
                         <BlockRenderer
                             block={block}
                             selectedBlockId={selectedBlockId}

@@ -79,7 +79,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
             // 2. p-0: 패딩 제거
             // 3. leading-none: 줄간격 여백 제거
             // 4. block: 인라인 요소로 인한 하단 틈 제거
-            className={`cursor-text hover:bg-black/5 rounded transition-colors border border-transparent hover:border-black/10 w-full h-full m-0 p-0 leading-none block ${className}`}
+            className={`cursor-text hover:bg-black/5 rounded transition-colors border border-transparent hover:border-black/10 w-full m-0 p-0 leading-none block ${className}`}
             style={{ ...style }}
             onClick={(e) => {
                 e.stopPropagation();

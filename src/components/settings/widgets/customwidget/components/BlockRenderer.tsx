@@ -24,6 +24,7 @@ import HeatmapWidget from "./Rendercomponent/HeatmapWidget.tsx";
 import BookInfoWidget from "./Rendercomponent/BookInfoWidget.tsx";
 import MovieTicketWidget from "./Rendercomponent/MovieTicketWidget.tsx";
 import UnitConverterWidget from "./Rendercomponent/UnitConverterWidget.tsx";
+import LinkBookmarkWidget from "./Rendercomponent/LinkBookmarkWidget.tsx";
 
 import {
     addEdge, applyEdgeChanges,
@@ -613,71 +614,81 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
             case 'heading1':
                 return (
-                    <EditableText
-                        tagName="h1"
-                        text={content.text}
-                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                        style={commonStyle}
-                        // 🌟 [수정] mb-2, border-b, pb-1 제거 -> 여백 없이 딱 맞게
-                        className="text-2xl font-bold break-words leading-none m-0 p-0"
-                        placeholder="Heading 1"
-                    />
+                    <div className="h-full w-full flex flex-col justify-center">
+                        <EditableText
+                            tagName="h1"
+                            text={content.text}
+                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                            style={commonStyle}
+                            // 🌟 [수정] mb-2, border-b, pb-1 제거 -> 여백 없이 딱 맞게
+                            className="text-2xl font-bold break-words leading-none m-0 p-0 block"
+                            placeholder="Heading 1"
+                        />
+                    </div>
                 );
             case 'heading2':
                 return (
-                    <EditableText
-                        tagName="h2"
-                        text={content.text}
-                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                        style={commonStyle}
-                        // 🌟 [수정] mb-1, mt-2 제거 -> 여백 없이 딱 맞게
-                        className="text-xl font-bold break-words leading-none m-0 p-0"
-                        placeholder="Heading 2"
-                    />
+                    <div className="h-full w-full flex flex-col justify-center">
+                        <EditableText
+                            tagName="h2"
+                            text={content.text}
+                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                            style={commonStyle}
+                            // 🌟 [수정] mb-1, mt-2 제거 -> 여백 없이 딱 맞게
+                            className="text-xl font-bold break-words leading-none m-0 p-0 block"
+                            placeholder="Heading 2"
+                        />
+                    </div>
                 );
             case 'heading3':
                 return (
-                    <div className="h-full w-full overflow-hidden">
+                    <div className="h-full w-full overflow-hidden flex flex-col justify-center">
                         <EditableText
                             tagName="h3"
                             text={content.text}
                             onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
                             style={commonStyle}
                             // 🌟 [수정] mb-1 제거
-                            className="text-lg font-semibold break-words leading-none m-0 p-0"
+                            className="text-lg font-semibold break-words leading-none m-0 p-0 block"
                             placeholder="Heading 3"
                         />
                     </div>
                 );
             case 'text':
                 return (
-                    <EditableText
-                        tagName="p"
-                        text={content.text}
-                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                        style={commonStyle}
-                        // 🌟 [수정] leading-relaxed(줄간격 넓게)를 제거하거나 leading-normal/none으로 변경
-                        className="whitespace-pre-wrap break-words leading-snug m-0 p-0"
-                        placeholder="텍스트를 입력하세요..."
-                    />
+                    <div className="h-full w-full flex flex-col justify-center">
+                        <EditableText
+                            tagName="p"
+                            text={content.text}
+                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                            style={commonStyle}
+                            // 🌟 [수정] leading-relaxed(줄간격 넓게)를 제거하거나 leading-normal/none으로 변경
+                            className="whitespace-pre-wrap break-words leading-snug m-0 p-0 block"
+                            placeholder="텍스트를 입력하세요..."
+                        />
+                    </div>
                 );
             case 'quote':
                 return (
-                    <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="border-l-4 pl-2 py-0 my-0 text-gray-600 italic bg-gray-50 rounded-r break-words">
+                    <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="h-full border-l-4 pl-1 py-0 my-0 text-gray-600 italic bg-gray-50 rounded-r break-words flex flex-col justify-center">
                         <EditableText
                             tagName="div"
                             text={content.text}
                             onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
                             style={{ ...commonStyle, fontStyle: 'italic' }} // Force italic visual
+                            className="leading-none m-0 p-0 block" // 🌟 [수정] h-full 제거됨에 따라 자연스럽게 content fit
                             placeholder="인용문을 입력하세요..."
                         />
                     </div>
                 );
             case 'book-info':
                 return <BookInfoWidget block={block} />;
+            case 'movie-ticket':
+                return <MovieTicketWidget block={block} onUpdateBlock={onUpdateBlock} />;
+            case 'link-bookmark':
+                return <LinkBookmarkWidget block={block} onUpdateBlock={onUpdateBlock} />;
             case 'mindmap': {
                 const content0 = (content || {}) as any;
-
                 const nodes = (content0.nodes || []) as Node[];
                 const edges = (content0.edges || []) as Edge[];
                 const selectedNodeId = (content0.selectedNodeId ?? null) as string | null;
@@ -975,7 +986,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             case 'divider': return <div className="w-full h-full py-2"><hr className="border-t border-gray-200" style={{ borderColor: styles.color }} /></div>;
             // --- 7. 리스트류 ---
             case 'bullet-list': return (
-                <ul style={commonStyle} className="w-full h-full list-disc list-outside ml-5 space-y-1 text-gray-800">
+                <ul style={commonStyle} className="w-full h-full list-disc list-outside ml-5 space-y-1 text-gray-800 flex flex-col justify-center">
                     {(content.items || []).map((it: string, i: number) => (
                         <li key={i} className="break-words pl-1">
                             <EditableText
@@ -984,6 +995,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                 onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
                                 style={commonStyle}
                                 placeholder={`항목 ${i + 1}`}
+                                className="block"
                             />
                         </li>
                     ))}
@@ -991,7 +1003,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             );
             case 'number-list':
                 return (
-                    <ol style={commonStyle} className="w-full h-full list-decimal list-outside ml-5 space-y-1 text-gray-800">
+                    <ol style={commonStyle} className="w-full h-full list-decimal list-outside ml-5 space-y-1 text-gray-800 flex flex-col justify-center">
                         {(content.items || []).map((it: string, i: number) => (
                             <li key={i} className="break-words pl-1">
                                 <EditableText
@@ -1000,11 +1012,14 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                     onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
                                     style={commonStyle}
                                     placeholder={`항목 ${i + 1}`}
+                                    className="block"
                                 />
                             </li>
                         ))}
                     </ol>
                 );
+            // --- 8. 인용문 (Quote) ---
+
             // --- 8. 토글 목록 ---
             case 'toggle-list':
                 return (
@@ -1034,24 +1049,27 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 const config = configMap[calloutType as keyof typeof configMap] || configMap.info;
 
                 return (
-                    <div className={`h-full w-full p-4 rounded-lg border flex gap-3 ${config.bg} ${config.border} break-words`}>
-                        <div className="flex-shrink-0 mt-0.5">{config.icon}</div>
-                        <div className="flex flex-col min-w-0 flex-1">
+                    // 🌟 [수정] h-full, items-center (아이콘/텍스트 수직 중앙 정렬)
+                    <div className={`h-full w-full p-1 rounded-lg border flex items-center gap-1 ${config.bg} ${config.border} break-words`}>
+                        <div className="flex-shrink-0">{config.icon}</div> {/* mt-0.5 제거 */}
+                        <div className="flex flex-col min-w-0 flex-1 justify-center"> {/* justify-center 추가 */}
                             {/* 제목 수정 */}
-                            <div className={`font-bold mb-1 ${config.text}`}>
+                            <div className={`font-bold mb-0 leading-none ${config.text}`}> {/* mb-0.5 제거, leading-none */}
                                 <EditableText
                                     tagName="span"
                                     text={content.title}
                                     onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
+                                    className="leading-none m-0 p-0 block" // 🌟 [수정]
                                     placeholder="제목 (선택)"
                                 />
                             </div>
                             {/* 내용 수정 */}
-                            <div className="text-gray-700 leading-relaxed text-sm">
+                            <div className="text-gray-700 leading-none text-sm"> {/* leading-tight -> leading-none */}
                                 <EditableText
                                     tagName="p"
                                     text={content.text}
                                     onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                                    className="leading-none m-0 p-0 block" // 🌟 [수정]
                                     placeholder="내용을 입력하세요..."
                                 />
                             </div>
@@ -1062,9 +1080,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             // 🌟 2. 형광펜 강조 (Highlight)
             case 'highlight':
                 return (
-                    <div style={commonStyle} className="h-full w-full leading-relaxed">
+                    <div style={commonStyle} className="h-full w-full leading-relaxed flex flex-col justify-center">
                         <span
-                            className="px-2 py-1 rounded box-decoration-clone"
+                            className="px-2 py-1 rounded box-decoration-clone block w-fit" // w-fit 추가하여 배경색이 텍스트만큼만
                             style={{ backgroundColor: styles.bgColor || '#fef08a' }} // 기본값 노랑
                         >
                             {content.text}
@@ -1246,7 +1264,12 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
 
                 return <UnitConverterWidget block={block} {...otherProps} />;
             case 'pdf-viewer':
-                return <PdfDropViewer />;
+                return (
+                    <PdfDropViewer
+                        content={content}
+                        onUpdate={(patch) => onUpdateBlock(block.id, { content: { ...content, ...patch } })}
+                    />
+                );
 
             // BlockRenderer.tsx (switch 내부에 추가)
             case 'flashcards': {
@@ -1385,7 +1408,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             }
             // 🌟 [NEW] case 추가
             case 'movie-ticket':
-                return <MovieTicketWidget block={block} />;
+                return <MovieTicketWidget block={block} onUpdateBlock={onUpdateBlock} />;
+            case 'link-bookmark':
+                return <LinkBookmarkWidget block={block} onUpdateBlock={onUpdateBlock} />;
             // --- [NEW] 데이터베이스 위젯 (심플 테이블 버전) ---
             case 'database': {
                 // 기본값: 간단한 표 데이터
