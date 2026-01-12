@@ -341,7 +341,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                 >
                     <div
                         ref={contentRef}
-                        className="w-[800px] min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone"
+                        className={`w-[800px] ${viewMode === 'editor' ? 'min-h-[1000px]' : ''} relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone`}
                         style={{
                             backgroundColor: '#ffffff',
                             ...paperStyles
@@ -389,7 +389,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             </div>
                         </div>
 
-                        <div className={`flex-1 relative pb-40 ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>
+                        <div className={`flex-1 relative ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>
 
                             <DragDropContext onDragEnd={onDragEnd}>
                                 <Droppable droppableId="content-blocks-list">

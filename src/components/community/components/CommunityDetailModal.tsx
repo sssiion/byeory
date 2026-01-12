@@ -29,7 +29,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     onLikeToggle,
     initialView = 'content'
 }) => {
-    // Detailed Post Data
     const [postDetail, setPostDetail] = useState<CommunityResponse | null>(null);
 
     const [likeState, setLikeState] = useState({
@@ -37,7 +36,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         count: data.likeCount
     });
 
-    // Messages State
     const [messages, setMessages] = useState<CommunityMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,11 +43,9 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const commentsRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    // Edit State
     const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
     const [editContent, setEditContent] = useState('');
 
-    // Confirmation Modal State
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
         title: string;
@@ -68,20 +64,18 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
     };
 
-    // Reset state when data changes
     useEffect(() => {
         setLikeState({
             isLiked: data.isLiked,
             count: data.likeCount
         });
-        setPostDetail(null); // Reset detail to trigger loading state
+        setPostDetail(null);
         if (isOpen) {
             fetchMessages();
             fetchDetail();
         }
     }, [data, isOpen]);
 
-    // Scroll to comments if initialView is 'comments'
     useEffect(() => {
         if (isOpen && initialView === 'comments' && commentsRef.current) {
             setTimeout(() => {
@@ -96,7 +90,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             const detail = await getCommunityDetail(data.postId, currentUserId);
             if (detail) {
                 setPostDetail(detail);
-                // ✨ Sync like state with fresh detail data
                 setLikeState({
                     isLiked: detail.isLiked,
                     count: detail.likeCount
@@ -110,7 +103,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const fetchMessages = async () => {
         try {
             const msgs = await getCommunityMessages(data.postId);
-            // Calculate isOwner based on currentUserId
             const processedMsgs = msgs.map(m => ({
                 ...m,
                 isOwner: currentUserId ? (Number(m.userId) === Number(currentUserId)) : false
@@ -128,7 +120,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         setIsSubmitting(true);
         try {
             const created = await createCommunityMessage(data.postId, newMessage, currentUserId);
-            // Optimistically add with isOwner: true
             setMessages(prev => [...prev, { ...created, isOwner: true }]);
             setNewMessage('');
             setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -151,7 +142,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         if (!currentUserId) return;
 
         const executeDelete = async () => {
-            // Optimistic Delete
             const backup = [...messages];
             setMessages(prev => prev.filter(m => m.messageId !== messageId));
             closeConfirmModal();
@@ -166,7 +156,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                     type: 'danger',
                     singleButton: true,
                     onConfirm: () => {
-                        setMessages(backup); // Revert
+                        setMessages(backup);
                         closeConfirmModal();
                     }
                 });
@@ -185,7 +175,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
     const handleUpdateMessage = async (messageId: number) => {
         if (!currentUserId || !editContent.trim()) return;
 
-        // Optimistic Update
         const backup = [...messages];
         setMessages(prev => prev.map(m =>
             m.messageId === messageId ? { ...m, content: editContent } : m
@@ -202,7 +191,7 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                 type: 'danger',
                 singleButton: true,
                 onConfirm: () => {
-                    setMessages(backup); // Revert
+                    setMessages(backup);
                     setEditingMessageId(messageId);
                     closeConfirmModal();
                 }
@@ -224,7 +213,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
             return;
         }
 
-        // Optimistic Update
         const newIsLiked = !likeState.isLiked;
         const newCount = newIsLiked ? likeState.count + 1 : likeState.count - 1;
 
@@ -234,7 +222,6 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
         try {
             await toggleCommunityLike(data.postId, currentUserId);
         } catch (error) {
-            // Revert on error
             setLikeState({ isLiked: !newIsLiked, count: likeState.count });
             onLikeToggle(!newIsLiked);
             console.error("Failed to toggle like:", error);
@@ -245,13 +232,11 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            {/* Modal Content */}
             <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col theme-bg-modal rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                 {/* Header */}
                 <div className="flex-shrink-0 flex items-center justify-between p-6 border-b theme-border theme-bg-header backdrop-blur-md text-white z-10">
@@ -267,9 +252,9 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                 </div>
 
                 {/* Body - Scrollable */}
-                <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
-                    {/* Meta Info */}
-                    <div className="flex items-center justify-between">
+                <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                    <div className="space-y-8">
+                        {/* Meta Info */}
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-white font-bold text-lg shadow-inner">
                                 {data.writerNickname.charAt(0)}
@@ -281,151 +266,150 @@ const CommunityDetailModal: React.FC<CommunityDetailModalProps> = ({
                                 </p>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Content Area - Detailed View */}
-                    <div className="flex-1 min-h-[400px] relative rounded-xl overflow-hidden flex flex-col items-center">
-                        {postDetail ? (
-                            <div className="w-full h-full transform scale-95 origin-top">
-                                <EditorCanvas
-                                    title={postDetail.title || data.title}
-                                    setTitle={() => { }}
-                                    titleStyles={postDetail.titleStyles || data.titleStyles || {}}
-                                    viewMode="read"
-                                    paperStyles={postDetail.styles || data.styles || {}}
-                                    blocks={postDetail.blocks || []}
-                                    setBlocks={() => { }}
-                                    stickers={postDetail.stickers || []}
-                                    floatingTexts={postDetail.floatingTexts || []}
-                                    floatingImages={postDetail.floatingImages || []}
-                                    selectedId={null}
-                                    onSelect={() => { }}
-                                    onUpdate={() => { }}
-                                    onDelete={() => { }}
-                                    onBlockImageUpload={() => { }}
-                                    onBackgroundClick={() => { }}
+                        {/* Content & Tags Section - 리팩토링됨: 불필요한 레이아웃 wrapper 제거 */}
+                        <div>
+                            {/* Editor Area */}
+                            <div className="w-full min-h-[300px] rounded-xl overflow-hidden">
+                                {postDetail ? (
+                                    <EditorCanvas
+                                        title={postDetail.title || data.title}
+                                        setTitle={() => { }}
+                                        titleStyles={postDetail.titleStyles || data.titleStyles || {}}
+                                        viewMode="read"
+                                        paperStyles={postDetail.styles || data.styles || {}}
+                                        blocks={postDetail.blocks || []}
+                                        setBlocks={() => { }}
+                                        stickers={postDetail.stickers || []}
+                                        floatingTexts={postDetail.floatingTexts || []}
+                                        floatingImages={postDetail.floatingImages || []}
+                                        selectedId={null}
+                                        onSelect={() => { }}
+                                        onUpdate={() => { }}
+                                        onDelete={() => { }}
+                                        onBlockImageUpload={() => { }}
+                                        onBackgroundClick={() => { }}
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center w-full h-[300px] text-gray-400 bg-black/5 dark:bg-white/5 animate-pulse rounded-xl">
+                                        게시글 불러오는 중...
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Tags - Editor 바로 아래 자연스럽게 위치 */}
+                            {(postDetail?.tags || data.tags) && (postDetail?.tags || data.tags)!.length > 0 && (
+                                <div className="w-full flex flex-wrap gap-2 mt-6">
+                                    {(postDetail?.tags || data.tags)!.map((tag, idx) => (
+                                        <span key={idx} className="px-4 py-1.5 rounded-full theme-bg-card theme-border border text-sm font-medium theme-text-secondary shadow-sm hover:shadow-md transition-all duration-300 cursor-default select-none">
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-4 py-4 border-t theme-border">
+                            <button
+                                onClick={handleLikeClick}
+                                className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 font-medium border ${likeState.isLiked
+                                    ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
+                                    : 'theme-bg-card theme-border theme-text-primary hover:bg-black/5'
+                                    }`}
+                            >
+                                <Heart
+                                    size={20}
+                                    className={likeState.isLiked ? 'fill-current' : ''}
                                 />
+                                <span>좋아요 {likeState.count}</span>
+                            </button>
+
+                            <div className="flex items-center gap-2 px-4 py-2 theme-text-secondary">
+                                <Eye size={20} />
+                                <span>{data.viewCount} 읽음</span>
                             </div>
-                        ) : (
-                            <div className="flex items-center justify-center w-full h-64 text-gray-400">
-                                <div className="animate-pulse">게시글 불러오는 중...</div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Tags */}
-                    {(postDetail?.tags || data.tags) && (postDetail?.tags || data.tags)!.length > 0 && (
-                        <div className="w-full flex flex-wrap gap-2 px-1 mt-4">
-                            {(postDetail?.tags || data.tags)!.map((tag, idx) => (
-                                <span key={idx} className="px-3 py-1 rounded-full bg-[var(--bg-secondary)] text-[var(--text-secondary)] text-sm font-medium hover:text-indigo-500 transition-colors cursor-default">
-                                    #{tag}
-                                </span>
-                            ))}
                         </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-4 py-4 border-t theme-border mt-4">
-                        <button
-                            onClick={handleLikeClick}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-300 font-medium border ${likeState.isLiked
-                                ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600 dark:bg-red-500 dark:border-red-500 dark:text-white'
-                                : 'theme-bg-card theme-border theme-text-primary hover:bg-black/5 dark:hover:bg-white/10'
-                                }`}
-                        >
-                            <Heart
-                                size={20}
-                                className={likeState.isLiked ? 'fill-current' : ''}
-                            />
-                            <span>좋아요 {likeState.count}</span>
-                        </button>
+                        {/* Comments Section */}
+                        <div ref={commentsRef} className="space-y-6 pt-4 border-t theme-border">
+                            <h3 className="text-lg font-bold theme-text-primary flex items-center gap-2">
+                                댓글 <span className="text-indigo-500">{messages.length}</span>
+                            </h3>
 
-                        <div className="flex items-center gap-2 px-4 py-2 theme-text-secondary">
-                            <Eye size={20} />
-                            <span>{data.viewCount} 읽음</span>
-                        </div>
-                    </div>
+                            <div className="space-y-4">
+                                {messages.length === 0 ? (
+                                    <p className="text-center text-gray-400 py-8 text-sm">첫 댓글을 남겨보세요!</p>
+                                ) : (
+                                    messages.map((msg, index) => (
+                                        <div key={`comment-${msg.messageId || 'none'}-${index}`} className="group flex gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+                                            {/* (댓글 렌더링 로직 유지) */}
+                                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300">
+                                                {(msg.nickname || "?").charAt(0)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-baseline justify-between mb-1">
+                                                    <span className="font-bold text-sm theme-text-primary">{msg.nickname || "알 수 없음"}</span>
+                                                    <span className="text-xs text-gray-400">
+                                                        {new Date(msg.createdAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
 
-                    {/* Comments Section */}
-                    <div ref={commentsRef} className="space-y-6 pt-4 border-t theme-border">
-                        <h3 className="text-lg font-bold theme-text-primary flex items-center gap-2">
-                            댓글 <span className="text-indigo-500">{messages.length}</span>
-                        </h3>
-
-                        <div className="space-y-4">
-                            {messages.length === 0 ? (
-                                <p className="text-center text-gray-400 py-8 text-sm">첫 댓글을 남겨보세요!</p>
-                            ) : (
-                                messages.map((msg, index) => (
-                                    <div key={`comment-${msg.messageId || 'none'}-${index}`} className="group flex gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-300">
-                                            {(msg.nickname || "?").charAt(0)}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-baseline justify-between mb-1">
-                                                <span className="font-bold text-sm theme-text-primary">{msg.nickname || "알 수 없음"}</span>
-                                                <span className="text-xs text-gray-400">
-                                                    {new Date(msg.createdAt).toLocaleDateString()}
-                                                </span>
+                                                {editingMessageId === msg.messageId ? (
+                                                    <div className="mt-1">
+                                                        <textarea
+                                                            value={editContent}
+                                                            onChange={(e) => setEditContent(e.target.value)}
+                                                            className="w-full p-2 text-sm rounded-lg border theme-border bg-white dark:bg-black/20 theme-text-primary focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                                            rows={2}
+                                                            autoFocus
+                                                        />
+                                                        <div className="flex justify-end gap-2 mt-2">
+                                                            <button
+                                                                onClick={() => setEditingMessageId(null)}
+                                                                className="px-3 py-1 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 theme-text-secondary"
+                                                            >
+                                                                취소
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleUpdateMessage(msg.messageId)}
+                                                                className="px-3 py-1 text-xs rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                                                            >
+                                                                수정 완료
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed whitespace-pre-wrap">
+                                                        {msg.content}
+                                                    </p>
+                                                )}
                                             </div>
 
-                                            {editingMessageId === msg.messageId ? (
-                                                <div className="mt-1">
-                                                    <textarea
-                                                        value={editContent}
-                                                        onChange={(e) => setEditContent(e.target.value)}
-                                                        className="w-full p-2 text-sm rounded-lg border theme-border bg-white dark:bg-black/20 theme-text-primary focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                                                        rows={2}
-                                                        autoFocus
-                                                    />
-                                                    <div className="flex justify-end gap-2 mt-2">
-                                                        <button
-                                                            onClick={() => setEditingMessageId(null)}
-                                                            className="px-3 py-1 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 theme-text-secondary"
-                                                        >
-                                                            취소
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleUpdateMessage(msg.messageId)}
-                                                            className="px-3 py-1 text-xs rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
-                                                        >
-                                                            수정 완료
-                                                        </button>
-                                                    </div>
+                                            {msg.isOwner && !editingMessageId && (
+                                                <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => {
+                                                            setEditingMessageId(msg.messageId);
+                                                            setEditContent(msg.content);
+                                                        }}
+                                                        className="p-1.5 text-gray-400 hover:text-indigo-500 transition-colors"
+                                                    >
+                                                        <PenLine size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteMessage(msg.messageId)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
                                                 </div>
-                                            ) : (
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed whitespace-pre-wrap">
-                                                    {msg.content}
-                                                </p>
                                             )}
                                         </div>
-
-                                        {/* Actions for Owner */}
-                                        {msg.isOwner && !editingMessageId && (
-                                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => {
-                                                        setEditingMessageId(msg.messageId);
-                                                        setEditContent(msg.content);
-                                                    }}
-                                                    className="p-1.5 text-gray-400 hover:text-indigo-500 transition-colors"
-                                                    title="수정"
-                                                >
-                                                    <PenLine size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteMessage(msg.messageId)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                                                    title="삭제"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                            <div ref={messagesEndRef} />
+                                    ))
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
                         </div>
                     </div>
                 </div>
