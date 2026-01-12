@@ -10,16 +10,16 @@ const BASE_URL = "http://localhost:8080";
 const API_BASE_URL = `${BASE_URL}/api/posts`;
 const API_ALBUM_URL = `${BASE_URL}/api/albums`;
 const API_ROOM_URL = `${BASE_URL}/api/rooms`;
-export const API_TEMPLATE_URL = `${BASE_URL}/api/templates`; // ✨ Fixed URL matching Controller
+export const API_TEMPLATE_URL = `${BASE_URL}/api/templates`; // Fixed URL matching Controller
 
 // ... existing code ...
 
-// ✨ Helper to clean ID (remove 'room-' prefix)
+// Helper to clean ID (remove 'room-' prefix)
 export const cleanId = (id: string | number): string => {
   return String(id).replace(/^room-/, "");
 };
 
-// ✨ Singleton Pattern for Supabase Client
+// Singleton Pattern for Supabase Client
 const getSupabaseClient = () => {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
 
@@ -205,8 +205,8 @@ export const fetchPostsFromApi = async () => {
         y: sanitizeCoordinate(s.y),
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
-        opacity: s.opacity || 1, // ✨ Fix invisible items
-        // ✨ Widget Persistence Decoding
+        opacity: s.opacity || 1, // Fix invisible items
+        // Widget Persistence Decoding
         widgetType: s.url && s.url.startsWith('widget://')
           ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
           : undefined,
@@ -220,7 +220,7 @@ export const fetchPostsFromApi = async () => {
         y: sanitizeCoordinate(t.y),
         w: sanitizeCoordinate(t.w),
         h: sanitizeCoordinate(t.h),
-        opacity: t.opacity || 1, // ✨ Fix invisible items
+        opacity: t.opacity || 1, // Fix invisible items
       })),
       floatingImages: (p.floatingImages || []).map((i: any) => ({
         ...i,
@@ -228,7 +228,7 @@ export const fetchPostsFromApi = async () => {
         y: sanitizeCoordinate(i.y),
         w: sanitizeCoordinate(i.w),
         h: sanitizeCoordinate(i.h),
-        opacity: i.opacity || 1, // ✨ Fix invisible items
+        opacity: i.opacity || 1, // Fix invisible items
       })),
       titleStyles: p.titleStyles || {},
       albumIds: (p.targetAlbumIds || []).map((t: any) => {
@@ -238,7 +238,7 @@ export const fetchPostsFromApi = async () => {
       isFavorite: p.isFavorite || false,
       mode: p.mode || "AUTO",
       isPublic: p.isPublic ?? true,
-      styles: p.styles || {}, // ✨ Paper Styles
+      styles: p.styles || {}, // Paper Styles
       visibility: p.isPublic === false ? "private" : "public",
     }));
   } catch (error) {
@@ -261,7 +261,7 @@ export const savePostToApi = async (
       titleStyles: postData.titleStyles || {},
       blocks: postData.blocks || [],
       stickers: (postData.stickers || []).map((s: any) => {
-        // ✨ Widget Persistence Encoding
+        // Widget Persistence Encoding
         if (s.widgetType) {
           return {
             ...s,
@@ -279,7 +279,7 @@ export const savePostToApi = async (
         .filter((n: number) => !isNaN(n)),
       isFavorite: postData.isFavorite || false,
       isPublic: postData.isPublic ?? true,
-      styles: postData.styles, // ✨ Paper Styles
+      styles: postData.styles, // Paper Styles
     };
 
     const response = await fetch(url, {
@@ -315,8 +315,8 @@ export const savePostToApi = async (
         y: sanitizeCoordinate(s.y),
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
-        opacity: s.opacity || 1, // ✨ Fix invisible items
-        // ✨ Widget Persistence Decoding
+        opacity: s.opacity || 1, // Fix invisible items
+        // Widget Persistence Decoding
         widgetType: s.url && s.url.startsWith('widget://')
           ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
           : undefined,
@@ -347,7 +347,7 @@ export const savePostToApi = async (
       isFavorite: savedPost.isFavorite || false,
       mode: savedPost.mode || "AUTO",
       isPublic: savedPost.isPublic ?? true,
-      styles: savedPost.styles || {}, // ✨ Paper Styles
+      styles: savedPost.styles || {}, // Paper Styles
       visibility: savedPost.isPublic === false ? "private" : "public",
     };
   } catch (error) {
@@ -404,7 +404,7 @@ export const fetchAlbumsFromApi = async () => {
   }
 };
 
-// ✨ 참여한 모임방 목록 조회 (GET) - 내 리스트
+// 참여한 모임방 목록 조회 (GET) - 내 리스트
 export const fetchRoomsFromApi = async () => {
   try {
     const response = await fetch(`${API_ROOM_URL}/my`, {
@@ -414,7 +414,7 @@ export const fetchRoomsFromApi = async () => {
     const rooms = await response.json();
     return rooms.map((r: any) => ({
       ...r,
-      id: String(r.id),
+      id: `room-${r.id}`, // ID Prepend to prevent collision
       parentId: null,
       tag:
         r.tag ||
@@ -435,7 +435,7 @@ export const fetchRoomsFromApi = async () => {
   }
 };
 
-// ✨ 모임방 입장 (POST)
+// 모임방 입장 (POST)
 export const joinRoomApi = async (roomId: string, password?: string) => {
   try {
     const numericId = cleanId(roomId);
@@ -471,7 +471,7 @@ export const joinRoomApi = async (roomId: string, password?: string) => {
   }
 };
 
-// ✨ 모임방 나가기 (DELETE) - 일반 멤버용
+// 모임방 나가기 (DELETE) - 일반 멤버용
 export const leaveRoomApi = async (roomId: string) => {
   try {
     const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}/leave`, {
@@ -489,7 +489,7 @@ export const leaveRoomApi = async (roomId: string) => {
   }
 };
 
-// ✨ 멤버 강퇴 (DELETE) - 방장용
+// 멤버 강퇴 (DELETE) - 방장용
 export const kickMemberApi = async (roomId: string, userId: string) => {
   try {
     const response = await fetch(
@@ -509,7 +509,7 @@ export const kickMemberApi = async (roomId: string, userId: string) => {
   }
 };
 
-// ✨ 멤버 목록 조회 (GET)
+// 멤버 목록 조회 (GET)
 export const fetchRoomMembersApi = async (roomId: string) => {
   try {
     const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}/members`, {
@@ -523,7 +523,7 @@ export const fetchRoomMembersApi = async (roomId: string) => {
   }
 };
 
-// ✨ 모임방 삭제 (DELETE)
+// 모임방 삭제 (DELETE)
 export const deleteRoomApi = async (roomId: string) => {
   try {
     const response = await fetch(`${API_ROOM_URL}/${cleanId(roomId)}`, {
@@ -561,7 +561,7 @@ export const fetchAlbumApi = async (id: string | number) => {
   }
 };
 
-// ✨ 모임방 단건 조회 (GET)
+// 모임방 단건 조회 (GET)
 export const fetchRoomApi = async (id: string | number) => {
   try {
     const response = await fetch(`${API_ROOM_URL}/${cleanId(id)}`, {
@@ -571,7 +571,7 @@ export const fetchRoomApi = async (id: string | number) => {
     const room = await response.json();
     return {
       ...room,
-      id: String(room.id),
+      id: `room-${room.id}`,
       parentId: null,
       roomConfig: {
         description: room.description,
@@ -607,7 +607,7 @@ export const createAlbumApi = async (albumData: any) => {
   }
 };
 
-// ✨ 모임방 생성 (POST)
+// 모임방 생성 (POST)
 export const createRoomApi = async (roomData: any) => {
   try {
     const response = await fetch(`${API_ROOM_URL}`, {
@@ -623,7 +623,7 @@ export const createRoomApi = async (roomData: any) => {
   }
 };
 
-// ✨ 모임방 수정 (PUT)
+// 모임방 수정 (PUT)
 export const updateRoomApi = async (id: string | number, roomData: any) => {
   try {
     const response = await fetch(`${API_ROOM_URL}/${cleanId(id)}`, {
@@ -720,7 +720,7 @@ export const fetchAlbumContents = async (
         };
       });
 
-    // ✨ Add "Unclassified" (미분류) Folder if in All View
+    // Add "Unclassified" (미분류) Folder if in All View
     if (targetId === "__all__") {
       const untaggedCount = localPosts.filter(
         (p: any) => !p.tags || p.tags.length === 0
@@ -798,7 +798,7 @@ export const fetchAlbumContents = async (
               w: sanitizeCoordinate(s.w),
               h: sanitizeCoordinate(s.h),
               opacity: s.opacity || 1,
-              // ✨ Widget Persistence Decoding for Album View
+              // Widget Persistence Decoding for Album View
               widgetType: s.url && s.url.startsWith('widget://')
                 ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
                 : undefined,
@@ -829,7 +829,7 @@ export const fetchAlbumContents = async (
                   w: sanitizeCoordinate(s.w),
                   h: sanitizeCoordinate(s.h),
                   opacity: s.opacity || 1,
-                  // ✨ Widget Persistence Decoding for Mixed View
+                  // Widget Persistence Decoding for Mixed View
                   widgetType: s.url && s.url.startsWith('widget://')
                     ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
                     : undefined,
@@ -877,7 +877,7 @@ export const fetchAlbumContents = async (
                 w: sanitizeCoordinate(s.w),
                 h: sanitizeCoordinate(s.h),
                 opacity: s.opacity || 1,
-                // ✨ Widget Persistence Decoding for Folder View
+                // Widget Persistence Decoding for Folder View
                 widgetType: s.url && s.url.startsWith('widget://')
                   ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
                   : undefined,
@@ -986,7 +986,7 @@ export const manageAlbumItem = async (
   return false;
 };
 
-// ✨ 나만의 템플릿 생성 (POST)
+// 나만의 템플릿 생성 (POST)
 export const createPostTemplateApi = async (templateData: any) => {
   try {
     const response = await fetch(`${API_TEMPLATE_URL}`, {
@@ -995,7 +995,7 @@ export const createPostTemplateApi = async (templateData: any) => {
       body: JSON.stringify({
         ...templateData,
         stickers: (templateData.stickers || []).map((s: any) => {
-          // ✨ Widget Persistence Encoding for Templates
+          // Widget Persistence Encoding for Templates
           if (s.widgetType) {
             return {
               ...s,
@@ -1014,7 +1014,7 @@ export const createPostTemplateApi = async (templateData: any) => {
   }
 };
 
-// ✨ 템플릿 상세 조회 (GET)
+// 템플릿 상세 조회 (GET)
 export const fetchPostTemplateById = async (templateId: string | number) => {
   try {
     const response = await fetch(`${API_TEMPLATE_URL}/${templateId}`, {
@@ -1031,7 +1031,7 @@ export const fetchPostTemplateById = async (templateId: string | number) => {
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
         opacity: s.opacity || 1,
-        // ✨ Widget Persistence Decoding for Templates
+        // Widget Persistence Decoding for Templates
         widgetType: s.url && s.url.startsWith('widget://')
           ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
           : undefined,
@@ -1060,7 +1060,7 @@ export const fetchPostTemplateById = async (templateId: string | number) => {
   }
 };
 
-// ✨ 내 템플릿 목록 조회 (GET)
+// 내 템플릿 목록 조회 (GET)
 export const fetchMyPostTemplatesApi = async () => {
   try {
     const response = await fetch(`${API_TEMPLATE_URL}/my`, {
@@ -1077,8 +1077,8 @@ export const fetchMyPostTemplatesApi = async () => {
         y: sanitizeCoordinate(s.y),
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
-        opacity: s.opacity || 1, // ✨ Fix invisible items
-        // ✨ Widget Persistence Decoding for Templates
+        opacity: s.opacity || 1, // Fix invisible items
+        // Widget Persistence Decoding for Templates
         widgetType: s.url && s.url.startsWith('widget://')
           ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
           : undefined,
@@ -1107,7 +1107,7 @@ export const fetchMyPostTemplatesApi = async () => {
   }
 };
 
-// ✨ 템플릿 삭제 (DELETE)
+// 템플릿 삭제 (DELETE)
 export const deletePostTemplateApi = async (id: number) => {
   try {
     const response = await fetch(`${API_TEMPLATE_URL}/${id}`, {
