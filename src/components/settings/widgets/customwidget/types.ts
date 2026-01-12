@@ -30,6 +30,16 @@ export interface WidgetBlockStyle {
     underline?: boolean;
     strikethrough?: boolean; // New
     columnCount?: 2 | 3 | 4; // 다단 컬럼용
+
+    // 🌟 [Phase 1] Advanced Styling
+    borderRadius?: number;      // px
+    borderWidth?: number;       // px
+    borderColor?: string;       // hex
+    borderStyle?: 'solid' | 'dashed' | 'dotted' | 'none';
+    padding?: number;           // px
+    backgroundImage?: string;   // url
+    boxShadow?: string;         // css string
+    opacity?: number;           // 0.0 ~ 1.0
 }
 export type MindmapNodeData = { label: string };
 
@@ -49,14 +59,7 @@ export type MindmapContent = {
     selectedNodeId?: string | null;
 };
 // 블록 데이터 구조
-export interface WidgetBlock {
-    id: string;
-    type: BlockType;
-    layout?: BlockLayout;
-    content: any; // 텍스트, 리스트 아이템, 수식 등
-    styles: WidgetBlockStyle;
-    action?: string; // 버튼 등 액션
-}
+// Old WidgetBlock definition removed in favor of normalized structure below
 export type Flashcard = {
     id: string;
     front: string;
@@ -77,4 +80,21 @@ export type ContainerLocation = {
     blockId: string;
     colIndex: number;
 } | null;
+
+// ✨ Normalized State Structure (Notion-like)
+// ♻️ Reverted to Recursive Structure for Grid/Column Layout Compatibility
+export interface WidgetBlock {
+    id: string;
+    type: BlockType;
+    layout?: BlockLayout; // Required for 'columns' type
+    content: any; // 텍스트, 리스트 아이템, 수식 등
+    styles: WidgetBlockStyle;
+    action?: string; // 버튼 등 액션
+
+    // Optional compatibility for flat structure if we mix them later
+    children?: string[];
+}
+
+// Keep these for future hybrid use, but primary is recursive for now
+export type BlockMap = Record<string, WidgetBlock>;
 

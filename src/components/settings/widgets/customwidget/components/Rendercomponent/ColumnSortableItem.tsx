@@ -21,15 +21,15 @@ interface ColumnSortableItemProps {
 
 const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
 
-                                                                   child,
-                                                                   columnContainerId,
-                                                                   selectedBlockId,
-                                                                   onSelectBlock,
-                                                                   onRemoveBlock,
-                                                                   activeContainer,
-                                                                   onSetActiveContainer,
-                                                                   onUpdateBlock
-                                                               }) => {
+    child,
+    columnContainerId,
+    selectedBlockId,
+    onSelectBlock,
+    onRemoveBlock,
+    activeContainer,
+    onSetActiveContainer,
+    onUpdateBlock
+}) => {
     // 2️⃣ useSortable 훅 사용
     const {
         attributes,
@@ -61,11 +61,11 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
                 onSelectBlock(child.id);
             }}
             className={`
-                relative group rounded border bg-white p-2 flex gap-2 transition-none w-full
+                relative group rounded border flex transition-none w-full
                 ${selectedBlockId === child.id
-                ? 'border-indigo-500 ring-1 ring-indigo-200'
-                : 'border-gray-200'
-            }
+                    ? 'bg-black/5 ring-1 ring-gray-400 border-transparent'
+                    : 'border-transparent hover:border-gray-200 hover:bg-black/5'
+                }
                 ${isDragging ? 'bg-indigo-50 border-dashed' : ''}
             `}
             {...attributes}

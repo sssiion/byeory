@@ -40,7 +40,12 @@ export const CustomDragLayer = () => {
 
     // 2. item.type(위젯 타입)을 이용해 맵에서 컴포넌트를 찾습니다.
     // (드래그 아이템 구조에 따라 item.type 혹은 item.widgetType 일 수 있음)
-    const WidgetComponent = WIDGET_COMPONENT_MAP[item.type];
+    let WidgetComponent = WIDGET_COMPONENT_MAP[item.type];
+
+    // 🌟 커스텀 위젯인 경우 (custom-123 등) 맵에 없을 수 있으므로 custom-block으로 대체
+    if (!WidgetComponent && (item.type === 'custom-block' || String(item.type).startsWith('custom-'))) {
+        WidgetComponent = WIDGET_COMPONENT_MAP['custom-block'];
+    }
 
     return (
         <div style={layerStyles}>
@@ -57,10 +62,11 @@ export const CustomDragLayer = () => {
                             <span className="font-bold theme-text-primary text-lg">{item.label}</span>
                         </div>
                     ) : WidgetComponent ? (
-                        /* 드래그 중인 미리보기는 보통 스타일을 좀 다르게 주거나 그대로 보여줍니다 */
+                        /* 드래그 중인 미리보기 */
                         <div style={{
-                            width: item.initialWidth || item.w * 100, // 캡처된 크기 사용, 없으면 기존 로직 폴백
-                            height: item.initialHeight || item.h * 100
+                            // 🌟 캡쳐된 크기(initialWidth)가 있으면 사용하고, 없으면 그리드 단위(w * 25vw or pixel)로 계산
+                            width: item.initialWidth ?? (item.w * (window.innerWidth < 768 ? window.innerWidth / 2 : 200)),
+                            height: item.initialHeight ?? (item.h * (window.innerWidth < 768 ? window.innerWidth / 2 : 200))
                         }}>
                             <WidgetComponent {...item.props} />
                         </div>

@@ -63,7 +63,14 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
 
     // 카테고리 순서 정의
     const CATEGORY_ORDER = [
+<<<<<<< Updated upstream
         'My Saved', // 커스텀 위젯이 최상단 (Utility 위)
+=======
+        'My Saved', // 🌟 커스텀 위젯 우선 표시
+        'System',
+        'Data & Logic',
+        'Diary & Emotion',
+>>>>>>> Stashed changes
         'Utility',
         'Diary & Emotion',
         'Interactive',
@@ -204,6 +211,7 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
                     const displayName = isCustomWidgetSection ? "커스텀 위젯" : category;
 
                     return (
+<<<<<<< Updated upstream
                         <div key={category} className="bg-[var(--bg-card-secondary)] rounded-2xl border border-[var(--border-color)]">
                             <button
                                 onClick={() => {
@@ -218,6 +226,34 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
                                         {categoryWidgets.length}
                                     </span>
                                 </h2>
+=======
+                        <div key={category} className="flex flex-col gap-3">
+                            <h2 className="text-sm font-bold text-[var(--accent-color)] uppercase tracking-wider px-1">
+                                {category}
+                            </h2>
+                            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                                {categoryWidgets.map((widget) => (
+                                    <div
+                                        key={widget.widgetType}
+                                        className="border border-[var(--border-color)] rounded-xl p-4 cursor-pointer hover:bg-[var(--bg-card-secondary)] transition-all hover:scale-[1.02] active:scale-95 bg-[var(--bg-card)] shadow-sm group"
+                                        onClick={() => {
+                                            // 🌟 [Fix] 커스텀 위젯은 MainPage의 레지스트리 동기화 문제(stale)를 방지하기 위해 객체 자체를 전달
+                                            if (!widget.isSystem) {
+                                                onSelect({
+                                                    type: widget.defaultProps?.type || 'custom-block',
+                                                    defaultSize: widget.defaultSize,
+                                                    content: widget.defaultProps?.content,
+                                                    styles: widget.defaultProps?.styles,
+                                                    name: widget.label
+                                                } as any);
+                                            } else {
+                                                onSelect(widget.widgetType);
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-lg text-[var(--text-primary)]">{widget.label}</h3>
+>>>>>>> Stashed changes
 
                                 <div className="flex items-center gap-3">
                                     {isCustomWidgetSection && onCreate && (

@@ -9,7 +9,7 @@ import LeftSidebar from './components/LeftSidebar';
 import RightSidebar from './components/RightSidebar';
 import Canvas from './components/Canvas';
 import type { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
-import { saveWidget, updateWidget } from "./widgetApi.ts";
+import { saveWidget, updateWidget } from "./widgetApi";
 
 interface Props {
     onExit: () => void;
@@ -99,21 +99,37 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
     const remainingCapacity = currentSize.capacity - usedCapacity;
 
     // --- Handlers ---
-    const addBlock = (type: BlockType) => {
+    const addBlock = (type: BlockType, template?: WidgetBlock) => {
+        // IMPROVEMENT: Removed "Not enough space" alert to be less annoying, or increase capacity?
+        // For now, keeping original logic as requested but maybe we can increase constants later.
         const cost = BLOCK_COSTS[type] || 1;
-        if (cost > remainingCapacity) { alert("공간 부족!"); return; }
+        if (cost > remainingCapacity) { alert("공간 부족! (2x2는 작습니다)"); return; }
 
         const newBlock: WidgetBlock = {
-            id: `blk - ${Date.now()} -${Math.random().toString(36).substr(2, 5)} `,
+            id: `blk-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             type,
-            content: getDefaultContent(type),
-            styles: { color: '#1e293b', align: 'left', fontSize: 14 }
+            content: template ? JSON.parse(JSON.stringify(template.content)) : getDefaultContent(type),
+            styles: template ? { ...template.styles } : { color: '#1e293b', align: 'left', fontSize: 14 }
         };
+
+        // 템플릿 사용 시 ID 재귀적 재생성 (복합 블록인 경우 내부 ID도 겹치지 않게)
+        if (template && template.type === 'custom-block' && newBlock.content.children) {
+            const regenerateIds = (blocks: WidgetBlock[]): WidgetBlock[] => {
+                return blocks.map(b => ({
+                    ...b,
+                    id: `blk-${Date.now()}-${Math.random().toString(36).substr(2, 7)}`,
+                    content: b.type === 'columns' && b.content.layout
+                        ? { ...b.content, layout: b.content.layout.map((col: any) => regenerateIds(col)) }
+                        : (b.type === 'custom-block' && b.content.children ? { ...b.content, children: regenerateIds(b.content.children) } : b.content)
+                }));
+            };
+            newBlock.content.children = regenerateIds(newBlock.content.children);
+        }
 
         if (activeContainer) {
             setBlocks(prev => {
                 const copy = JSON.parse(JSON.stringify(prev));
-                const targetListId = `COL - ${activeContainer.blockId} -${activeContainer.colIndex} `;
+                const targetListId = `COL-${activeContainer.blockId}-${activeContainer.colIndex}`;
                 const targetList = getListFromId(targetListId, copy);
                 if (targetList) targetList.unshift(newBlock);
                 else copy.unshift(newBlock);
@@ -183,7 +199,18 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
             if (oldIndex === -1) return prev;
 
             const [moved] = sourceList.splice(oldIndex, 1);
-            destList.push(moved);
+
+            // 🌟 [수정] 단순히 push하는 대신, over의 위치를 찾아서 해당 인덱스에 삽입
+            let newIndex = destList.length;
+            if (over.id !== toContainer) {
+                const overIndex = destList.findIndex((b) => b.id === over.id);
+                if (overIndex !== -1) {
+                    // active가 over의 뒤쪽인지 앞쪽인지 판단하기 어려우므로 (dragOver에서는)
+                    // 보통은 overIndex에 넣습니다. (SortableContext가 처리)
+                    newIndex = overIndex >= 0 ? overIndex : destList.length;
+                }
+            }
+            destList.splice(newIndex, 0, moved);
 
             active.data.current = { ...(active.data.current ?? {}), containerId: toContainer };
             return draft;
@@ -221,6 +248,9 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         }
     };
 
+    // 🌟 저장 카운트 (LeftSidebar 새로고침 트리거용)
+    const [saveCount, setSaveCount] = useState(0);
+
     // 🌟 저장 로직 핸들러
     const handleSaveToCloud = async () => {
         if (blocks.length === 0) return;
@@ -228,8 +258,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         // 🌟 다중 블록이면 'custom-block'으로 랩핑하여 저장
         let blockToSave: WidgetBlock;
 
-        // 🌟 수정된 로직: 블록이 1개면 그대로 저장
-        // 🌟 항상 'custom-block'으로 통일하여 저장 (데이터 일관성 유지)
+        // 🌟 저장 구조 통일
         blockToSave = {
             id: `group-${Date.now()}`,
             type: 'custom-block',
@@ -255,6 +284,9 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                 result = await saveWidget(blockToSave, name);
                 alert(`'${name}' 위젯이 서버에 저장되었습니다! ☁️`);
             }
+
+            // 🌟 저장 성공 시 카운트 증가 -> LeftSidebar 자동 갱신
+            setSaveCount(prev => prev + 1);
 
             // 🌟 저장 후 부모에게 알림 (데이터 갱신용)
             if (onSave && result) {
@@ -297,7 +329,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
             </header>
 
             <div className="flex-1 flex overflow-hidden">
-                <LeftSidebar onAddBlock={addBlock} remainingCapacity={remainingCapacity} />
+                <LeftSidebar onAddBlock={addBlock} remainingCapacity={remainingCapacity} refreshTrigger={saveCount} />
                 <Canvas
                     blocks={blocks}
                     currentSize={currentSize}

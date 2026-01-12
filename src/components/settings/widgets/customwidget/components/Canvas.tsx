@@ -32,7 +32,7 @@ interface Props {
     maxCapacity: number;
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
-    onUpdateBlock: (id: string, updates: any) => void; // ✅ 캔버스 직접 수정을 위해 필수
+    onUpdateBlock: (id: string, updates: any) => void;
     onDragEnd: (event: DragEndEvent) => void;
     onDragOver: (event: DragOverEvent) => void;
 }
@@ -114,7 +114,7 @@ const Canvas: React.FC<Props> = (props) => {
                         onDragOver={onDragOver}
                         onDragEnd={handleDragEndLocal}
                     >
-                        <div ref={setNodeRef} className="flex-1 flex flex-col gap-3 min-h-full">
+                        <div ref={setNodeRef} className="flex-1 flex flex-col min-h-full">
                             {blocks.length === 0 ? (
                                 <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-color)] rounded-[1.5rem] bg-[var(--bg-card-secondary)]/50 transition-colors group-hover/canvas:bg-[var(--bg-card-secondary)]">
                                     <Smartphone size={40} className="mb-3 opacity-20" />
