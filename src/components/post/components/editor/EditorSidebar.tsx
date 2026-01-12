@@ -370,13 +370,30 @@ const EditorSidebar: React.FC<Props> = ({
                             <button
                                 key={template.id}
                                 onClick={() => applyTemplate && applyTemplate(template)}
-                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1"
+                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 overflow-hidden relative"
                                 style={{
-                                    backgroundColor: template.styles?.backgroundColor || '#fff',
-                                    color: template.defaultFontColor || '#000'
+                                    backgroundColor: template.styles?.backgroundColor || '#fff'
                                 }}
                             >
-                                <span className="truncate w-full text-center">{template.name}</span>
+                                <span
+                                    className="truncate w-full text-center relative z-10"
+                                    style={{
+                                        color: (() => {
+                                            const bg = template.styles?.backgroundColor || '#ffffff';
+                                            // Simple brightness check
+                                            if (bg.startsWith('#')) {
+                                                const r = parseInt(bg.substring(1, 3), 16);
+                                                const g = parseInt(bg.substring(3, 5), 16);
+                                                const b = parseInt(bg.substring(5, 7), 16);
+                                                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                                                return brightness > 125 ? '#000000' : '#ffffff';
+                                            }
+                                            return '#000000';
+                                        })()
+                                    }}
+                                >
+                                    {template.name}
+                                </span>
                             </button>
                         ))
                     ) : (

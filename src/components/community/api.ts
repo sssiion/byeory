@@ -102,7 +102,14 @@ export const getCommunityDetail = async (postId: number, userId?: number): Promi
                 x: sanitizeCoordinate(s.x),
                 y: sanitizeCoordinate(s.y),
                 w: sanitizeCoordinate(s.w),
-                h: sanitizeCoordinate(s.h)
+                h: sanitizeCoordinate(s.h),
+                // ✨ Widget Persistence Decoding
+                widgetType: s.url && s.url.startsWith('widget://')
+                    ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+                    : undefined,
+                widgetProps: s.url && s.url.startsWith('widget://')
+                    ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+                    : undefined
             }));
         }
         if (data.floatingTexts) {
@@ -204,7 +211,14 @@ export const getPostDetail = async (postId: number): Promise<any> => {
                 x: sanitizeCoordinate(s.x),
                 y: sanitizeCoordinate(s.y),
                 w: sanitizeCoordinate(s.w),
-                h: sanitizeCoordinate(s.h)
+                h: sanitizeCoordinate(s.h),
+                // ✨ Widget Persistence Decoding
+                widgetType: s.url && s.url.startsWith('widget://')
+                    ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+                    : undefined,
+                widgetProps: s.url && s.url.startsWith('widget://')
+                    ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+                    : undefined
             })),
             titleStyles: p.titleStyles || {},
             isFavorite: p.isFavorite || false,

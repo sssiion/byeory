@@ -152,9 +152,9 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
                 </h3>
             </div>
 
-            <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 w-full">
                 {posts.map((post, index) => (
-                    <div key={`post-${post.postId || 'none'}-${index}`} className="break-inside-avoid mb-5 inline-block w-full">
+                    <div key={`post-${post.postId || 'none'}-${index}`} className="w-full">
                         <CommunityCard
                             data={post}
                             onClick={() => handleCardClick(post, 'content')} // Default click opens content

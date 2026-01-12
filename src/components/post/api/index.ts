@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Block } from "./types";
+import type { Block } from "../types";
 import { LAYOUT_PRESETS } from "../constants";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
@@ -206,6 +206,13 @@ export const fetchPostsFromApi = async () => {
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
         opacity: s.opacity || 1, // ✨ Fix invisible items
+        // ✨ Widget Persistence Decoding
+        widgetType: s.url && s.url.startsWith('widget://')
+          ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+          : undefined,
+        widgetProps: s.url && s.url.startsWith('widget://')
+          ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+          : undefined
       })),
       floatingTexts: (p.floatingTexts || []).map((t: any) => ({
         ...t,
@@ -253,7 +260,16 @@ export const savePostToApi = async (
       title: postData.title,
       titleStyles: postData.titleStyles || {},
       blocks: postData.blocks || [],
-      stickers: postData.stickers || [],
+      stickers: (postData.stickers || []).map((s: any) => {
+        // ✨ Widget Persistence Encoding
+        if (s.widgetType) {
+          return {
+            ...s,
+            url: `widget://${encodeURIComponent(s.widgetType)}?props=${encodeURIComponent(JSON.stringify(s.widgetProps || {}))}`
+          };
+        }
+        return s;
+      }),
       floatingTexts: postData.floatingTexts || [],
       floatingImages: postData.floatingImages || [],
       tags: postData.tags || [],
@@ -300,6 +316,13 @@ export const savePostToApi = async (
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
         opacity: s.opacity || 1, // ✨ Fix invisible items
+        // ✨ Widget Persistence Decoding
+        widgetType: s.url && s.url.startsWith('widget://')
+          ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+          : undefined,
+        widgetProps: s.url && s.url.startsWith('widget://')
+          ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+          : undefined
       })),
       floatingTexts: (savedPost.floatingTexts || []).map((t: any) => ({
         ...t,
@@ -436,7 +459,7 @@ export const joinRoomApi = async (roomId: string, password?: string) => {
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
       throw new Error(errorMessage);
     }
 
@@ -768,6 +791,21 @@ export const fetchAlbumContents = async (
             ...p,
             tags: p.hashtags || p.tags || [],
             visibility: p.isPublic === false ? "private" : "public",
+            stickers: (p.stickers || []).map((s: any) => ({
+              ...s,
+              x: sanitizeCoordinate(s.x),
+              y: sanitizeCoordinate(s.y),
+              w: sanitizeCoordinate(s.w),
+              h: sanitizeCoordinate(s.h),
+              opacity: s.opacity || 1,
+              // ✨ Widget Persistence Decoding for Album View
+              widgetType: s.url && s.url.startsWith('widget://')
+                ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+                : undefined,
+              widgetProps: s.url && s.url.startsWith('widget://')
+                ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+                : undefined
+            })),
           },
         })
       );
@@ -784,6 +822,21 @@ export const fetchAlbumContents = async (
                 tags: item.content.hashtags || item.content.tags || [],
                 visibility:
                   item.content.isPublic === false ? "private" : "public",
+                stickers: (item.content.stickers || []).map((s: any) => ({
+                  ...s,
+                  x: sanitizeCoordinate(s.x),
+                  y: sanitizeCoordinate(s.y),
+                  w: sanitizeCoordinate(s.w),
+                  h: sanitizeCoordinate(s.h),
+                  opacity: s.opacity || 1,
+                  // ✨ Widget Persistence Decoding for Mixed View
+                  widgetType: s.url && s.url.startsWith('widget://')
+                    ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+                    : undefined,
+                  widgetProps: s.url && s.url.startsWith('widget://')
+                    ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+                    : undefined
+                })),
               },
             });
           } else if (item.type === "FOLDER" || item.type === "ALBUM") {
@@ -817,6 +870,21 @@ export const fetchAlbumContents = async (
               ...item,
               tags: item.hashtags || item.tags || [],
               visibility: item.isPublic === false ? "private" : "public",
+              stickers: (item.stickers || []).map((s: any) => ({
+                ...s,
+                x: sanitizeCoordinate(s.x),
+                y: sanitizeCoordinate(s.y),
+                w: sanitizeCoordinate(s.w),
+                h: sanitizeCoordinate(s.h),
+                opacity: s.opacity || 1,
+                // ✨ Widget Persistence Decoding for Folder View
+                widgetType: s.url && s.url.startsWith('widget://')
+                  ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+                  : undefined,
+                widgetProps: s.url && s.url.startsWith('widget://')
+                  ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+                  : undefined
+              })),
             },
           });
         }
@@ -924,7 +992,19 @@ export const createPostTemplateApi = async (templateData: any) => {
     const response = await fetch(`${API_TEMPLATE_URL}`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(templateData),
+      body: JSON.stringify({
+        ...templateData,
+        stickers: (templateData.stickers || []).map((s: any) => {
+          // ✨ Widget Persistence Encoding for Templates
+          if (s.widgetType) {
+            return {
+              ...s,
+              url: `widget://${encodeURIComponent(s.widgetType)}?props=${encodeURIComponent(JSON.stringify(s.widgetProps || {}))}`
+            };
+          }
+          return s;
+        })
+      }),
     });
     if (!response.ok) throw new Error("템플릿 생성 실패");
     return await response.json();
@@ -951,6 +1031,13 @@ export const fetchPostTemplateById = async (templateId: string | number) => {
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
         opacity: s.opacity || 1,
+        // ✨ Widget Persistence Decoding for Templates
+        widgetType: s.url && s.url.startsWith('widget://')
+          ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+          : undefined,
+        widgetProps: s.url && s.url.startsWith('widget://')
+          ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+          : undefined
       })),
       floatingTexts: (data.floatingTexts || []).map((text: any) => ({
         ...text,
@@ -991,6 +1078,13 @@ export const fetchMyPostTemplatesApi = async () => {
         w: sanitizeCoordinate(s.w),
         h: sanitizeCoordinate(s.h),
         opacity: s.opacity || 1, // ✨ Fix invisible items
+        // ✨ Widget Persistence Decoding for Templates
+        widgetType: s.url && s.url.startsWith('widget://')
+          ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+          : undefined,
+        widgetProps: s.url && s.url.startsWith('widget://')
+          ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+          : undefined
       })),
       floatingTexts: (t.floatingTexts || []).map((text: any) => ({
         ...text,

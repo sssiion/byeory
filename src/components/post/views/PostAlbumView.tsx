@@ -17,8 +17,8 @@ interface Props {
     onStartWriting: () => void;
     onUpdateAlbum: (id: string, updates: Partial<CustomAlbum>) => void;
     onDeleteAlbum: (id: string) => void;
-    sortOption: 'name' | 'count' | 'newest';
-    setSortOption: (option: 'name' | 'count' | 'newest') => void;
+    sortOption: 'name' | 'count' | 'newest' | 'favorites';
+    setSortOption: (option: 'name' | 'count' | 'newest' | 'favorites') => void;
     onPostClick: (post: PostData) => void;
     onToggleFavorite: (id: number) => void;
     handleToggleAlbumFavorite: (id: string) => void;
@@ -94,26 +94,85 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
 
     // ✨ Compute Album Stats
     const albumStats = useMemo(() => {
-        const stats: Record<string, { count: number, folderCount: number, totalCount: number, lastDate: number }> = {};
+        const stats: Record<string, { count: number, folderCount: number, totalCount: number, lastDate: number, representativeTag: string | null }> = {};
 
-        // Initialize stats from API data (No recursive calculation)
+        // Initialize stats with backend data as baseline
         customAlbums.forEach(a => {
             stats[a.id] = {
-                count: a.postCount || 0,
-                folderCount: a.folderCount || 0,
-                totalCount: a.postCount || 0, // User requested exact backend value
-                lastDate: a.createdAt || 0
+                count: a.postCount || 0, // ✨ Use Backend Count
+                folderCount: a.folderCount || 0, // ✨ Use Backend Folder Count
+                totalCount: a.postCount || 0, // Baseline total
+                lastDate: a.createdAt ? new Date(a.createdAt).getTime() : 0, // ✨ Ensure Number
+                representativeTag: a.tag || null // ✨ Search Tag
             };
         });
 
-        // ✨ Filter Top Level Albums (No parentId)
-        const topLevelAlbums = customAlbums.filter(a => !a.parentId);
+        // ✨ Recalculate Folder Counts (Client side adjustment if needed, or rely on backend?)
+        // If backend provides folderCount, we might double count if we add here?
+        // Let's assume for now we trust backend for counts.
+        customAlbums.forEach(a => {
+            if (a.parentId && stats[a.parentId]) {
+                // If backend doesn't aggregate folder counts, we might need this.
+                // But let's stick to simple "backend count" logic for now.
+                // stats[a.parentId].folderCount++; 
+            }
+        });
+
+        // ✨ Recalculate Dates & Infer Tags (BUT NOT COUNTS to match backend)
+        posts.forEach(p => {
+            // Parse Date (YYYY. MM. DD.)
+            let pDate = 0;
+            try {
+                pDate = new Date(p.date.replace(/\./g, '-')).getTime();
+                if (isNaN(pDate)) pDate = new Date(p.date).getTime();
+                if (isNaN(pDate)) pDate = 0;
+            } catch (e) { pDate = 0; }
+
+            // 1. Direct Album Assignment
+            if (p.albumIds && p.albumIds.length > 0) {
+                p.albumIds.forEach(id => {
+                    const idStr = String(id);
+                    if (stats[idStr]) {
+                        // stats[idStr].count++; // 🛑 Don't double count
+                        // stats[idStr].totalCount++;
+                        if (pDate > stats[idStr].lastDate) {
+                            stats[idStr].lastDate = pDate;
+                        }
+                        // ✨ Infer Tag if missing
+                        if (!stats[idStr].representativeTag && p.tags && p.tags.length > 0) {
+                            stats[idStr].representativeTag = p.tags[0];
+                        }
+                    }
+                });
+            } else {
+                // 2. Legacy Tag Matching (Fallback)
+                const tags = p.tags || [];
+                customAlbums.forEach(album => {
+                    if (album.tag && tags.includes(album.tag)) {
+                        // stats[album.id].count++;
+                        // stats[album.id].totalCount++;
+                        if (pDate > stats[album.id].lastDate) {
+                            stats[album.id].lastDate = pDate;
+                        }
+                    }
+                });
+            }
+        });
+
+        // ✨ Filter Top Level Albums (No parentId) & Deduplicate by ID
+        const topLevelAlbums = customAlbums
+            .filter(a => !a.parentId)
+            .filter((a, index, self) => index === self.findIndex(t => t.id === a.id));
 
         // Sort Albums
         const sortedAlbums = [...topLevelAlbums].sort((a, b) => {
             if (sortOption === 'name') return a.name.localeCompare(b.name);
             if (sortOption === 'count') return (stats[b.id].totalCount) - (stats[a.id].totalCount);
             if (sortOption === 'newest') return stats[b.id].lastDate - stats[a.id].lastDate;
+            if (sortOption === 'favorites') {
+                if (a.isFavorite === b.isFavorite) return a.name.localeCompare(b.name); // Secondary sort by name
+                return a.isFavorite ? -1 : 1; // Favorites first
+            }
 
             return 0;
         });
@@ -161,13 +220,13 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                 </div>
                 <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
                     <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-10 md:h-12 items-center flex-shrink-0">
-                        {(['name', 'newest', 'count'] as const).map(opt => (
+                        {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
                             <button
                                 key={opt}
                                 onClick={() => setSortOption(opt)}
                                 className={`px-2 md:px-3 py-1.5 md:py-3 text-[10px] md:text-xs font-bold rounded-md transition-all whitespace-nowrap ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                             >
-                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순' }[opt]}
+                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
                             </button>
                         ))}
                     </div>
@@ -186,7 +245,7 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                         <div key={album.id} onClick={() => onAlbumClick(album.id)} className="relative group cursor-pointer">
                             <AlbumBook
                                 title={album.name}
-                                tag={album.tag || undefined}
+                                tag={album.tag || stats.representativeTag || undefined} // ✨ Use inferred tag
                                 count={album.type === 'room' ? undefined : formatStats(stats)}
                                 config={album.coverConfig}
                                 className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"

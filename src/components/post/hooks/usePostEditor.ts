@@ -65,7 +65,7 @@ export const usePostEditor = () => {
 
     const [targetAlbumIds, setTargetAlbumIds] = useState<string[]>([]);
     const [isPublic, setIsPublic] = useState(true);
-    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest'>('name');
+    const [sortOption, setSortOption] = useState<'name' | 'count' | 'newest' | 'favorites'>('name');
 
     // ✨ Paper Styles (Dirty tracked)
     const [paperStyles, _setPaperStyles] = useState<Record<string, any>>({
@@ -446,9 +446,24 @@ export const usePostEditor = () => {
     const handleCreateAlbum = async (name: string, tags: string[], parentId?: string, type: 'album' | 'room' = 'album', roomConfig?: any, coverConfig?: any) => {
         let res;
         if (type === 'room') {
-            res = await createRoomApi({ name, description: roomConfig?.description, password: roomConfig?.password, coverConfig });
+            res = await createRoomApi({
+                name,
+                description: roomConfig?.description,
+                password: roomConfig?.password,
+                coverConfig,
+                tag: tags[0], // ✨ Pass Primary Tag
+                hashtags: tags // ✨ Pass All Tags
+            });
         } else {
-            res = await createAlbumApi({ name, tags, type, parentId, coverConfig });
+            res = await createAlbumApi({
+                name,
+                tags,
+                tag: tags[0], // ✨ Pass Primary Tag for Backend
+                hashtags: tags, // ✨ Consistency
+                type,
+                parentId,
+                coverConfig
+            });
         }
 
         if (res) { fetchAlbums(); return res.id; }
