@@ -49,19 +49,37 @@ export const WordMindMapWidget = ({ className, style, gridSize }: ComponentProps
             });
 
             if (response.ok && response.status !== 204) {
-                const json = await response.json();
-                let parsedData = json;
-                if (typeof json.analysisResult === "string") {
-                    try {
-                        parsedData = JSON.parse(json.analysisResult);
-                    } catch (e) {
-                        // ignore
+                try {
+                    const text = await response.text();
+                    if (!text) {
+                        setWords([]);
+                        return;
                     }
-                }
 
-                if (parsedData && parsedData.wordCloud) {
-                    setWords(parsedData.wordCloud);
-                } else {
+                    const json = JSON.parse(text);
+
+                    // 빈 배열([])이거나 데이터 구조가 안맞으면 빈값 처리
+                    if (Array.isArray(json) && json.length === 0) {
+                        setWords([]);
+                        return;
+                    }
+
+                    let parsedData = json;
+                    if (typeof json.analysisResult === "string") {
+                        try {
+                            parsedData = JSON.parse(json.analysisResult);
+                        } catch (e) {
+                            // ignore
+                        }
+                    }
+
+                    if (parsedData && parsedData.wordCloud) {
+                        setWords(parsedData.wordCloud);
+                    } else {
+                        setWords([]);
+                    }
+                } catch (e) {
+                    console.error("JSON Parse Error:", e);
                     setWords([]);
                 }
             }

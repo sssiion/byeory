@@ -40,13 +40,10 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
     const isImageItem = (selectedType === 'block' && itemType !== 'paragraph') || selectedType === 'sticker' || selectedType === 'floatingImage';
 
     const handleTextUpdate = (key: string, value: any) => {
-        if (selectedType === 'block') {
-            onUpdate(selectedId, selectedType, { [key]: value });
-        } else {
-            const currentStyles = (currentItem as any).styles || {};
-            const newStyles = { ...currentStyles, [key]: value };
-            onUpdate(selectedId, selectedType, { styles: newStyles });
-        }
+        // ✨ Fix: Always update nested 'styles' for text properties, even for blocks
+        const currentStyles = (currentItem as any).styles || {};
+        const newStyles = { ...currentStyles, [key]: value };
+        onUpdate(selectedId, selectedType, { styles: newStyles });
     };
 
     // 폰트 크기 숫자(px)만 추출하는 헬퍼
@@ -67,19 +64,18 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
                 <span>설정</span>
             </div>
 
-            {/* 1. 레이어 순서 */}
-            {selectedType !== 'block' && (
-                <div className="flex items-center gap-1 border-r pr-4 mr-2 border-gray-200">
-                    <span className="text-xs text-gray-400 font-bold mr-1">순서</span>
-                    <button onClick={() => handleZIndexChange(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-600" title="뒤로 보내기">
-                        <SendToBack size={18} />
-                    </button>
-                    <span className="text-xs font-mono w-4 text-center">{currentZIndex}</span>
-                    <button onClick={() => handleZIndexChange(1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-600" title="앞으로 가져오기">
-                        <BringToFront size={18} />
-                    </button>
-                </div>
-            )}
+            {/* 1. 레이어 순서 (Floating) & Title & Block */}
+            <div className="flex items-center gap-1 border-r pr-4 mr-2 border-gray-200">
+                <span className="text-xs text-gray-400 font-bold mr-1">순서</span>
+                <button onClick={() => handleZIndexChange(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-600" title="뒤로 보내기">
+                    <SendToBack size={18} />
+                </button>
+                <span className="text-xs font-mono w-4 text-center">{currentZIndex}</span>
+                <button onClick={() => handleZIndexChange(1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-600" title="앞으로 가져오기">
+                    <BringToFront size={18} />
+                </button>
+            </div>
+
 
             {isTextItem && (
                 <div className="flex items-center gap-4">

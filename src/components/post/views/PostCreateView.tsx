@@ -69,6 +69,7 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     return (
         <div className="flex flex-col xl:flex-row h-auto min-h-[85vh] gap-6 relative">
             {/* 메인 캔버스 */}
+            {/* 메인 캔버스 */}
             <EditorCanvas
                 ref={canvasRef}
                 title={editor.title} setTitle={editor.setTitle}
@@ -78,10 +79,10 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 stickers={editor.stickers} floatingTexts={editor.floatingTexts}
                 floatingImages={editor.floatingImages}
                 selectedId={editor.selectedId}
+                selectedIds={editor.selectedIds} // ✨ Pass Multi-Select State
                 selectedType={editor.selectedType}
-                onSelect={(id, type) => {
-                    editor.setSelectedId(id);
-                    editor.setSelectedType(type);
+                onSelect={(id, type, isMulti) => { // ✨ Handle Multi-Select
+                    editor.handleSelect(id, type, isMulti);
                 }}
                 onUpdate={(id, _, changes) => editor.handleUpdate(id, changes)}
                 onDelete={() => {
@@ -89,8 +90,7 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 }}
                 onBlockImageUpload={(id, file) => editor.handleBlockImageUpload(file, id)}
                 onBackgroundClick={() => {
-                    editor.setSelectedId(null);
-                    editor.setSelectedType(null);
+                    editor.handleSelect(null, null);
                 }}
                 paperStyles={editor.paperStyles}
             />

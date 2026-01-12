@@ -18,20 +18,21 @@ interface Props {
     floatingTexts: FloatingText[];
     floatingImages: FloatingImage[];
     selectedId: string | null;
+    selectedIds?: string[]; // ✨ Multi-Select Support
     selectedType?: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null;
 
     setBlocks: React.Dispatch<React.SetStateAction<Block[]>>;
-    onSelect: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title') => void;
+    onSelect: (id: string | null, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null, isMulti?: boolean) => void; // ✨ Updated Signature
     onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
     onDelete: () => void;
     onBlockImageUpload: (id: string, file: File, idx?: number) => void;
     onBackgroundClick: () => void;
-    paperStyles?: Record<string, any>; // ✨ New Prop
+    paperStyles?: Record<string, any>;
 }
 
 const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
-    title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedType,
-    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, onBackgroundClick, paperStyles
+    title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedIds = [], selectedType,
+    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, paperStyles
 }, ref) => {
 
     // ✨ Responsive Scaling Logic
@@ -39,6 +40,10 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     const contentRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined);
+
+    // ✨ Drag Selection State
+    const [isSelecting, setIsSelecting] = useState(false);
+    const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
 
     // ✨ Expose Content Ref
     useImperativeHandle(ref, () => contentRef.current!);
@@ -77,6 +82,25 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
         };
     }, [viewMode]);
 
+    // ✨ Delete Key Listener
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                const activeTag = document.activeElement?.tagName.toLowerCase();
+                const isInputActive = activeTag === 'input' || activeTag === 'textarea' || (document.activeElement as HTMLElement).isContentEditable;
+
+                // If editing text, do not delete object
+                if (isInputActive) return;
+
+                if ((selectedIds && selectedIds.length > 0) || selectedId) {
+                    onDelete();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedIds, selectedId, onDelete]);
+
     // ✨ Update wrapper height to match scaled content
     useEffect(() => {
         const updateHeight = () => {
@@ -97,6 +121,130 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
         return () => observer.disconnect();
     }, [scale, blocks, stickers, floatingTexts, floatingImages]);
+
+    // ✨ Selection Box Logic
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (viewMode !== 'editor') return;
+
+        const target = e.target as HTMLElement;
+
+        if (['input', 'textarea', 'button'].includes(target.tagName.toLowerCase())) return;
+        if (target.closest('button')) return;
+
+        e.preventDefault();
+
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+
+        const rect = contentRef.current!.getBoundingClientRect();
+        // Calculate relative position within the content area, accounting for scale
+        const x = (e.clientX - rect.left) / scale;
+        const y = (e.clientY - rect.top) / scale;
+
+        setIsSelecting(true);
+        setSelectionBox({ startX: x, startY: y, currentX: x, currentY: y });
+
+        // Clear selection initially if not holding shift
+        if (!e.shiftKey) {
+            onSelect(null, null);
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isSelecting || !selectionBox || !contentRef.current) return;
+
+        const rect = contentRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / scale;
+        const y = (e.clientY - rect.top) / scale;
+
+        setSelectionBox(prev => prev ? { ...prev, currentX: x, currentY: y } : null);
+    };
+
+    const handleMouseUp = () => {
+        if (isSelecting && selectionBox) {
+            // Calculate selection logic
+            const boxLeft = Math.min(selectionBox.startX, selectionBox.currentX);
+            const boxTop = Math.min(selectionBox.startY, selectionBox.currentY);
+            const boxWidth = Math.abs(selectionBox.currentX - selectionBox.startX);
+            const boxHeight = Math.abs(selectionBox.currentY - selectionBox.startY);
+            const boxRight = boxLeft + boxWidth;
+            const boxBottom = boxTop + boxHeight;
+
+            // Threshold to distinguish click from drag
+            if (boxWidth > 5 || boxHeight > 5) {
+                const newSelectedIds: string[] = [];
+
+                // Helper to check intersection
+                const checkIntersection = (id: string, x: number, y: number, w: number, h: number) => {
+                    // Try getting DOM element first for accurate size
+                    const el = document.getElementById(id);
+                    let finalX = x, finalY = y, finalW = w, finalH = h;
+
+                    if (el && contentRef.current) {
+                        const elRect = el.getBoundingClientRect();
+                        const contentRect = contentRef.current.getBoundingClientRect();
+
+                        // Calculate element position relative to the contentRef, scaled
+                        finalX = (elRect.left - contentRect.left) / scale;
+                        finalY = (elRect.top - contentRect.top) / scale;
+                        finalW = elRect.width / scale;
+                        finalH = elRect.height / scale;
+                    }
+
+                    if (boxLeft < finalX + finalW &&
+                        boxRight > finalX &&
+                        boxTop < finalY + finalH &&
+                        boxBottom > finalY) {
+                        return true;
+                    }
+                    return false;
+                }
+
+                // Check intersection with stickers
+                stickers.forEach(stk => {
+                    if (checkIntersection(stk.id, stk.x as number, stk.y as number, stk.w as number, stk.h as number)) {
+                        newSelectedIds.push(stk.id);
+                    }
+                });
+
+                // Also check text / images
+                floatingTexts.forEach(txt => {
+                    if (checkIntersection(txt.id, txt.x as number, txt.y as number, txt.w as number, txt.h as number)) {
+                        newSelectedIds.push(txt.id);
+                    }
+                });
+
+                floatingImages.forEach(img => {
+                    if (checkIntersection(img.id, img.x as number, img.y as number, img.w as number, img.h as number)) {
+                        newSelectedIds.push(img.id);
+                    }
+                });
+
+                // ✨ Check blocks (standard content)
+                blocks.forEach(blk => {
+                    if (checkIntersection(blk.id, 0, 0, 0, 0)) { // x,y,w,h are placeholders, checkIntersection will use DOM rect
+                        newSelectedIds.push(blk.id);
+                    }
+                });
+
+                newSelectedIds.forEach(id => {
+                    // Determine type
+                    let type: any = 'sticker';
+                    if (floatingTexts.some(t => t.id === id)) type = 'floating';
+                    if (floatingImages.some(i => i.id === id)) type = 'floatingImage';
+                    if (blocks.some(b => b.id === id)) type = 'block'; // ✨ Support blocks
+
+                    // We use isMulti=true to append.
+                    if (!selectedIds.includes(id)) {
+                        onSelect(id, type, true);
+                    }
+                });
+            }
+        }
+        setIsSelecting(false);
+        setSelectionBox(null);
+    };
 
 
     // 드래그가 끝났을 때 순서를 바꾸는 함수
@@ -167,12 +315,18 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
     const currentItem = getSelectedItem();
 
+
+
     return (
         // 최상위 컨테이너 (Scale Wrapper)
         <div
             ref={containerRef}
             className={`w-full h-full flex items-start justify-center overflow-x-hidden overflow-y-auto py-4 md:py-8 px-2 md:px-0 custom-scrollbar ${viewMode === 'read' ? 'items-center' : ''}`}
-            onClick={onBackgroundClick}
+            // ✨ Bind selection handlers
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
         >
             {/* Let's try inserting a spacer div */}
             <div style={{ height: scaledHeight, width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -186,41 +340,53 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                 >
                     <div
                         ref={contentRef}
-                        className="w-[800px] min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden"
+                        className="w-[800px] min-h-[1000px] relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone"
                         style={{
-                            borderRadius: '0.75rem', // rounded-xl equivalent
-                            backgroundColor: '#ffffff', // default
-                            ...paperStyles // ✨ Apply Paper Styles
+                            backgroundColor: '#ffffff',
+                            ...paperStyles
                         }}
                     >
+                        {/* ✨ Selection Overlay */}
+                        {isSelecting && selectionBox && (
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    left: Math.min(selectionBox.startX, selectionBox.currentX),
+                                    top: Math.min(selectionBox.startY, selectionBox.currentY),
+                                    width: Math.abs(selectionBox.currentX - selectionBox.startX),
+                                    height: Math.abs(selectionBox.currentY - selectionBox.startY),
+                                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                                    border: '1px solid rgba(59, 130, 246, 0.5)',
+                                    zIndex: 9999,
+                                    pointerEvents: 'none'
+                                }}
+                            />
+                        )}
+
                         {/* 헤더 */}
                         <div
-                            className={`sticky top-0 bg-white/95 backdrop-blur border-b p-6 flex justify-between items-start gap-4 rounded-t-xl z-20 transition-all ${viewMode === 'editor' && selectedId === 'title' ? 'ring-2 ring-indigo-200' : ''}`}
-                            style={{
-                                backgroundColor: titleStyles.backgroundColor || 'rgba(255, 255, 255, 0.95)',
-                                borderTopLeftRadius: '0.75rem',
-                                borderTopRightRadius: '0.75rem'
-                            }}
+                            className={`sticky top-0 bg-transparent border-b p-5 flex justify-between items-start gap-4 transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
+                            style={{ zIndex: titleStyles.zIndex || 20 }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (viewMode === 'editor') onSelect('title', 'title');
                             }}
                         >
-                            <input
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                placeholder="제목을 입력하세요"
-                                readOnly={viewMode === 'read'}
-                                className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0"
-                                style={{
-                                    ...titleStyles,
-                                    backgroundColor: 'transparent',
-                                    fontSize: titleStyles.fontSize || '30px',
-                                    fontWeight: titleStyles.fontWeight || 'bold',
-                                }}
-                            />
+                            <div className="flex justify-between items-start gap-4 pointer-events-auto w-full">
+                                <input
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder="제목을 입력하세요"
+                                    readOnly={viewMode === 'read'}
+                                    className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0"
+                                    style={{
+                                        ...titleStyles,
+                                        fontSize: titleStyles.fontSize || '30px',
+                                        fontWeight: titleStyles.fontWeight || 'bold',
+                                    }}
+                                />
+                            </div>
                         </div>
-
 
                         <div className={`flex-1 relative pb-40 ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>
 
@@ -247,13 +413,14 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                             <div
                                                                 ref={provided.innerRef}
                                                                 {...provided.draggableProps}
+                                                                id={block.id} // ✨ Added ID for selection logic
                                                                 style={{
                                                                     ...provided.draggableProps.style,
                                                                     opacity: snapshot.isDragging ? 0.8 : 1,
-                                                                    zIndex: snapshot.isDragging ? 100 : 'auto'
+                                                                    zIndex: snapshot.isDragging ? 100 : ((block as any).zIndex || 'auto')
                                                                 }}
                                                                 className={`relative group transition-shadow duration-200 ${isFocused ? 'ring-2 ring-indigo-200 rounded-lg pl-2' : ''}`}
-                                                                onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') onSelect(block.id, 'block'); }}
+                                                                onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') onSelect(block.id, 'block', e.shiftKey); }}
                                                             >
                                                                 <ContentBlock
                                                                     block={block}
@@ -290,7 +457,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             </DragDropContext>
 
                             {viewMode === 'editor' && (
-                                <div className="mt-12 py-8 border-t border-dashed border-gray-200 flex flex-col items-center gap-4 text-gray-500">
+                                <div className="mt-12 py-8 border-t border-dashed border-gray-200 flex flex-col items-center gap-4 text-gray-500 select-none"> {/* ✨ select-none */}
                                     <span className="text-sm font-medium opacity-70">어떤 내용을 추가할까요?</span>
                                     <div className="flex flex-wrap items-center justify-center gap-3">
                                         <button onClick={() => handleAddBlock('paragraph')} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-full transition shadow-sm"><Type size={16} /> <span>글만 쓰기</span></button>
@@ -306,9 +473,11 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             <ResizableItem
                                 key={stk.id}
                                 {...stk}
-                                isSelected={selectedId === stk.id}
+                                // ✨ Check against selectedIds
+                                isSelected={selectedId === stk.id || selectedIds.includes(stk.id)}
                                 readOnly={viewMode === 'read' || !!stk.locked}
-                                onSelect={() => onSelect(stk.id, 'sticker')}
+                                onSelect={(isMulti) => onSelect(stk.id, 'sticker', isMulti)} // ✨ Pass shift key state from item? No, ResizableItem wraps props.
+                                // ResizableItem onClick needs to be updated too?
                                 onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
                             >
                                 {stk.widgetType ? (
@@ -336,9 +505,9 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             <ResizableItem
                                 key={txt.id}
                                 {...txt}
-                                isSelected={selectedId === txt.id}
+                                isSelected={selectedId === txt.id || selectedIds.includes(txt.id)}
                                 readOnly={viewMode === 'read' || !!txt.locked}
-                                onSelect={() => onSelect(txt.id, 'floating')}
+                                onSelect={(isMulti) => onSelect(txt.id, 'floating', isMulti)}
                                 onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                             >
                                 <textarea
@@ -364,9 +533,9 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             <ResizableItem
                                 key={img.id}
                                 {...img}
-                                isSelected={selectedId === img.id}
+                                isSelected={selectedId === img.id || selectedIds.includes(img.id)}
                                 readOnly={viewMode === 'read' || !!img.locked}
-                                onSelect={() => onSelect(img.id, 'floatingImage')}
+                                onSelect={(isMulti) => onSelect(img.id, 'floatingImage', isMulti)}
 
                                 onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
                             >
