@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import type { WidgetInstance, WidgetLayout } from '../../settings/widgets/type';
 import { clampWidget, resolveCollisions, compactLayout } from '../../settings/widgets/layoutUtils';
 import { useWidgetRegistry } from '../../settings/widgets/useWidgetRegistry';
+import { getWidgetSettings, updateWidgetSettings } from '../../../services/widgetSettings';
+import { useAuth } from '../../../context/AuthContext';
 
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
 const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
@@ -16,6 +18,7 @@ const DEFAULT_WIDGETS_V3: WidgetInstance[] = [
 export const useDashboardLogic = (isMobile: boolean) => {
     const { registry } = useWidgetRegistry();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { isLoggedIn } = useAuth();
 
     const [isWidgetEditMode, setIsWidgetEditMode] = useState(false);
     const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
@@ -38,11 +41,37 @@ export const useDashboardLogic = (isMobile: boolean) => {
     const [layoutPreview, setLayoutPreview] = useState<WidgetInstance[] | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Save to LC
+    // Load from API on mount/login
+    useEffect(() => {
+        const loadWidgets = async () => {
+            if (isLoggedIn) {
+                try {
+                    const remoteWidgets = await getWidgetSettings();
+                    if (remoteWidgets && remoteWidgets.length > 0) {
+                        setWidgets(remoteWidgets);
+                        localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(remoteWidgets));
+                    }
+                } catch (error) {
+                    console.error("Failed to load widgets:", error);
+                }
+            }
+        };
+        loadWidgets();
+    }, [isLoggedIn]);
+
+    // Save to LC and API
     useEffect(() => {
         localStorage.setItem('my_dashboard_widgets_v3', JSON.stringify(widgets));
         localStorage.setItem('my_dashboard_grid_size_v4', JSON.stringify(gridSize));
-    }, [widgets, gridSize]);
+
+        if (isLoggedIn) {
+            // Debounce or just save
+            const timer = setTimeout(() => {
+                updateWidgetSettings(widgets).catch(err => console.error("Failed to sync widgets:", err));
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [widgets, gridSize, isLoggedIn]);
 
     // Snapshot for Cancel
     useEffect(() => {

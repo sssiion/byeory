@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import ForcedPinInputModal from '../components/security/ForcedPinInputModal';
+import ForcedPinInputModal from '../components/Security/ForcedPinInputModal';
 import { authService } from '../services/authService';
 import { pinService } from '../services/pinService';
 
@@ -300,6 +300,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('sessionStartTime');
         localStorage.removeItem('isProfileSetupCompleted');
         localStorage.removeItem('temp_social_profile');
+        localStorage.removeItem('my_dashboard_widgets_v3');
+        localStorage.removeItem('my_dashboard_grid_size_v4');
         sessionStorage.removeItem('pin_verified'); // Clear PIN verification
 
         // Clear session specific items
