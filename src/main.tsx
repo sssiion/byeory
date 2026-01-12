@@ -10,7 +10,7 @@ import CommunityPage from './pages/community/CommunityPage';
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 
 import { ThemeProvider } from './context/ThemeContext';
-import MarketPage from './pages/market/MarketPage'
+import MarketPage from './pages/market/MarketPage.tsx'
 
 import ProfilePage from './pages/profile/My/ProfilePage'
 import ProfileEditPage from './pages/profile/My/ProfileEditPage';
@@ -130,6 +130,7 @@ if (savedManualBtnTextColor) {
 import WelcomePage from './pages/WelcomePage';
 import AnalysisPage from "./pages/profile/analysis/AnalysisPage.tsx";
 import RoomCyclePage from './pages/post/RoomCyclePage';
+import YearPage from './pages/post/season-greeting/YearPage';
 
 const RootRouting = () => {
   const token = localStorage.getItem('accessToken');
@@ -173,6 +174,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route path="/profile/delete" element={<GetOutPage />} />
                       <Route path="/setup-profile" element={<InitialProfileSetup />} />
                       <Route path="/profile/analysis" element={<AnalysisPage />} />
+                      <Route path="/season-greeting" element={<YearPage />} />
                       <Route path="/charge" element={<ChargePage />} />
                     </Route>
                   </Routes>

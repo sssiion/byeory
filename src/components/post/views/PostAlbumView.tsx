@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { PostData, CustomAlbum } from '../types';
 // ✨ Added GalleryHorizontal for All Posts icon
-import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles, Lock, Users } from 'lucide-react';
+import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles, Lock, Users, Gift } from 'lucide-react';
 import RenameAlbumModal from '../components/RenameAlbumModal';
 import AlbumBook from '../components/AlbumCover/AlbumBook';
 import type { AlbumCoverConfig } from '../components/AlbumCover/constants';
@@ -32,6 +33,8 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null);
     const [editingCoverId, setEditingCoverId] = useState<string | null>(null);
     const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+    const [isEasterEggOpen, setIsEasterEggOpen] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
@@ -213,7 +216,9 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-[var(--border-color)] pb-4 space-y-4 md:space-y-0">
                 <div>
                     <h2 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-                        <Folder className="text-yellow-400 fill-yellow-400" size={32} />
+                        <button onClick={() => setIsEasterEggOpen(true)} className="transition-transform hover:scale-110 active:scale-95 focus:outline-none">
+                            <Folder className="text-yellow-400 fill-yellow-400" size={32} />
+                        </button>
                         내 앨범
                     </h2>
                     <p className="text-[var(--text-secondary)] text-sm mt-2 ml-1">나만의 추억 보관함입니다.</p>
@@ -357,6 +362,44 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     onClose={() => setRoomSettingsId(null)}
                     album={customAlbums.find(a => a.id === roomSettingsId)!}
                 />
+            )}
+
+            {/* ✨ Easter Egg Modal */}
+            {isEasterEggOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setIsEasterEggOpen(false)}>
+                    <div className="bg-[var(--bg-card)] rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-[var(--border-color)] animate-scale-up" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 flex flex-col items-center text-center space-y-4">
+                            <div className="w-16 h-16 bg-yellow-100/50 rounded-full flex items-center justify-center text-yellow-500 mb-2 ring-4 ring-yellow-50">
+                                <Gift size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-[var(--text-primary)]">선물이 도착했어요!</h3>
+                                <p className="text-[var(--text-secondary)] text-sm mt-2">
+                                    특별한 선물을 준비했어요.<br />
+                                    지금 바로 확인해보시겠어요?
+                                </p>
+                            </div>
+
+                            <div className="flex gap-2 w-full mt-4">
+                                <button
+                                    onClick={() => setIsEasterEggOpen(false)}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] font-medium hover:bg-[var(--bg-card-secondary)] transition-colors"
+                                >
+                                    아니요
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsEasterEggOpen(false);
+                                        navigate('/season-greeting');
+                                    }}
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-bold hover:opacity-90 transition-opacity shadow-md shadow-orange-500/20"
+                                >
+                                    확인해보기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
