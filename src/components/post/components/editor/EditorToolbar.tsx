@@ -23,9 +23,10 @@ interface Props {
     currentItem: Block | Sticker | FloatingText | FloatingImage | any;
     onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
     onDelete?: () => void;
+    positionMode?: 'fixed' | 'inline';
 }
 
-const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete }) => {
+const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete, positionMode = 'fixed' }) => {
     const [showTextMenu, setShowTextMenu] = React.useState(false);
     const [showBgMenu, setShowBgMenu] = React.useState(false);
     const itemType = (currentItem as any)?.type;
@@ -52,21 +53,22 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
         return parseInt(sizeStr.replace('px', '')) || 18;
     };
 
+    const positionClasses = positionMode === 'fixed'
+        ? "fixed bottom-8 left-1/2 -translate-x-1/2"
+        : "absolute top-full mt-2 left-1/2 -translate-x-1/2";
+
     return (
         <div
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center z-[100] animate-in slide-in-from-bottom-5"
+            className={`${positionClasses} bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center z-[100] animate-in slide-in-from-bottom-5`}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
         >
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-500 border-r pr-4 mr-4">
-                <Sliders size={16} className="text-indigo-600" />
-                <span>설정</span>
-            </div>
+
 
             {/* 1. 레이어 순서 (Floating) & Title & Block */}
             <div className="flex items-center gap-1 border-r pr-4 mr-2 border-gray-200">
-                <span className="text-xs text-gray-400 font-bold mr-1">순서</span>
+                <span className="text-xs text-gray-400 font-bold mr-1 whitespace-nowrap">순서</span>
                 <button onClick={() => handleZIndexChange(-1)} className="p-2 hover:bg-gray-100 rounded-full text-gray-600" title="뒤로 보내기">
                     <SendToBack size={18} />
                 </button>

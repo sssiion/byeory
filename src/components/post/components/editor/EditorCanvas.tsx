@@ -434,17 +434,30 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                     dragHandleProps={provided.dragHandleProps}
                                                                 />
 
-                                                                {viewMode === 'editor' && isFocused && !block.locked && (
-                                                                    <div className="absolute -right-14 top-[-10px] h-full flex flex-col justify-start pt-2 gap-2 z-30">
-                                                                        <div className="flex flex-col gap-1 bg-white/80 backdrop-blur rounded-lg shadow-sm p-1 border">
-                                                                            <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'up'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowUp size={16} /></button>
-                                                                            <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'down'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowDown size={16} /></button>
-                                                                        </div>
-                                                                        {canSwap && (
-                                                                            <button onClick={(e) => { e.stopPropagation(); handleSwapLayout(block.id); }} className="p-2 bg-white border shadow-md rounded-full text-indigo-600 hover:bg-indigo-50 transition flex items-center justify-center ring-1 ring-indigo-100"><ArrowRightLeft size={18} /></button>
+                                                                {viewMode === 'editor' && isFocused && (
+                                                                    <>
+                                                                        {!block.locked && (
+                                                                            <div className="absolute -right-14 top-[-10px] h-full flex flex-col justify-start pt-2 gap-2 z-30">
+                                                                                <div className="flex flex-col gap-1 bg-white/80 backdrop-blur rounded-lg shadow-sm p-1 border">
+                                                                                    <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'up'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowUp size={16} /></button>
+                                                                                    <button onClick={(e) => { e.stopPropagation(); moveBlock(index, 'down'); }} className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition"><ArrowDown size={16} /></button>
+                                                                                </div>
+                                                                                {canSwap && (
+                                                                                    <button onClick={(e) => { e.stopPropagation(); handleSwapLayout(block.id); }} className="p-2 bg-white border shadow-md rounded-full text-indigo-600 hover:bg-indigo-50 transition flex items-center justify-center ring-1 ring-indigo-100"><ArrowRightLeft size={18} /></button>
+                                                                                )}
+                                                                                <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 bg-white border shadow-md rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center mt-2 ring-1 ring-red-50"><Trash2 size={18} /></button>
+                                                                            </div>
                                                                         )}
-                                                                        <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 bg-white border shadow-md rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center mt-2 ring-1 ring-red-50"><Trash2 size={18} /></button>
-                                                                    </div>
+
+                                                                        <EditorToolbar
+                                                                            selectedId={block.id}
+                                                                            selectedType="block"
+                                                                            currentItem={block}
+                                                                            onUpdate={onUpdate}
+                                                                            onDelete={onDelete}
+                                                                            positionMode="inline"
+                                                                        />
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         )}
@@ -544,14 +557,15 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             </ResizableItem>
                         ))}
 
-                        {/* 하단 툴바 */}
-                        {viewMode === 'editor' && selectedId && currentItem && detectedType && (
+                        {/* 하단 툴바 (Blocks 외의 요소들용) */}
+                        {viewMode === 'editor' && selectedId && currentItem && detectedType && detectedType !== 'block' && (
                             <EditorToolbar
                                 selectedId={selectedId}
                                 selectedType={detectedType}
                                 currentItem={currentItem}
                                 onUpdate={onUpdate}
                                 onDelete={detectedType === 'title' ? undefined : onDelete}
+                                positionMode="fixed"
                             />
                         )}
                     </div>

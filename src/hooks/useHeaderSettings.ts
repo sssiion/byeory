@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { updateHeaderSettings, getHeaderSettings, type HeaderSettings } from '../services/headerSettings';
 
-const LOCAL_STORAGE_KEY = 'header_settings_v2';
+const LOCAL_STORAGE_KEY = 'header_settings_v3';
 
 const DEFAULT_SETTINGS: HeaderSettings = {
     showTimer: false,
     showCredit: true,
-    showWidgetZoom: true,
+    showWidgetZoom: false,
 };
 
 export const useHeaderSettings = () => {
