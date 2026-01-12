@@ -9,3 +9,5 @@ export * from './ComplimentJar';
 export * from './EmotionalWeather';
 export * from './DailyStamp';
 export * from './ChatDiary';
+export * from './MoodAnalytics';
+export * from './WordMindMapWidget';
