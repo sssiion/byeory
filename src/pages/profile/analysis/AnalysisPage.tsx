@@ -178,17 +178,35 @@ function AnalysisPage() {
       });
 
       if (response.ok && response.status !== 204) {
-        const json = await response.json();
-        if (typeof json.analysisResult === "string") {
-          try {
-            const parsed = JSON.parse(json.analysisResult);
-            setData(parsed);
-          } catch (e) {
-            console.warn("Legacy data format");
+        try {
+          const text = await response.text();
+          if (!text) {
             setData(null);
+            return;
           }
-        } else {
-          setData(json);
+
+          const json = JSON.parse(text);
+
+          // 빈 배열([])이거나 데이터 구조가 안맞으면 null 처리
+          if (Array.isArray(json) && json.length === 0) {
+            setData(null);
+            return;
+          }
+
+          if (typeof json.analysisResult === "string") {
+            try {
+              const parsed = JSON.parse(json.analysisResult);
+              setData(parsed);
+            } catch (e) {
+              console.warn("Legacy data format");
+              setData(null);
+            }
+          } else {
+            setData(json);
+          }
+        } catch (e) {
+          console.error("Data parsing error:", e);
+          setData(null);
         }
       } else {
         setData(null);

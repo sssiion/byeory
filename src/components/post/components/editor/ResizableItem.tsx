@@ -11,13 +11,13 @@ interface Props {
     zIndex: number;
     isSelected: boolean;
     readOnly: boolean;
-    onSelect: () => void;
+    onSelect: (isMulti?: boolean) => void;
     onUpdate: (changes: any) => void;
     children: React.ReactNode;
 }
 
 const ResizableItem: React.FC<Props> = ({
-    x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
+    id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -38,7 +38,7 @@ const ResizableItem: React.FC<Props> = ({
         if (readOnly) return;
         e.stopPropagation();
         e.preventDefault();
-        onSelect();
+        onSelect(e.shiftKey); // ✨ Pass shift key
         setIsDragging(true);
 
         const currentX = elementRef.current?.offsetLeft || 0;
@@ -131,6 +131,7 @@ const ResizableItem: React.FC<Props> = ({
     return (
         <div
             ref={elementRef}
+            id={id} // ✨ Added ID for selection logic
             className={`absolute group`}
             style={{
                 left: typeof x === 'number' ? `${x}px` : x,
@@ -146,7 +147,7 @@ const ResizableItem: React.FC<Props> = ({
             // ✨ Click selects the item, but doesn't start drag
             onClick={(e) => {
                 e.stopPropagation();
-                onSelect();
+                onSelect(e.shiftKey); // ✨ Pass shift key
             }}
         >
             <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500' : ''}`}>

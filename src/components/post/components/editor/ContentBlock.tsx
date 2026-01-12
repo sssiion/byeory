@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, useState} from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { Block } from '../../types';
 import { Trash2, GripVertical, Mic, MicOff } from 'lucide-react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
@@ -97,9 +97,9 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                 onClick={toggleRecording}
                 className={`p-2 rounded-full transition-all duration-200 flex items-center justify-center
                     ${isRecordingHere && listening
-                    ? 'bg-red-100 text-red-600 animate-pulse ring-2 ring-red-200'
-                    : 'bg-transparent text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'
-                }
+                        ? 'bg-red-100 text-red-600 animate-pulse ring-2 ring-red-200'
+                        : 'bg-transparent text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'
+                    }
                 `}
                 title={listening ? "음성 인식 중지" : "음성으로 입력하기"}
             >
@@ -139,7 +139,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                         )}
                     </>
                 ) : (
-                    <div className="text-gray-400 hover:text-indigo-500 text-center">
+                    <div className="text-gray-400 hover:text-indigo-500 text-center select-none"> {/* ✨ select-none */}
                         <span className="text-2xl block mb-1">📷</span>
                         <span className="text-xs font-bold">사진 추가</span>
                     </div>

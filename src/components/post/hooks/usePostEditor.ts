@@ -45,6 +45,8 @@ export const usePostEditor = () => {
     const setFloatingImages = (value: React.SetStateAction<FloatingImage[]>) => { _setFloatingImages(value); setIsDirty(true); };
 
     // ... Selection States (No need to be dirty)
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    // selectedId acts as the "primary" or "active" selection for the toolbar
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [selectedType, setSelectedType] = useState<'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null>(null);
     const [rawInput, setRawInput] = useState("");
@@ -71,7 +73,6 @@ export const usePostEditor = () => {
     const [paperStyles, _setPaperStyles] = useState<Record<string, any>>({
         backgroundColor: '#ffffff',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        padding: '3rem',
     });
     const setPaperStyles = (value: React.SetStateAction<Record<string, any>>) => { _setPaperStyles(value); setIsDirty(true); };
 
@@ -145,7 +146,6 @@ export const usePostEditor = () => {
             _setPaperStyles({
                 backgroundColor: '#ffffff',
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                padding: '3rem',
             });
         }
 
@@ -161,8 +161,6 @@ export const usePostEditor = () => {
         setIsDirty(false); // ✨ Reset Dirty Flag
     };
 
-    // 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
-    // ✨ Support Temp Save
     // 저장하기: PX 단위 그대로 저장 + 메타데이터 블록 추가
     // ✨ Support Temp Save
     const handleSave = async (isTemp: boolean = false): Promise<{ success: boolean; message?: string; type?: 'info' | 'success' | 'danger' }> => {
@@ -368,21 +366,81 @@ export const usePostEditor = () => {
         if (!isDirty) setIsDirty(true);
     };
 
-    // ✨ Interaction Wrappers (Already using setters that trigger dirty if defined above, 
-    // but handleUpdate modifies specific items, so it needs to use setBlocks)
+    // ✨ Interaction Wrappers
     const handleUpdate = (id: string, updates: any) => {
+        if (id === 'title') {
+            // If updates contain 'styles', merge them. If flat, merge directly (based on toolbar logic).
+            // Toolbar now sends { styles: ... }.
+            if (updates.styles) {
+                setTitleStyles(prev => ({ ...prev, ...updates.styles }));
+            } else {
+                setTitleStyles(prev => ({ ...prev, ...updates }));
+            }
+            return; // ✨ Early exit for title
+        }
         setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
         setStickers(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
         setFloatingTexts(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
         setFloatingImages(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
     };
 
+    const handleSelect = (id: string | null, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title' | null, isMulti: boolean = false) => {
+        if (!id) {
+            setSelectedIds([]);
+            setSelectedId(null);
+            setSelectedType(null);
+            return;
+        }
+
+        if (isMulti) {
+            setSelectedIds(prev => {
+                const newIds = prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id];
+                // Update primary selectedId logic
+                if (newIds.length > 0) {
+                    if (prev.includes(id)) { // removed
+                        setSelectedId(newIds[newIds.length - 1]);
+                    } else {
+                        setSelectedId(id);
+                        setSelectedType(type);
+                    }
+                } else {
+                    setSelectedId(null);
+                    setSelectedType(null);
+                }
+                return newIds;
+            });
+        } else {
+            setSelectedIds([id]);
+            setSelectedId(id);
+            setSelectedType(type);
+        }
+    };
+
     const handleDelete = (id: string) => {
-        setBlocks(prev => prev.filter(b => b.id !== id));
-        setStickers(prev => prev.filter(s => s.id !== id));
-        setFloatingTexts(prev => prev.filter(t => t.id !== id));
-        setFloatingImages(prev => prev.filter(i => i.id !== id));
-        if (selectedId === id) { setSelectedId(null); setSelectedType(null); }
+        let idsToDelete: string[] = [];
+
+        if (id && selectedIds.includes(id)) {
+            idsToDelete = selectedIds;
+        } else if (id) {
+            idsToDelete = [id];
+        } else if (selectedIds.length > 0) {
+            idsToDelete = selectedIds;
+        }
+
+        if (idsToDelete.length === 0) return;
+
+        setBlocks(prev => prev.filter(b => !idsToDelete.includes(b.id)));
+        setStickers(prev => prev.filter(s => !idsToDelete.includes(s.id)));
+        setFloatingTexts(prev => prev.filter(t => !idsToDelete.includes(t.id)));
+        setFloatingImages(prev => prev.filter(i => !idsToDelete.includes(i.id)));
+
+        if (idsToDelete.includes(selectedId || '')) {
+            setSelectedId(null);
+            setSelectedType(null);
+            setSelectedIds(prev => prev.filter(pid => !idsToDelete.includes(pid)));
+        } else {
+            setSelectedIds(prev => prev.filter(pid => !idsToDelete.includes(pid)));
+        }
     };
 
     const addSticker = (url: string) => {
@@ -393,8 +451,6 @@ export const usePostEditor = () => {
         };
         setStickers(prev => [...prev, newSticker]);
     };
-
-
 
     const addFloatingText = () => {
         setFloatingTexts(prev => [...prev, {
@@ -428,8 +484,6 @@ export const usePostEditor = () => {
     };
 
     const changeZIndex = (id: string, direction: 'up' | 'down') => {
-        // Simple implementation: bring to front or back by large increment
-        // Or swap. For now, let's just increment/decrement
         const currentZ = getMaxZ();
         handleUpdate(id, { zIndex: direction === 'up' ? currentZ + 1 : Math.max(0, currentZ - 1) });
     };
@@ -474,8 +528,6 @@ export const usePostEditor = () => {
         await updateAlbumApi(id, data);
         fetchAlbums();
     };
-
-
 
     // ✨ Modal State for Confirmations
     const [confirmModal, setConfirmModal] = useState<{
@@ -589,12 +641,12 @@ export const usePostEditor = () => {
         setTempImages([]);
         setSelectedId(null);
         setSelectedType(null);
+        setSelectedIds([]); // ✨ Reset selectedIds
         _setCurrentTags([]);
 
         _setPaperStyles({
             backgroundColor: '#ffffff',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            padding: '3rem',
         });
 
         if (validAlbumId) {
@@ -639,5 +691,6 @@ export const usePostEditor = () => {
         myTemplates, applyTemplate, fetchMyTemplates,
         isDirty, setIsDirty,
         confirmModal, showConfirmModal, closeConfirmModal, // ✨ Export Modal State & Helpers
+        selectedIds, handleSelect, // ✨ Export Multi-Select
     };
 };
