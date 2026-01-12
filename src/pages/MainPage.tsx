@@ -11,12 +11,7 @@ import { CustomDragLayer } from '../components/settings/widgets/CustomDragLayer'
 import WidgetBuilder from "../components/settings/widgets/customwidget/WidgetBuilder";
 import { WidgetInfoModal } from '../components/settings/widgets/WidgetInfoModal';
 import { PresetManager } from '../components/settings/widgets/PresetManager';
-<<<<<<< Updated upstream
 import { useIsMobile, useAutoScroll } from '../hooks';
-=======
-import { useIsMobile } from '../hooks';
-import { useWidgetRegistry } from "../components/settings/widgets/useWidgetRegistry.ts";
->>>>>>> Stashed changes
 import type { WidgetInstance } from "../components/settings/widgets/type.ts";
 
 // Refactored Components
@@ -27,15 +22,8 @@ import { useDashboardLogic } from '../components/dashboard/hooks/useDashboardLog
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
 
 const MainPage: React.FC = () => {
-<<<<<<< Updated upstream
     useAutoScroll(); // Enable auto-scrolling during drag
     const isMobile = useIsMobile();
-=======
-    // 🔥 [변경 2] 훅을 사용해 위젯 메타데이터(registry) 로딩
-    // 🔥 [변경 2] 훅을 사용해 위젯 메타데이터(registry) 로딩
-    const { registry, isLoading, refresh: refreshRegistry } = useWidgetRegistry();
-
->>>>>>> Stashed changes
     const { isEditMode: isMenuEditMode } = useMenu();
 
     const {
@@ -234,17 +222,7 @@ const MainPage: React.FC = () => {
                                     onSelect={(item) => addWidget(item, setIsCatalogOpen)}
                                     onMultiSelect={(items) => addWidgets(items, setIsCatalogOpen)}
                                     onEdit={(data) => {
-                                        // 🌟 [Fix] Registry Item -> WidgetBuilder Format 변환
-                                        // WidgetGallery는 WidgetConfig 객체를 넘기지만, WidgetBuilder는 저장된 원본 데이터(평탄화된 구조)를 기대함
-                                        const builderData = {
-                                            id: data.id,
-                                            type: data.defaultProps?.type || 'custom-block',
-                                            content: data.defaultProps?.content || {},
-                                            styles: data.defaultProps?.styles || {},
-                                            name: data.label, // 저장 시 이름 유지
-                                            // 필요한 경우 다른 메타데이터 맵핑
-                                        };
-                                        setEditingWidgetData(builderData);
+                                        setEditingWidgetData(data);
                                         setIsBuilderOpen(true);
                                         setIsCatalogOpen(false);
                                     }}
@@ -308,7 +286,6 @@ const MainPage: React.FC = () => {
                             initialData={editingWidgetData}
                             onSave={(savedData) => {
                                 setEditingWidgetData(savedData);
-                                refreshRegistry(); // 🌟 저장 시 위젯 목록 새로고침
                             }}
                         />
                     </div>

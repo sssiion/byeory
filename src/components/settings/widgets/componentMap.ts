@@ -8,17 +8,8 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
     // System (Deprecated / Moved)
     // ======================================================================
-<<<<<<< Updated upstream
     // 'welcome' moved to Utility
     // 'theme-guide', 'feature-card' deleted
-=======
-    'welcome': lazy(() => import('./WidgetCollection/system/Welcome.tsx').then(m => ({ default: m.WelcomeWidget }))),
-    'theme-guide': lazy(() => import('./WidgetCollection/system/ThemeGuide.tsx').then(m => ({ default: m.ThemeGuideWidget }))),
-    'feature-card': lazy(() => import('./WidgetCollection/system/FeatureCard.tsx').then(m => ({ default: m.FeatureCard }))),
-    'my-persona': lazy(() => import('./WidgetCollection/system/MyPersona.tsx').then(m => ({ default: m.MyPersona }))),
-    // 🌟 커스텀 위젯 (Gallery 노출용)
-    'custom-block': lazy(() => import('./customwidget/CustomWidgetWrapper.tsx').then(m => ({ default: m.CustomWidgetWrapper }))),
->>>>>>> Stashed changes
 
     // ======================================================================
     // Data & Logic

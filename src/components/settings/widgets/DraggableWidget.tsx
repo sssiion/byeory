@@ -120,15 +120,13 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     let WidgetComponent: any = null;
     let registryItem: WidgetConfig | undefined = registry[widget.type];
 
-    // Priority: 1. Registry에 등록된 컴포넌트 2. ComponentMap 직접 조회
-    if (registryItem?.component) {
-        WidgetComponent = registryItem.component;
-    } else if (WIDGET_COMPONENT_MAP[widget.type]) {
+    // Registry에 있고, ComponentMap에도 코드가 있다면 연결
+    if (registryItem && WIDGET_COMPONENT_MAP[widget.type]) {
         WidgetComponent = WIDGET_COMPONENT_MAP[widget.type];
     }
 
-    // Fallback logic for custom blocks or missing registry items
-    if (!registryItem && (widget.type === 'custom-block' || widget.type.startsWith('custom-'))) {
+    // Fallback logic
+    if (widget.type === 'custom-block' || !registryItem) {
         registryItem = {
             id: 0,
             widgetType: widget.type,
@@ -138,23 +136,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             keywords: [],
             defaultSize: '2x2',
             validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
-            defaultProps: {},
-            isSystem: false,
-            component: null as any
-        };
-    }
-
-    // Ultimate fallback to prevent crash
-    if (!registryItem) {
-        registryItem = {
-            id: 999,
-            widgetType: 'unknown',
-            label: 'Unknown',
-            description: '',
-            category: 'Uncategorized',
-            keywords: [],
-            defaultSize: '1x1',
-            validSizes: [[1, 1]],
             defaultProps: {},
             isSystem: false,
             component: null as any
@@ -257,7 +238,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                             </button>
                         )}
 
-<<<<<<< Updated upstream
                         {/* Remove Button (Trash Icon) */}
                         <button
                             onClick={(e) => {
@@ -367,56 +347,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                 <path d="M3 21h6" strokeOpacity="0.5" />
                                 <path d="M9 21v-6" strokeOpacity="0.5" />
                             </svg>
-=======
-                            {showSizeMenu && (
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-[var(--bg-card)] rounded-lg shadow-xl border border-[var(--border-color)] p-2 z-[100] w-36 grid grid-cols-2 gap-1 animate-in zoom-in duration-200 max-h-60 overflow-y-auto custom-scrollbar">
-                                    {(registryItem.validSizes || [
-                                        [1, 1], [2, 1], [3, 1],
-                                        [1, 2], [2, 2], [3, 2],
-                                        [2, 3], [3, 3], [4, 2]
-                                    ]).filter((size: number[]) => {
-                                        const [cw, ch] = size;
-                                        if (isMobile) {
-                                            if (cw > 2) return false;
-                                            if (ch > 2) return false;
-                                            // Mobile specific filters...
-                                            if (widget.type === 'welcome') {
-                                                if (cw === 1 && ch === 2) return false;
-                                                if (ch > 2) return false;
-                                            }
-                                            if (widget.type === 'ootd' && ch !== 2) return false;
-                                            if (widget.type === 'chat-diary' && cw !== 2) return false;
-                                            if (widget.type === 'asmr-mixer' && cw !== 2) return false;
-                                            if (widget.type === 'random-picker' && cw === 1 && ch === 1) return false;
-                                        }
-                                        return true;
-                                    }).map((size: number[]) => {
-                                        const [cw, ch] = size;
-                                        return (
-                                            <button
-                                                key={`${cw}x${ch}`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    updateLayout(widget.id, { w: cw, h: ch });
-                                                    // LocalStorage Config Logic
-                                                    try {
-                                                        const key = `widget-config-${widget.type}`;
-                                                        const existing = localStorage.getItem(key);
-                                                        const config = existing ? JSON.parse(existing) : {};
-                                                        const newConfig = { ...config, defaultSize: `${cw}x${ch}` };
-                                                        localStorage.setItem(key, JSON.stringify(newConfig));
-                                                    } catch (e) { console.warn(e); }
-                                                    setShowSizeMenu(false);
-                                                }}
-                                                className={`text-[10px] p-2 rounded hover:bg-[var(--bg-card-secondary)] border transition-colors ${w === cw && h === ch ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-[var(--border-color)] text-[var(--text-secondary)]'}`}
-                                            >
-                                                {cw}x{ch}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
->>>>>>> Stashed changes
                         </div>
                     )}
                 </div>

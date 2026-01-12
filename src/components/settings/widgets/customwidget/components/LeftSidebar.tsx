@@ -7,60 +7,21 @@ import {
     Columns, AlignVerticalJustifyCenter, AlertCircle, Highlighter, EyeOff, Sigma,
     Play, ChevronsRight, MoreHorizontal, BarChart3, Radar,
     Grid3X3, PlusCircle, Star, Battery, Database, ArrowLeftRight,
-    Link, FileText, StickyNote, Search, RotateCw
+    Link, FileText, StickyNote, Search
 } from 'lucide-react';
 import type { BlockType } from '../types';
 import { BLOCK_COSTS } from '../constants';
-import { getMyWidgets } from '../widgetApi'; // API 임포트
-import { Package } from 'lucide-react'; // 아이콘 임포트
-import type { WidgetBlock } from '../types';
 
 interface Props {
-    onAddBlock: (type: BlockType, template?: WidgetBlock) => void;
+    onAddBlock: (type: BlockType) => void;
     remainingCapacity: number;
-    refreshTrigger?: number; // 🌟 외부에서 새로고침 트리거
 }
 
-// 카테고리 타입 정의 (saved 추가)
-type Category = 'text' | 'structure' | 'visual' | 'effect' | 'data' | 'util' | 'study' | 'interaction' | 'saved';
+// 카테고리 타입 정의
+type Category = 'text' | 'structure' | 'visual' | 'effect' | 'data' | 'util' | 'study' | 'interaction';
 
-const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity, refreshTrigger }) => {
+const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity }) => {
     const [activeTab, setActiveTab] = useState<Category>('text');
-    const [savedWidgets, setSavedWidgets] = useState<WidgetBlock[]>([]);
-
-    // 보관함 탭 클릭 시 위젯 로드
-    const loadSavedWidgets = () => {
-        getMyWidgets().then(response => {
-            // 🌟 응답 구조 방어 로직 (페이지네이션 vs 배열)
-            let dataList = [];
-            if (Array.isArray(response)) {
-                dataList = response;
-            } else if (response && Array.isArray(response.content)) {
-                dataList = response.content;
-            } else if (response && Array.isArray(response.data)) { // 혹시 모를 구조
-                dataList = response.data;
-            }
-
-            const mapped = dataList.map((w: any) => ({
-                id: w.id || w._id,
-                type: w.type,
-                content: w.content,
-                styles: w.styles || {},
-                name: w.name
-            }));
-            setSavedWidgets(mapped);
-        }).catch(err => {
-            console.error(err);
-            setSavedWidgets([]);
-        });
-    };
-
-    // 탭 변경 또는 refreshTrigger 발생 시 로드
-    React.useEffect(() => {
-        if (activeTab === 'saved') {
-            loadSavedWidgets();
-        }
-    }, [activeTab, refreshTrigger]);
 
     // 헬퍼: 버튼 렌더링
     const renderBtn = (icon: React.ReactNode, label: string, type: BlockType) => {
@@ -147,14 +108,6 @@ const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity, refreshTr
                     onClick={() => setActiveTab('interaction')}
                     icon={<MousePointer2 size={20} />}
                     label="동작"
-                />
-
-                <div className="w-8 h-px bg-[var(--border-color)] my-1"></div>
-                <TabButton
-                    active={activeTab === 'saved'}
-                    onClick={() => setActiveTab('saved')}
-                    icon={<Package size={20} />}
-                    label="보관함"
                 />
             </div>
 
@@ -251,52 +204,6 @@ const LeftSidebar: React.FC<Props> = ({ onAddBlock, remainingCapacity, refreshTr
 
 
                     </div>
-
-                    {activeTab === 'saved' && (
-                        <>
-                            <div className="flex justify-between items-center px-4 py-2 border-b border-[var(--border-color)] mb-2">
-                                <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">내 보관함</span>
-                                <button
-                                    onClick={loadSavedWidgets}
-                                    className="text-[var(--text-secondary)] hover:text-indigo-400 transition-colors p-1 rounded hover:bg-[var(--bg-card-secondary)]"
-                                    title="새로고침"
-                                >
-                                    <RotateCw size={14} />
-                                </button>
-                            </div>
-                            {savedWidgets.length === 0 ? (
-                                <div className="text-center text-[var(--text-secondary)] text-xs p-4 bg-gray-50/50 rounded-lg mx-2 border border-dashed border-gray-200">
-                                    <p className="mb-1">저장된 위젯이 없습니다.</p>
-                                    <p className="text-[10px] text-gray-400">상단의 '저장하기' 버튼으로<br />현재 위젯을 저장해보세요!</p>
-                                </div>
-                            ) : (
-                                savedWidgets.map((widget) => {
-                                    // 커스텀 블록 비용 계산 (여기서는 대략 1 또는 자식 수 비례?? 일단 1로 처리하거나 계산 로직 필요)
-                                    // 일단 비용 1로 가정하고 렌더링
-                                    return (
-                                        <button
-                                            key={widget.id}
-                                            onClick={() => onAddBlock(widget.type, widget)}
-                                            className="w-full flex items-center gap-3 p-2.5 rounded-lg transition-all group relative text-left mb-1 hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] cursor-pointer text-[var(--text-secondary)] bg-[var(--bg-card-secondary)]/50 border border-[var(--border-color)] hover:border-indigo-500"
-                                        >
-                                            <div className="group-hover:text-indigo-400 text-[var(--text-secondary)]">
-                                                <Package size={18} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-[var(--text-primary)] truncate max-w-[140px]">
-                                                    {(widget as any).name || '이름 없음'}
-                                                </span>
-                                                <span className="text-[10px] text-[var(--text-secondary)]">
-                                                    {widget.type === 'custom-block' ? '복합 위젯' : widget.type}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    );
-                                })
-                            )}
-                        </>
-                    )}
-
                 </div>
             </div>
         </aside>

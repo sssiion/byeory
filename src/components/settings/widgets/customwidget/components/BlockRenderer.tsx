@@ -53,32 +53,6 @@ interface RendererProps {
 
 
 // --- Helper Components (Defined before BlockRenderer to avoid usage-before-declaration) ---
-function DroppableColumn({
-    id,
-    onClick,
-    children,
-}: {
-    id: string;
-    onClick?: (e: React.MouseEvent) => void;
-    children: React.ReactNode;
-}) {
-    const { setNodeRef, isOver } = useDroppable({
-        id,
-        data: { containerId: id, isContainer: true },
-    });
-
-    return (
-        <div
-            ref={setNodeRef}
-            onClick={onClick}
-            className={`flex flex-col gap-2 w-full h-full flex-1 min-h-[50px] relative rounded-lg border-2 border-transparent transition-colors
-        ${isOver ? 'border-indigo-400 bg-indigo-50/30' : ''}`}
-        >
-            {children}
-        </div>
-    );
-}
-
 const ToggleItem = ({ block, onUpdateBlock, style }: any) => {
     const { content } = block;
     const [isOpen, setIsOpen] = useState(false);
@@ -99,7 +73,7 @@ const ToggleItem = ({ block, onUpdateBlock, style }: any) => {
                     e.stopPropagation();
                     setIsOpen(!isOpen);
                 }}
-                className="flex items-center gap-1 cursor-pointer p-1 rounded select-none group"
+                className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 p-1 rounded select-none group"
             >
                 <div className="text-gray-400 group-hover:text-gray-600">
                     {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -128,7 +102,7 @@ const ToggleItem = ({ block, onUpdateBlock, style }: any) => {
                                 tagName="span"
                                 text={it}
                                 onUpdate={(val) => handleItemUpdate(i, val)}
-                                style={{ ...style, fontWeight: 'normal' }} // 본문은 굵기 빼기
+                                style={{...style, fontWeight: 'normal'}} // 본문은 굵기 빼기
                                 placeholder={`항목 ${i + 1}`}
                             />
                         </li>
@@ -191,9 +165,9 @@ const SpoilerItem = ({ block, onUpdateBlock, style }: any) => {
             onClick={() => setIsRevealed(!isRevealed)}
             className={`h-full w-full relative p-3 rounded-lg border transition-all cursor-pointer group select-none flex flex-col
                 ${isRevealed
-                    ? 'bg-gray-50 border-gray-200 text-gray-800'
-                    : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
-                }
+                ? 'bg-gray-50 border-gray-200 text-gray-800'
+                : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
+            }
             `}
             style={style}
         >
@@ -282,7 +256,31 @@ const TypingTextItem = ({ content, style }: any) => {
     );
 };
 
+function DroppableColumn({
+    id,
+    onClick,
+    children,
+}: {
+    id: string; // columnContainerId
+    onClick: (e: React.MouseEvent) => void;
+    children: React.ReactNode;
+}) {
+    const { setNodeRef, isOver } = useDroppable({
+        id,
+        data: { containerId: id, isContainer: true },
+    });
 
+    return (
+        <div
+            ref={setNodeRef}
+            onClick={onClick}
+            className={`flex flex-col gap-2 w-full min-h-[80px] rounded-lg border-2 p-2 relative
+        ${isOver ? 'border-indigo-400 bg-indigo-50/30' : ''}`}
+        >
+            {children}
+        </div>
+    );
+}
 
 const RadarChartItem = ({ content, style, styles }: any) => {
     const data = content.data || [];
@@ -435,134 +433,53 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
 
     const commonStyle = {
         color: styles.color,
-        color: styles.color,
-        // 🌟 [Refactor] Use 'background' to support both solid colors and gradients
-        background: styles.bgColor,
+        backgroundColor: styles.bgColor,
         fontSize: styles.fontSize ? `${styles.fontSize}px` : undefined,
         textAlign: styles.align as any,
         fontWeight: styles.bold ? 'bold' : 'normal',
         fontStyle: styles.italic ? 'italic' : 'normal',
         textDecoration: textDecoration || undefined,
-
-        // 🌟 [Phase 1] Advanced Styling Application
-        borderRadius: styles.borderRadius ? `${styles.borderRadius}px` : undefined,
-        borderWidth: styles.borderWidth ? `${styles.borderWidth}px` : undefined,
-        borderColor: styles.borderColor || undefined,
-        borderStyle: styles.borderStyle || undefined,
-        padding: styles.padding ? `${styles.padding}px` : undefined,
-        backgroundImage: styles.backgroundImage ? `url(${styles.backgroundImage})` : undefined,
-        backgroundSize: styles.backgroundImage ? 'cover' : undefined,
-        backgroundPosition: styles.backgroundImage ? 'center' : undefined,
-        boxShadow: styles.boxShadow || undefined,
-        opacity: styles.opacity ?? 1,
     };
-
-    // 🌟 Helper for List Updates
-    const handleListUpdate = (items: string[], index: number, newVal: string) => {
-        const newItems = [...items];
-        newItems[index] = newVal;
-        onUpdateBlock(block.id, { content: { ...content, items: newItems } });
-    };
-
     // 🌟 [중요] 해당 블록이 선택되었는지 확인 (선택된 블록만 리사이징 핸들 표시)
     const isSelected = selectedBlockId === block.id;
     // --- 🔥 컬럼(Columns) 렌더링 로직 (dnd-kit로 변경) ---
     if (type === 'columns') {
         const layout: WidgetBlock[][] = content.layout || [[], []];
-        const ratios: number[] = content.columnRatios || layout.map(() => 100 / layout.length);
-
-        // Resize Logic
-        const handleResizeStart = (index: number, e: React.MouseEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const startX = e.clientX;
-            const startRatios = [...ratios];
-            const containerWidth = (e.currentTarget.parentElement?.offsetWidth || 0);
-
-            const handleMouseMove = (moveEvent: MouseEvent) => {
-                const deltaX = moveEvent.clientX - startX;
-                const deltaPercent = (deltaX / containerWidth) * 100;
-
-                const newRatios = [...startRatios];
-                newRatios[index] += deltaPercent;
-                newRatios[index + 1] -= deltaPercent;
-
-                // Minimal width check (e.g., 10%)
-                if (newRatios[index] < 10) {
-                    newRatios[index + 1] += (newRatios[index] - 10);
-                    newRatios[index] = 10;
-                }
-                if (newRatios[index + 1] < 10) {
-                    newRatios[index] += (newRatios[index + 1] - 10);
-                    newRatios[index + 1] = 10;
-                }
-
-                onUpdateBlock(block.id, { content: { ...content, columnRatios: newRatios } });
-            };
-
-            const handleMouseUp = () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-        };
 
         return (
-            <div className="flex w-full h-full relative">
+            <div className="flex gap-2 w-full h-full">
                 {layout.map((colBlocks, index) => {
                     const columnContainerId = `COL-${block.id}-${index}`;
-                    const widthPercent = ratios[index] || (100 / layout.length);
 
                     return (
-                        <React.Fragment key={index}>
-                            <div
-                                className="flex flex-col h-full min-w-[10px] flex-none"
-                                style={{ width: `${widthPercent}%` }}
+                        <div key={index} className="flex-1 w-0 min-w-[50px] flex flex-col h-full">
+                            <DroppableColumn
+                                id={columnContainerId}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSetActiveContainer({ blockId: block.id, colIndex: index });
+                                    onSelectBlock(null);
+                                }}
                             >
-                                <DroppableColumn
-                                    id={columnContainerId}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onSetActiveContainer({ blockId: block.id, colIndex: index });
-                                        onSelectBlock(null);
-                                    }}
-                                >
-                                    <SortableContext items={colBlocks.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-                                        <div className="relative z-10 flex flex-col w-full h-full">
-                                            {colBlocks.map((child) => (
-                                                <ColumnSortableItem
-                                                    key={child.id}
-                                                    child={child}
-                                                    columnContainerId={columnContainerId}
-                                                    selectedBlockId={props.selectedBlockId}
-                                                    onSelectBlock={props.onSelectBlock}
-                                                    onRemoveBlock={props.onRemoveBlock}
-                                                    activeContainer={props.activeContainer}
-                                                    onSetActiveContainer={props.onSetActiveContainer}
-                                                    onUpdateBlock={props.onUpdateBlock}
-                                                />
-                                            ))}
-                                            {/* 빈 공간 클릭 시에도 동작하도록 투명 레이어 추가 (선택사항) */}
-                                            {colBlocks.length === 0 && <div className="flex-1 min-h-[50px]" />}
-                                        </div>
-                                    </SortableContext>
-                                </DroppableColumn>
-                            </div>
-
-                            {/* Resizer Handle */}
-                            {index < layout.length - 1 && (
-                                <div
-                                    className="w-4 -mx-2 z-20 cursor-col-resize flex flex-col items-center justify-center group/resizer hover:bg-indigo-500/10 transition-colors h-full select-none"
-                                    onMouseDown={(e) => handleResizeStart(index, e)}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <div className="w-1 h-full bg-gray-300 rounded-full group-hover/resizer:bg-indigo-400 transition-colors opacity-0 group-hover/resizer:opacity-100" />
-                                </div>
-                            )}
-                        </React.Fragment>
+                                <SortableContext items={colBlocks.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                                    <div className="relative z-10 flex flex-col gap-2 w-full">
+                                        {colBlocks.map((child) => (
+                                            <ColumnSortableItem
+                                                key={child.id}
+                                                child={child}
+                                                columnContainerId={columnContainerId}
+                                                selectedBlockId={props.selectedBlockId}
+                                                onSelectBlock={props.onSelectBlock}
+                                                onRemoveBlock={props.onRemoveBlock}
+                                                activeContainer={props.activeContainer}
+                                                onSetActiveContainer={props.onSetActiveContainer}
+                                                onUpdateBlock={props.onUpdateBlock}
+                                            />
+                                        ))}
+                                    </div>
+                                </SortableContext>
+                            </DroppableColumn>
+                        </div>
                     );
                 })}
             </div>
@@ -609,123 +526,41 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     }
     const renderWidgetContent = () => {
         switch (type) {
-            // 🌟 [Phase 3] Charts & Data Visualization
-            case 'chart-pie': {
-                const data = content.data || [{ label: 'A', value: 30 }, { label: 'B', value: 70 }];
-                const total = data.reduce((acc: number, cur: any) => acc + cur.value, 0);
-                let currentAngle = 0;
-                const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-                return (
-                    <div style={commonStyle} className="w-full h-full flex flex-col items-center justify-center p-2">
-                        <svg viewBox="0 0 100 100" className="w-full h-full max-w-[150px] max-h-[150px] overflow-visible">
-                            {data.map((item: any, i: number) => {
-                                const angle = (item.value / total) * 360;
-                                const x1 = 50 + 50 * Math.cos(Math.PI * (currentAngle - 90) / 180);
-                                const y1 = 50 + 50 * Math.sin(Math.PI * (currentAngle - 90) / 180);
-                                const x2 = 50 + 50 * Math.cos(Math.PI * (currentAngle + angle - 90) / 180);
-                                const y2 = 50 + 50 * Math.sin(Math.PI * (currentAngle + angle - 90) / 180);
-                                const largeArc = angle > 180 ? 1 : 0;
-                                const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`;
-                                const sliceColor = colors[i % colors.length];
-                                currentAngle += angle;
-                                return <path key={i} d={pathData} fill={sliceColor} stroke="white" strokeWidth="1" />;
-                            })}
-                        </svg>
-                        <div className="flex flex-wrap gap-2 justify-center mt-2">
-                            {data.map((item: any, i: number) => (
-                                <div key={i} className="flex items-center gap-1 text-[10px] text-gray-500">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} />
-                                    <span>{item.label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            }
-            case 'chart-bar': {
-                const data = content.data || [{ label: 'A', value: 30 }, { label: 'B', value: 70 }];
-                const max = Math.max(...data.map((d: any) => d.value));
-                const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-                return (
-                    <div style={commonStyle} className="w-full h-full flex items-end justify-center gap-2 p-4">
-                        {data.map((item: any, i: number) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
-                                <span className="text-[10px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">{item.value}</span>
-                                <div
-                                    className="w-full rounded-t transition-all hover:brightness-110"
-                                    style={{
-                                        height: `${(item.value / max) * 100}%`,
-                                        backgroundColor: colors[i % colors.length],
-                                        minHeight: '4px'
-                                    }}
-                                />
-                                <span className="text-[10px] text-gray-600 font-bold truncate w-full text-center">{item.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                );
-            }
-            case 'progress-bar': {
-                // 기존 코드가 있으면 유지, 없으면 새로 구현
-                // 이전 구현이 없어서 새로 추가함
-                const value = content.value || 50;
-                const max = content.max || 100;
-                const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-
-                return (
-                    <div style={commonStyle} className="w-full h-full flex flex-col justify-center p-4 gap-2">
-                        <div className="flex justify-between text-xs font-bold text-gray-600">
-                            <span>{content.label || 'Progress'}</span>
-                            <span>{Math.round(percentage)}%</span>
-                        </div>
-                        <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
-                            <div
-                                className="h-full bg-indigo-500 transition-all duration-500 ease-out"
-                                style={{ width: `${percentage}%`, backgroundColor: styles.color || '#6366f1' }}
-                            />
-                        </div>
-                    </div>
-                );
-            }
-
-            // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
+        // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
             case 'heading1':
                 return (
-                    <div className="h-full w-full flex items-center">
-                        <EditableText
-                            tagName="h1"
-                            text={content.text}
-                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                            style={commonStyle}
-                            className="text-2xl font-bold break-words leading-normal w-full h-auto"
-                            placeholder="Heading 1"
-                        />
-                    </div>
+                    <EditableText
+                        tagName="h1"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={commonStyle}
+                        // 🌟 [수정] mb-2, border-b, pb-1 제거 -> 여백 없이 딱 맞게
+                        className="text-2xl font-bold break-words leading-none"
+                        placeholder="Heading 1"
+                    />
                 );
             case 'heading2':
                 return (
-                    <div className="h-full w-full flex items-center">
-                        <EditableText
-                            tagName="h2"
-                            text={content.text}
-                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                            style={commonStyle}
-                            className="text-xl font-bold break-words leading-normal w-full h-auto"
-                            placeholder="Heading 2"
-                        />
-                    </div>
+                    <EditableText
+                        tagName="h2"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={commonStyle}
+                        // 🌟 [수정] mb-1, mt-2 제거 -> 여백 없이 딱 맞게
+                        className="text-xl font-bold break-words leading-none"
+                        placeholder="Heading 2"
+                    />
                 );
             case 'heading3':
                 return (
-                    <div className="h-full w-full flex items-center overflow-hidden">
+                    <div className="h-full w-full overflow-hidden">
                         <EditableText
                             tagName="h3"
                             text={content.text}
                             onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
                             style={commonStyle}
-                            className="text-lg font-semibold break-words leading-normal w-full h-auto"
+                            // 🌟 [수정] mb-1 제거
+                            className="text-lg font-semibold break-words leading-none"
                             placeholder="Heading 3"
                         />
                     </div>
@@ -737,226 +572,200 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                         text={content.text}
                         onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
                         style={commonStyle}
-                        // 🌟 [수정] leading-snug, h-auto 추가하여 높이 최적화
-                        className="whitespace-pre-wrap break-words leading-snug h-auto"
+                        // 🌟 [수정] leading-relaxed(줄간격 넓게)를 제거하거나 leading-normal/none으로 변경
+                        className="whitespace-pre-wrap break-words leading-normal"
                         placeholder="텍스트를 입력하세요..."
                     />
                 );
-            // 🌟 [Phase 2] Action Button
-            case 'button':
-                return (
-                    <div className="w-full h-full flex items-center justify-center p-1">
-                        <button
-                            onClick={() => {
-                                if (block.action) {
-                                    window.open(block.action, '_blank');
-                                } else {
-                                    alert('링크가 설정되지 않았습니다.');
-                                }
-                            }}
-                            style={{ ...commonStyle, cursor: block.action ? 'pointer' : 'default' }}
-                            className="w-full h-full rounded transition-transform active:scale-95 flex items-center justify-center"
-                        >
-                            <EditableText
-                                tagName="span"
-                                text={content.text || '버튼'}
-                                onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                                style={{ color: 'inherit', textDecoration: 'inherit' }}
-                                placeholder="버튼명"
-                            />
-                        </button>
-                    </div>
+        case 'quote':
+            return (
+                <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="border-l-4 pl-3 py-1 my-2 text-gray-600 italic bg-gray-50 rounded-r break-words">
+                    <EditableText
+                        tagName="div"
+                        text={content.text}
+                        onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                        style={{ ...commonStyle, fontStyle: 'italic' }} // Force italic visual
+                        placeholder="인용문을 입력하세요..."
+                    />
+                </div>
+            );
+        case 'book-info':
+            return <BookInfoWidget block={block} />;
+        case 'mindmap': {
+            const content0 = (content || {}) as any;
+
+            const nodes = (content0.nodes || []) as Node[];
+            const edges = (content0.edges || []) as Edge[];
+            const selectedNodeId = (content0.selectedNodeId ?? null) as string | null;
+
+            const setContent = (patch: any) => {
+                props.onUpdateBlock(block.id, {
+                    content: {
+                        ...content0,
+                        ...patch,
+                    },
+                });
+            };
+
+            const onNodesChange = useCallback(
+                (changes: NodeChange[]) => {
+                    setContent({ nodes: applyNodeChanges(changes, nodes) });
+                },
+                [nodes]
+            );
+
+            const onEdgesChange = useCallback(
+                (changes: EdgeChange[]) => {
+                    setContent({ edges: applyEdgeChanges(changes, edges) });
+                },
+                [edges]
+            );
+
+            const onConnect = useCallback(
+                (connection: Connection) => {
+                    const edge = { ...connection, id: `mm-e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` } as Edge;
+                    const nextEdges = addEdge(edge, edges);
+                    setContent({ edges: nextEdges });
+                },
+                [edges]
+            );
+
+            const addNode = () => {
+                const newId = `mm-n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                const newNode: Node = {
+                    id: newId,
+                    type: 'mindmap',
+                    position: { x: 40 * nodes.length, y: 40 * nodes.length },
+                    data: { label: 'New Node' },
+                };
+
+                setContent({
+                    nodes: [...nodes, newNode],
+                    selectedNodeId: newId,
+                });
+            };
+
+            const deleteSelectedNode = () => {
+                if (!selectedNodeId) return;
+                const nextNodes = nodes.filter((n) => n.id !== selectedNodeId);
+                const nextEdges = edges.filter(
+                    (e) => e.source !== selectedNodeId && e.target !== selectedNodeId
                 );
-            case 'quote':
-                return (
-                    <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="border-l-4 pl-2 text-gray-600 italic break-words flex items-center h-full">
-                        <EditableText
-                            tagName="div"
-                            text={content.text}
-                            onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                            style={{ ...commonStyle, fontStyle: 'italic' }}
-                            placeholder="인용문을 입력하세요..."
-                            className="w-full leading-snug h-auto"
+                setContent({ nodes: nextNodes, edges: nextEdges, selectedNodeId: null });
+            };
+
+            const updateSelectedLabel = (label: string) => {
+                if (!selectedNodeId) return;
+                setContent({
+                    nodes: nodes.map((n) =>
+                        n.id === selectedNodeId ? { ...n, data: { ...(n.data as any), label } } : n
+                    ),
+                });
+            };
+
+            return (
+                <div
+                    className="w-full h-full rounded-lg border border-gray-200 bg-white overflow-hidden"
+                    onPointerDownCapture={(e) => e.stopPropagation()}
+                    onMouseDownCapture={(e) => e.stopPropagation()}
+                    onTouchStartCapture={(e) => e.stopPropagation()}
+                >
+                    <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
+                        <span className="font-bold truncate">Mind Map</span>
+                        <div className="flex gap-2">
+                            <button
+                                className="text-xs font-bold text-indigo-600"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    addNode();
+                                }}
+                            >
+                                + Node
+                            </button>
+                            <button
+                                className="text-xs font-bold text-red-500 disabled:opacity-40"
+                                disabled={!selectedNodeId}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteSelectedNode();
+                                }}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 뷰어 영역 */}
+                    <div style={{ height: 360 }}>
+                        <ReactFlow
+                            nodes={nodes}
+                            edges={edges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            onConnect={onConnect}
+                            onNodeClick={(_, node) => setContent({ selectedNodeId: node.id })}
+                            fitView
+                        >
+                            <Controls showInteractive={false} />
+                            <Background />
+                        </ReactFlow>
+                    </div>
+
+                    {/* 빠른 편집(선택된 노드 라벨) */}
+                    <div className="p-3 border-t bg-white">
+                        <div className="text-[11px] text-gray-500 mb-1">Selected node</div>
+                        <input
+                            className="w-full border rounded px-2 py-1 text-sm"
+                            placeholder="노드를 선택하세요"
+                            value={
+                                selectedNodeId
+                                    ? ((nodes.find((n) => n.id === selectedNodeId)?.data as any)?.label ?? '')
+                                    : ''
+                            }
+                            disabled={!selectedNodeId}
+                            onChange={(e) => updateSelectedLabel(e.target.value)}
                         />
                     </div>
-                );
-            case 'book-info':
-                return <BookInfoWidget block={block} />;
-            case 'mindmap': {
-                const content0 = (content || {}) as any;
-
-                const nodes = (content0.nodes || []) as Node[];
-                const edges = (content0.edges || []) as Edge[];
-                const selectedNodeId = (content0.selectedNodeId ?? null) as string | null;
-
-                const setContent = (patch: any) => {
-                    props.onUpdateBlock(block.id, {
-                        content: {
-                            ...content0,
-                            ...patch,
-                        },
-                    });
-                };
-
-                const onNodesChange = useCallback(
-                    (changes: NodeChange[]) => {
-                        setContent({ nodes: applyNodeChanges(changes, nodes) });
-                    },
-                    [nodes]
-                );
-
-                const onEdgesChange = useCallback(
-                    (changes: EdgeChange[]) => {
-                        setContent({ edges: applyEdgeChanges(changes, edges) });
-                    },
-                    [edges]
-                );
-
-                const onConnect = useCallback(
-                    (connection: Connection) => {
-                        const edge = { ...connection, id: `mm-e-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` } as Edge;
-                        const nextEdges = addEdge(edge, edges);
-                        setContent({ edges: nextEdges });
-                    },
-                    [edges]
-                );
-
-                const addNode = () => {
-                    const newId = `mm-n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-                    const newNode: Node = {
-                        id: newId,
-                        type: 'mindmap',
-                        position: { x: 40 * nodes.length, y: 40 * nodes.length },
-                        data: { label: 'New Node' },
-                    };
-
-                    setContent({
-                        nodes: [...nodes, newNode],
-                        selectedNodeId: newId,
-                    });
-                };
-
-                const deleteSelectedNode = () => {
-                    if (!selectedNodeId) return;
-                    const nextNodes = nodes.filter((n) => n.id !== selectedNodeId);
-                    const nextEdges = edges.filter(
-                        (e) => e.source !== selectedNodeId && e.target !== selectedNodeId
-                    );
-                    setContent({ nodes: nextNodes, edges: nextEdges, selectedNodeId: null });
-                };
-
-                const updateSelectedLabel = (label: string) => {
-                    if (!selectedNodeId) return;
-                    setContent({
-                        nodes: nodes.map((n) =>
-                            n.id === selectedNodeId ? { ...n, data: { ...(n.data as any), label } } : n
-                        ),
-                    });
-                };
-
-                return (
-                    <div
-                        className="w-full h-full rounded-lg border border-gray-200 bg-white overflow-hidden"
-                        onPointerDownCapture={(e) => e.stopPropagation()}
-                        onMouseDownCapture={(e) => e.stopPropagation()}
-                        onTouchStartCapture={(e) => e.stopPropagation()}
-                    >
-                        <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
-                            <span className="font-bold truncate">Mind Map</span>
-                            <div className="flex gap-2">
-                                <button
-                                    className="text-xs font-bold text-indigo-600"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        addNode();
-                                    }}
-                                >
-                                    + Node
-                                </button>
-                                <button
-                                    className="text-xs font-bold text-red-500 disabled:opacity-40"
-                                    disabled={!selectedNodeId}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteSelectedNode();
-                                    }}
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* 뷰어 영역 */}
-                        <div style={{ height: 360 }}>
-                            <ReactFlow
-                                nodes={nodes}
-                                edges={edges}
-                                onNodesChange={onNodesChange}
-                                onEdgesChange={onEdgesChange}
-                                onConnect={onConnect}
-                                onNodeClick={(_, node) => setContent({ selectedNodeId: node.id })}
-                                fitView
+                </div>
+            );
+        }
+        // --- 2. 할 일 목록 ---
+        case 'todo-list':
+            return (
+                <div className="space-y-1.5 w-full h-full">
+                    {(content.items || []).map((it: any, i: number) => (
+                        <div key={i} className="flex items-start gap-2 group">
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newItems = [...(content.items || [])];
+                                    newItems[i] = { ...newItems[i], done: !newItems[i].done };
+                                    onUpdateBlock(block.id, { content: { ...content, items: newItems } });
+                                }}
+                                className={`mt-0.5 w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${it.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-400 bg-white'}`}
                             >
-                                <Controls showInteractive={false} />
-                                <Background />
-                            </ReactFlow>
-                        </div>
-
-                        {/* 빠른 편집(선택된 노드 라벨) */}
-                        <div className="p-3 border-t bg-white">
-                            <div className="text-[11px] text-gray-500 mb-1">Selected node</div>
-                            <input
-                                className="w-full border rounded px-2 py-1 text-sm"
-                                placeholder="노드를 선택하세요"
-                                value={
-                                    selectedNodeId
-                                        ? ((nodes.find((n) => n.id === selectedNodeId)?.data as any)?.label ?? '')
-                                        : ''
-                                }
-                                disabled={!selectedNodeId}
-                                onChange={(e) => updateSelectedLabel(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                );
-            }
-            // --- 2. 할 일 목록 ---
-            case 'todo-list':
-                return (
-                    <div className="space-y-1.5 w-full h-full">
-                        {(content.items || []).map((it: any, i: number) => (
-                            <div key={i} className="flex items-start gap-2 group">
-                                <div
-                                    onClick={(e) => {
-                                        e.stopPropagation();
+                                {it.done && <Check size={10} strokeWidth={4} />}
+                            </div>
+                            {/* 할 일 텍스트도 수정 가능하게 변경 */}
+                            <div className="flex-1 min-w-0">
+                                <EditableText
+                                    tagName="span"
+                                    text={it.text}
+                                    onUpdate={(val) => {
                                         const newItems = [...(content.items || [])];
-                                        newItems[i] = { ...newItems[i], done: !newItems[i].done };
+                                        newItems[i] = { ...newItems[i], text: val };
                                         onUpdateBlock(block.id, { content: { ...content, items: newItems } });
                                     }}
-                                    className={`mt-0.5 w-4 h-4 border rounded flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer ${it.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-400 bg-white'}`}
-                                >
-                                    {it.done && <Check size={10} strokeWidth={4} />}
-                                </div>
-                                {/* 할 일 텍스트도 수정 가능하게 변경 */}
-                                <div className="flex-1 min-w-0">
-                                    <EditableText
-                                        tagName="span"
-                                        text={it.text}
-                                        onUpdate={(val) => {
-                                            const newItems = [...(content.items || [])];
-                                            newItems[i] = { ...newItems[i], text: val };
-                                            onUpdateBlock(block.id, { content: { ...content, items: newItems } });
-                                        }}
-                                        style={{ ...commonStyle, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? '#9ca3af' : styles.color }}
-                                        className="text-sm break-words"
-                                    />
-                                </div>
+                                    style={{...commonStyle, textDecoration: it.done ? 'line-through' : 'none', color: it.done ? '#9ca3af' : styles.color }}
+                                    className="text-sm break-words"
+                                />
                             </div>
-                        ))}
-                    </div>
-                );
-            // --- 3. 원형 차트 ---
-            case 'chart-pie': {
+                        </div>
+                    ))}
+                </div>
+            );
+        // --- 3. 원형 차트 ---
+        case 'chart-pie': {
                 const data = content.data || [];
                 const total = data.reduce((acc: number, cur: any) => acc + cur.value, 0);
 
@@ -1035,9 +844,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                     <div key={i} className="flex items-center gap-1 min-w-0 flex-shrink-0 max-w-full" title={`${item.label}: ${Math.round((item.value / total) * 100)}%`}>
                                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: colors[i % colors.length] }}></span>
                                         <span className="text-[10px] text-gray-600 truncate">
-                                            {item.label}
+                                        {item.label}
                                             <span className="font-bold ml-1 text-gray-900">{Math.round((item.value / total) * 100)}%</span>
-                                        </span>
+                                    </span>
                                     </div>
                                 ))}
                             </div>
@@ -1045,75 +854,75 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                     </div>
                 );
             }
-            // --- 4. 막대 차트 ---
-            case 'chart-bar': {
-                const data = content.data || [];
-                const max = Math.max(...data.map((d: any) => d.value), 1);
-                const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981'];
-                return (
-                    <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm w-full h-full flex items-end justify-between gap-1 overflow-hidden">
-                        {data.map((item: any, i: number) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group h-full justify-end min-w-0">
-                                {/* 막대 높이는 %이므로 부모가 커지면 같이 길어짐 */}
-                                <div className="w-full rounded-t-sm transition-all relative" style={{ height: `${(item.value / max) * 100}%`, backgroundColor: colors[i % colors.length] }}></div>
-                                <span className="text-[10px] text-gray-500 truncate w-full text-center">{item.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                )
-            }
-            // --- 5. D-Day ---
-            case 'counter': {
-                const targetDate = new Date(content.date);
-                const today = new Date();
-                const diff = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${Math.abs(diff)}`;
-                return (
-                    <div style={{ backgroundColor: styles.bgColor || '#eff6ff' }} className="p-3 rounded-lg flex flex-col justify-center items-center gap-2 overflow-hidden w-full h-full text-center">
-                        <div className="min-w-0">
-                            <div className="text-[10px] text-gray-500 font-bold uppercase truncate flex items-center gap-1"><CalendarDays size={10} /> {content.title}</div>
-                            <div className="text-[10px] text-gray-400 truncate">{content.date}</div>
+        // --- 4. 막대 차트 ---
+        case 'chart-bar': {
+            const data = content.data || [];
+            const max = Math.max(...data.map((d: any) => d.value), 1);
+            const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981'];
+            return (
+                <div className="bg-white p-2 rounded-xl border border-gray-100 shadow-sm w-full h-full flex items-end justify-between gap-1 overflow-hidden">
+                    {data.map((item: any, i: number) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group h-full justify-end min-w-0">
+                            {/* 막대 높이는 %이므로 부모가 커지면 같이 길어짐 */}
+                            <div className="w-full rounded-t-sm transition-all relative" style={{ height: `${(item.value / max) * 100}%`, backgroundColor: colors[i % colors.length] }}></div>
+                            <span className="text-[10px] text-gray-500 truncate w-full text-center">{item.label}</span>
                         </div>
-                        <div className="text-xl font-black text-indigo-600 whitespace-nowrap">{dDay}</div>
+                    ))}
+                </div>
+            )
+        }
+        // --- 5. D-Day ---
+        case 'counter': {
+            const targetDate = new Date(content.date);
+            const today = new Date();
+            const diff = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${Math.abs(diff)}`;
+            return (
+                <div style={{ backgroundColor: styles.bgColor || '#eff6ff' }} className="p-3 rounded-lg flex flex-col justify-center items-center gap-2 overflow-hidden w-full h-full text-center">
+                    <div className="min-w-0">
+                        <div className="text-[10px] text-gray-500 font-bold uppercase truncate flex items-center gap-1"><CalendarDays size={10} /> {content.title}</div>
+                        <div className="text-[10px] text-gray-400 truncate">{content.date}</div>
                     </div>
-                );
-            }
-            // --- 6. 구분선 ---
-            case 'divider': return <div className="w-full h-full py-2"><hr className="border-t border-gray-200" style={{ borderColor: styles.color }} /></div>;
-            // --- 7. 리스트류 ---
-            case 'bullet-list': return (
-                <ul style={commonStyle} className="w-full h-full list-disc list-outside ml-4 space-y-1 text-gray-800">
+                    <div className="text-xl font-black text-indigo-600 whitespace-nowrap">{dDay}</div>
+                </div>
+            );
+        }
+        // --- 6. 구분선 ---
+        case 'divider': return <div className="w-full h-full py-2"><hr className="border-t border-gray-200" style={{ borderColor: styles.color }} /></div>;
+        // --- 7. 리스트류 ---
+        case 'bullet-list': return (
+            <ul style={commonStyle} className="w-full h-full list-disc list-inside space-y-1 text-gray-800">
+                {(content.items || []).map((it: string, i: number) => (
+                    <li key={i} className="break-words pl-1">
+                        <EditableText
+                            tagName="span"
+                            text={it}
+                            onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
+                            style={commonStyle}
+                            placeholder={`항목 ${i+1}`}
+                        />
+                    </li>
+                ))}
+            </ul>
+        );
+        case 'number-list':
+            return (
+                <ol style={commonStyle} className="w-full h-full list-decimal list-inside space-y-1 text-gray-800">
                     {(content.items || []).map((it: string, i: number) => (
-                        <li key={i} className="break-words pl-1 marker:text-gray-400">
+                        <li key={i} className="break-words pl-1">
                             <EditableText
-                                tagName="p"
+                                tagName="span"
                                 text={it}
                                 onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
                                 style={commonStyle}
-                                placeholder={`항목 ${i + 1}`}
+                                placeholder={`항목 ${i+1}`}
                             />
                         </li>
                     ))}
-                </ul>
+                </ol>
             );
-            case 'number-list':
-                return (
-                    <ol style={commonStyle} className="w-full h-full list-decimal list-outside ml-4 space-y-1 text-gray-800">
-                        {(content.items || []).map((it: string, i: number) => (
-                            <li key={i} className="break-words pl-1 marker:text-gray-400">
-                                <EditableText
-                                    tagName="span"
-                                    text={it}
-                                    onUpdate={(val) => handleListUpdate(content.items || [], i, val)}
-                                    style={commonStyle}
-                                    placeholder={`항목 ${i + 1}`}
-                                />
-                            </li>
-                        ))}
-                    </ol>
-                );
             // --- 8. 토글 목록 ---
-            case 'toggle-list':
+        case 'toggle-list':
                 return (
                     <ToggleItem
                         block={block}
@@ -1121,440 +930,440 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                         style={commonStyle}
                     />
                 );
-            // --- 9. 아코디언 ---
-            case 'accordion': return (
-                <AccordionItem
-                    block={block} // title, body 대신 block 전체 전달
+        // --- 9. 아코디언 ---
+        case 'accordion': return (
+            <AccordionItem
+                block={block} // title, body 대신 block 전체 전달
+                onUpdateBlock={onUpdateBlock}
+                style={commonStyle}
+            />
+        );
+        case 'callout': {
+            const calloutType = content.type || 'info';
+            // @ts-ignore
+            const configMap = {
+                info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: <Info size={20} className="text-blue-500" /> },
+                warning: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', icon: <AlertTriangle size={20} className="text-orange-500" /> },
+                error: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: <XCircle size={20} className="text-red-500" /> },
+                success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: <CheckCircle size={20} className="text-green-500" /> }
+            };
+            const config = configMap[calloutType as keyof typeof configMap] || configMap.info;
+
+            return (
+                <div className={`h-full w-full p-4 rounded-lg border flex gap-3 ${config.bg} ${config.border} break-words`}>
+                    <div className="flex-shrink-0 mt-0.5">{config.icon}</div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                        {/* 제목 수정 */}
+                        <div className={`font-bold mb-1 ${config.text}`}>
+                            <EditableText
+                                tagName="span"
+                                text={content.title}
+                                onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
+                                placeholder="제목 (선택)"
+                            />
+                        </div>
+                        {/* 내용 수정 */}
+                        <div className="text-gray-700 leading-relaxed text-sm">
+                            <EditableText
+                                tagName="p"
+                                text={content.text}
+                                onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                                placeholder="내용을 입력하세요..."
+                            />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        // 🌟 2. 형광펜 강조 (Highlight)
+        case 'highlight':
+            return (
+                <div style={commonStyle} className="h-full w-full leading-relaxed">
+                    <span
+                        className="px-2 py-1 rounded box-decoration-clone"
+                        style={{ backgroundColor: styles.bgColor || '#fef08a' }} // 기본값 노랑
+                    >
+                        {content.text}
+                    </span>
+                </div>
+            );
+        // 🌟 3. 스포일러 방지 (Spoiler)
+        case 'spoiler':
+            return (
+                <SpoilerItem
+                    block={block} // content 대신 block 전달
                     onUpdateBlock={onUpdateBlock}
                     style={commonStyle}
                 />
             );
-            case 'callout': {
-                const calloutType = content.type || 'info';
-                // @ts-ignore
-                const configMap = {
-                    info: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', icon: <Info size={20} className="text-blue-500" /> },
-                    warning: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', icon: <AlertTriangle size={20} className="text-orange-500" /> },
-                    error: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', icon: <XCircle size={20} className="text-red-500" /> },
-                    success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', icon: <CheckCircle size={20} className="text-green-500" /> }
-                };
-                const config = configMap[calloutType as keyof typeof configMap] || configMap.info;
+        // 🌟 4. 세로 쓰기 (Vertical Text)
+        case 'vertical-text':
+            return (
+                <div
+                    style={{
+                        ...commonStyle,
+                        writingMode: 'vertical-rl', // 세로 쓰기 핵심 속성
+                        textOrientation: 'upright', // 알파벳도 똑바로 세우기 (선택사항)
+                        letterSpacing: '0.1em'      // 자간을 약간 넓혀 가독성 확보
+                    }}
+                    className="h-full w-full min-h-[150px] p-2 leading-loose whitespace-pre-wrap break-words border border-transparent"
+                >
+                    {content.text}
+                </div>
+            );
+        // 🌟 5. 수식 (Math) - LaTeX
+        case 'math':
+            // 수식이 비어있으면 안내 문구 표시
+            if (!content.text) return <div className="text-gray-400 text-xs italic">(수식을 입력하세요)</div>;
 
-                return (
-                    <div className={`h-full w-full p-4 rounded-lg border flex gap-3 ${config.bg} ${config.border} break-words`}>
-                        <div className="flex-shrink-0 mt-0.5">{config.icon}</div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                            {/* 제목 수정 */}
-                            <div className={`font-bold mb-1 ${config.text}`}>
-                                <EditableText
-                                    tagName="span"
-                                    text={content.title}
-                                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
-                                    placeholder="제목 (선택)"
-                                />
-                            </div>
-                            {/* 내용 수정 */}
-                            <div className="text-gray-700 leading-relaxed text-sm">
-                                <EditableText
-                                    tagName="p"
-                                    text={content.text}
-                                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
-                                    placeholder="내용을 입력하세요..."
-                                />
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-            // 🌟 2. 형광펜 강조 (Highlight)
-            case 'highlight':
-                return (
-                    <div style={commonStyle} className="h-full w-full leading-relaxed">
-                        <span
-                            className="px-2 py-1 rounded box-decoration-clone"
-                            style={{ backgroundColor: styles.bgColor || '#fef08a' }} // 기본값 노랑
-                        >
-                            {content.text}
-                        </span>
-                    </div>
-                );
-            // 🌟 3. 스포일러 방지 (Spoiler)
-            case 'spoiler':
-                return (
-                    <SpoilerItem
-                        block={block} // content 대신 block 전달
-                        onUpdateBlock={onUpdateBlock}
-                        style={commonStyle}
-                    />
-                );
-            // 🌟 4. 세로 쓰기 (Vertical Text)
-            case 'vertical-text':
-                return (
-                    <div
+            return (
+                <div style={commonStyle} className="h-full w-full p-4 flex justify-center items-center overflow-x-auto">
+                    <img
+                        // CodeCogs 무료 LaTeX API 사용 (설치 불필요)
+                        src={`https://latex.codecogs.com/svg.latex?\\huge&space;${encodeURIComponent(content.text)}`}
+                        alt="Math Formula"
+                        className="max-w-full"
                         style={{
-                            ...commonStyle,
-                            writingMode: 'vertical-rl', // 세로 쓰기 핵심 속성
-                            textOrientation: 'upright', // 알파벳도 똑바로 세우기 (선택사항)
-                            letterSpacing: '0.1em'      // 자간을 약간 넓혀 가독성 확보
+                            filter: styles.color === '#ffffff' || styles.color?.includes('white')
+                                ? 'invert(1)' // 배경이 어두울 경우 수식을 흰색으로 반전
+                                : 'none'
                         }}
-                        className="h-full w-full min-h-[150px] p-2 leading-loose whitespace-pre-wrap break-words border border-transparent"
-                    >
-                        {content.text}
-                    </div>
-                );
-            // 🌟 5. 수식 (Math) - LaTeX
-            case 'math':
-                // 수식이 비어있으면 안내 문구 표시
-                if (!content.text) return <div className="text-gray-400 text-xs italic">(수식을 입력하세요)</div>;
-
-                return (
-                    <div style={commonStyle} className="h-full w-full p-4 flex justify-center items-center overflow-x-auto">
-                        <img
-                            // CodeCogs 무료 LaTeX API 사용 (설치 불필요)
-                            src={`https://latex.codecogs.com/svg.latex?\\huge&space;${encodeURIComponent(content.text)}`}
-                            alt="Math Formula"
-                            className="max-w-full"
-                            style={{
-                                filter: styles.color === '#ffffff' || styles.color?.includes('white')
-                                    ? 'invert(1)' // 배경이 어두울 경우 수식을 흰색으로 반전
-                                    : 'none'
-                            }}
-                        />
-                    </div>
-                );
-            // 🌟 6. 타이핑 효과 (Typing Text)
-            case 'typing-text':
-                return <TypingTextItem content={content} style={commonStyle} />;
-            // 🌟 7. 스크롤 텍스트 (Scroll Text, Marquee)
-            case 'scroll-text':
-                return (
-                    <div className="h-full w-full overflow-hidden bg-gray-100 rounded border border-gray-200 py-2 relative flex items-center">
-                        {/* 애니메이션 스타일 정의 */}
-                        <style>
-                            {`
+                    />
+                </div>
+            );
+        // 🌟 6. 타이핑 효과 (Typing Text)
+        case 'typing-text':
+            return <TypingTextItem content={content} style={commonStyle} />;
+        // 🌟 7. 스크롤 텍스트 (Scroll Text, Marquee)
+        case 'scroll-text':
+            return (
+                <div className="h-full w-full overflow-hidden bg-gray-100 rounded border border-gray-200 py-2 relative flex items-center">
+                    {/* 애니메이션 스타일 정의 */}
+                    <style>
+                        {`
                 @keyframes marquee {
                     0% { transform: translateX(100%); }
                     100% { transform: translateX(-100%); }
                 }
                 `}
-                        </style>
-                        <div
-                            style={{
-                                ...commonStyle,
-                                whiteSpace: 'nowrap',
-                                animation: `marquee ${content.speed || 10}s linear infinite`,
-                                width: 'max-content' // 텍스트 길이만큼 너비 확보
-                            }}
-                        >
-                            {content.text}
-                        </div>
+                    </style>
+                    <div
+                        style={{
+                            ...commonStyle,
+                            whiteSpace: 'nowrap',
+                            animation: `marquee ${content.speed || 10}s linear infinite`,
+                            width: 'max-content' // 텍스트 길이만큼 너비 확보
+                        }}
+                    >
+                        {content.text}
                     </div>
-                );
-            // 🌟 8. 방사형 차트 (Radar Chart)
-            case 'chart-radar':
-                return <RadarChartItem content={content} style={commonStyle} styles={styles} />;
-            case 'heatmap':
-                return (
-                    <div style={commonStyle} className="p-3 w-full h-full bg-white flex flex-col justify-center">
-                        {/* 제목이 있으면 표시 */}
-                        {content.title && <div className="text-xs font-bold text-gray-500 mb-2">{content.title}</div>}
+                </div>
+            );
+        // 🌟 8. 방사형 차트 (Radar Chart)
+        case 'chart-radar':
+            return <RadarChartItem content={content} style={commonStyle} styles={styles} />;
+        case 'heatmap':
+            return (
+                <div style={commonStyle} className="p-3 w-full h-full bg-white flex flex-col justify-center">
+                    {/* 제목이 있으면 표시 */}
+                    {content.title && <div className="text-xs font-bold text-gray-500 mb-2">{content.title}</div>}
 
-                        <HeatmapWidget
-                            viewMode={content.viewMode || 'year'}
-                            themeColor={styles.color || '#6366f1'} // 사용자가 설정한 색상 전달
-                        />
-                    </div>
-                );
-            // 🌟 [NEW] 별점/평점 (Rating)
-            case 'rating':
-                return <RatingItem block={block} {...otherProps} />;
-            // --- [NEW] 진행 게이지 위젯 ---
-            // --- [NEW] 진행 게이지 위젯 (원형/직선형 분기 추가) ---
-            case 'progress-bar': {
-                // 1. 값 계산
-                const value = content.value || 0;
-                const max = content.max || 100;
-                const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-                // 2. 스타일 확인 (RightSidebar에서 설정한 값)
-                const isCircle = content.style === 'circle';
+                    <HeatmapWidget
+                        viewMode={content.viewMode || 'year'}
+                        themeColor={styles.color || '#6366f1'} // 사용자가 설정한 색상 전달
+                    />
+                </div>
+            );
+        // 🌟 [NEW] 별점/평점 (Rating)
+        case 'rating':
+            return <RatingItem block={block} {...otherProps} />;
+        // --- [NEW] 진행 게이지 위젯 ---
+        // --- [NEW] 진행 게이지 위젯 (원형/직선형 분기 추가) ---
+        case 'progress-bar': {
+            // 1. 값 계산
+            const value = content.value || 0;
+            const max = content.max || 100;
+            const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+            // 2. 스타일 확인 (RightSidebar에서 설정한 값)
+            const isCircle = content.style === 'circle';
 
-                return (
-                    <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm w-full h-full flex flex-col justify-center items-center">
+            return (
+                <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm w-full h-full flex flex-col justify-center items-center">
 
-                        {/* A. 원형 (Circle) 스타일 렌더링 */}
-                        {isCircle ? (
-                            <div className="flex flex-col items-center justify-center py-2">
-                                <div className="relative w-32 h-32">
-                                    {/* SVG로 도넛 차트 그리기 */}
-                                    <svg className="w-full h-full transform -rotate-90">
-                                        {/* 1) 배경 원 (회색) */}
-                                        <circle
-                                            cx="64" cy="64" r="56"
-                                            stroke="currentColor" strokeWidth="12" fill="transparent"
-                                            className="text-gray-100"
-                                        />
-                                        {/* 2) 진행 원 (설정된 색상 or 파란색) */}
-                                        <circle
-                                            cx="64" cy="64" r="56"
-                                            stroke="currentColor" strokeWidth="12" fill="transparent"
-                                            strokeDasharray={351.86} // 원의 둘레 (2 * pi * r) -> 2 * 3.14159 * 56 ≈ 351.86
-                                            strokeDashoffset={351.86 - (351.86 * percentage) / 100} // 진행률만큼 오프셋 조정
-                                            className="text-indigo-600 transition-all duration-1000 ease-out"
-                                            style={{ color: styles.color }} // 사용자 지정 색상 적용 가능
-                                            strokeLinecap="round"
-                                        />
-                                    </svg>
+                    {/* A. 원형 (Circle) 스타일 렌더링 */}
+                    {isCircle ? (
+                        <div className="flex flex-col items-center justify-center py-2">
+                            <div className="relative w-32 h-32">
+                                {/* SVG로 도넛 차트 그리기 */}
+                                <svg className="w-full h-full transform -rotate-90">
+                                    {/* 1) 배경 원 (회색) */}
+                                    <circle
+                                        cx="64" cy="64" r="56"
+                                        stroke="currentColor" strokeWidth="12" fill="transparent"
+                                        className="text-gray-100"
+                                    />
+                                    {/* 2) 진행 원 (설정된 색상 or 파란색) */}
+                                    <circle
+                                        cx="64" cy="64" r="56"
+                                        stroke="currentColor" strokeWidth="12" fill="transparent"
+                                        strokeDasharray={351.86} // 원의 둘레 (2 * pi * r) -> 2 * 3.14159 * 56 ≈ 351.86
+                                        strokeDashoffset={351.86 - (351.86 * percentage) / 100} // 진행률만큼 오프셋 조정
+                                        className="text-indigo-600 transition-all duration-1000 ease-out"
+                                        style={{ color: styles.color }} // 사용자 지정 색상 적용 가능
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
 
-                                    {/* 중앙 텍스트 */}
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-indigo-900">
-                                        <span className="text-2xl font-bold" style={{ color: styles.color }}>
-                                            {Math.round(percentage)}%
-                                        </span>
-                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">
-                                            {content.label || 'Progress'}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* 하단 값 표시 */}
-                                <div className="mt-2 text-xs text-gray-400 font-mono">
-                                    {value} / {max}
-                                </div>
-                            </div>
-                        ) : (
-                            /* B. 직선형 (Bar) 스타일 (기존 코드 유지) */
-                            <>
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-sm font-bold text-gray-700">{content.label || '진행률'}</span>
-                                    <span className="text-sm font-bold text-indigo-600" style={{ color: styles.color }}>
+                                {/* 중앙 텍스트 */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center text-indigo-900">
+                                    <span className="text-2xl font-bold" style={{ color: styles.color }}>
                                         {Math.round(percentage)}%
                                     </span>
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">
+                                        {content.label || 'Progress'}
+                                    </span>
                                 </div>
-                                <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden relative">
-                                    <div
-                                        className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out relative"
-                                        style={{
-                                            width: `${percentage}%`,
-                                            backgroundColor: styles.color // 사용자 지정 색상 적용
-                                        }}
-                                    >
-                                        {/* 반짝이는 효과 (선택사항) */}
-                                        <div className="absolute top-0 left-0 bottom-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]"></div>
-                                    </div>
-                                </div>
-                                <div className="mt-2 text-xs text-gray-400 text-right">
-                                    {value} / {max}
-                                </div>
-                            </>
-                        )}
-                    </div>
-                );
-            }
+                            </div>
 
-                return <UnitConverterWidget block={block} {...otherProps} />;
-            case 'pdf-viewer':
-                return <PdfDropViewer />;
-
-            // BlockRenderer.tsx (switch 내부에 추가)
-            case 'flashcards': {
-                const title: string = content.title || 'Flashcards';
-                const cards = (content.cards || []) as { id: string; front: string; back: string }[];
-                const currentIndex = Math.min(content.currentIndex ?? 0, Math.max(cards.length - 1, 0));
-                const showBack = !!content.showBack;
-
-                const current = cards[currentIndex];
-
-                const setState = (patch: any) => {
-                    props.onUpdateBlock(block.id, {
-                        content: {
-                            ...content,
-                            ...patch,
-                        },
-                    });
-                };
-
-                const goPrev = () => {
-                    if (cards.length === 0) return;
-                    setState({
-                        currentIndex: Math.max(0, currentIndex - 1),
-                        showBack: false,
-                    });
-                };
-
-                const goNext = () => {
-                    if (cards.length === 0) return;
-                    setState({
-                        currentIndex: Math.min(cards.length - 1, currentIndex + 1),
-                        showBack: false,
-                    });
-                };
-
-                const flip = () => {
-                    if (cards.length === 0) return;
-                    setState({ showBack: !showBack });
-                };
-
-                return (
-                    <div className="w-full rounded-lg border border-gray-200 bg-white overflow-hidden">
-                        <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
-                            <span className="font-bold truncate">{title}</span>
-                            <span className="text-[10px] text-gray-400">
-                                {cards.length === 0 ? '0 cards' : `${currentIndex + 1}/${cards.length}`}
-                            </span>
+                            {/* 하단 값 표시 */}
+                            <div className="mt-2 text-xs text-gray-400 font-mono">
+                                {value} / {max}
+                            </div>
                         </div>
-
-                        <div className="p-3">
-                            {cards.length === 0 ? (
-                                <div className="text-sm text-gray-400">카드를 추가하세요 (RightSidebar)</div>
-                            ) : (
+                    ) : (
+                        /* B. 직선형 (Bar) 스타일 (기존 코드 유지) */
+                        <>
+                            <div className="flex justify-between mb-1">
+                                <span className="text-sm font-bold text-gray-700">{content.label || '진행률'}</span>
+                                <span className="text-sm font-bold text-indigo-600" style={{ color: styles.color }}>
+                                    {Math.round(percentage)}%
+                                </span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden relative">
                                 <div
-                                    className="rounded-lg border border-gray-200 bg-white"
-                                    style={{ perspective: 1000 }}
-                                >
-                                    {/* flip-card: CSS로 뒤집기(3D) */}
-                                    <div
-                                        className="relative w-full h-[160px] cursor-pointer"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            flip();
-                                        }}
-                                        style={{
-                                            transformStyle: 'preserve-3d',
-                                            transition: 'transform 0.4s ease',
-                                            transform: showBack ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                                        }}
-                                    >
-                                        {/* Front */}
-                                        <div
-                                            className="absolute inset-0 p-4 flex items-center justify-center text-sm text-gray-800"
-                                            style={{
-                                                backfaceVisibility: 'hidden',
-                                            }}
-                                        >
-                                            <div className="whitespace-pre-wrap break-words text-center">
-                                                {current.front || '(Front empty)'}
-                                            </div>
-                                        </div>
-
-                                        {/* Back */}
-                                        <div
-                                            className="absolute inset-0 p-4 flex items-center justify-center text-sm text-gray-800 bg-indigo-50"
-                                            style={{
-                                                backfaceVisibility: 'hidden',
-                                                transform: 'rotateY(180deg)',
-                                            }}
-                                        >
-                                            <div className="whitespace-pre-wrap break-words text-center">
-                                                {current.back || '(Back empty)'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="mt-3 flex gap-2">
-                                <button
-                                    className="flex-1 py-2 rounded bg-gray-900 text-white text-xs font-bold disabled:opacity-40"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        goPrev();
+                                    className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out relative"
+                                    style={{
+                                        width: `${percentage}%`,
+                                        backgroundColor: styles.color // 사용자 지정 색상 적용
                                     }}
-                                    disabled={cards.length === 0 || currentIndex === 0}
                                 >
-                                    Prev
-                                </button>
+                                    {/* 반짝이는 효과 (선택사항) */}
+                                    <div className="absolute top-0 left-0 bottom-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]"></div>
+                                </div>
+                            </div>
+                            <div className="mt-2 text-xs text-gray-400 text-right">
+                                {value} / {max}
+                            </div>
+                        </>
+                    )}
+                </div>
+            );
+        }
 
-                                <button
-                                    className="flex-1 py-2 rounded bg-indigo-600 text-white text-xs font-bold disabled:opacity-40"
+            return <UnitConverterWidget block={block} {...otherProps} />;
+        case 'pdf-viewer':
+            return <PdfDropViewer />;
+
+        // BlockRenderer.tsx (switch 내부에 추가)
+        case 'flashcards': {
+            const title: string = content.title || 'Flashcards';
+            const cards = (content.cards || []) as { id: string; front: string; back: string }[];
+            const currentIndex = Math.min(content.currentIndex ?? 0, Math.max(cards.length - 1, 0));
+            const showBack = !!content.showBack;
+
+            const current = cards[currentIndex];
+
+            const setState = (patch: any) => {
+                props.onUpdateBlock(block.id, {
+                    content: {
+                        ...content,
+                        ...patch,
+                    },
+                });
+            };
+
+            const goPrev = () => {
+                if (cards.length === 0) return;
+                setState({
+                    currentIndex: Math.max(0, currentIndex - 1),
+                    showBack: false,
+                });
+            };
+
+            const goNext = () => {
+                if (cards.length === 0) return;
+                setState({
+                    currentIndex: Math.min(cards.length - 1, currentIndex + 1),
+                    showBack: false,
+                });
+            };
+
+            const flip = () => {
+                if (cards.length === 0) return;
+                setState({ showBack: !showBack });
+            };
+
+            return (
+                <div className="w-full rounded-lg border border-gray-200 bg-white overflow-hidden">
+                    <div className="px-3 py-2 text-[11px] text-gray-500 border-b bg-gray-50 flex items-center justify-between gap-2">
+                        <span className="font-bold truncate">{title}</span>
+                        <span className="text-[10px] text-gray-400">
+                            {cards.length === 0 ? '0 cards' : `${currentIndex + 1}/${cards.length}`}
+                        </span>
+                    </div>
+
+                    <div className="p-3">
+                        {cards.length === 0 ? (
+                            <div className="text-sm text-gray-400">카드를 추가하세요 (RightSidebar)</div>
+                        ) : (
+                            <div
+                                className="rounded-lg border border-gray-200 bg-white"
+                                style={{ perspective: 1000 }}
+                            >
+                                {/* flip-card: CSS로 뒤집기(3D) */}
+                                <div
+                                    className="relative w-full h-[160px] cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         flip();
                                     }}
-                                    disabled={cards.length === 0}
-                                >
-                                    Flip
-                                </button>
-
-                                <button
-                                    className="flex-1 py-2 rounded bg-gray-900 text-white text-xs font-bold disabled:opacity-40"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        goNext();
+                                    style={{
+                                        transformStyle: 'preserve-3d',
+                                        transition: 'transform 0.4s ease',
+                                        transform: showBack ? 'rotateY(180deg)' : 'rotateY(0deg)',
                                     }}
-                                    disabled={cards.length === 0 || currentIndex === cards.length - 1}
                                 >
-                                    Next
-                                </button>
+                                    {/* Front */}
+                                    <div
+                                        className="absolute inset-0 p-4 flex items-center justify-center text-sm text-gray-800"
+                                        style={{
+                                            backfaceVisibility: 'hidden',
+                                        }}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words text-center">
+                                            {current.front || '(Front empty)'}
+                                        </div>
+                                    </div>
+
+                                    {/* Back */}
+                                    <div
+                                        className="absolute inset-0 p-4 flex items-center justify-center text-sm text-gray-800 bg-indigo-50"
+                                        style={{
+                                            backfaceVisibility: 'hidden',
+                                            transform: 'rotateY(180deg)',
+                                        }}
+                                    >
+                                        <div className="whitespace-pre-wrap break-words text-center">
+                                            {current.back || '(Back empty)'}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                        )}
+
+                        <div className="mt-3 flex gap-2">
+                            <button
+                                className="flex-1 py-2 rounded bg-gray-900 text-white text-xs font-bold disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goPrev();
+                                }}
+                                disabled={cards.length === 0 || currentIndex === 0}
+                            >
+                                Prev
+                            </button>
+
+                            <button
+                                className="flex-1 py-2 rounded bg-indigo-600 text-white text-xs font-bold disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    flip();
+                                }}
+                                disabled={cards.length === 0}
+                            >
+                                Flip
+                            </button>
+
+                            <button
+                                className="flex-1 py-2 rounded bg-gray-900 text-white text-xs font-bold disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goNext();
+                                }}
+                                disabled={cards.length === 0 || currentIndex === cards.length - 1}
+                            >
+                                Next
+                            </button>
                         </div>
                     </div>
-                );
-            }
-            // 🌟 [NEW] case 추가
-            case 'movie-ticket':
-                return <MovieTicketWidget block={block} />;
-            // --- [NEW] 데이터베이스 위젯 (심플 테이블 버전) ---
-            case 'database': {
-                // 기본값: 간단한 표 데이터
-                const headers = content.headers || ['이름', '태그', '상태'];
-                const rows = content.rows || [
-                    ['프로젝트 기획', '업무', '완료'],
-                    ['디자인 시안', '디자인', '진행중'],
-                    ['개발 착수', '개발', '대기'],
-                ];
+                </div>
+            );
+        }
+        // 🌟 [NEW] case 추가
+        case 'movie-ticket':
+            return <MovieTicketWidget block={block} />;
+        // --- [NEW] 데이터베이스 위젯 (심플 테이블 버전) ---
+        case 'database': {
+            // 기본값: 간단한 표 데이터
+            const headers = content.headers || ['이름', '태그', '상태'];
+            const rows = content.rows || [
+                ['프로젝트 기획', '업무', '완료'],
+                ['디자인 시안', '디자인', '진행중'],
+                ['개발 착수', '개발', '대기'],
+            ];
 
-                return (
-                    <div className="overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm">
-                        {/* 상단 제목 바 */}
-                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center gap-2">
-                            <Database size={14} className="text-gray-500" />
-                            <span className="text-xs font-bold text-gray-600">데이터베이스</span>
-                        </div>
-                        {/* 테이블 본문 */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
-                                    <tr>
-                                        {headers.map((h: string, i: number) => (
-                                            <th key={i} className="px-4 py-2 font-medium border-b border-gray-100">{h}</th>
+            return (
+                <div className="overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm">
+                    {/* 상단 제목 바 */}
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center gap-2">
+                        <Database size={14} className="text-gray-500" />
+                        <span className="text-xs font-bold text-gray-600">데이터베이스</span>
+                    </div>
+                    {/* 테이블 본문 */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
+                                <tr>
+                                    {headers.map((h: string, i: number) => (
+                                        <th key={i} className="px-4 py-2 font-medium border-b border-gray-100">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row: string[], i: number) => (
+                                    <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                                        {row.map((cell: string, j: number) => (
+                                            <td key={j} className="px-4 py-2 text-gray-700">
+                                                {/* 태그 스타일링 예시 (2번째 컬럼) */}
+                                                {j === 1 ? (
+                                                    <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
+                                                        {cell}
+                                                    </span>
+                                                ) : (
+                                                    cell
+                                                )}
+                                            </td>
                                         ))}
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {rows.map((row: string[], i: number) => (
-                                        <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                                            {row.map((cell: string, j: number) => (
-                                                <td key={j} className="px-4 py-2 text-gray-700">
-                                                    {/* 태그 스타일링 예시 (2번째 컬럼) */}
-                                                    {j === 1 ? (
-                                                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
-                                                            {cell}
-                                                        </span>
-                                                    ) : (
-                                                        cell
-                                                    )}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                );
-            }
-            default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
-
+                </div>
+            );
         }
+        default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
+
+    }
 
     };
 
-    return (
-        <div className="w-full h-full min-h-[30px]">
-            {/* 단순히 컨텐츠만 렌더링 */}
-            {renderWidgetContent()}
-        </div>
-    );
+return(
+    <div className="w-full h-full min-h-[30px]">
+        {/* 단순히 컨텐츠만 렌더링 */}
+        {renderWidgetContent()}
+    </div>
+);
 };
 // End of BlockRenderer
 export default BlockRenderer;

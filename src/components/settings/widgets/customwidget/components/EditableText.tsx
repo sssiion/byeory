@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface EditableTextProps {
     text: string;
-    tagName: 'h1' | 'h2' | 'h3' | 'p' | 'div' | 'span';
+    tagName: 'h1' | 'h2' | 'h3' | 'p' | 'div';
     className?: string;
     style?: React.CSSProperties;
     onUpdate: (newText: string) => void;
@@ -10,13 +10,13 @@ interface EditableTextProps {
 }
 
 export const EditableText: React.FC<EditableTextProps> = ({
-    text,
-    tagName: Tag,
-    className,
-    style,
-    onUpdate,
-    placeholder
-}) => {
+                                                              text,
+                                                              tagName: Tag,
+                                                              className,
+                                                              style,
+                                                              onUpdate,
+                                                              placeholder
+                                                          }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [value, setValue] = useState(text);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -79,7 +79,7 @@ export const EditableText: React.FC<EditableTextProps> = ({
             // 2. p-0: 패딩 제거
             // 3. leading-none: 줄간격 여백 제거
             // 4. block: 인라인 요소로 인한 하단 틈 제거
-            className={`cursor-text rounded transition-colors border border-transparent w-full h-full m-0 p-0 leading-none block ${className}`}
+            className={`cursor-text hover:bg-black/5 rounded transition-colors border border-transparent hover:border-black/10 w-full h-full m-0 p-0 leading-none block ${className}`}
             style={{ ...style }}
             onClick={(e) => {
                 e.stopPropagation();

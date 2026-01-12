@@ -57,7 +57,7 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
             ref={setNodeRef}
             style={style}
             {...attributes}
-            className="outline-none relative" // mb-2 제거: 블록 간 간격 삭제
+            className="outline-none relative mb-2" // mb-2: 블록 간 간격 확보
         >
             {/* 🔥 핵심 수정 사항 🔥
                1. maxHeight="100%" 제거: 높이를 자유롭게 늘릴 수 있게 함
@@ -71,8 +71,8 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                 maxWidth="100%"
                 bounds={boundaryElement || undefined}
                 // 최소 크기 제한 (너무 작아져서 핸들이 사라지는 것 방지)
-                minWidth={50} // 핸들 잡을 최소 너비
-                minHeight={24} // 텍스트 한 줄 높이 수준으로 허용
+                minWidth={100}
+                minHeight={50}
 
                 size={{
                     width: layout.w,
@@ -122,17 +122,17 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                         onSelectBlock(block.id);
                     }}
                     className={`
-                        relative group transition-all flex items-stretch h-full overflow-hidden rounded-lg
+                        relative group rounded-lg transition-all border-2 flex items-stretch h-full overflow-hidden
                         ${isSelected
-                            ? 'bg-black/5 ring-1 ring-gray-400' // 인디고 -> 회색/검정 계열로 변경
-                            : 'hover:bg-black/5 hover:ring-1 hover:ring-gray-200 bg-transparent' // 호버 시 연한 테두리와 배경
+                            ? 'border-indigo-500 bg-indigo-500/10 ring-2 ring-indigo-500/30'
+                            : 'border-transparent hover:border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] bg-transparent'
                         }
                     `}
                 >
-                    {/* 드래그 핸들 (Grip) - 패딩 제거 및 오버레이 스타일 고려 (여기서는 px-1로 축소) */}
+                    {/* 드래그 핸들 (Grip) */}
                     <div
                         {...listeners}
-                        className="flex items-center justify-center w-4 cursor-grab active:cursor-grabbing text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" // 평소엔 숨김
+                        className="flex items-center justify-center px-2 cursor-grab active:cursor-grabbing text-[var(--text-secondary)] hover:text-[var(--text-primary)] flex-shrink-0"
                     >
                         <GripVertical size={16} />
                     </div>
