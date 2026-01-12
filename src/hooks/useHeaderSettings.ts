@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import { updateHeaderSettings, getHeaderSettings, type HeaderSettings } from '../services/headerSettings';
 
-const LOCAL_STORAGE_KEY = 'header_settings_cache';
+const LOCAL_STORAGE_KEY = 'header_settings_v2';
 
 const DEFAULT_SETTINGS: HeaderSettings = {
     showTimer: false,
     showCredit: true,
+    showWidgetZoom: true,
 };
 
 export const useHeaderSettings = () => {
     // 1. Initialize from Local Storage (Instant Load)
     const [settings, setSettings] = useState<HeaderSettings>(() => {
         const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return cached ? JSON.parse(cached) : DEFAULT_SETTINGS;
+        return cached ? { ...DEFAULT_SETTINGS, ...JSON.parse(cached) } : DEFAULT_SETTINGS;
     });
 
     // 2. Sync with Backend on Mount

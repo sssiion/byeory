@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Palette, Menu, Home, Layout, Plus, RefreshCw, AlignStartVertical, FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMenu } from '../../settings/menu/MenuSettings';
@@ -11,6 +11,7 @@ interface FloatingSettingsPanelProps {
     setIsArrangeConfirmOpen: (value: boolean) => void;
     setIsPresetManagerOpen: (value: boolean) => void;
     resetWidgets: () => void;
+    isMobile: boolean;
 }
 
 const FloatingSettingsPanel: React.FC<FloatingSettingsPanelProps> = ({
@@ -20,11 +21,19 @@ const FloatingSettingsPanel: React.FC<FloatingSettingsPanelProps> = ({
     setIsBuilderOpen,
     setIsArrangeConfirmOpen,
     setIsPresetManagerOpen,
-    resetWidgets
+    resetWidgets,
+    isMobile
 }) => {
-    const [isOpen, setIsOpen] = useState(true);
-    const { setIsEditMode } = useMenu();
+    const [isOpen, setIsOpen] = useState(!isMobile);
     const navigate = useNavigate();
+    const { setIsEditMode } = useMenu();
+
+    // Close panel when switching to mobile
+    useEffect(() => {
+        if (isMobile) {
+            setIsOpen(false);
+        }
+    }, [isMobile]);
 
     const openSettings = (view: string) => {
         window.dispatchEvent(new CustomEvent('open-settings-modal', { detail: { view } }));

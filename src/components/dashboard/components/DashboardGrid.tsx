@@ -21,6 +21,8 @@ interface DashboardGridProps {
     setSelectedWidgetId: React.Dispatch<React.SetStateAction<string | null>>;
     handleShowHelp: (widget: WidgetInstance) => void;
     handleUpdateWidgetData: (id: string, updates: any) => void;
+    onWidgetClick?: (widgetId: string) => void;
+    isZoomEnabled?: boolean;
 }
 
 const DashboardGrid: React.FC<DashboardGridProps> = ({
@@ -40,7 +42,9 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
     updateWidgetPosition,
     setSelectedWidgetId,
     handleShowHelp,
-    handleUpdateWidgetData
+    handleUpdateWidgetData,
+    onWidgetClick,
+    isZoomEnabled
 }) => {
     if (isMenuEditMode) return null;
 
@@ -94,6 +98,8 @@ const DashboardGrid: React.FC<DashboardGridProps> = ({
                         onSelect={() => setSelectedWidgetId(prev => prev === widget.id ? null : widget.id)}
                         onShowInfo={() => handleShowHelp(widget)}
                         onUpdateWidget={handleUpdateWidgetData}
+                        onZoom={() => onWidgetClick?.(widget.id)}
+                        isZoomEnabled={isZoomEnabled}
                     />
                 ))}
             </div>

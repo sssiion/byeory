@@ -19,6 +19,9 @@ import DashboardHeader from '../components/dashboard/components/DashboardHeader'
 import DashboardGrid from '../components/dashboard/components/DashboardGrid';
 import FloatingSettingsPanel from '../components/dashboard/components/FloatingSettingsPanel';
 import { useDashboardLogic } from '../components/dashboard/hooks/useDashboardLogic';
+import { useHeaderSettings } from '../hooks/useHeaderSettings';
+import { WIDGET_COMPONENT_MAP } from '../components/settings/widgets/componentMap';
+import BlockRenderer from "../components/settings/widgets/customwidget/components/BlockRenderer";
 
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
 
@@ -55,6 +58,8 @@ const MainPage: React.FC = () => {
     const [infoWidget, setInfoWidget] = useState<any>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
+    const [zoomedWidgetId, setZoomedWidgetId] = useState<string | null>(null);
+    const { settings: headerSettings } = useHeaderSettings();
 
     // Body Scroll Lock
     useEffect(() => {
@@ -205,6 +210,12 @@ const MainPage: React.FC = () => {
                         setSelectedWidgetId={setSelectedWidgetId}
                         handleShowHelp={handleShowHelp}
                         handleUpdateWidgetData={handleUpdateWidgetData}
+                        onWidgetClick={(widgetId) => {
+                            if (headerSettings.showWidgetZoom) {
+                                setZoomedWidgetId(widgetId);
+                            }
+                        }}
+                        isZoomEnabled={headerSettings.showWidgetZoom}
                     />
                 </div>
 
@@ -301,6 +312,54 @@ const MainPage: React.FC = () => {
                     />
                 )}
 
+                {/* Zoom Widget Modal */}
+                {zoomedWidgetId && (() => {
+                    const zoomedWidget = widgets.find(w => w.id === zoomedWidgetId);
+                    if (!zoomedWidget) return null;
+
+                    let WidgetComponent: any = null;
+                    if (WIDGET_COMPONENT_MAP[zoomedWidget.type]) {
+                        WidgetComponent = WIDGET_COMPONENT_MAP[zoomedWidget.type];
+                    }
+
+                    return (
+                        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-8 backdrop-blur-md animate-in zoom-in duration-200" onClick={() => setZoomedWidgetId(null)}>
+                            <button
+                                onClick={() => setZoomedWidgetId(null)}
+                                className="absolute top-8 right-8 p-3 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-[101]"
+                            >
+                                <X size={32} />
+                            </button>
+                            <div className="w-full max-w-6xl aspect-video bg-[var(--bg-card)] rounded-3xl overflow-hidden shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                                {(zoomedWidget.type === 'custom-block' || !WidgetComponent) ? (
+                                    <BlockRenderer
+                                        block={{
+                                            id: zoomedWidget.id,
+                                            type: (zoomedWidget.props || {}).type || zoomedWidget.type,
+                                            content: (zoomedWidget.props || {}).content || {},
+                                            styles: (zoomedWidget.props || {}).styles || {}
+                                        }}
+                                        selectedBlockId={null}
+                                        onSelectBlock={() => { }}
+                                        onRemoveBlock={() => { }}
+                                        activeContainer={null as any}
+                                        onSetActiveContainer={() => { }}
+                                        onUpdateBlock={() => { }}
+                                    />
+                                ) : (
+                                    <WidgetComponent
+                                        {...(zoomedWidget.props || {})}
+                                        gridSize={{ w: 4, h: 4 }}
+                                        updateLayout={() => { }}
+                                        widgetId={zoomedWidget.id}
+                                        onInteraction={() => { }}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* Floating Settings Panel */}
                 <FloatingSettingsPanel
                     isWidgetEditMode={isWidgetEditMode}
@@ -310,6 +369,7 @@ const MainPage: React.FC = () => {
                     setIsArrangeConfirmOpen={setIsArrangeConfirmOpen}
                     setIsPresetManagerOpen={setIsPresetManagerOpen}
                     resetWidgets={() => setIsResetConfirmOpen(true)}
+                    isMobile={isMobile}
                 />
 
                 {/* Scroll To Top Button */}

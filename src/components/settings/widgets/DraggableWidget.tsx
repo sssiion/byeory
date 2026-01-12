@@ -22,8 +22,10 @@ interface DraggableWidgetProps {
     isMobile?: boolean;
     isSelected?: boolean;
     onSelect?: () => void;
+    onZoom?: () => void;
     onShowInfo?: () => void;
     onUpdateWidget?: (id: string, updates: any) => void;
+    isZoomEnabled?: boolean;
 }
 
 const ItemTypes = {
@@ -43,8 +45,10 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
     isMobile = false,
     isSelected = false,
     onSelect,
+    onZoom,
     onShowInfo,
-    onUpdateWidget
+    onUpdateWidget,
+    isZoomEnabled = false
 }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [showSizeMenu, setShowSizeMenu] = useState(false);
@@ -171,6 +175,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     e.stopPropagation();
                 } else if (!isEditMode) {
                     triggerWidgetInteraction();
+                    onZoom?.();
                 }
             }}
             onContextMenu={(e) => {
@@ -349,6 +354,22 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                             </svg>
                         </div>
                     )}
+                </div>
+            )}
+            {/* Zoom Overlay */}
+            {!isEditMode && isZoomEnabled && !isMobile && (
+                <div
+                    className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20 cursor-pointer rounded-2xl"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onZoom?.();
+                    }}
+                >
+                    <div className="bg-black/40 p-3 rounded-full backdrop-blur-md shadow-lg transform scale-90 group-hover:scale-100 transition-all duration-200">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                        </svg>
+                    </div>
                 </div>
             )}
         </motion.div>

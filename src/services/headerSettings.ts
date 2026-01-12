@@ -3,6 +3,7 @@ const API_BASE_URL = 'http://localhost:8080';
 export interface HeaderSettings {
     showTimer: boolean;
     showCredit: boolean;
+    showWidgetZoom: boolean;
 }
 
 const getHeaders = () => {

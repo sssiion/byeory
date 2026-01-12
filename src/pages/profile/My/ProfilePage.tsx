@@ -11,6 +11,7 @@ import ProfileStats from "../../../components/profile/ProfileStats";
 import ProfileMenu from "../../../components/profile/ProfileMenu";
 import SessionSettings from "../../../components/profile/security/SessionSettings";
 import CreditSettings from "../../../components/profile/security/CreditSettings";
+import WidgetZoomSettings from "../../../components/profile/security/WidgetZoomSettings";
 import PinSettings from "../../../components/profile/security/PinSettings";
 import TagSettings from "../../../components/profile/security/TagSettings";
 
@@ -126,6 +127,7 @@ function ProfilePage() {
 
             <SessionSettings />
             <CreditSettings />
+            <WidgetZoomSettings />
 
             <PinSettings
               confirmModal={setConfirmModal}
