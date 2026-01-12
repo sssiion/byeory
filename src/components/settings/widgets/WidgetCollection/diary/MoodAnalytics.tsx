@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WidgetWrapper } from '../../Shared';
 import { RefreshCw, Activity } from 'lucide-react';
 
@@ -15,6 +16,7 @@ interface ComponentProps {
 }
 
 export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) => {
+    const navigate = useNavigate();
     const [moods, setMoods] = useState<MoodItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -32,6 +34,11 @@ export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) =>
                 headers: { Authorization: `Bearer ${token}` },
             });
 
+            if (response.status === 404) {
+                setMoods([]);;
+                return;
+            }
+
             if (response.ok && response.status !== 204) {
                 const json = await response.json();
                 let parsedData = json;
@@ -39,8 +46,7 @@ export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) =>
                     try {
                         parsedData = JSON.parse(json.analysisResult);
                     } catch (e) {
-                        console.warn("Legacy data format");
-                        setError(true);
+                        // silently ignore parsing error
                     }
                 }
 
@@ -53,8 +59,9 @@ export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) =>
                 setMoods([]);
             }
         } catch (e) {
-            console.error(e);
-            setError(true);
+            // console.error(e);
+            // setError(true);
+            setMoods([]);
         } finally {
             setLoading(false);
         }
@@ -86,9 +93,18 @@ export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) =>
     if (error || moods.length === 0) {
         return (
             <WidgetWrapper className={`bg-white ${className || ''}`} style={style} title="Moods">
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 p-2 text-center gap-2">
-                    <Activity className="w-6 h-6 opacity-30" />
-                    <span className="text-xs opacity-70">데이터 부족</span>
+                <div className="flex flex-col items-center justify-center h-full text-center gap-3 p-4">
+                    <div className="flex flex-col items-center gap-1">
+                        <Activity className="w-8 h-8 text-indigo-300 opacity-50" />
+                        <span className="text-xs text-gray-400 font-medium">분석된 기분이 없어요</span>
+                    </div>
+
+                    <button
+                        onClick={() => navigate('/profile/analysis')}
+                        className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                    >
+                        분석하러 가기
+                    </button>
                 </div>
             </WidgetWrapper>
         );

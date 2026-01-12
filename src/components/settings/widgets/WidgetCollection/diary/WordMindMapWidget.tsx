@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WidgetWrapper } from '../../Shared';
 import { RefreshCw, Tag } from 'lucide-react';
 
@@ -25,6 +26,7 @@ interface ComponentProps {
 }
 
 export const WordMindMapWidget = ({ className, style, gridSize }: ComponentProps) => {
+    const navigate = useNavigate();
     const [words, setWords] = useState<WordItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -238,9 +240,18 @@ export const WordMindMapWidget = ({ className, style, gridSize }: ComponentProps
     if (words.length === 0) {
         return (
             <WidgetWrapper className={`bg-white ${className || ''}`} style={style} title="Key">
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 p-2 text-center gap-2 opacity-50">
-                    <Tag size={20} />
-                    <span className="text-[10px]">No Keywords</span>
+                <div className="flex flex-col items-center justify-center h-full text-center gap-3 p-4">
+                    <div className="flex flex-col items-center gap-1">
+                        <Tag className="w-8 h-8 text-indigo-300 opacity-50" />
+                        <span className="text-xs text-gray-400 font-medium">발견된 키워드가 없어요</span>
+                    </div>
+
+                    <button
+                        onClick={() => navigate('/profile/analysis')}
+                        className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-lg transition-colors"
+                    >
+                        분석하러 가기
+                    </button>
                 </div>
             </WidgetWrapper>
         );
