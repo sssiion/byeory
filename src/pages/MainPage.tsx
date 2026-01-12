@@ -17,6 +17,7 @@ import type { WidgetInstance } from "../components/settings/widgets/type.ts";
 // Refactored Components
 import DashboardHeader from '../components/dashboard/components/DashboardHeader';
 import DashboardGrid from '../components/dashboard/components/DashboardGrid';
+import FloatingSettingsPanel from '../components/dashboard/components/FloatingSettingsPanel';
 import { useDashboardLogic } from '../components/dashboard/hooks/useDashboardLogic';
 
 const DEFAULT_GRID_SIZE = { cols: 4, rows: 1 };
@@ -299,6 +300,17 @@ const MainPage: React.FC = () => {
                         showAction={false}
                     />
                 )}
+
+                {/* Floating Settings Panel */}
+                <FloatingSettingsPanel
+                    isWidgetEditMode={isWidgetEditMode}
+                    setIsWidgetEditMode={setIsWidgetEditMode}
+                    setIsCatalogOpen={setIsCatalogOpen}
+                    setIsBuilderOpen={setIsBuilderOpen}
+                    setIsArrangeConfirmOpen={setIsArrangeConfirmOpen}
+                    setIsPresetManagerOpen={setIsPresetManagerOpen}
+                    resetWidgets={() => setIsResetConfirmOpen(true)}
+                />
 
                 {/* Scroll To Top Button */}
                 <button
