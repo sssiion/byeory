@@ -22,6 +22,7 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     'chat-diary': lazy(() => import('./WidgetCollection/diary/ChatDiary.tsx').then(m => ({ default: m.ChatDiary }))),
     'mood-analytics': lazy(() => import('./WidgetCollection/diary/MoodAnalytics.tsx').then(m => ({ default: m.MoodAnalytics }))),
     'word-mind-map': lazy(() => import('./WidgetCollection/diary/WordMindMapWidget.tsx').then(m => ({ default: m.WordMindMapWidget }))),
+    'random-diary': lazy(() => import('./WidgetCollection/diary/RandomDiary.tsx').then(m => ({ default: m.RandomDiary }))),
 
     // ======================================================================
     // Utility

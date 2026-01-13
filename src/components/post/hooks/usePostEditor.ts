@@ -87,10 +87,50 @@ export const usePostEditor = () => {
             fetchMyTemplates();
         }
 
-        // ✨ Parse URL Query Params for Deep Linking (e.g., ?albumId=...)
+        // ✨ Parse URL Query Params for Deep Linking (e.g., ?albumId=... or ?id=...)
         const params = new URLSearchParams(window.location.search);
         const albumIdParam = params.get('albumId');
-        if (albumIdParam) {
+        const postIdParam = params.get('id');
+
+        if (postIdParam) {
+            // ✨ Deep link to specific post - will be handled after posts are loaded
+            const postId = Number(postIdParam);
+            if (!isNaN(postId)) {
+                // Fetch posts first, then navigate to the post
+                fetchPostsFromApi().then(fetchedPosts => {
+                    setPosts(fetchedPosts);
+                    const targetPost = fetchedPosts.find((p: PostData) => p.id === postId);
+                    if (targetPost) {
+                        // Use same logic as handlePostClick but inline to avoid dependency
+                        setCurrentPostId(targetPost.id);
+                        _setTitle(targetPost.title);
+                        _setTitleStyles((targetPost.titleStyles as any) || {
+                            fontSize: '30px',
+                            fontWeight: 'bold',
+                            fontFamily: "'Noto Sans KR', sans-serif",
+                            color: '#000000',
+                            textAlign: 'left'
+                        });
+                        _setBlocks(targetPost.blocks);
+                        _setStickers(targetPost.stickers);
+                        _setFloatingTexts(targetPost.floatingTexts || []);
+                        _setFloatingImages(targetPost.floatingImages || []);
+                        _setCurrentTags(targetPost.tags || []);
+                        setTargetAlbumIds(targetPost.albumIds || []);
+                        if (targetPost.styles) {
+                            _setPaperStyles(targetPost.styles);
+                        }
+                        if (targetPost.mode) {
+                            setMode(targetPost.mode);
+                        }
+                        setIsFavorite(targetPost.isFavorite || false);
+                        setIsPublic(targetPost.isPublic ?? true);
+                        setViewMode('read');
+                    }
+                });
+                return; // Early exit, don't run normal fetch
+            }
+        } else if (albumIdParam) {
             setSelectedAlbumId(albumIdParam);
             setViewMode('folder');
         }
