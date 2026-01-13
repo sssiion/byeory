@@ -362,6 +362,7 @@ const MainPage: React.FC = () => {
 
                 {/* Floating Settings Panel */}
                 <FloatingSettingsPanel
+                    defaultOpen={!isMobile} // ✨ Open by default on PC
                     isWidgetEditMode={isWidgetEditMode}
                     setIsWidgetEditMode={setIsWidgetEditMode}
                     setIsCatalogOpen={setIsCatalogOpen}

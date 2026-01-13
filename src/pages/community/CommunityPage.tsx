@@ -3,8 +3,11 @@ import Navigation from '../../components/header/Navigation';
 import { Globe, Search, X } from 'lucide-react'; // Settings 아이콘 추가 (선택사항)
 import CommunityFeed from '../../components/community/components/CommunityFeed';
 import { fetchMyProfile } from '../../components/community/api';
+import { useIsMobile } from '../../hooks'; // ✨
+import FloatingSettingsPanel from '../../components/dashboard/components/FloatingSettingsPanel'; // ✨
 
 const Community: React.FC = () => {
+    const isMobile = useIsMobile(); // ✨
     const [userId, setUserId] = useState<number | undefined>(undefined);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -34,6 +37,7 @@ const Community: React.FC = () => {
         initUser();
     }, []);
 
+    // ... existing handlers ...
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery.trim()) return;
@@ -75,6 +79,12 @@ const Community: React.FC = () => {
     return (
         <div className="min-h-screen">
             <Navigation />
+
+            {/* ✨ Floating Settings Panel */}
+            <FloatingSettingsPanel
+                defaultOpen={false}
+                isMobile={isMobile}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-9 pb-32">
                 {/* Header Section */}

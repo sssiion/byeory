@@ -338,7 +338,7 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 md:gap-3 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto justify-start md:justify-end pb-2 md:pb-0">
                         {(() => {
                             const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
                             const isRoom = targetAlbum?.type === 'room' || String(albumId).startsWith('room-');
@@ -349,7 +349,7 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                 return (
                                     <button
                                         onClick={() => setIsCycleModalOpen(true)}
-                                        className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0"
+                                        className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0 flex-1 md:flex-none justify-center"
                                     >
                                         <PenLine size={20} />
                                         새 활동 시작
@@ -384,7 +384,7 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                     {albumId && albumId !== '__all__' && (
                                         <button
                                             onClick={() => onStartWriting(albumId)}
-                                            className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0"
+                                            className="flex items-center gap-2 px-4 md:px-6 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 text-sm md:text-base whitespace-nowrap flex-shrink-0 flex-1 md:flex-none justify-center"
                                         >
                                             <PenLine size={20} />
                                             기록 남기기

@@ -43,7 +43,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
     return (
         <div
-            className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-200 ${isOpen ? 'bg-black/60 backdrop-blur-sm opacity-100' : 'bg-transparent opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-200 ${isOpen ? 'bg-black/60 backdrop-blur-sm opacity-100' : 'bg-transparent opacity-0 pointer-events-none'}`}
             onClick={onClose || (singleButton ? onConfirm : onCancel)}
         >
             <div

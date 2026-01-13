@@ -10,10 +10,13 @@ import PostAlbumView from '../../components/post/views/PostAlbumView';
 import PostFolderView from '../../components/post/views/PostFolderView';
 import CreateAlbumModal from '../../components/post/components/CreateAlbumModal';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import { useIsMobile } from '../../hooks'; // ✨
+import FloatingSettingsPanel from '../../components/dashboard/components/FloatingSettingsPanel'; // ✨
 
 const Post: React.FC = () => {
     // Custom Hook 사용
     const editor = usePostEditor();
+    const isMobile = useIsMobile(); // ✨
     const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
 
     React.useEffect(() => {
@@ -86,7 +89,14 @@ const Post: React.FC = () => {
         <div className="min-h-screen pb-32">
             <Navigation />
 
+            {/* ✨ Floating Settings Panel */}
+            <FloatingSettingsPanel
+                defaultOpen={false}
+                isMobile={isMobile}
+            />
+
             <div className="max-w-7xl mx-auto px-4 py-8">
+                {/* ... existing jsx ... */}
                 {/* 상단 헤더 버튼 (리스트/앨범/폴더 뷰일 때만 표시) */}
                 {/* 1) 앨범 뷰 (기본) */}
                 {editor.viewMode === 'album' && (

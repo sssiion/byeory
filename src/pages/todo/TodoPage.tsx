@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from '../../components/header/Navigation';
-import { DailyView } from '../../components/todo/Daily';
-import { WeeklyView } from '../../components/todo/Weekly';
-import { MonthlyView } from '../../components/todo/Monthly';
+import { DailyView } from '../../components/Todo/Daily';
+import { WeeklyView } from '../../components/Todo/Weekly';
+import { MonthlyView } from '../../components/Todo/Monthly';
 import type { Todo, Post } from '../../types/todo';
-import { useSharedTodo } from '../../components/todo/useSharedTodo';
+import { useSharedTodo } from '../../components/Todo/useSharedTodo';
+import { useIsMobile } from '../../hooks'; // ✨
+import FloatingSettingsPanel from '../../components/dashboard/components/FloatingSettingsPanel'; // ✨
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 type AppMode = 'todo' | 'post';
 
 const TodoPage: React.FC = () => {
+    const isMobile = useIsMobile(); // ✨
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
     const [appMode, setAppMode] = useState<AppMode>('todo');
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -93,6 +96,12 @@ const TodoPage: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col transition-colors duration-300">
             <Navigation />
+
+            {/* ✨ Floating Settings Panel */}
+            <FloatingSettingsPanel
+                defaultOpen={false}
+                isMobile={isMobile}
+            />
 
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header & View Switcher */}

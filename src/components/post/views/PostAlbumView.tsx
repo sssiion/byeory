@@ -223,20 +223,27 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     </h2>
                     <p className="text-[var(--text-secondary)] text-sm mt-2 ml-1">나만의 추억 보관함입니다.</p>
                 </div>
-                <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
-                    <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 mr-2 h-10 md:h-12 items-center flex-shrink-0">
-                        {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
-                            <button
-                                key={opt}
-                                onClick={() => setSortOption(opt)}
-                                className={`px-2 md:px-3 py-1.5 md:py-3 text-[10px] md:text-xs font-bold rounded-md transition-all whitespace-nowrap ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-                            >
-                                {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
-                            </button>
-                        ))}
+                <div className="flex flex-col md:flex-row items-end gap-3 w-full md:w-auto">
+                    {/* Sort Options - Line 1 on Mobile */}
+                    <div className="w-full md:w-auto overflow-x-auto hide-scrollbar pb-1 md:pb-0">
+                        <div className="flex bg-[var(--bg-card-secondary)] rounded-lg p-1 h-10 md:h-12 items-center flex-shrink-0 w-max">
+                            {(['name', 'newest', 'count', 'favorites'] as const).map(opt => (
+                                <button
+                                    key={opt}
+                                    onClick={() => setSortOption(opt)}
+                                    className={`px-3 md:px-3 py-1.5 md:py-3 text-[11px] md:text-xs font-bold rounded-md transition-all whitespace-nowrap ${sortOption === opt ? 'bg-[var(--bg-card)] shadow-sm text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+                                >
+                                    {{ name: '가나다순', newest: '최신순', count: '많은 기록순', favorites: '⭐ 즐겨찾기' }[opt]}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <button onClick={onCreateAlbum} className="flex items-center gap-1 px-3 h-10 md:h-12 rounded-xl border border-[var(--border-color)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-all font-medium group flex-shrink-0"><Plus size={16} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" /><Folder size={18} className="text-[var(--text-secondary)] group-hover:text-yellow-500 group-hover:fill-yellow-500 transition-colors" /></button>
-                    <button onClick={() => onStartWriting()} className="flex items-center gap-2 px-4 md:px-5 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 whitespace-nowrap flex-shrink-0"><PenLine size={18} />기록 남기기</button>
+
+                    {/* Action Buttons - Line 2 on Mobile */}
+                    <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                        <button onClick={onCreateAlbum} className="flex items-center gap-1 px-3 h-10 md:h-12 rounded-xl border border-[var(--border-color)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] transition-all font-medium group flex-shrink-0"><Plus size={16} className="text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors" /><Folder size={18} className="text-[var(--text-secondary)] group-hover:text-yellow-500 group-hover:fill-yellow-500 transition-colors" /></button>
+                        <button onClick={() => onStartWriting()} className="flex items-center gap-2 px-4 md:px-5 h-10 md:h-12 rounded-xl bg-[var(--btn-bg)] text-[var(--btn-text)] font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 whitespace-nowrap flex-shrink-0 flex-1 md:flex-none justify-center"><PenLine size={18} />기록 남기기</button>
+                    </div>
                 </div>
             </div>
 

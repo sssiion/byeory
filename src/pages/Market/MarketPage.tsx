@@ -9,7 +9,7 @@ import ScrollToTopButton from '../../components/common/ScrollToTopButton';
 import { useCredits } from '../../context/CreditContext';
 import { type MarketItem } from '../../types/market';
 
-import { useMarket } from '../../hooks';
+import { useMarket, useIsMobile } from '../../hooks'; // ✨
 import { getMyWidgets } from '../../components/settings/widgets/customwidget/widgetApi';
 import { fetchMyPostTemplatesApi, uploadImageToSupabase } from '../../components/post/api';
 import { STICKERS } from '../../components/post/constants';
@@ -20,10 +20,12 @@ import MarketFilterBar from '../../components/market/components/MarketFilterBar'
 import MarketHistoryView from '../../components/market/components/MarketHistoryView';
 import MarketMyShopView from '../../components/market/components/MarketMyShopView';
 import MarketProductGrid from '../../components/market/components/MarketProductGrid';
+import FloatingSettingsPanel from '../../components/dashboard/components/FloatingSettingsPanel'; // ✨
 
 const Market: React.FC = () => {
     const { credits } = useCredits();
     const navigate = useNavigate();
+    const isMobile = useIsMobile(); // ✨
 
     const {
         marketItems,
@@ -326,6 +328,11 @@ const Market: React.FC = () => {
 
     return (
         <MarketLayout header={<Navigation />}>
+            {/* ✨ Floating Settings Panel */}
+            <FloatingSettingsPanel
+                defaultOpen={false}
+                isMobile={isMobile}
+            />
             <div className="flex flex-col gap-8 pb-20">
                 <MarketHeader
                     onMyShopClick={() => setActiveTab('myshop')}
