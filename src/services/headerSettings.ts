@@ -4,6 +4,7 @@ export interface HeaderSettings {
     showTimer: boolean;
     showCredit: boolean;
     showWidgetZoom: boolean;
+    showFloatingPanel: boolean; // ✨ Now persistent
 }
 
 const getHeaders = () => {

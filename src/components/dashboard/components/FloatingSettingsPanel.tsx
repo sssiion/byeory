@@ -2,30 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { Palette, Menu, Home, Layout, Plus, RefreshCw, AlignStartVertical, FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMenu } from '../../settings/menu/MenuSettings';
+import { useHeaderSettings } from '../../../hooks/useHeaderSettings'; // ✨
 
 interface FloatingSettingsPanelProps {
-    defaultOpen?: boolean; // ✨ New Prop
-    isWidgetEditMode?: boolean; // Optional
-    setIsWidgetEditMode?: (value: boolean) => void; // Optional
-    setIsCatalogOpen?: (value: boolean) => void; // Optional
-    setIsBuilderOpen?: (value: boolean) => void; // Optional
-    setIsArrangeConfirmOpen?: (value: boolean) => void; // Optional
-    setIsPresetManagerOpen?: (value: boolean) => void; // Optional
-    resetWidgets?: () => void; // Optional
+    defaultOpen?: boolean;
+    isWidgetEditMode?: boolean;
+    setIsWidgetEditMode?: (value: boolean) => void;
+    setIsCatalogOpen?: (value: boolean) => void;
+    setIsBuilderOpen?: (value: boolean) => void;
+    setIsArrangeConfirmOpen?: (value: boolean) => void; // ✨ Restored
+    setIsPresetManagerOpen?: (value: boolean) => void; // ✨ Restored
+    resetWidgets?: () => void; // ✨ Restored
     isMobile: boolean;
 }
 
 const FloatingSettingsPanel: React.FC<FloatingSettingsPanelProps> = ({
-    defaultOpen = false, // ✨ Default false if not provided
+    defaultOpen = false,
     isWidgetEditMode,
     setIsWidgetEditMode,
     setIsCatalogOpen,
     setIsBuilderOpen,
-    setIsArrangeConfirmOpen,
-    setIsPresetManagerOpen,
-    resetWidgets,
+    setIsArrangeConfirmOpen, // ✨ Restored
+    setIsPresetManagerOpen, // ✨ Restored
+    resetWidgets, // ✨ Restored
     isMobile
 }) => {
+    const { settings } = useHeaderSettings(); // ✨
     // ✨ Use defaultOpen prop, but force closed on mobile initial load
     const [isOpen, setIsOpen] = useState(defaultOpen && !isMobile);
     const navigate = useNavigate();
@@ -37,6 +39,9 @@ const FloatingSettingsPanel: React.FC<FloatingSettingsPanelProps> = ({
             setIsOpen(false);
         }
     }, [isMobile]);
+
+    // ✨ Respect Global Setting: If disabled, do not render
+    if (settings.showFloatingPanel === false) return null;
 
     const openSettings = (view: string) => {
         window.dispatchEvent(new CustomEvent('open-settings-modal', { detail: { view } }));

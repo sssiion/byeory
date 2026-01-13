@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: HeaderSettings = {
     showTimer: false,
     showCredit: true,
     showWidgetZoom: false,
+    showFloatingPanel: true, // ✨ Default Enabled
 };
 
 export const useHeaderSettings = () => {
@@ -23,8 +24,12 @@ export const useHeaderSettings = () => {
                 const serverSettings = await getHeaderSettings();
 
                 if (serverSettings) {
-                    setSettings(serverSettings);
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serverSettings));
+                    // ✨ Merge with existing settings (defaults) to preserve local-only keys if backend misses them
+                    setSettings(prev => {
+                        const merged = { ...prev, ...serverSettings };
+                        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+                        return merged;
+                    });
                 }
             } catch (error) {
                 console.error("Failed to sync header settings:", error);

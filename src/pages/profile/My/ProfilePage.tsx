@@ -4,20 +4,20 @@ import { useAuth } from "../../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Shield, LogOut } from "lucide-react";
 import ConfirmationModal from "../../../components/common/ConfirmationModal";
+import { useIsMobile } from "../../../hooks"; // ✨
+import FloatingSettingsPanel from "../../../components/dashboard/components/FloatingSettingsPanel"; // ✨
 
 // Components
 import ProfileHeader from "../../../components/profile/ProfileHeader";
 import ProfileStats from "../../../components/profile/ProfileStats";
 import ProfileMenu from "../../../components/profile/ProfileMenu";
-import SessionSettings from "../../../components/profile/security/SessionSettings";
-import CreditSettings from "../../../components/profile/security/CreditSettings";
-import WidgetZoomSettings from "../../../components/profile/security/WidgetZoomSettings";
 import PinSettings from "../../../components/profile/security/PinSettings";
 import TagSettings from "../../../components/profile/security/TagSettings";
 
 function ProfilePage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile(); // ✨
 
   const [profile, setProfile] = useState<{
     name?: string;
@@ -106,6 +106,12 @@ function ProfilePage() {
       {/* 내비게이션 설정 */}
       <Navigation />
 
+      {/* ✨ Floating Settings Panel */}
+      <FloatingSettingsPanel
+        defaultOpen={false}
+        isMobile={isMobile}
+      />
+
       {/* 메인 화면 */}
       <main className="pt-16 md:pt-20 px-4 animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -125,16 +131,34 @@ function ProfilePage() {
               보안
             </h3>
 
-            <SessionSettings />
-            <CreditSettings />
-            <WidgetZoomSettings />
-
             <PinSettings
               confirmModal={setConfirmModal}
               closeConfirmModal={closeConfirmModal}
             />
 
             <TagSettings />
+
+            <button
+              onClick={() => navigate("/profile/delete")}
+              className="w-full px-6 py-4 text-left transition-colors flex items-center justify-between hover:opacity-80"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-5 h-5 flex items-center justify-center">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5 theme-text-secondary"
+                  >
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                  </svg>
+                </span>
+                <span className="theme-text-primary">회원탈퇴</span>
+              </div>
+            </button>
           </div>
 
           {/* Logout Button */}
