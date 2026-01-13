@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks';
-import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check } from 'lucide-react';
+import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
@@ -71,6 +71,44 @@ const WidgetButton = ({ widget, onAdd }: { widget: any, onAdd: (type: string) =>
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
                 {widget.label}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+            </div>
+        </div>
+    );
+};
+
+// ✨ Accordion Component
+const SidebarAccordion = ({
+    title,
+    icon: Icon,
+    children,
+    defaultOpen = false
+}: {
+    title: string;
+    icon: React.ElementType;
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+}) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+
+    return (
+        <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden transition-all duration-300">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full p-4 flex items-center justify-between transition-colors ${isOpen ? 'bg-[var(--bg-card-secondary)]/30 border-b border-[var(--border-color)]' : 'hover:bg-[var(--bg-card-secondary)]/50'}`}
+            >
+                <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
+                    <Icon size={18} className="text-[var(--text-secondary)]" />
+                    {title}
+                </div>
+                <ChevronDown
+                    size={16}
+                    className={`text-[var(--text-secondary)] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+                />
+            </button>
+            <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}
+            >
+                {children}
             </div>
         </div>
     );
@@ -274,250 +312,43 @@ const EditorSidebar: React.FC<Props> = ({
     };
 
     return (
-        <div className={`w-full ${containerClassName} flex flex-col gap-5 h-full overflow-y-auto pr-1 pb-10`}>
+        <div className={`w-full ${containerClassName} flex flex-col gap-5 h-full overflow-y-auto py-4 md:py-8 pr-1 pb-10`}>
             {/* 상단 액션 버튼 */}
             {showActionButtons && (
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2">
+                    {/* Row 1: Cancel & Complete (Taller, 5:5) */}
+                    <div className="flex gap-2 w-full">
+                        <button
+                            onClick={onCancel}
+                            className="flex-1 py-4 px-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] transition-all flex items-center justify-center gap-2"
+                            title="취소"
+                        >
+                            <X size={20} />
+                            <span>취소</span>
+                        </button>
+                        <button
+                            onClick={onSave}
+                            disabled={isSaving}
+                            className="flex-1 py-4 px-3 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <Check size={20} />
+                            <span>{isSaving ? "저장 중..." : "완료"}</span>
+                        </button>
+                    </div>
+
+                    {/* Row 2: Temp Save (Thinner, Full Width) */}
                     <button
-                        onClick={onCancel}
-                        className="py-3 px-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)] transition-all flex items-center justify-center"
-                        title="취소"
-                    >
-                        <X size={18} />
-                    </button>
-                    <button
-                        onClick={onTempSave} // ✨ Temp Save
+                        onClick={onTempSave}
                         disabled={isSaving}
-                        className="flex-1 py-3 px-3 bg-white border border-indigo-200 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+                        className="w-full py-2.5 px-3 bg-white border border-indigo-200 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
                     >
-                        <Save size={18} />
-                        {isSaving ? "..." : "임시 저장"}
-                    </button>
-                    <button
-                        onClick={onSave}
-                        disabled={isSaving}
-                        className="flex-1 py-3 px-3 bg-[var(--btn-bg)] text-[var(--btn-text)] rounded-xl font-bold hover:opacity-90 transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        <Check size={18} />
-                        {isSaving ? "저장 중..." : "완료"}
+                        <Save size={14} />
+                        <span>{isSaving ? "..." : "임시 저장"}</span>
                     </button>
                 </div>
             )}
 
             {/* SaveLocationWidget Removed - Moved to Modal */}
-
-            {/* ✨ 종이 디자인 섹션 */}
-            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
-                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <Layout size={18} className="text-[var(--text-secondary)]" />
-                        종이 디자인
-                    </h3>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-2">
-                    {Object.values(PAPER_PRESETS).map((preset: any) => (
-                        <button
-                            key={preset.id}
-                            onClick={() => applyPaperPreset(preset)}
-                            className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1"
-                            style={{
-                                backgroundColor: preset.styles.backgroundColor || '#fff',
-                                color: preset.defaultFontColor || '#000'
-                            }}
-                        >
-                            {preset.name}
-                        </button>
-                    ))}
-
-                    <button
-                        onClick={onSaveAsTemplate}
-                        className="p-2 border border-[var(--border-color)] border-dashed rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-400 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 justify-center bg-transparent"
-                    >
-                        <Save size={14} />
-                        템플릿 저장
-                    </button>
-                </div>
-            </div>
-
-            {/* ✨ Widgets Section */}
-            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
-                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <span className="text-lg">🧩</span>
-                        위젯
-                    </h3>
-                </div>
-                <div className="p-4">
-                    <div className="grid grid-cols-4 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar">
-                        {allWidgets.map((widget) => (
-                            <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* ✨ 나의 템플릿 섹션 */}
-            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
-                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <Save size={18} className="text-[var(--text-secondary)]" />
-                        나의 템플릿
-                    </h3>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-2">
-                    {myTemplates.length > 0 ? (
-                        myTemplates.map((template: any) => (
-                            <button
-                                key={template.id}
-                                onClick={() => applyTemplate && applyTemplate(template)}
-                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 overflow-hidden relative"
-                                style={{
-                                    backgroundColor: template.styles?.backgroundColor || '#fff'
-                                }}
-                            >
-                                <span
-                                    className="truncate w-full text-center relative z-10"
-                                    style={{
-                                        color: (() => {
-                                            const bg = template.styles?.backgroundColor || '#ffffff';
-                                            // Simple brightness check
-                                            if (bg.startsWith('#')) {
-                                                const r = parseInt(bg.substring(1, 3), 16);
-                                                const g = parseInt(bg.substring(3, 5), 16);
-                                                const b = parseInt(bg.substring(5, 7), 16);
-                                                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                                                return brightness > 125 ? '#000000' : '#ffffff';
-                                            }
-                                            return '#000000';
-                                        })()
-                                    }}
-                                >
-                                    {template.name}
-                                </span>
-                            </button>
-                        ))
-                    ) : (
-                        <div className="col-span-2 text-center text-xs text-gray-400 py-2">
-                            저장된 템플릿이 없습니다.
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* 꾸미기 도구 섹션 */}
-            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
-                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <Palette size={18} className="text-[var(--text-secondary)]" />
-                        꾸미기 도구
-                    </h3>
-                </div>
-
-                <div className="p-4 flex flex-col gap-3">
-                    <button
-                        onClick={onAddBlock}
-                        className="w-full py-3 px-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition-all text-sm font-medium text-[var(--text-primary)] flex items-center gap-3 group bg-white/50"
-                    >
-                        <div className="p-1.5 rounded-lg bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                            <Type size={18} />
-                        </div>
-                        <span className="flex-1 text-left">줄글 상자 추가</span>
-                        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
-                    </button>
-
-                    <button
-                        onClick={onAddFloatingText}
-                        className="w-full py-3 px-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-card-secondary)] hover:border-yellow-200 transition-all text-sm font-medium text-[var(--text-primary)] flex items-center gap-3 group bg-white/50"
-                    >
-                        <div className="p-1.5 rounded-lg bg-yellow-50 text-yellow-600 group-hover:bg-yellow-100 transition-colors">
-                            <StickyNote size={18} />
-                        </div>
-                        <span className="flex-1 text-left">포스트잇 붙이기</span>
-                        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-yellow-400" />
-                    </button>
-
-                    <button
-                        onClick={() => floatingImgRef.current?.click()}
-                        className="w-full py-3 px-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-card-secondary)] hover:border-blue-200 transition-all text-sm font-medium text-[var(--text-primary)] flex items-center gap-3 group bg-white/50"
-                    >
-                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                            <ImageIcon size={18} />
-                        </div>
-                        <span className="flex-1 text-left">자유 사진 붙이기</span>
-                        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
-                    </button>
-                    <input type="file" hidden ref={floatingImgRef} onChange={handleFloatingImgChange} accept="image/*" />
-                </div>
-
-                <div className="px-4 pb-4 pt-2 border-t border-[var(--border-color)]">
-                    <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-3 mt-2 uppercase tracking-wider flex justify-between items-center">
-                        Stickers
-                        <a href="/market" className="text-[10px] text-indigo-500 hover:underline">Get more</a>
-                    </h4>
-                    <div className="grid grid-cols-4 gap-2">
-                        {STICKERS.map((sticker) => {
-                            // Check ownership
-                            const owned = !sticker.isPremium || isOwned(sticker.id) || (sticker.packId && isOwned(sticker.packId));
-                            const isLocked = !owned;
-
-                            return (
-                                <button
-                                    key={sticker.id}
-                                    title={isLocked ? `구매하기 (${sticker.price} C)` : '사용하기'}
-                                    onClick={() => handleStickerClick(sticker)}
-                                    className={`relative aspect-square hover:bg-[var(--bg-card-secondary)] p-1.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all active:scale-95 ${isLocked ? 'grayscale opacity-70' : ''}`}
-                                >
-                                    <img src={sticker.url} className="w-full h-full object-contain filter drop-shadow-sm" alt="sticker" />
-                                    {isLocked && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 rounded-xl text-white drop-shadow-md">
-                                            <span className="text-xs">🔒</span>
-                                            <span className="text-[10px] font-bold">{sticker.price}</span>
-                                        </div>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-
-            {/* ✨ Tags Section (Real-time Visualization) */}
-            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
-                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <span className="text-lg">🏷️</span>
-                        태그
-                    </h3>
-                </div>
-                <div className="p-4 flex flex-col gap-2">
-                    <div className="flex flex-wrap gap-1 mb-2">
-                        {currentTags.map(tag => (
-                            <span key={tag} className="px-2 py-1 bg-[var(--btn-bg)] text-[var(--btn-text)] text-xs rounded-full flex items-center gap-1 opacity-90">
-                                #{tag}
-                                <button onClick={() => onTagsChange(currentTags.filter(t => t !== tag))} className="hover:text-red-200"><X size={12} /></button>
-                            </span>
-                        ))}
-                    </div>
-                    <input
-                        placeholder="태그 입력 (Space/Ent)"
-                        className="w-full p-2 bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-lg text-sm outline-none focus:border-[var(--btn-bg)] transition-colors"
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                const val = e.currentTarget.value.trim();
-                                if (val) {
-                                    // Remove # if present
-                                    const tag = val.replace(/^#/, '');
-                                    if (!currentTags.includes(tag)) {
-                                        onTagsChange([...currentTags, tag]);
-                                    }
-                                    e.currentTarget.value = '';
-                                }
-                            }
-                        }}
-                    />
-                </div>
-            </div>
 
             {/* AI 기록 도우미 */}
             <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden flex flex-col">
@@ -596,6 +427,216 @@ const EditorSidebar: React.FC<Props> = ({
                     <input type="file" hidden ref={fileInputRef} onChange={handleImagesUpload} multiple accept="image/*" />
                 </div>
             </div>
+
+            {/* ✨ Tags Section (Real-time Visualization) */}
+            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <span className="text-lg">🏷️</span>
+                        태그
+                    </h3>
+                </div>
+                <div className="p-4 flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-1">
+                        {currentTags.map(tag => (
+                            <span key={tag} className="px-2 py-1 bg-[var(--btn-bg)] text-[var(--btn-text)] text-xs rounded-full flex items-center gap-1 opacity-90">
+                                #{tag}
+                                <button onClick={() => onTagsChange(currentTags.filter(t => t !== tag))} className="hover:text-red-200"><X size={12} /></button>
+                            </span>
+                        ))}
+                    </div>
+                    <input
+                        placeholder="태그 입력 (Space/Ent)"
+                        className="w-full p-2 bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-lg text-sm outline-none focus:border-[var(--btn-bg)] transition-colors"
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                const val = e.currentTarget.value.trim();
+                                if (val) {
+                                    // Remove # if present
+                                    const tag = val.replace(/^#/, '');
+                                    if (!currentTags.includes(tag)) {
+                                        onTagsChange([...currentTags, tag]);
+                                    }
+                                    e.currentTarget.value = '';
+                                }
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* 꾸미기 도구 섹션 */}
+            <SidebarAccordion title="꾸미기 도구" icon={Palette} defaultOpen={false}>
+                <div className="p-4 flex flex-col gap-3">
+                    <button
+                        onClick={onAddBlock}
+                        className="w-full py-3 px-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition-all text-sm font-medium text-[var(--text-primary)] flex items-center gap-3 group bg-white/50"
+                    >
+                        <div className="p-1.5 rounded-lg bg-gray-100 text-gray-600 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                            <Type size={18} />
+                        </div>
+                        <span className="flex-1 text-left">줄글 상자 추가</span>
+                        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
+                    </button>
+
+                    <button
+                        onClick={onAddFloatingText}
+                        className="w-full py-3 px-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-card-secondary)] hover:border-yellow-200 transition-all text-sm font-medium text-[var(--text-primary)] flex items-center gap-3 group bg-white/50"
+                    >
+                        <div className="p-1.5 rounded-lg bg-yellow-50 text-yellow-600 group-hover:bg-yellow-100 transition-colors">
+                            <StickyNote size={18} />
+                        </div>
+                        <span className="flex-1 text-left">포스트잇 붙이기</span>
+                        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-yellow-400" />
+                    </button>
+
+                    <button
+                        onClick={() => floatingImgRef.current?.click()}
+                        className="w-full py-3 px-4 border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-card-secondary)] hover:border-blue-200 transition-all text-sm font-medium text-[var(--text-primary)] flex items-center gap-3 group bg-white/50"
+                    >
+                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                            <ImageIcon size={18} />
+                        </div>
+                        <span className="flex-1 text-left">자유 사진 붙이기</span>
+                        <Plus size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                    </button>
+                    <input type="file" hidden ref={floatingImgRef} onChange={handleFloatingImgChange} accept="image/*" />
+                </div>
+
+                <div className="px-4 pb-4 pt-2 border-t border-[var(--border-color)]">
+                    <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-3 mt-2 uppercase tracking-wider flex justify-between items-center">
+                        Stickers
+                        <a href="/market" className="text-[10px] text-indigo-500 hover:underline">Get more</a>
+                    </h4>
+                    <div className="grid grid-cols-4 gap-2">
+                        {STICKERS.map((sticker) => {
+                            // Check ownership
+                            const owned = !sticker.isPremium || isOwned(sticker.id) || (sticker.packId && isOwned(sticker.packId));
+                            const isLocked = !owned;
+
+                            return (
+                                <button
+                                    key={sticker.id}
+                                    title={isLocked ? `구매하기 (${sticker.price} C)` : '사용하기'}
+                                    onClick={() => handleStickerClick(sticker)}
+                                    className={`relative aspect-square hover:bg-[var(--bg-card-secondary)] p-1.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all active:scale-95 ${isLocked ? 'grayscale opacity-70' : ''}`}
+                                >
+                                    <img src={sticker.url} className="w-full h-full object-contain filter drop-shadow-sm" alt="sticker" />
+                                    {isLocked && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 rounded-xl text-white drop-shadow-md">
+                                            <span className="text-xs">🔒</span>
+                                            <span className="text-[10px] font-bold">{sticker.price}</span>
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </SidebarAccordion>
+
+            {/* ✨ 종이 디자인 섹션 */}
+            <SidebarAccordion title="배경 디자인" icon={Layout} defaultOpen={false}>
+                <div className="p-4 grid grid-cols-2 gap-2">
+                    {Object.values(PAPER_PRESETS).map((preset: any) => {
+                        // ✨ Label Formatting Logic
+                        const isSpecial = preset.id !== 'default' && preset.id !== 'hanji';
+                        let displayName: React.ReactNode = preset.name;
+
+                        if (isSpecial && preset.name.includes('(')) {
+                            const [main, sub] = preset.name.split('(');
+                            displayName = (
+                                <>
+                                    <span>{main.trim()}</span>
+                                    <span className="text-[10px] opacity-80">({sub}</span>
+                                </>
+                            );
+                        }
+
+                        return (
+                            <button
+                                key={preset.id}
+                                onClick={() => applyPaperPreset(preset)}
+                                className="h-15 p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center justify-center gap-0.5 leading-tight"
+                                style={{
+                                    backgroundColor: preset.styles.backgroundColor || '#fff',
+                                    color: preset.defaultFontColor || '#000'
+                                }}
+                            >
+                                {displayName}
+                            </button>
+                        );
+                    })}
+
+                    <button
+                        onClick={onSaveAsTemplate}
+                        className="col-span-2 h-12 border-2 border-dashed border-indigo-300 rounded-lg text-xs hover:bg-indigo-50 hover:border-indigo-500 transition text-indigo-600 font-bold flex items-center justify-center gap-2 bg-white/50"
+                    >
+                        <Save size={16} />
+                        템플릿 저장 (현재 디자인 저장)
+                    </button>
+                </div>
+            </SidebarAccordion>
+
+            {/* ✨ 나의 템플릿 섹션 */}
+            <div className="bg-[var(--bg-card)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
+                <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]/30">
+                    <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
+                        <Save size={18} className="text-[var(--text-secondary)]" />
+                        나의 템플릿
+                    </h3>
+                </div>
+                <div className="p-4 grid grid-cols-2 gap-2">
+                    {myTemplates.length > 0 ? (
+                        myTemplates.map((template: any) => (
+                            <button
+                                key={template.id}
+                                onClick={() => applyTemplate && applyTemplate(template)}
+                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 overflow-hidden relative"
+                                style={{
+                                    backgroundColor: template.styles?.backgroundColor || '#fff'
+                                }}
+                            >
+                                <span
+                                    className="truncate w-full text-center relative z-10"
+                                    style={{
+                                        color: (() => {
+                                            const bg = template.styles?.backgroundColor || '#ffffff';
+                                            // Simple brightness check
+                                            if (bg.startsWith('#')) {
+                                                const r = parseInt(bg.substring(1, 3), 16);
+                                                const g = parseInt(bg.substring(3, 5), 16);
+                                                const b = parseInt(bg.substring(5, 7), 16);
+                                                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                                                return brightness > 125 ? '#000000' : '#ffffff';
+                                            }
+                                            return '#000000';
+                                        })()
+                                    }}
+                                >
+                                    {template.name}
+                                </span>
+                            </button>
+                        ))
+                    ) : (
+                        <div className="col-span-2 text-center text-xs text-gray-400 py-2">
+                            저장된 템플릿이 없습니다.
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ✨ Widgets Section */}
+            <SidebarAccordion title="위젯" icon={() => <span className="text-lg">🧩</span>} defaultOpen={false}>
+                <div className="p-4">
+                    <div className="grid grid-cols-4 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar">
+                        {allWidgets.map((widget) => (
+                            <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
+                        ))}
+                    </div>
+                </div>
+            </SidebarAccordion>
 
             <ConfirmationModal
                 isOpen={confirmation.isOpen}

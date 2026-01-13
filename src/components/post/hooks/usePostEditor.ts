@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, createRoomApi, updateAlbumApi, deleteAlbumApi, createPostTemplateApi, fetchMyPostTemplatesApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
@@ -230,7 +230,7 @@ export const usePostEditor = () => {
                 setIsPublic(false);
                 // Also refresh tags in UI
                 _setCurrentTags(safeTags);
-                return { success: true, message: "임시 저장되었습니다.", type: "success" };
+                return { success: true, message: "임시 저장되었습니다.\n\"#임시저장\"에서 확인 가능합니다.", type: "success" };
             } else {
                 await Promise.all([
                     fetchPosts(),
@@ -533,7 +533,7 @@ export const usePostEditor = () => {
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
         title: string;
-        message: string;
+        message: React.ReactNode;
         type?: 'info' | 'danger' | 'success';
         singleButton?: boolean;
         onConfirm: () => void;
@@ -548,7 +548,7 @@ export const usePostEditor = () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
     };
 
-    const showConfirmModal = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void, singleButton: boolean = false) => {
+    const showConfirmModal = (title: string, message: React.ReactNode, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void, singleButton: boolean = false) => {
         setConfirmModal({
             isOpen: true,
             title,

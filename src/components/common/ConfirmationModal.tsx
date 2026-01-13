@@ -4,7 +4,7 @@ import { AlertCircle } from 'lucide-react';
 interface ConfirmationModalProps {
     isOpen: boolean;
     title: string;
-    message: string;
+    message: React.ReactNode;
     confirmText?: string;
     cancelText?: string;
     onConfirm: () => void;
@@ -58,9 +58,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     <h3 className="text-lg font-black text-[var(--text-primary)] mb-2 whitespace-pre-wrap">
                         {title}
                     </h3>
-                    <p className="text-sm text-[var(--text-secondary)] mb-6 whitespace-pre-wrap leading-relaxed">
+                    <div className="text-sm text-[var(--text-secondary)] mb-6 whitespace-pre-wrap leading-relaxed">
                         {message}
-                    </p>
+                    </div>
 
                     <div className="flex gap-3">
                         {!singleButton && (

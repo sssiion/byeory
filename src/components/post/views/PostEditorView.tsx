@@ -115,7 +115,17 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     if (result?.message) {
                         editor.showConfirmModal(
                             result.success ? '임시 저장' : '저장 실패',
-                            result.message,
+                            result.success ? (
+                                <div className="text-center">
+                                    <span>임시 저장되었습니다.</span>
+                                    <div className="mt-2 flex items-center justify-center gap-1.5 flex-wrap">
+                                        <button className="px-2 py-0.5 rounded-md text-xs font-bold bg-[var(--btn-bg)] text-[var(--btn-text)] shadow-sm">
+                                            #임시저장
+                                        </button>
+                                        <span>에서 확인 가능합니다.</span>
+                                    </div>
+                                </div>
+                            ) : result.message,
                             result.type || (result.success ? 'success' : 'danger'),
                             undefined,
                             true
