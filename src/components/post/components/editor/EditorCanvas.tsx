@@ -498,7 +498,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                             const Widget = WIDGET_COMPONENT_MAP[stk.widgetType!];
                                             return Widget ? (
                                                 <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto">
-                                                    <Widget {...(stk.widgetProps || {})} />
+                                                    <Widget {...(stk.widgetProps || {})} isStickerMode={true} />
                                                 </div>
                                             ) : (
                                                 <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-400 text-xs">

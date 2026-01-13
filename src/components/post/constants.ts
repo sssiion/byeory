@@ -59,7 +59,7 @@ export const FONT_FAMILIES = [
 export const LAYOUT_PRESETS = [
     {
         id: 'type-a',
-        name: '📷 밸런스형 (기본)',
+        name: '📷 밸런스형',
         description: '사진과 글이 적절히 섞인 가장 무난한 구성',
         structure: [
             { type: 'image-full', text: '' },   // 1. 대문 사진 + 제목 느낌
@@ -70,7 +70,7 @@ export const LAYOUT_PRESETS = [
     },
     {
         id: 'type-b',
-        name: '📖 매거진형 (지그재그)',
+        name: '📖 매거진형',
         description: '왼쪽, 오른쪽 사진이 교차되는 잡지 스타일',
         structure: [
             { type: 'image-left', text: '' },   // 1. 사진(좌) - 글(우)
@@ -81,7 +81,7 @@ export const LAYOUT_PRESETS = [
     },
     {
         id: 'type-c',
-        name: '🖼️ 앨범형 (사진 위주)',
+        name: '🖼️ 앨범형',
         description: '글보다는 사진을 많이 보여주고 싶을 때',
         structure: [
             { type: 'image-double', text: '' }, // 1. 사진 2장
@@ -92,7 +92,7 @@ export const LAYOUT_PRESETS = [
     },
     {
         id: 'type-d',
-        name: '📝 에세이형 (글 위주)',
+        name: '📝 에세이형',
         description: '차분하게 글을 많이 쓰고 싶을 때',
         structure: [
             { type: 'paragraph', text: '' },    // 1. 긴 글

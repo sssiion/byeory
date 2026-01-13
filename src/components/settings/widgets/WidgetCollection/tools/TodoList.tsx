@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Check } from 'lucide-react';
 import { WidgetWrapper } from '../../Shared';
-import { useSharedTodo } from '../../../../todo/useSharedTodo';
+import { useSharedTodo } from '../../../../Todo/useSharedTodo';
 import type { Todo } from '../../../../../types/todo';
 
 interface TodoListWidgetProps {
     gridSize?: { w: number; h: number };
+    isStickerMode?: boolean;
 }
 
 // 6. Todo List Widget (할 일 목록)
-export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
+export function TodoListWidget({ gridSize, isStickerMode }: TodoListWidgetProps) {
     const navigate = useNavigate();
     const { getTodayTodos, addTodo, toggleTodo } = useSharedTodo();
     const [newTodoTitle, setNewTodoTitle] = useState('');
@@ -26,7 +27,10 @@ export function TodoListWidget({ gridSize }: TodoListWidgetProps) {
     const progress = total > 0 ? (completed / total) * 100 : 0;
     const progressColor = progress === 100 ? 'bg-green-500' : 'bg-[var(--btn-bg)]';
 
-    const handleNavigate = () => navigate('/todo');
+    const handleNavigate = () => {
+        if (isStickerMode) return;
+        navigate('/todo');
+    };
 
     // Auto-stamp logic
     useEffect(() => {

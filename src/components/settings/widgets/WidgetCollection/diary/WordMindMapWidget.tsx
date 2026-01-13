@@ -23,9 +23,10 @@ interface ComponentProps {
     className?: string;
     style?: React.CSSProperties;
     gridSize?: { w: number; h: number };
+    isStickerMode?: boolean;
 }
 
-export const WordMindMapWidget = ({ className, style, gridSize }: ComponentProps) => {
+export const WordMindMapWidget = ({ className, style, gridSize, isStickerMode }: ComponentProps) => {
     const navigate = useNavigate();
     const [words, setWords] = useState<WordItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ export const WordMindMapWidget = ({ className, style, gridSize }: ComponentProps
     // Physics State
     const [physicsWords, setPhysicsWords] = useState<PhysicsWord[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
-    const requestRef = useRef<number>();
+    const requestRef = useRef<number | undefined>(undefined);
 
     const fetchPersona = async () => {
         setLoading(true);
@@ -265,7 +266,7 @@ export const WordMindMapWidget = ({ className, style, gridSize }: ComponentProps
                     </div>
 
                     <button
-                        onClick={() => navigate('/profile/analysis')}
+                        onClick={() => !isStickerMode && navigate('/profile/analysis')}
                         className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-lg transition-colors"
                     >
                         분석하러 가기

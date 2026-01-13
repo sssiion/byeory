@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../../context/AuthContext';
 import { User, Palette } from 'lucide-react';
 
-export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number } }) {
+export function WelcomeWidget({ gridSize, isStickerMode }: { gridSize?: { w: number; h: number }; isStickerMode?: boolean }) {
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -48,7 +48,7 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
     if (isSmall) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center p-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm overflow-hidden text-center cursor-pointer hover:bg-white transition-colors"
-                onClick={() => navigate('/profile')}>
+                onClick={() => !isStickerMode && navigate('/profile')}>
                 <span className="text-[10px] text-gray-400 font-bold uppercase mb-0.5 tracking-wider">HELLO</span>
                 <span className="text-sm font-bold text-blue-500 truncate max-w-full leading-tight">{displayName}</span>
             </div>
@@ -74,14 +74,14 @@ export function WelcomeWidget({ gridSize }: { gridSize?: { w: number; h: number 
 
             <div className={`flex gap-2 relative z-10 ${isShort ? 'mt-2' : 'mt-4'}`}>
                 <button
-                    onClick={() => navigate('/profile')}
+                    onClick={() => !isStickerMode && navigate('/profile')}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all shadow-sm text-sm font-medium text-gray-600 group/btn"
                 >
                     <User size={14} className="text-gray-400 group-hover/btn:text-blue-500 transition-colors" />
                     {!isShort && '프로필'}
                 </button>
                 <button
-                    onClick={openThemeSettings}
+                    onClick={() => !isStickerMode && openThemeSettings()}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 hover:border-gray-200 transition-all shadow-sm text-sm font-medium text-gray-600 group/btn"
                 >
                     <Palette size={14} className="text-gray-400 group-hover/btn:text-purple-500 transition-colors" />

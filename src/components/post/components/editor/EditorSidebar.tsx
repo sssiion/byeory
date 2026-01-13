@@ -395,13 +395,12 @@ const EditorSidebar: React.FC<Props> = ({
                                 <button
                                     key={l.id}
                                     onClick={() => setSelectedLayoutId(l.id)}
-                                    className={`text-xs px-3 py-2.5 rounded-lg border transition-all flex items-center justify-center gap-1.5
+                                    className={`text-xs px-3 py-4 rounded-lg border transition-all flex items-center justify-center gap-1.5
                                         ${selectedLayoutId === l.id
                                             ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-bold ring-1 ring-indigo-200'
                                             : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
                                         }`}
                                 >
-                                    <Layout size={12} />
                                     {l.name}
                                 </button>
                             ))}
@@ -630,7 +629,7 @@ const EditorSidebar: React.FC<Props> = ({
             {/* ✨ Widgets Section */}
             <SidebarAccordion title="위젯" icon={() => <span className="text-lg">🧩</span>} defaultOpen={false}>
                 <div className="p-4">
-                    <div className="grid grid-cols-4 gap-2 max-h-[120px] overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto custom-scrollbar">
                         {allWidgets.map((widget) => (
                             <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
                         ))}

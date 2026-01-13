@@ -13,9 +13,10 @@ interface ComponentProps {
     className?: string;
     style?: React.CSSProperties;
     gridSize?: { w: number; h: number };
+    isStickerMode?: boolean;
 }
 
-export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) => {
+export const MoodAnalytics = ({ className, style, gridSize, isStickerMode }: ComponentProps) => {
     const navigate = useNavigate();
     const [moods, setMoods] = useState<MoodItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) =>
             }
         } catch (e) {
             // console.error(e);
-            // setError(true);
+            setError(true);
             setMoods([]);
         } finally {
             setLoading(false);
@@ -100,7 +101,7 @@ export const MoodAnalytics = ({ className, style, gridSize }: ComponentProps) =>
                     </div>
 
                     <button
-                        onClick={() => navigate('/profile/analysis')}
+                        onClick={() => !isStickerMode && navigate('/profile/analysis')}
                         className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
                     >
                         분석하러 가기
