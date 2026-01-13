@@ -3,6 +3,7 @@ import ContentBlock from './ContentBlock';
 import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
 import ResizableItem from './ResizableItem';
 import EditorToolbar from './EditorToolbar';
+import ToolbarOverlay from './ToolbarOverlay';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
@@ -366,7 +367,8 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
                         {/* 헤더 */}
                         <div
-                            className={`sticky top-0 bg-transparent border-b flex justify-between items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
+                            id="title" // ✨ Added ID for ToolbarOverlay
+                            className={`sticky top-0 bg-transparent border-b flex flex-col justify-start items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
                             style={{ zIndex: titleStyles.zIndex || 20 }}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -387,6 +389,10 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                     }}
                                 />
                             </div>
+                            {viewMode === 'editor' && selectedId === 'title' && (
+                                // ✨ Toolbar Removed: Moved to Overlay
+                                null
+                            )}
                         </div>
 
                         <div className={`flex-1 relative ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>
@@ -448,14 +454,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                             </div>
                                                                         )}
 
-                                                                        <EditorToolbar
-                                                                            selectedId={block.id}
-                                                                            selectedType="block"
-                                                                            currentItem={block}
-                                                                            onUpdate={onUpdate}
-                                                                            onDelete={onDelete}
-                                                                            positionMode="inline"
-                                                                        />
+                                                                        {/* EditorToolbar Removed: Moved to Overlay */}
                                                                     </>
                                                                 )}
                                                             </div>
@@ -556,8 +555,8 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             </ResizableItem>
                         ))}
 
-                        {/* 하단 툴바 (Blocks 외의 요소들용) */}
-                        {viewMode === 'editor' && selectedId && currentItem && detectedType && detectedType !== 'block' && (
+                        {/* 하단 툴바 (Blocks 외의 요소들용: Stickers, etc.) */}
+                        {viewMode === 'editor' && selectedId && currentItem && detectedType && detectedType !== 'block' && (detectedType as string) !== 'title' && (
                             <EditorToolbar
                                 selectedId={selectedId}
                                 selectedType={detectedType}
@@ -565,6 +564,18 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 onUpdate={onUpdate}
                                 onDelete={detectedType === 'title' ? undefined : onDelete}
                                 positionMode="fixed"
+                            />
+                        )}
+
+                        {/* ✨ NEW: Global Overlay Toolbar for Blocks & Title */}
+                        {viewMode === 'editor' && selectedId && currentItem && (detectedType === 'block' || detectedType === 'title') && (
+                            <ToolbarOverlay
+                                selectedId={selectedId}
+                                selectedType={detectedType} // 'block' | 'title'
+                                currentItem={currentItem}
+                                onUpdate={onUpdate}
+                                onDelete={detectedType === 'title' ? undefined : onDelete}
+                                scale={scale}
                             />
                         )}
                     </div>

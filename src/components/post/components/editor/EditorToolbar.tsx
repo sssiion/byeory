@@ -59,7 +59,7 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
 
     return (
         <div
-            className={`${positionClasses} bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center z-[100] animate-in slide-in-from-bottom-5`}
+            className={`${positionClasses} bg-white/95 backdrop-blur-md shadow-2xl border border-gray-200 rounded-2xl px-6 py-3 flex items-center z-[100] animate-in slide-in-from-bottom-5 text-gray-900`}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}

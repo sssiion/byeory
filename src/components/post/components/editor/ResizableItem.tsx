@@ -36,6 +36,13 @@ const ResizableItem: React.FC<Props> = ({
     // ✨ Modified: Only trigger drag from the Move Handle
     const handleMoveStart = (e: React.MouseEvent) => {
         if (readOnly) return;
+
+        // ✨ Check if the target is an interactive element (e.g., input, textarea, button)
+        const target = e.target as HTMLElement;
+        if (['textarea', 'input', 'button', 'select'].includes(target.tagName.toLowerCase())) {
+            return;
+        }
+
         e.stopPropagation();
         e.preventDefault();
         onSelect(e.shiftKey); // ✨ Pass shift key
@@ -144,10 +151,21 @@ const ResizableItem: React.FC<Props> = ({
                 cursor: readOnly ? 'default' : 'default',
                 touchAction: 'none'
             }}
+            // ✨ Body Drag Enabled
+            onMouseDown={handleMoveStart}
             // ✨ Click selects the item, but doesn't start drag
             onClick={(e) => {
+                // If dragging happened, drag handler handled everything.
+                // We keep this just in case click didn't trigger drag (e.g. filtered element)
+                // but if filtered element (button), we probably want native click.
+
+                // If it wasn't filtered, handleMoveStart stopped propagation.
+                // So this onClick only fires if handleMoveStart allowed it bubbling?
+                // No, handleMoveStart calls stopPropagation.
+                // So this onClick is dead code for draggable items?
+                // Let's keep it safe:
                 e.stopPropagation();
-                onSelect(e.shiftKey); // ✨ Pass shift key
+                onSelect(e.shiftKey);
             }}
         >
             <div className={`w-full h-full relative ${isSelected && !readOnly ? 'ring-2 ring-indigo-500' : ''}`}>
