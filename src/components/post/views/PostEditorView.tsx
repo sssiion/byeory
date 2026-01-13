@@ -34,6 +34,10 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     };
 
     const handleSaveAsTemplateWrapper = async () => {
+        // ✨ Prompt First
+        const name = prompt("이 디자인을 '나만의 템플릿'으로 저장하시겠습니까?\n이름을 입력해주세요:");
+        if (!name) return;
+
         // ✨ Auto-Generate Thumbnail (Synced with CreatePage)
         if (canvasRef.current) {
             try {
@@ -46,17 +50,17 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     const blob = await (await fetch(dataUrl)).blob();
                     const file = new File([blob], `tmpl-${Date.now()}.png`, { type: "image/png" });
                     const url = await uploadImageToSupabase(file);
-                    editor.handleSaveAsTemplate(url || undefined);
+                    editor.handleSaveAsTemplate(name, url || undefined);
                 } else {
-                    editor.handleSaveAsTemplate();
+                    editor.handleSaveAsTemplate(name);
                 }
             } catch (e: any) {
                 console.warn("Thumbnail capture failed", e);
                 // alert(`Error: ${e?.message}`);
-                editor.handleSaveAsTemplate();
+                editor.handleSaveAsTemplate(name);
             }
         } else {
-            editor.handleSaveAsTemplate();
+            editor.handleSaveAsTemplate(name);
         }
     };
 

@@ -20,8 +20,8 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // Diary & Emotion
     // ======================================================================
     'chat-diary': lazy(() => import('./WidgetCollection/diary/ChatDiary.tsx').then(m => ({ default: m.ChatDiary }))),
-    'mood-analytics': lazy(() => import('./WidgetCollection/diary/MoodAnalytics.tsx').then(m => ({ default: m.MoodAnalytics }))),
-    'word-mind-map': lazy(() => import('./WidgetCollection/diary/WordMindMapWidget.tsx').then(m => ({ default: m.WordMindMapWidget }))),
+    // 'mood-analytics': lazy(() => import('./WidgetCollection/diary/MoodAnalytics.tsx').then(m => ({ default: m.MoodAnalytics }))),
+    // 'word-mind-map': lazy(() => import('./WidgetCollection/diary/WordMindMapWidget.tsx').then(m => ({ default: m.WordMindMapWidget }))),
 
     // ======================================================================
     // Utility
@@ -95,9 +95,9 @@ export const WIDGET_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
     // ======================================================================
     // Global Controllers
     // ======================================================================
-    'cursor-trail': lazy(() => import('./WidgetCollection/controllers/CursorTrail.tsx').then(m => ({ default: m.CursorTrail }))),
-    'highlighter': lazy(() => import('./WidgetCollection/controllers/Highlighter.tsx').then(m => ({ default: m.Highlighter }))),
-    'physics-box': lazy(() => import('./WidgetCollection/controllers/PhysicsBox.tsx').then(m => ({ default: m.PhysicsBox }))),
-    'magnifier': lazy(() => import('./WidgetCollection/controllers/Magnifier.tsx').then(m => ({ default: m.Magnifier }))),
-    'ruby-text': lazy(() => import('./WidgetCollection/controllers/RubyText.tsx').then(m => ({ default: m.RubyText }))),
+    // 'cursor-trail': lazy(() => import('./WidgetCollection/controllers/CursorTrail.tsx').then(m => ({ default: m.CursorTrail }))),
+    // 'highlighter': lazy(() => import('./WidgetCollection/controllers/Highlighter.tsx').then(m => ({ default: m.Highlighter }))),
+    // 'physics-box': lazy(() => import('./WidgetCollection/controllers/PhysicsBox.tsx').then(m => ({ default: m.PhysicsBox }))),
+    // 'magnifier': lazy(() => import('./WidgetCollection/controllers/Magnifier.tsx').then(m => ({ default: m.Magnifier }))),
+    // 'ruby-text': lazy(() => import('./WidgetCollection/controllers/RubyText.tsx').then(m => ({ default: m.RubyText }))),
 };

@@ -302,11 +302,10 @@ export const usePostEditor = () => {
 
 
     // ✨ Save as Template
-    const handleSaveAsTemplate = async (thumbnailUrl?: string | any) => {
+    const handleSaveAsTemplate = async (name: string, thumbnailUrl?: string | any) => {
         // Guard: If thumbnailUrl is an Event object (or not a string), treat as undefined
         const safeThumbnailUrl = typeof thumbnailUrl === 'string' ? thumbnailUrl : undefined;
 
-        const name = prompt("이 디자인을 '나만의 템플릿'으로 저장하시겠습니까?\n이름을 입력해주세요:");
         if (!name) return;
 
         // 1. Construct Template JSON
