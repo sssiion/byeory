@@ -7,7 +7,7 @@ import {
     Columns, AlignVerticalJustifyCenter, AlertCircle, Highlighter, EyeOff, Sigma,
     Play, ChevronsRight, MoreHorizontal, BarChart3, Radar,
     Grid3X3, PlusCircle, Star, Battery, Database, ArrowLeftRight,
-    Link, FileText, StickyNote, Search
+    Link, FileText, StickyNote, Search, Map
 } from 'lucide-react';
 import type { BlockType } from '../types';
 import { BLOCK_COSTS } from '../constants';
@@ -193,6 +193,7 @@ const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, rem
                                 {renderBtn(<ArrowLeftRight size={18} />, "단위 변환기", 'unit-converter')}
                                 {renderBtn(<Link size={18} />, "링크 북마크", 'link-bookmark')}
                                 {renderBtn(<FileText size={18} />, "PDF 뷰어", 'pdf-viewer')}
+                                {renderBtn(<Map size={18} />, "여행 플래너", 'travel-plan')}
                             </>
                         )}
 

@@ -7,6 +7,10 @@ export const WIDGET_SIZES: Record<string, WidgetSize & { capacity: number }> = {
     '1x2': { w: 160, h: 340, label: '1x2', capacity: 6 },  // 모바일: 세로로 김
     '2x1': { w: 340, h: 160, label: '2x1', capacity: 4 },   // 작음: 텍스트 4줄 정도
     '2x2': { w: 340, h: 340, label: '2x2', capacity: 10 }, // 중간: 텍스트 10줄 정도
+    '3x3': { w: 520, h: 520, label: '3x3', capacity: 20 }, // 대형
+    '4x4': { w: 700, h: 700, label: '4x4', capacity: 35 }, // 초대형
+    // Irregular Sizes
+    '2x3': { w: 340, h: 520, label: '2x3', capacity: 15 }, // 세로형 (중대형)
 };
 
 // 2. 블록 타입별 비용 (Cost)

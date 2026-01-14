@@ -14,7 +14,7 @@ export type BlockType =
     | 'counter' | 'rating' | 'progress-bar' | 'database'
     // NEW (유틸)
     | 'unit-converter' | 'calculator' | 'random-picker' | 'map-pin'
-    | 'zip-viewer' | 'rss-reader' | 'link-bookmark' | 'pdf-viewer' | 'export-button'
+    | 'zip-viewer' | 'rss-reader' | 'link-bookmark' | 'pdf-viewer' | 'export-button' | 'travel-plan'
     // NEW (학습)
     | 'flashcards' | 'mindmap' | 'book-info' | 'movie-ticket';
 

@@ -295,19 +295,47 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                     </button>
                     <h1 className="text-lg font-bold max-md:text-sm whitespace-nowrap">커스텀 위젯</h1>
                 </div>
-                <div className="flex bg-[var(--bg-card-secondary)] p-1 rounded-lg overflow-x-auto scrollbar-hide flex-shrink min-w-0">
-                    {Object.entries(WIDGET_SIZES).map(([key, val]) => (
-                        <button
-                            key={key}
-                            onClick={() => setCurrentSizeKey(key as any)}
-                            className={`px-3 py-1 text-xs font-bold rounded transition-colors whitespace-nowrap
-                                max-md:px-2 max-md:text-[10px] max-md:py-1
-                                ${currentSizeKey === key ? 'bg-indigo-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'} 
-                            `}
-                        >
-                            {val.label}
-                        </button>
-                    ))}
+
+                {/* 🌟 사이즈 선택 (그룹 분리) */}
+                <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide flex-shrink min-w-0">
+                    {/* 1. Standard Sizes (Square) */}
+                    <div className="flex bg-[var(--bg-card-secondary)] p-1 rounded-lg gap-1">
+                        {['1x1', '2x2', '3x3', '4x4'].map((key) => {
+                            const val = WIDGET_SIZES[key];
+                            if (!val) return null;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => setCurrentSizeKey(key as any)}
+                                    className={`px-3 py-1 text-xs font-bold rounded transition-colors whitespace-nowrap
+                                        max-md:px-2 max-md:text-[10px] max-md:py-1
+                                        ${currentSizeKey === key ? 'bg-indigo-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'} 
+                                    `}
+                                >
+                                    {val.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {/* 2. Irregular Sizes (List) */}
+                    <div className="flex bg-[var(--bg-card-secondary)]/50 p-1 rounded-lg border border-dashed border-[var(--border-color)] gap-1">
+                        <span className="text-[10px] text-[var(--text-secondary)] self-center px-1 font-bold">ETC</span>
+                        {['1x2', '2x1', '2x3'].map((key) => {
+                            const val = WIDGET_SIZES[key];
+                            if (!val) return null;
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => setCurrentSizeKey(key as any)}
+                                    className={`px-2 py-1 text-[10px] font-bold rounded transition-colors whitespace-nowrap
+                                        ${currentSizeKey === key ? 'bg-indigo-500 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'} 
+                                    `}
+                                >
+                                    {val.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
                 <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                     <button onClick={handleSaveToCloud} className="px-5 py-2 bg-[var(--btn-bg)] hover:brightness-110 text-[var(--btn-text)] text-sm font-bold rounded-lg transition shadow-lg max-md:px-3 max-md:text-xs whitespace-nowrap">

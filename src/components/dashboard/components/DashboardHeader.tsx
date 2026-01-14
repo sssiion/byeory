@@ -50,9 +50,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
     return (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold theme-text-primary flex items-center gap-2">
-                <LayoutGrid size={20} /> My Dashboard
-            </h2>
+            {!isMenuEditMode && (
+                <h2 className="text-xl font-bold theme-text-primary flex items-center gap-2">
+                    <LayoutGrid size={20} /> My Dashboard
+                </h2>
+            )}
 
             <div
                 ref={controlsRef}

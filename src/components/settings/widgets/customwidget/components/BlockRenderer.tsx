@@ -5,7 +5,7 @@ import {
     CalendarDays,
     ChevronDown,
     ChevronRight,
-    EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp, Database
+    EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { RotateCw } from 'lucide-react';
@@ -25,6 +25,8 @@ import BookInfoWidget from "./Rendercomponent/BookInfoWidget.tsx";
 import MovieTicketWidget from "./Rendercomponent/MovieTicketWidget.tsx";
 import UnitConverterWidget from "./Rendercomponent/UnitConverterWidget.tsx";
 import LinkBookmarkWidget from "./Rendercomponent/LinkBookmarkWidget.tsx";
+import DatabaseWidget from "./Rendercomponent/DatabaseWidget.tsx";
+import TravelPlanWidget from './Rendercomponent/TravelPlanWidget';
 
 import {
     addEdge, applyEdgeChanges,
@@ -567,7 +569,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     if (type === 'custom-block') {
         const children = (content.children || []) as WidgetBlock[];
         return (
-            <div className="flex flex-col gap-2 w-full h-full">
+            <div className="flex flex-col gap-0 w-full h-full">
                 {children.map((childBlock) => (
                     <BlockRenderer
                         key={childBlock.id}
@@ -687,6 +689,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 return <MovieTicketWidget block={block} onUpdateBlock={onUpdateBlock} />;
             case 'link-bookmark':
                 return <LinkBookmarkWidget block={block} onUpdateBlock={onUpdateBlock} />;
+            // 🌟 [NEW] 여행 플래너 위젯 렌더링
+            case 'travel-plan':
+                return <TravelPlanWidget block={block} onUpdateBlock={onUpdateBlock} />;
             case 'mindmap': {
                 const content0 = (content || {}) as any;
                 const nodes = (content0.nodes || []) as Node[];
@@ -1413,53 +1418,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 return <LinkBookmarkWidget block={block} onUpdateBlock={onUpdateBlock} />;
             // --- [NEW] 데이터베이스 위젯 (심플 테이블 버전) ---
             case 'database': {
-                // 기본값: 간단한 표 데이터
-                const headers = content.headers || ['이름', '태그', '상태'];
-                const rows = content.rows || [
-                    ['프로젝트 기획', '업무', '완료'],
-                    ['디자인 시안', '디자인', '진행중'],
-                    ['개발 착수', '개발', '대기'],
-                ];
-
-                return (
-                    <div className="overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm">
-                        {/* 상단 제목 바 */}
-                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center gap-2">
-                            <Database size={14} className="text-gray-500" />
-                            <span className="text-xs font-bold text-gray-600">데이터베이스</span>
-                        </div>
-                        {/* 테이블 본문 */}
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
-                                    <tr>
-                                        {headers.map((h: string, i: number) => (
-                                            <th key={i} className="px-4 py-2 font-medium border-b border-gray-100">{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rows.map((row: string[], i: number) => (
-                                        <tr key={i} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                                            {row.map((cell: string, j: number) => (
-                                                <td key={j} className="px-4 py-2 text-gray-700">
-                                                    {/* 태그 스타일링 예시 (2번째 컬럼) */}
-                                                    {j === 1 ? (
-                                                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">
-                                                            {cell}
-                                                        </span>
-                                                    ) : (
-                                                        cell
-                                                    )}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                );
+                return <DatabaseWidget block={block} onUpdateBlock={onUpdateBlock} />;
             }
             default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
 

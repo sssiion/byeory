@@ -78,20 +78,54 @@ const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock, onClose }
             setIsSearching(false);
         }
     };
-    // 영화 검색 함수 (iTunes API 사용 - 키 불필요)
+    // 영화 검색 함수 (TMDB API 사용)
     const searchMovies = async () => {
         if (!movieQuery.trim()) return;
         setIsMovieSearching(true);
         try {
-            // entity=movie 속성으로 영화만 검색
-            const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(movieQuery)}&media=movie&entity=movie&limit=5`);
+            const API_KEY = 'd7ddca14f677d7854d5e222002f435ee';
+            const url = `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(movieQuery)}&language=ko-KR&include_adult=false`;
+
+            const res = await fetch(url);
             const data = await res.json();
             setMovieResults(data.results || []);
         } catch (e) {
             console.error(e);
-            alert('영화 검색 실패');
+            alert('영화 검색 실패 (TMDB API)');
         } finally {
             setIsMovieSearching(false);
+        }
+    };
+
+    // 영화 선택 핸들러 (상세 정보 Fetch)
+    const handleSelectTMDBMovie = async (movie: any) => {
+        try {
+            const API_KEY = 'd7ddca14f677d7854d5e222002f435ee';
+            // 감독 정보를 얻기 위해 credits API 호출
+            const creditRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/credits?api_key=${API_KEY}&language=ko-KR`);
+            const creditData = await creditRes.json();
+
+            const director = creditData.crew?.find((c: any) => c.job === 'Director')?.name || '';
+            const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '';
+            const year = movie.release_date ? movie.release_date.split('-')[0] : '';
+
+            onUpdateBlock(selectedBlock.id, {
+                content: {
+                    ...content,
+                    movieData: {
+                        title: movie.title,
+                        poster: posterUrl,
+                        year: year,
+                        director: director,
+                        plot: movie.overview
+                    }
+                }
+            });
+            setMovieResults([]);
+            setMovieQuery('');
+        } catch (e) {
+            console.error(e);
+            alert('영화 상세 정보 가져오기 실패');
         }
     };
 
@@ -974,6 +1008,149 @@ const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock, onClose }
                             </div>
                         </div>
                     )}
+
+                    {/* 🌟 [NEW] 여행 플래너 (Travel Plan) 설정 */}
+                    {/* 🌟 [NEW] 여행 플래너 (Travel Plan) 설정 */}
+                    {type === 'travel-plan' && (
+                        <div className="space-y-4">
+                            <Label>여행 플래너 설정</Label>
+
+                            {/* 1. 기본 정보 */}
+                            <div className="space-y-2">
+                                <span className="text-xs text-[var(--text-secondary)] font-bold">기본 정보</span>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] text-[var(--text-secondary)]">여행지 / 제목</span>
+                                    <Input
+                                        value={content.travelData?.title}
+                                        onChange={(val: string) => {
+                                            const newData = { ...(content.travelData || {}), title: val };
+                                            onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                        }}
+                                        placeholder="여행지 입력"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-[var(--text-secondary)]">시작일</span>
+                                        <input
+                                            type="date"
+                                            value={content.travelData?.startDate || ''}
+                                            onChange={(e) => {
+                                                const newData = { ...(content.travelData || {}), startDate: e.target.value };
+                                                onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                            }}
+                                            className="w-full bg-[var(--bg-card-secondary)] text-[var(--text-primary)] p-1.5 rounded border border-[var(--border-color)] outline-none text-xs"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-[var(--text-secondary)]">종료일</span>
+                                        <input
+                                            type="date"
+                                            value={content.travelData?.endDate || ''}
+                                            onChange={(e) => {
+                                                const newData = { ...(content.travelData || {}), endDate: e.target.value };
+                                                onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                            }}
+                                            className="w-full bg-[var(--bg-card-secondary)] text-[var(--text-primary)] p-1.5 rounded border border-[var(--border-color)] outline-none text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] text-[var(--text-secondary)]">통화 (Currency)</span>
+                                    <Input
+                                        value={content.travelData?.currency}
+                                        onChange={(val: string) => {
+                                            const newData = { ...(content.travelData || {}), currency: val };
+                                            onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                        }}
+                                        placeholder="KRW, USD, etc."
+                                    />
+                                </div>
+                            </div>
+
+                            {/* 2. 컬럼 관리 (Notion Style) */}
+                            <div className="space-y-2 pt-2 border-t border-[var(--border-color)]">
+                                <span className="text-xs text-[var(--text-secondary)] font-bold">테이블 컬럼 (데이터베이스)</span>
+                                <div className="flex flex-col gap-2">
+                                    {(content.travelData?.columns || []).map((col: any, idx: number) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-[var(--bg-card-secondary)] p-2 rounded text-xs border border-[var(--border-color)]">
+                                            {/* Type Icon / Select */}
+                                            <div className="relative group/type">
+                                                <div className="w-5 h-5 flex items-center justify-center bg-gray-200 rounded text-gray-600 cursor-pointer hover:bg-indigo-100">
+                                                    {col.type === 'text' && 'T'}
+                                                    {col.type === 'number' && '#'}
+                                                    {col.type === 'date' && '📅'}
+                                                    {col.type === 'select' && '🔽'}
+                                                    {col.type === 'checkbox' && '✅'}
+                                                </div>
+                                                {/* Type Dropdown */}
+                                                <select
+                                                    value={col.type}
+                                                    onChange={(e) => {
+                                                        const newCols = [...(content.travelData?.columns || [])];
+                                                        newCols[idx] = { ...newCols[idx], type: e.target.value };
+                                                        const newData = { ...(content.travelData || {}), columns: newCols };
+                                                        onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                                    }}
+                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                >
+                                                    <option value="text">텍스트</option>
+                                                    <option value="number">숫자 (비용)</option>
+                                                    <option value="date">날짜</option>
+                                                    <option value="select">선택 (태그)</option>
+                                                    <option value="checkbox">체크박스</option>
+                                                </select>
+                                            </div>
+
+                                            <input
+                                                value={col.name}
+                                                onChange={(e) => {
+                                                    const newCols = [...(content.travelData?.columns || [])];
+                                                    newCols[idx] = { ...newCols[idx], name: e.target.value };
+                                                    const newData = { ...(content.travelData || {}), columns: newCols };
+                                                    onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                                }}
+                                                className="bg-transparent border-b border-gray-300 w-full outline-none focus:border-indigo-500"
+                                            />
+
+                                            <button
+                                                onClick={() => {
+                                                    const curCols = content.travelData?.columns || [];
+                                                    const newCols = curCols.filter((_: any, i: number) => i !== idx);
+                                                    const newData = { ...(content.travelData || {}), columns: newCols };
+                                                    onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                                }}
+                                                className="text-gray-400 hover:text-red-400"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    <button
+                                        onClick={() => {
+                                            const curCols = content.travelData?.columns || [];
+                                            const newCol = { id: `c-${Date.now()}`, name: '새 속성', type: 'text', width: 100 };
+                                            const newCols = [...curCols, newCol];
+                                            const newData = { ...(content.travelData || {}), columns: newCols };
+                                            onUpdateBlock(selectedBlock.id, { content: { ...content, travelData: newData } });
+                                        }}
+                                        className="w-full py-1.5 rounded text-xs border border-dashed border-gray-300 hover:border-indigo-400 hover:text-indigo-500 text-gray-400 flex items-center justify-center gap-1"
+                                    >
+                                        <Plus size={12} /> 속성 추가
+                                    </button>
+                                </div>
+
+                                <div className="text-[10px] text-[var(--text-secondary)] mt-2 bg-[var(--bg-card-secondary)] p-2 rounded">
+                                    <p>💡 Tip:</p>
+                                    <ul className="list-disc pl-3 space-y-0.5">
+                                        <li>'숫자' 타입 컬럼에 '비용', 'Cost', 'Price'가 포함되면 총 예산에 합산됩니다.</li>
+                                        <li>'선택' 타입은 태그처럼 활용하세요.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {/* 🆕 5. 다단 컬럼 설정 (🔥 여기가 수정된 부분입니다) */}
                     {type === 'columns' && (
                         <div className="space-y-4">
@@ -1270,36 +1447,26 @@ const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock, onClose }
                                     {movieResults.length > 0 && (
                                         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 scrollbar-thin border-t border-[var(--border-color)] pt-2">
                                             {movieResults.map((m: any) => {
-                                                // iTunes API 데이터 매핑
-                                                // artworkUrl100은 작으므로 600x600으로 변환해서 고화질 사용
-                                                const posterUrl = m.artworkUrl100?.replace('100x100', '600x600');
-                                                const year = m.releaseDate ? m.releaseDate.split('-')[0] : '';
+                                                // TMDB API 데이터 매핑
+                                                const year = m.release_date ? m.release_date.substring(0, 4) : '';
+                                                const posterUrl = m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : '';
 
                                                 return (
                                                     <div
-                                                        key={m.trackId}
-                                                        onClick={() => {
-                                                            onUpdateBlock(selectedBlock.id, {
-                                                                content: {
-                                                                    ...content,
-                                                                    movieData: {
-                                                                        title: m.trackName,
-                                                                        poster: posterUrl,
-                                                                        year: year,
-                                                                        director: m.artistName, // iTunes는 감독 대신 artistName 제공
-                                                                        plot: m.longDescription
-                                                                    }
-                                                                }
-                                                            });
-                                                            setMovieResults([]);
-                                                            setMovieQuery('');
-                                                        }}
+                                                        key={m.id}
+                                                        onClick={() => handleSelectTMDBMovie(m)}
                                                         className="flex gap-2 p-2 rounded bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] cursor-pointer transition-colors border border-transparent hover:border-indigo-500"
                                                     >
-                                                        <img src={m.artworkUrl100} className="w-8 h-12 object-cover rounded bg-black" alt="" />
+                                                        {posterUrl ? (
+                                                            <img src={posterUrl} className="w-8 h-12 object-cover rounded bg-black" alt="" />
+                                                        ) : (
+                                                            <div className="w-8 h-12 bg-gray-800 rounded flex items-center justify-center text-gray-500">
+                                                                <Film size={16} />
+                                                            </div>
+                                                        )}
                                                         <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                                            <div className="text-xs font-bold text-gray-200 truncate">{m.trackName}</div>
-                                                            <div className="text-[10px] text-[var(--text-secondary)]">{year} · {m.artistName}</div>
+                                                            <div className="text-xs font-bold text-gray-200 truncate">{m.title}</div>
+                                                            <div className="text-[10px] text-[var(--text-secondary)]">{year}</div>
                                                         </div>
                                                     </div>
                                                 );
