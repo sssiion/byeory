@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CreditCard, Wallet, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
+import { useIsMobile } from '../../hooks';
 
 const ChargePage: React.FC = () => {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [modalConfig, setModalConfig] = useState<{
         isOpen: boolean;
         title: string;
@@ -71,7 +73,13 @@ const ChargePage: React.FC = () => {
 
                     const data = await response.json();
                     localStorage.setItem('kakaopay_tid', data.tid);
-                    window.location.href = data.next_redirect_pc_url;
+
+                    // Choose redirect URL based on device
+                    const redirectUrl = isMobile && data.next_redirect_mobile_url
+                        ? data.next_redirect_mobile_url
+                        : data.next_redirect_pc_url;
+
+                    window.location.href = redirectUrl;
 
                 } catch (e) {
                     console.error(e);

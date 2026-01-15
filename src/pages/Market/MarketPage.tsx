@@ -68,11 +68,8 @@ const Market: React.FC = () => {
         const isFree = isFreeFilter;
         let category: string = 'all';
 
-        if (['sticker', 'template_widget', 'template_post'].includes(activeTab)) {
+        if (['sticker', 'template_widget', 'template_post', 'package'].includes(activeTab)) {
             category = activeTab;
-        } else if (activeTab === 'package') {
-            // Fetch ALL because some 'packages' are categorized as 'stickers' in Backend
-            category = 'all';
         }
 
         if (activeTab === 'myshop' || activeTab === 'history') {
@@ -208,10 +205,16 @@ const Market: React.FC = () => {
                 // Manual template cloning removed (Backend handles it)
 
                 if (success) {
+                    const packStickers = STICKERS.filter(s => s.packId === (item.referenceId || item.id));
+                    const ownedStickers = packStickers.filter(s => isOwned(s.id));
+                    const ownedValue = ownedStickers.reduce((sum: number, s) => sum + (s.price || 0), 0);
+                    const packOriginalPrice = item.price || effectivePrice + ownedValue;
+                    const discountApplied = Math.min(ownedValue, packOriginalPrice);
+
                     setConfirmation({
                         isOpen: true,
                         title: '구매 완료! 🎉',
-                        message: `'${item.title}' 구매가 완료되었습니다.\n보관함 또는 구매 내역에서 확인할 수 있습니다.`,
+                        message: `'${item.title}' 구매가 완료되었습니다.${discountApplied > 0 ? `\n(세트 효과: ${discountApplied.toLocaleString()} C 할인 적용)` : ''}\n보관함 또는 구매 내역에서 확인할 수 있습니다.`,
                         type: 'success',
                         singleButton: false,
                         confirmText: '구매 내역 보기',
@@ -302,23 +305,19 @@ const Market: React.FC = () => {
             return wishlistDetails || [];
         }
 
-        // 0. Tab-based Strict Filtering (Client Side)
-        // Because Backend categories might be mixed (e.g. Sticker Packs are 'stickers' in DB but mapped to 'package' in Frontend)
+        // Tab-based Client Side fallback (Mainly for legacy mapping support)
         let items = marketItems;
 
         if (activeTab === 'package') {
-            items = items.filter(item => String(item.type).toLowerCase() === 'package' || String(item.type).toLowerCase() === 'start_pack');
+            items = items.filter(item => item.type === 'package');
         } else if (activeTab === 'sticker') {
-            items = items.filter(item => String(item.type).toLowerCase() === 'sticker');
+            items = items.filter(item => item.type === 'sticker');
         } else if (activeTab === 'template_widget') {
-            items = items.filter(item => String(item.type).toLowerCase() === 'template_widget');
+            items = items.filter(item => item.type === 'template_widget');
         } else if (activeTab === 'template_post') {
-            items = items.filter(item => String(item.type).toLowerCase() === 'template_post');
+            items = items.filter(item => item.type === 'template_post');
         }
 
-        // 1. Base Filter: Removed (We rely on 'Hide Owned' toggle instead)
-
-        // 2. Hide Owned Filter (User Toggle)
         if (hideOwned) {
             items = items.filter(item => !isOwned(item.id));
         }
@@ -414,7 +413,7 @@ const Market: React.FC = () => {
                     onClose={() => setSelectedItem(null)}
                     onBuy={handleBuy}
                     onToggleWishlist={(item) => toggleWishlist(item as any)}
-                    isOwned={isOwned(selectedItem.id)}
+                    checkOwned={isOwned}
                     isWishlisted={isWishlisted(selectedItem.id)}
                     effectivePrice={getPackPrice(selectedItem.referenceId || selectedItem.id, selectedItem.price)}
                     initialTab={selectedItem.initialTab}

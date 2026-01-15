@@ -554,7 +554,7 @@ export const useMarket = () => {
             const packOriginalPrice = targetItem?.price || cost + ownedValue; // Heuristic fallback
 
             const targetDiscountedPrice = Math.max(0, packOriginalPrice - ownedValue);
-            const discountGrantAmount = Math.max(0, ownedValue); // We grant back the value of what they own
+            const discountGrantAmount = Math.min(ownedValue, packOriginalPrice); // Cap discount to pack price
 
             // 3. User Balance Check (Net Price check)
             if (credits < targetDiscountedPrice) {
@@ -595,7 +595,6 @@ export const useMarket = () => {
                 });
 
                 if (res.ok) {
-                    alert(`구매 완료! (세트 완성 할인 적용)\n${discountGrantAmount} 크레딧 할인이 적용되어 ${targetDiscountedPrice} 크레딧만 사용되었습니다.`);
                     await fetchUserData();
                     await refreshCredits();
                     return true;

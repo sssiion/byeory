@@ -12,7 +12,7 @@ interface ItemDetailModalProps {
     onClose: () => void;
     onBuy: (item: MarketItem) => void;
     onToggleWishlist: (item: MarketItem) => void;
-    isOwned: boolean;
+    checkOwned: (id: string) => boolean;
     isWishlisted: boolean;
     effectivePrice: number;
     initialTab?: 'details' | 'reviews';
@@ -24,8 +24,9 @@ interface ItemDetailModalProps {
 }
 
 const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
-    item, onClose, onBuy, onToggleWishlist, isOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag, reviewTargetId, onReviewChange, marketItems
+    item, onClose, onBuy, onToggleWishlist, checkOwned, isWishlisted, effectivePrice, initialTab = 'details', onFilterBySeller, onSearchTag, reviewTargetId, onReviewChange, marketItems
 }) => {
+    const isOwned = checkOwned(item.id);
     const { userId } = useCredits();
     const [activeTab, setActiveTab] = useState<'details' | 'reviews'>(initialTab);
     const [reviews, setReviews] = useState<any[]>([]);
@@ -228,20 +229,24 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     // Pack Recommendation Logic
     const packRecommendation = React.useMemo(() => {
         if (!item || !marketItems) return null;
-        // Check if this item is a sticker in a pack
-        // Use referenceId (backend ID) or id
         const targetId = item.referenceId || item.id;
         const stickerDef = STICKERS.find(s => s.id === String(targetId));
 
         if (stickerDef && stickerDef.packId) {
-            // Find the pack locally
-            // Note: Pack Items in marketItems have referenceId === packId (e.g. 'cat_pack')
             const packItem = marketItems.find(m => m.referenceId === stickerDef.packId);
-            // If checking fails, maybe check ID? Logic suggests referenceId.
             return packItem;
         }
         return null;
     }, [item, marketItems]);
+
+    // Pack Contents Details
+    const packContents = React.useMemo(() => {
+        const typeStr = (item.type as string || '').toLowerCase();
+        if (typeStr !== 'package' && typeStr !== 'start_pack') return [];
+
+        const packRefId = item.referenceId || item.id;
+        return STICKERS.filter(s => s.packId === packRefId);
+    }, [item]);
 
 
     if (!item) return null;
@@ -372,12 +377,51 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                                         {item.description || "설명이 없습니다."}
                                     </p>
                                 </div>
+
+                                {packContents.length > 0 && (
+                                    <div className="pt-4 border-t border-[var(--border-color)]">
+                                        <h3 className="font-bold text-[var(--text-primary)] mb-4 flex items-center justify-between">
+                                            <span>패키지 구성품 ({packContents.length})</span>
+                                            <span className="text-[10px] text-[var(--text-disabled)] font-normal">전체 {packContents.length}개 중 {packContents.filter(s => checkOwned(s.id)).length}개 보유</span>
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {packContents.map(sticker => {
+                                                const stickerOwned = checkOwned(sticker.id);
+                                                return (
+                                                    <div
+                                                        key={sticker.id}
+                                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-all ${stickerOwned
+                                                            ? 'bg-[var(--bg-card-secondary)] border-green-500/20 opacity-80'
+                                                            : 'bg-[var(--bg-card)] border-[var(--border-color)]'
+                                                            }`}
+                                                    >
+                                                        <div className="w-12 h-12 relative flex items-center justify-center">
+                                                            <img src={sticker.url} alt={sticker.name} className="w-full h-full object-contain" />
+                                                            {stickerOwned && (
+                                                                <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
+                                                                    <Star className="w-2.5 h-2.5 fill-current" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="text-[10px] font-bold text-[var(--text-primary)] truncate max-w-full">{sticker.name}</span>
+                                                            <span className={`text-[9px] font-medium ${stickerOwned ? 'text-green-500' : 'text-[var(--text-secondary)]'}`}>
+                                                                {stickerOwned ? '보유 중' : '미보유'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="p-4 bg-[var(--bg-card-secondary)] rounded-xl border border-[var(--border-color)]">
                                     <h4 className="font-bold text-[var(--text-primary)] text-sm mb-2">상품 정보</h4>
                                     <div className="grid grid-cols-2 gap-4 text-xs text-[var(--text-secondary)]">
                                         <div>출시일: {new Date().toLocaleDateString()}</div>
                                         <div>버전: 1.0.0</div>
-                                        <div>크기: 2.1 MB</div>
+                                        <div>크기: {packContents.length > 0 ? `${(packContents.length * 0.4).toFixed(1)} MB` : '2.1 MB'}</div>
                                         <div>라이선스: 개인 사용</div>
                                     </div>
                                 </div>

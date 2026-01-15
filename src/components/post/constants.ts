@@ -21,15 +21,40 @@ export const STICKERS: StickerItemDef[] = [
     { id: 'free_10', url: 'https://cdn-icons-png.flaticon.com/512/126/126473.png', isPremium: true, price: 150, packId: 'pack_basic', name: '엄지척' },
 
     // Premium Stickers (From Mock Market)
-    // Pack 001: Cute Cat
-    { id: 'cat_1', url: 'https://cdn-icons-png.flaticon.com/512/616/616408.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '고양이 1' },
-    { id: 'cat_2', url: 'https://cdn-icons-png.flaticon.com/512/616/616430.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '고양이 2' },
+    // Pack 001: Animal Friends
+    { id: 'cat_1', url: 'https://cdn-icons-png.flaticon.com/512/616/616408.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '동물 1' },
+    { id: 'cat_2', url: 'https://cdn-icons-png.flaticon.com/512/616/616430.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '동물 2' },
+    { id: 'cat_3', url: 'https://cdn-icons-png.flaticon.com/512/2663/2663067.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '동물 3' },
+    { id: 'cat_4', url: 'https://img.icons8.com/color/512/panda.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '동물 4' },
+    { id: 'cat_5', url: 'https://img.icons8.com/color/512/fox.png', isPremium: true, price: 200, packId: 'sticker_pack_001', name: '동물 5' },
 
     // Pack 002: Vintage Label
     { id: 'vintage_1', url: 'https://cdn-icons-png.flaticon.com/512/2361/2361730.png', isPremium: true, price: 300, packId: 'sticker_pack_002', name: '빈티지 라벨 1' },
+    { id: 'vintage_2', url: 'https://cdn-icons-png.flaticon.com/512/3739/3739054.png', isPremium: true, price: 300, packId: 'sticker_pack_002', name: '빈티지 라벨 2' },
+    { id: 'vintage_3', url: 'https://cdn-icons-png.flaticon.com/512/2361/2361841.png', isPremium: true, price: 300, packId: 'sticker_pack_002', name: '빈티지 라벨 3' },
 
     // Pack 003: Pixel Art
-    { id: 'pixel_1', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603762.png', isPremium: true, price: 250, packId: 'sticker_pack_003', name: '픽셀 이모지 1' },
+    { id: 'pixel_1', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603762.png', isPremium: true, price: 250, packId: 'sticker_pack_003', name: '픽셀 아트 1' },
+    { id: 'pixel_2', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603764.png', isPremium: true, price: 250, packId: 'sticker_pack_003', name: '픽셀 아트 2' },
+    { id: 'pixel_3', url: 'https://cdn-icons-png.flaticon.com/512/10603/10603761.png', isPremium: true, price: 250, packId: 'sticker_pack_003', name: '픽셀 아트 3' },
+
+    // Pack 004: Travel Memory
+    { id: 'travel_1', url: 'https://cdn-icons-png.flaticon.com/512/727/727289.png', isPremium: true, price: 350, packId: 'sticker_pack_004', name: '여행 1' },
+    { id: 'travel_2', url: 'https://cdn-icons-png.flaticon.com/512/685/685655.png', isPremium: true, price: 350, packId: 'sticker_pack_004', name: '여행 2' },
+    { id: 'travel_3', url: 'https://cdn-icons-png.flaticon.com/512/1865/1865269.png', isPremium: true, price: 350, packId: 'sticker_pack_004', name: '여행 3' },
+    { id: 'travel_4', url: 'https://cdn-icons-png.flaticon.com/512/2903/2903554.png', isPremium: true, price: 350, packId: 'sticker_pack_004', name: '여행 4' },
+
+    // Pack 005: Yummy Food
+    { id: 'food_1', url: 'https://cdn-icons-png.flaticon.com/512/3595/3595455.png', isPremium: true, price: 250, packId: 'sticker_pack_005', name: '음식 1' },
+    { id: 'food_2', url: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png', isPremium: true, price: 250, packId: 'sticker_pack_005', name: '음식 2' },
+    { id: 'food_3', url: 'https://img.icons8.com/color/512/hot-dog.png', isPremium: true, price: 250, packId: 'sticker_pack_005', name: '음식 3' },
+    { id: 'food_4', url: 'https://cdn-icons-png.flaticon.com/512/3194/3194593.png', isPremium: true, price: 250, packId: 'sticker_pack_005', name: '음식 4' },
+
+    // Pack 006: Daily Life
+    { id: 'daily_1', url: 'https://cdn-icons-png.flaticon.com/512/2935/2935307.png', isPremium: true, price: 150, packId: 'sticker_pack_006', name: '데일리 1' },
+    { id: 'daily_2', url: 'https://cdn-icons-png.flaticon.com/512/3389/3389081.png', isPremium: true, price: 150, packId: 'sticker_pack_006', name: '데일리 2' },
+    { id: 'daily_3', url: 'https://cdn-icons-png.flaticon.com/512/3659/3659899.png', isPremium: true, price: 150, packId: 'sticker_pack_006', name: '데일리 3' },
+    { id: 'daily_4', url: 'https://cdn-icons-png.flaticon.com/512/2097/2097068.png', isPremium: true, price: 150, packId: 'sticker_pack_006', name: '데일리 4' },
 ];
 
 // 사용 가능한 폰트 목록 (Google Fonts)
