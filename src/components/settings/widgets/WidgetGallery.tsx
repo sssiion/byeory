@@ -4,8 +4,9 @@ import type { WidgetConfig } from "./type.ts";
 import { X, Check, ChevronDown } from 'lucide-react'; // Icon imports
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { getMyWidgets } from './customwidget/widgetApi.ts'; // Import API
+import { getMyWidgets, deleteWidget } from './customwidget/widgetApi.ts'; // Import API
 import { WIDGET_COMPONENT_MAP } from "./componentMap.ts"; // Import Component Map
+import CustomWidgetPreview from "./customwidget/components/CustomWidgetPreview"; // Import Preview Component
 
 // MainPage에서 넘겨주는 props 이름(onSelect, onEdit)과 일치시킵니다.
 interface WidgetGalleryProps {
@@ -33,10 +34,14 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
 
                         // 'custom-block' 폴백 처리
                         if (!Component && baseType === 'custom-block') {
-                            Component = () => (
-                                <div className="w-full h-full flex items-center justify-center bg-gray-50 text-xs text-gray-400 border border-dashed border-gray-200 rounded">
-                                    Custom Block
-                                </div>
+                            Component = (props: any) => (
+                                <CustomWidgetPreview
+                                    content={{
+                                        ...props.content,
+                                        decorations: props.decorations || [], // 🌟 decorations 주입
+                                    }}
+                                    defaultSize={item.defaultSize || '2x2'}
+                                />
                             );
                         }
 
@@ -53,7 +58,8 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
                             validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
                             defaultProps: {
                                 content: item.content,
-                                styles: item.styles
+                                styles: item.styles,
+                                decorations: item.decorations // 🌟 decorations 필드 추가
                             },
                             isSystem: false,
                             thumbnail: undefined,
@@ -72,6 +78,21 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
 
         fetchCustomWidgets();
     }, []);
+
+    // 🌟 삭제 핸들러
+    const handleDelete = async (widgetId: string, widgetName: string) => {
+        if (!confirm(`정말 '${widgetName}' 위젯을 삭제하시겠습니까?`)) return;
+
+        try {
+            await deleteWidget(widgetId);
+            // 목록 갱신: 로컬 상태에서 제거 (형변환 주의)
+            setCustomWidgets(prev => prev.filter(w => String(w.id) !== widgetId));
+            alert('삭제되었습니다.');
+        } catch (e) {
+            console.error('삭제 실패', e);
+            alert('삭제에 실패했습니다.');
+        }
+    };
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedWidgets, setSelectedWidgets] = useState<WidgetConfig[]>([]); // 장바구니 상태
@@ -92,9 +113,13 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
         if (onMultiSelect) {
             onMultiSelect(selectedWidgets);
         } else {
-            // Fallback for when onMultiSelect is not passed (legacy support)
+            // Fallback for custom widgets: pass extra props if supported
             selectedWidgets.forEach(widget => {
-                onSelect(widget.widgetType);
+                // 🌟 [수정] onSelect가 (type, props)를 받을 수 있다고 가정하거나,
+                // 커스텀 위젯의 경우 별도 처리 필요.
+                // 만약 onSelect가 string만 받는다면 커스텀 위젯 정보가 유실됨.
+                // 일단 defaultProps를 두 번째 인자로 넘겨봄 (수신 측 확인 필요)
+                onSelect(widget.widgetType, widget.defaultProps);
             });
         }
     };
@@ -340,7 +365,7 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
                                                                     </div>
                                                                 )}
 
-                                                                {widget.thumbnail && (
+                                                                {widget.thumbnail ? (
                                                                     <div className="w-full bg-[var(--bg-card-secondary)] rounded-lg mb-4 overflow-hidden border border-[var(--border-color)] flex items-center justify-center">
                                                                         <img
                                                                             src={widget.thumbnail}
@@ -351,21 +376,40 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
                                                                             }}
                                                                         />
                                                                     </div>
+                                                                ) : (
+                                                                    // 🌟 [수정] 썸네일 없으면 컴포넌트 프리뷰 렌더링 (decorations 포함)
+                                                                    <div className="w-full aspect-video bg-[var(--bg-card-secondary)] rounded-lg mb-4 overflow-hidden border border-[var(--border-color)] relative">
+                                                                        <div className="w-full h-full pointer-events-none select-none transform scale-[0.9] origin-center">
+                                                                            {/* defaultProps(content, decorations 포함) 전달 */}
+                                                                            <widget.component {...widget.defaultProps} />
+                                                                        </div>
+                                                                    </div>
                                                                 )}
                                                                 <div className="w-full flex justify-between items-start mb-2">
                                                                     <h3 className="font-bold text-lg text-[var(--text-primary)] w-full">{widget.label}</h3>
 
                                                                     {/* 편집 가능한 위젯인 경우 Edit 버튼 표시 (onEdit이 있을 때만) */}
                                                                     {onEdit && !widget.isSystem && (
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation(); // 부모 클릭 방지
-                                                                                onEdit(widget);
-                                                                            }}
-                                                                            className="text-xs px-2 py-1 bg-[var(--bg-card-secondary)] rounded hover:brightness-95 text-[var(--text-secondary)] border border-[var(--border-color)] transition-all z-20"
-                                                                        >
-                                                                            Edit
-                                                                        </button>
+                                                                        <>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation(); // 부모 클릭 방지
+                                                                                    onEdit(widget);
+                                                                                }}
+                                                                                className="text-xs px-2 py-1 bg-[var(--bg-card-secondary)] rounded hover:brightness-95 text-[var(--text-secondary)] border border-[var(--border-color)] transition-all z-20"
+                                                                            >
+                                                                                Edit
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    if (widget.id) handleDelete(String(widget.id), widget.label);
+                                                                                }}
+                                                                                className="ml-1 text-xs px-2 py-1 bg-red-100 rounded hover:bg-red-200 text-red-600 border border-red-200 transition-all z-20"
+                                                                            >
+                                                                                Del
+                                                                            </button>
+                                                                        </>
                                                                     )}
                                                                 </div>
 

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { getSvgPathFromPoints } from '../utils'; // Import utility
 import type { WidgetBlock, ContainerLocation } from '../types';
 import {
     Check,
@@ -27,6 +28,7 @@ import UnitConverterWidget from "./Rendercomponent/UnitConverterWidget.tsx";
 import LinkBookmarkWidget from "./Rendercomponent/LinkBookmarkWidget.tsx";
 import DatabaseWidget from "./Rendercomponent/DatabaseWidget.tsx";
 import TravelPlanWidget from './Rendercomponent/TravelPlanWidget';
+import DecorationLayer from './DecorationLayer'; // 🌟 Import DecorationLayer
 
 import {
     addEdge, applyEdgeChanges,
@@ -167,7 +169,7 @@ const SpoilerItem = ({ block, onUpdateBlock, style }: any) => {
     return (
         <div
             onClick={() => setIsRevealed(!isRevealed)}
-            className={`h-full w-full relative p-1 rounded-lg border transition-all cursor-pointer group select-none flex flex-col
+            className={`w-full relative p-1 rounded-lg border transition-all cursor-pointer group select-none flex flex-col
                 ${isRevealed
                     ? 'bg-gray-50 border-gray-200 text-gray-800'
                     : 'bg-gray-900 border-gray-800 text-transparent hover:bg-gray-800'
@@ -435,6 +437,9 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         styles.strikethrough ? 'line-through' : ''
     ].filter(Boolean).join(' ');
 
+    // 🌟 [수정] 레이아웃 관련 스타일은 자식 블록에 상속되지 않도록 필터링
+    const { justifyContent, alignItems, alignContent, display, height, minHeight, ...safeStyle } = styles as any;
+
     const commonStyle = {
         color: styles.color,
         backgroundColor: styles.bgColor,
@@ -568,38 +573,52 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     // 🌟 [NEW] Composite Widget (Custom Block) Rendering
     if (type === 'custom-block') {
         const children = (content.children || []) as WidgetBlock[];
+        // 🌟 [Fix] decorations 데이터 가져오기
+        const decorations = content.decorations || [];
+
         return (
-            <div className="flex flex-col gap-0 w-full h-full">
-                {children.map((childBlock) => (
-                    <BlockRenderer
-                        key={childBlock.id}
-                        {...props}
-                        block={childBlock}
-                        onUpdateBlock={(childId, childUpdates) => {
-                            const targetChild = children.find(c => c.id === childId);
-                            if (!targetChild) return;
+            <div className="flex flex-col gap-0 w-full h-full relative">
+                {/* 🌟 0. Decorations Layer (Background) */}
+                <DecorationLayer decorations={decorations} />
 
-                            const mergedChild = { ...targetChild };
-                            if (childUpdates.content) mergedChild.content = { ...mergedChild.content, ...childUpdates.content };
-                            if (childUpdates.styles) mergedChild.styles = { ...mergedChild.styles, ...childUpdates.styles };
+                {/* 🌟 1. Content Layer (Foreground) */}
+                {children.map((childBlock) => {
+                    // 🌟 [Fix] 자식 블록의 레이아웃(크기) 적용
+                    const layout = childBlock.layout || { w: '100%', h: 'auto' };
+                    let width: string | number = '100%';
+                    let height: string | number = 'auto';
 
-                            Object.keys(childUpdates).forEach(k => {
-                                if (k !== 'content' && k !== 'styles') {
-                                    (mergedChild as any)[k] = childUpdates[k];
-                                }
-                            });
+                    // Width handling
+                    if (typeof layout.w === 'number') width = `${layout.w}px`;
+                    else if (layout.w) width = layout.w;
 
-                            const finalChildren = children.map(c => c.id === childId ? mergedChild : c);
+                    // Height handling
+                    if (typeof layout.h === 'number') height = `${layout.h}px`;
+                    else if (layout.h) height = layout.h;
 
-                            onUpdateBlock(block.id, {
-                                content: {
-                                    ...content,
-                                    children: finalChildren
-                                }
-                            });
-                        }}
-                    />
-                ))}
+                    return (
+                        <div
+                            key={childBlock.id}
+                            style={{
+                                width,
+                                height,
+                                minHeight: '20px', // Builder's minHeight
+                                position: 'relative',
+                                overflow: 'hidden' // Builder's overflow behavior
+                            }}
+                        >
+                            <BlockRenderer
+                                block={childBlock}
+                                selectedBlockId={null} // 대시보드에서는 선택 불가
+                                onSelectBlock={() => { }}
+                                onRemoveBlock={() => { }}
+                                activeContainer={props.activeContainer}
+                                onSetActiveContainer={props.onSetActiveContainer}
+                                onUpdateBlock={onUpdateBlock}
+                            />
+                        </div>
+                    );
+                })}
             </div>
         );
     }
@@ -616,7 +635,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             // --- 1. 텍스트류 (긴 텍스트 줄바꿈 처리) ---
             case 'heading1':
                 return (
-                    <div className="h-full w-full flex flex-col justify-center">
+                    <div className="w-full flex flex-col">
                         <EditableText
                             tagName="h1"
                             text={content.text}
@@ -630,7 +649,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 );
             case 'heading2':
                 return (
-                    <div className="h-full w-full flex flex-col justify-center">
+                    <div className="w-full flex flex-col">
                         <EditableText
                             tagName="h2"
                             text={content.text}
@@ -644,7 +663,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 );
             case 'heading3':
                 return (
-                    <div className="h-full w-full overflow-hidden flex flex-col justify-center">
+                    <div className="w-full overflow-hidden flex flex-col">
                         <EditableText
                             tagName="h3"
                             text={content.text}
@@ -658,7 +677,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 );
             case 'text':
                 return (
-                    <div className="h-full w-full flex flex-col justify-center">
+                    <div className="w-full flex flex-col">
                         <EditableText
                             tagName="p"
                             text={content.text}
@@ -672,7 +691,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                 );
             case 'quote':
                 return (
-                    <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="h-full border-l-4 pl-1 py-0 my-0 text-gray-600 italic bg-gray-50 rounded-r break-words flex flex-col justify-center">
+                    <div style={{ ...commonStyle, borderLeftColor: styles.color || '#333' }} className="border-l-4 pl-1 py-0 my-0 text-gray-600 italic bg-gray-50 rounded-r break-words flex flex-col">
                         <EditableText
                             tagName="div"
                             text={content.text}
@@ -1420,16 +1439,195 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             case 'database': {
                 return <DatabaseWidget block={block} onUpdateBlock={onUpdateBlock} />;
             }
-            default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown</div>;
+            case 'custom-block': {
+                const children = (content.children || []) as WidgetBlock[];
+                // 🌟 [디버깅] 상세 로그 추가
+                console.log('🧱 [BlockRenderer Debug] Custom Block Render:', {
+                    id: block.id,
+                    childrenCount: children.length,
+                    decorations: content.decorations,
+                    styles: styles,
+                    wrapperClasses: "w-full h-full relative flex flex-col justify-start text-left"
+                });
+
+                if (children.length === 0) return <div className="text-gray-300 text-xs p-2">Empty Custom Block</div>;
+
+                return (
+                    // 🌟 [수정] 정렬 강제 지정 (flex-col justify-start text-left) items-start 제거 -> stretch 되도록
+                    <div
+                        className="w-full h-full relative flex flex-col justify-start text-left"
+                        style={{ justifyContent: 'flex-start', alignItems: 'stretch' }}
+                    >
+                        {/* DEBUG: DECORATION CHECK */}
+                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] z-[999] p-1 font-bold pointer-events-none opacity-80">
+                            DECOS: {content.decorations?.length ?? 0}
+                        </div>
+
+                        {/* 🌟 Decorations Rendering (Background Layer) */}
+                        {content.decorations && Array.isArray(content.decorations) && (
+                            <div className="absolute inset-0 z-[50] pointer-events-none overflow-hidden border-4 border-red-500 bg-black/10">
+                                {content.decorations.map((deco: any) => {
+                                    let safeType = deco.type;
+                                    if (typeof safeType === 'object' && (safeType as any).type) {
+                                        safeType = (safeType as any).type;
+                                    }
+
+                                    console.log('🖼️ [BlockRenderer] Decoration item:', deco, 'SafeType:', safeType);
+
+                                    // 유령 사각형 방지
+                                    if (!['blob', 'text', 'circle', 'square', 'star', 'shape'].includes(safeType)) {
+                                        console.log('⚠️ [BlockRenderer] Skipped decoration due to invalid type:', safeType);
+                                        return null;
+                                    }
+
+                                    return (
+                                        <div
+                                            key={deco.id}
+                                            className="absolute"
+                                            style={{
+                                                left: `${deco.x}%`,
+                                                top: `${deco.y}%`,
+                                                width: `${deco.w}px`,
+                                                height: `${deco.h}px`,
+                                                transform: `translate(-50%, -50%) rotate(${deco.rotation || 0}deg)`,
+                                                opacity: deco.opacity,
+                                                zIndex: deco.zIndex || 0,
+                                            }}
+                                        >
+                                            {safeType === 'blob' ? (
+                                                <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
+                                                    <path
+                                                        d={getSvgPathFromPoints(deco.points || [], 0.5, true)}
+                                                        fill={deco.color}
+                                                    />
+                                                </svg>
+                                            ) : safeType === 'text' ? (
+                                                <div style={{ color: deco.color, fontSize: deco.fontSize || 14 }}>
+                                                    {deco.text}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        backgroundColor: deco.color,
+                                                        borderRadius: (safeType === 'circle' || (safeType === 'shape' && deco.shapeType === 'circle')) ? '50%' :
+                                                            (safeType === 'square' || (safeType === 'shape' && deco.shapeType === 'square')) ? '4px' : '0%',
+                                                        clipPath: (safeType === 'star' || (safeType === 'shape' && deco.shapeType === 'star'))
+                                                            ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+                                                            : undefined
+                                                    }}
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Children Rendering (Content Layer) */}
+                        <div className="w-full h-full relative z-10 flex flex-col justify-start">
+                            {children.map((childBlock) => (
+                                <div key={childBlock.id} className="relative mb-1 w-full">
+                                    <BlockRenderer
+                                        block={childBlock}
+                                        onUpdateBlock={onUpdateBlock}
+                                        selectedBlockId={props.selectedBlockId}
+                                        onSelectBlock={props.onSelectBlock}
+                                        onRemoveBlock={props.onRemoveBlock}
+                                        activeContainer={props.activeContainer}
+                                        onSetActiveContainer={props.onSetActiveContainer}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            default: return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown Block Type: {type}</div>;
 
         }
 
     };
 
     return (
-        <div className="w-full h-full min-h-[30px]">
+        <div className="w-full h-full min-h-[30px] relative">
+            {/* 🌟 [수정] wrapper에 relative 추가하여 decorations 위치 기준점 확보 */}
+
+            {/* 단순히 컨텐츠만 렌더링 */}
             {/* 단순히 컨텐츠만 렌더링 */}
             {renderWidgetContent()}
+
+            {/* 🌟 Decorations Rendering for Custom Blocks */}
+            {(() => {
+                if (block.content?.decorations && block.content.decorations.length > 0) {
+                    console.log('🎨 [BlockRenderer] Rendering Decorations:', block.content.decorations);
+                } else if (type === 'custom-block') {
+                    console.log('⚠️ [BlockRenderer] No decorations found for custom-block:', block);
+                }
+                return null;
+            })()}
+            {block.content?.decorations && Array.isArray(block.content.decorations) && (
+                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                    {block.content.decorations.map((deco: any) => {
+                        // 🌟 Data recovery for corrupted 'type'
+                        let safeType = deco.type;
+                        if (typeof safeType === 'object' && (safeType as any).type) {
+                            safeType = (safeType as any).type;
+                        }
+
+                        // 🌟 [수정] 유령 사각형 방지: 알 수 없는 타입은 렌더링하지 않음
+                        if (!['blob', 'text', 'circle', 'square', 'star', 'shape'].includes(safeType)) {
+                            return null;
+                        }
+
+                        return (
+                            <div
+                                key={deco.id}
+                                className="absolute"
+                                style={{
+                                    left: `${deco.x}%`,
+                                    top: `${deco.y}%`,
+                                    width: `${deco.w}px`,
+                                    height: `${deco.h}px`,
+                                    transform: `translate(-50%, -50%) rotate(${deco.rotation || 0}deg)`,
+                                    opacity: deco.opacity,
+                                    zIndex: deco.zIndex || 0,
+                                }}
+                            >
+                                {safeType === 'blob' ? (
+                                    <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
+                                        <path
+                                            d={getSvgPathFromPoints(deco.points || [], 0.5, true)}
+                                            fill={deco.color}
+                                        />
+                                    </svg>
+                                ) : safeType === 'text' ? (
+                                    <div style={{ color: deco.color, fontSize: deco.fontSize || 14 }}>
+                                        {deco.text}
+                                    </div>
+                                ) : (
+                                    <div
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            backgroundColor: deco.color,
+                                            // 🌟 [수정] 원형 타입 명시적 확인
+                                            borderRadius: (safeType === 'circle' || (safeType === 'shape' && deco.shapeType === 'circle')) ? '50%' :
+                                                (safeType === 'square' || (safeType === 'shape' && deco.shapeType === 'square')) ? '4px' : '0%',
+                                            // 🌟 [수정] 별 모양 등 추가 도형 처리 (이미지나 SVG 필요시 확장)
+                                            clipPath: (safeType === 'star' || (safeType === 'shape' && deco.shapeType === 'star'))
+                                                ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+                                                : undefined
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };

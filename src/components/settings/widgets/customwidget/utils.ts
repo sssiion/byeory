@@ -213,3 +213,64 @@ export const getLabelByType = (type: BlockType) => {
         default: return '블록';
     }
 };
+
+// --------------------
+// Spline Logic for Blob
+// --------------------
+export const getSvgPathFromPoints = (points: { x: number; y: number }[], tension: number = 0.5, close: boolean = true) => {
+    if (!points || points.length < 1) return "";
+
+    // Make a copy
+    let pts = points.map(p => ({ ...p }));
+
+    // If closed, repeat points to handle looping curvature
+    if (close) {
+        pts.unshift(points[points.length - 1]);
+        pts.unshift(points[points.length - 2]);
+        pts.push(points[0]);
+        pts.push(points[1]);
+    }
+
+    const res: any[] = [];
+
+    // Start drawing
+    // Move to the first actual point
+    res.push(`M ${points[0].x} ${points[0].y}`);
+
+    // Loop through points
+    // i starts at 1 because we added 2 pts at the start (if closed is typical implementation)
+    // Actually simplicity: Catmull-Rom to Cubic Bezier conversion
+    // For each segment p1 -> p2
+    // p0, p1, p2, p3
+
+    // If closed, the array has padded points. The actual segment we care about starts from the first real point.
+    // Real points are at index 2 (since 0,1 are padding) in 'pts' if we padded simple.
+
+    // Let's use a simpler known algorithm logic or just standard smoothing
+    // Using Catmull-Rom logic:
+    // P = points array
+    // For i = 1 to length - 3
+    // p0=pts[i-1], p1=pts[i], p2=pts[i+1], p3=pts[i+2]
+
+    // Adjust logic:
+    const padded = close
+        ? [points[points.length - 1], ...points, points[0], points[1]]
+        : [points[0], ...points, points[points.length - 1]];
+
+    for (let i = 1; i < padded.length - 2; i++) {
+        const p0 = padded[i - 1];
+        const p1 = padded[i];
+        const p2 = padded[i + 1];
+        const p3 = padded[i + 2];
+
+        const cp1x = p1.x + (p2.x - p0.x) / 6 * tension;
+        const cp1y = p1.y + (p2.y - p0.y) / 6 * tension;
+
+        const cp2x = p2.x - (p3.x - p1.x) / 6 * tension;
+        const cp2y = p2.y - (p3.y - p1.y) / 6 * tension;
+
+        res.push(`C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${p2.x} ${p2.y}`);
+    }
+
+    return res.join(" ");
+};

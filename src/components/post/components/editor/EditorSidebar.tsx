@@ -41,17 +41,28 @@ interface Props {
 }
 
 import { useWidgetRegistry } from '../../../../components/settings/widgets/useWidgetRegistry'; // ✨ Import Registry
+import { getMyWidgets } from '../../../../components/settings/widgets/customwidget/widgetApi';
+import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
+import CustomWidgetPreview from '../../../../components/settings/widgets/customwidget/components/CustomWidgetPreview';
+import type { WidgetConfig } from '../../../../components/settings/widgets/type';
 
 // Helper Component for safe image loading
-const WidgetButton = ({ widget, onAdd }: { widget: any, onAdd: (type: string) => void }) => {
+const WidgetButton = ({ widget, onAdd }: { widget: any, onAdd: (type: string, props?: any) => void }) => {
     const [imgError, setImgError] = React.useState(false);
     const thumbnailUrl = `/thumbnails/${widget.widgetType}.png`;
 
     return (
         <div key={widget.widgetType} className="group relative">
-            <button
-                onClick={() => onAdd(widget.widgetType)}
-                className="w-full aspect-square rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:border-[var(--accent-color)] transition-all flex items-center justify-center bg-white shadow-sm overflow-hidden p-1.5"
+            <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onAdd(widget.widgetType, widget.defaultProps)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        onAdd(widget.widgetType, widget.defaultProps);
+                    }
+                }}
+                className="w-full aspect-square rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card-secondary)] hover:border-[var(--accent-color)] transition-all flex items-center justify-center bg-white shadow-sm overflow-hidden p-1.5 cursor-pointer"
             >
                 {!imgError ? (
                     <img
@@ -61,11 +72,21 @@ const WidgetButton = ({ widget, onAdd }: { widget: any, onAdd: (type: string) =>
                         onError={() => setImgError(true)}
                     />
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-[var(--accent-color)] bg-gradient-to-br from-white to-gray-50">
-                        <span className="text-xl">🧩</span>
+                    <div className="w-full h-full overflow-hidden relative bg-[var(--bg-card-secondary)] rounded-lg">
+                        {/* 🌟 썸네일 로드 실패 시 컴포넌트 렌더링 시도 */}
+                        <div className="w-full h-full pointer-events-none select-none transform scale-[0.4] origin-top-left" style={{ width: '250%', height: '250%' }}>
+                            {/* width/height 250% + scale 0.4 = 100% fit (approx) */}
+                            {widget.component ? (
+                                <widget.component {...(widget.defaultProps || {})} />
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center p-2 text-[var(--accent-color)]">
+                                    <span className="text-xl">🧩</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
-            </button>
+            </div>
 
             {/* Hover Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
@@ -127,7 +148,72 @@ const EditorSidebar: React.FC<Props> = ({
 
     // ✨ Widget Registry
     const { registry: widgetRegistry } = useWidgetRegistry();
-    const allWidgets = Object.values(widgetRegistry);
+    const [customWidgets, setCustomWidgets] = useState<WidgetConfig[]>([]);
+
+    // 🌟 [NEW] 커스텀 위젯 직접 Fetching (WidgetGallery 로직 복사)
+    useEffect(() => {
+        const fetchCustomWidgets = async () => {
+            try {
+                const data = await getMyWidgets();
+                if (Array.isArray(data)) {
+                    const refinedConfigs: WidgetConfig[] = data.map((item: any) => {
+                        const baseType = item.type;
+                        let Component = WIDGET_COMPONENT_MAP[baseType];
+
+                        // 'custom-block' 폴백 처리
+                        if (!Component && baseType === 'custom-block') {
+                            Component = (props: any) => (
+                                <CustomWidgetPreview
+                                    content={{
+                                        ...props.content,
+                                        decorations: props.decorations || [],
+                                    }}
+                                    defaultSize={item.defaultSize || '2x2'}
+                                />
+                            );
+                        }
+
+                        if (!Component) return null;
+
+                        return {
+                            id: item.id,
+                            widgetType: `custom-${item.id}`,
+                            label: item.name || '제목 없음',
+                            description: `Custom ${baseType} widget`,
+                            category: 'My Saved',
+                            keywords: ['custom', baseType],
+                            defaultSize: item.defaultSize || '1x1',
+                            validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
+                            defaultProps: {
+                                content: item.content,
+                                styles: item.styles,
+                                decorations: item.decorations
+                            },
+                            isSystem: false,
+                            thumbnail: undefined,
+                            component: Component,
+                        } as WidgetConfig;
+                    }).filter((w): w is WidgetConfig => w !== null);
+
+                    setCustomWidgets(refinedConfigs);
+                    console.log("Sidebar: Fetched custom widgets:", refinedConfigs.length);
+                }
+            } catch (e) {
+                console.error("Failed to load custom widgets in Sidebar:", e);
+            }
+        };
+
+        fetchCustomWidgets();
+    }, []);
+
+    // ✨ 중복 제거 로직 제거 (일단 표시 우선)
+    // registry와 customWidgets를 단순 병합. key 중복은 React가 경고하겠지만 렌더링은 됨.
+    const allWidgets = [
+        ...Object.values(widgetRegistry),
+        ...customWidgets
+    ];
+
+    console.log("Sidebar: Total widgets:", allWidgets.length);
 
     const { isOwned, buyItem, getMarketItem, getPackPrice } = useMarket();
 
@@ -628,11 +714,35 @@ const EditorSidebar: React.FC<Props> = ({
 
             {/* ✨ Widgets Section */}
             <SidebarAccordion title="위젯" icon={() => <span className="text-lg">🧩</span>} defaultOpen={false}>
-                <div className="p-4">
-                    <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto custom-scrollbar">
-                        {allWidgets.map((widget) => (
-                            <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
-                        ))}
+                <div className="p-4 flex flex-col gap-4">
+                    {/* 1. 기본 위젯 */}
+                    <div>
+                        <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-wider">기본 위젯</h4>
+                        <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto custom-scrollbar">
+                            {allWidgets.filter(w => !w.widgetType.startsWith('custom-')).map((widget) => (
+                                <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 2. 나의 위젯 (커스텀) */}
+                    <div className="pt-2 border-t border-[var(--border-color)]">
+                        <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-2 mt-2 uppercase tracking-wider flex items-center gap-2">
+                            나의 위젯
+                            <span className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold">Custom</span>
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto custom-scrollbar">
+                            {allWidgets.filter(w => w.widgetType.startsWith('custom-')).length > 0 ? (
+                                allWidgets.filter(w => w.widgetType.startsWith('custom-')).map((widget) => (
+                                    <WidgetButton key={widget.widgetType} widget={widget} onAdd={onAddWidgetSticker} />
+                                ))
+                            ) : (
+                                <div className="col-span-2 py-4 flex flex-col items-center justify-center text-center text-gray-400 gap-1 bg-[var(--bg-card-secondary)]/30 rounded-lg border border-dashed border-[var(--border-color)]">
+                                    <span className="text-xl">📭</span>
+                                    <span className="text-xs">저장된 위젯이 없습니다.</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </SidebarAccordion>

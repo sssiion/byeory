@@ -104,7 +104,7 @@ export const useDashboardLogic = (isMobile: boolean) => {
         }
     }, [searchParams, setSearchParams]);
 
-    const addWidgets = (items: any[], setIsCatalogOpen: (open: boolean) => void) => {
+    const addWidgets = (items: any[], setIsCatalogOpen: (open: boolean) => void, customProps?: any) => {
         setWidgets(prevWidgets => {
             let currentWidgets = [...prevWidgets];
 
@@ -193,6 +193,15 @@ export const useDashboardLogic = (isMobile: boolean) => {
                     return;
                 }
 
+                // 🌟 [추가] 외부에서 전달된 customProps가 있으면 덮어씌움 (content, decorations 등 복구)
+                if (customProps) {
+                    initialProps = { ...initialProps, ...customProps };
+                    // decorations 복구: initialProps에 decorations가 없고 customProps에만 있다면 병합
+                    if (customProps.content) {
+                        (initialProps as any).content = { ...(initialProps as any).content, ...customProps.content };
+                    }
+                }
+
                 if (w > gridSize.cols) w = gridSize.cols;
 
                 let targetX = 1;
@@ -238,8 +247,8 @@ export const useDashboardLogic = (isMobile: boolean) => {
         setIsCatalogOpen(false);
     };
 
-    const addWidget = (item: any, setIsCatalogOpen: (open: boolean) => void) => {
-        addWidgets([item], setIsCatalogOpen);
+    const addWidget = (item: any, setIsCatalogOpen: (open: boolean) => void, customProps?: any) => {
+        addWidgets([item], setIsCatalogOpen, customProps);
     };
 
     const removeWidget = (id: string) => {

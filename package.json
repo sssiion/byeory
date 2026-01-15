@@ -25,6 +25,8 @@
     "axios": "^1.13.2",
     "framer-motion": "^12.23.26",
     "html2canvas": "^1.4.1",
+    "link": "^2.1.2",
+    "lint": "^0.8.19",
     "lucide-react": "^0.560.0",
     "mathjs": "^15.1.0",
     "modern-screenshot": "^4.6.7",

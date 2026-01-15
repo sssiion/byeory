@@ -182,39 +182,48 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                 if (isEditMode) e.preventDefault();
             }}
         >
-            <div className={`w-full h-full transition-transform overflow-hidden rounded-2xl ${isEditMode ? 'pointer-events-none' : ''}`}>
+            <div className={`w-full h-full transition-transform overflow-hidden rounded-2xl flex flex-col justify-start ${isEditMode ? 'pointer-events-none' : ''}`}>
                 <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-2xl" />}>
 
                     {/* 🔥 [수정 3] WidgetComponent가 없거나 custom-block 일 때 BlockRenderer 렌더링 */}
-                    {(widget.type === 'custom-block' || !WidgetComponent) ? (
-                        <BlockRenderer
-                            block={{
-                                id: widget.id,
-                                // 🔥 [핵심 수정] widget.props가 undefined일 경우를 대비해 || {} 추가
-                                type: (widget.props || {}).type || widget.type,
-                                content: (widget.props || {}).content || {},
-                                styles: (widget.props || {}).styles || {}
-                            }}
-                            selectedBlockId={null}
-                            onSelectBlock={() => { }}
-                            onRemoveBlock={() => { }}
-                            activeContainer={null as any}
-                            onSetActiveContainer={() => { }}
-                            onUpdateBlock={(id, updates) => {
-                                if (onUpdateWidget) {
-                                    onUpdateWidget(widget.id, updates);
-                                }
-                            }}
-                        />
-                    ) : (
-                        <WidgetComponent
-                            {...(widget.props || {})}
-                            gridSize={{ w, h }}
-                            updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
-                            widgetId={widget.id}
-                            onInteraction={triggerWidgetInteraction}
-                        />
-                    )}
+                    {(() => {
+                        if (widget.type === 'custom-block' || !WidgetComponent) {
+                            console.log('🚧 [DraggableWidget] Rendering custom-block:', widget.id, widget.props);
+                        }
+                        return (widget.type === 'custom-block' || !WidgetComponent) ? (
+                            <BlockRenderer
+                                block={{
+                                    id: widget.id,
+                                    // 🔥 [핵심 수정] widget.props가 undefined일 경우를 대비해 || {} 추가
+                                    type: (widget.props || {}).type || widget.type,
+                                    content: {
+                                        ...((widget.props || {}).content || {}),
+                                        // 🌟 [핵심 수정] decorations 보존: props.decorations가 없으면 기존 content.decorations 유지
+                                        decorations: (widget.props || {}).decorations || ((widget.props || {}).content || {}).decorations
+                                    },
+                                    styles: (widget.props || {}).styles || {}
+                                }}
+                                selectedBlockId={null}
+                                onSelectBlock={() => { }}
+                                onRemoveBlock={() => { }}
+                                activeContainer={null as any}
+                                onSetActiveContainer={() => { }}
+                                onUpdateBlock={(id, updates) => {
+                                    if (onUpdateWidget) {
+                                        onUpdateWidget(widget.id, updates);
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <WidgetComponent
+                                {...(widget.props || {})}
+                                gridSize={{ w, h }}
+                                updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
+                                widgetId={widget.id}
+                                onInteraction={triggerWidgetInteraction}
+                            />
+                        );
+                    })()}
                 </Suspense>
             </div>
 

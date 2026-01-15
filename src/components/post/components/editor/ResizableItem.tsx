@@ -13,11 +13,13 @@ interface Props {
     readOnly: boolean;
     onSelect: (isMulti?: boolean) => void;
     onUpdate: (changes: any) => void;
+    onDoubleClick?: () => void; // ✨ Double Click Support
+    opacity?: number;
     children: React.ReactNode;
 }
 
 const ResizableItem: React.FC<Props> = ({
-    id, x, y, w, h, rotation, zIndex, isSelected, readOnly, onSelect, onUpdate, children
+    id, x, y, w, h, rotation, zIndex, opacity = 1, isSelected, readOnly, onSelect, onUpdate, onDoubleClick, children
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -147,6 +149,7 @@ const ResizableItem: React.FC<Props> = ({
                 height: typeof h === 'number' ? `${h}px` : h,
                 transform: `rotate(${rotation}deg)`,
                 zIndex: zIndex,
+                opacity: opacity, // ✨ Apply Opacity
                 // ✨ Changed cursor logic: default for content, grabbing only when dragging
                 cursor: readOnly ? 'default' : 'default',
                 touchAction: 'none'

@@ -259,7 +259,7 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
                         <div className="flex items-center gap-3">
                             <span className="text-xs text-gray-500 font-bold whitespace-nowrap">투명도</span>
                             <input
-                                type="range" min="0.1" max="1" step="0.1"
+                                type="range" min="0" max="1" step="0.01"
                                 value={(currentItem as any).opacity ?? 1}
                                 onChange={(e) => onUpdate(selectedId, selectedType, { opacity: parseFloat(e.target.value) })}
                                 className="w-32 accent-indigo-600 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none"

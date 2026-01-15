@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle, Suspense } from 'react';
 import ContentBlock from './ContentBlock';
 import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
+import CustomWidgetPreview from '../../../../components/settings/widgets/customwidget/components/CustomWidgetPreview'; // 🌟 Import CustomWidgetPreview
 import ResizableItem from './ResizableItem';
 import EditorToolbar from './EditorToolbar';
 import ToolbarOverlay from './ToolbarOverlay';
@@ -45,6 +46,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     // ✨ Drag Selection State
     const [isSelecting, setIsSelecting] = useState(false);
     const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
+    const [isToolbarVisible, setIsToolbarVisible] = useState(false); // ✨ Toolbar Visibility State
 
     // ✨ Expose Content Ref
     useImperativeHandle(ref, () => contentRef.current!);
@@ -149,6 +151,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
         // Clear selection initially if not holding shift
         if (!e.shiftKey) {
             onSelect(null, null);
+            setIsToolbarVisible(false); // ✨ Hide toolbar on new selection start
         }
     };
 
@@ -427,7 +430,8 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                     zIndex: snapshot.isDragging ? 100 : ((block as any).zIndex || 'auto')
                                                                 }}
                                                                 className={`relative group transition-shadow duration-200 ${isFocused ? 'rounded-xl' : ''}`}
-                                                                onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') onSelect(block.id, 'block', e.shiftKey); }}
+                                                                onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') { onSelect(block.id, 'block', e.shiftKey); setIsToolbarVisible(false); } }}
+                                                                onDoubleClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') { onSelect(block.id, 'block'); setIsToolbarVisible(true); } }}
                                                             >
                                                                 <ContentBlock
                                                                     block={block}
@@ -488,21 +492,43 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 // ✨ Check against selectedIds
                                 isSelected={selectedId === stk.id || selectedIds.includes(stk.id)}
                                 readOnly={viewMode === 'read' || !!stk.locked}
-                                onSelect={(isMulti) => onSelect(stk.id, 'sticker', isMulti)} // ✨ Pass shift key state from item? No, ResizableItem wraps props.
-                                // ResizableItem onClick needs to be updated too?
+                                onSelect={(isMulti) => { onSelect(stk.id, 'sticker', isMulti); setIsToolbarVisible(false); }}
+                                onDoubleClick={() => setIsToolbarVisible(true)}
                                 onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
                             >
                                 {stk.widgetType ? (
                                     <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-lg" />}>
                                         {(() => {
                                             const Widget = WIDGET_COMPONENT_MAP[stk.widgetType!];
-                                            return Widget ? (
-                                                <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto">
-                                                    <Widget {...(stk.widgetProps || {})} isStickerMode={true} />
-                                                </div>
-                                            ) : (
+
+                                            // 🌟 1. Standard Widget
+                                            if (Widget) {
+                                                return (
+                                                    <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setIsToolbarVisible(true); }}>
+                                                        <Widget {...(stk.widgetProps || {})} isStickerMode={true} />
+                                                    </div>
+                                                );
+                                            }
+
+                                            // 🌟 2. Custom Widget Fallback (custom-block or custom-*)
+                                            if (stk.widgetType === 'custom-block' || stk.widgetType?.startsWith('custom-')) {
+                                                return (
+                                                    <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setIsToolbarVisible(true); }}>
+                                                        <CustomWidgetPreview
+                                                            content={{
+                                                                ...(stk.widgetProps?.content || {}),
+                                                                decorations: stk.widgetProps?.decorations || []
+                                                            }}
+                                                            defaultSize="2x2"
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+
+                                            // 🌟 3. Unknown
+                                            return (
                                                 <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-400 text-xs">
-                                                    Unknown
+                                                    Unknown ({stk.widgetType})
                                                 </div>
                                             );
                                         })()}
@@ -519,7 +545,8 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 {...txt}
                                 isSelected={selectedId === txt.id || selectedIds.includes(txt.id)}
                                 readOnly={viewMode === 'read' || !!txt.locked}
-                                onSelect={(isMulti) => onSelect(txt.id, 'floating', isMulti)}
+                                onSelect={(isMulti) => { onSelect(txt.id, 'floating', isMulti); setIsToolbarVisible(false); }}
+                                onDoubleClick={() => setIsToolbarVisible(true)}
                                 onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                             >
                                 <textarea
@@ -547,28 +574,18 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 {...img}
                                 isSelected={selectedId === img.id || selectedIds.includes(img.id)}
                                 readOnly={viewMode === 'read' || !!img.locked}
-                                onSelect={(isMulti) => onSelect(img.id, 'floatingImage', isMulti)}
-
+                                onSelect={(isMulti) => { onSelect(img.id, 'floatingImage', isMulti); setIsToolbarVisible(false); }}
+                                onDoubleClick={() => setIsToolbarVisible(true)}
                                 onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
                             >
                                 <img src={img.url} className="w-full h-full object-cover pointer-events-none rounded-lg select-none" style={{ opacity: img.opacity }} />
                             </ResizableItem>
                         ))}
 
-                        {/* 하단 툴바 (Blocks 외의 요소들용: Stickers, etc.) */}
-                        {viewMode === 'editor' && selectedId && currentItem && detectedType && detectedType !== 'block' && (detectedType as string) !== 'title' && (
-                            <EditorToolbar
-                                selectedId={selectedId}
-                                selectedType={detectedType}
-                                currentItem={currentItem}
-                                onUpdate={onUpdate}
-                                onDelete={detectedType === 'title' ? undefined : onDelete}
-                                positionMode="fixed"
-                            />
-                        )}
-
                         {/* ✨ NEW: Global Overlay Toolbar for Blocks & Title */}
                         {viewMode === 'editor' && selectedId && currentItem && (detectedType === 'block' || detectedType === 'title') && (
+                            // Keeping Overlay inside scale for now as it attaches to blocks? Or should we move it?
+                            // ToolbarOverlay handles its own positioning usually.
                             <ToolbarOverlay
                                 selectedId={selectedId}
                                 selectedType={detectedType} // 'block' | 'title'
@@ -581,6 +598,18 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                     </div>
                 </div>
             </div>
+
+            {/* ✨ Fixed Toolbar (Moved outside of scaled content) */}
+            {viewMode === 'editor' && selectedId && currentItem && detectedType && detectedType !== 'block' && (detectedType as string) !== 'title' && isToolbarVisible && (
+                <EditorToolbar
+                    selectedId={selectedId}
+                    selectedType={detectedType}
+                    currentItem={currentItem}
+                    onUpdate={onUpdate}
+                    onDelete={detectedType === 'title' ? undefined : onDelete}
+                    positionMode="fixed"
+                />
+            )}
         </div>
     );
 });

@@ -19,10 +19,11 @@ interface Props {
     activeTab: Category;
     setActiveTab: (tab: Category) => void;
     onAddBlock: (type: BlockType) => void;
+    onAddDecoration?: (type: any) => void; // [NEW] Optional for now to avoid breaking other usages
     remainingCapacity: number;
 }
 
-const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, remainingCapacity }) => {
+const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, onAddDecoration, remainingCapacity }) => {
 
 
     // 헬퍼: 버튼 렌더링
@@ -56,6 +57,51 @@ const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, rem
             </button>
         );
     };
+
+    // 🌟 데코레이션 버튼 렌더링 (비용 없음)
+    const renderDecoBtn = (icon: React.ReactNode, label: string, decoType: any) => (
+        <button
+            key={decoType}
+            onClick={() => {
+                const decoration: any = {
+                    id: `deco-${Date.now()}`,
+                    type: decoType,
+                    x: 50, // Center X (%)
+                    y: 50, // Center Y (%)
+                    w: 200,
+                    h: 200,
+                    color: '#e0e7ff', // indigo-100
+                    opacity: 1,
+                    zIndex: 0,
+                    rotation: 0,
+                };
+
+                if (decoType === 'blob') {
+                    // Default blob points (circle-ish)
+                    decoration.points = [
+                        { x: 50, y: 0 },
+                        { x: 85, y: 15 },
+                        { x: 100, y: 50 },
+                        { x: 85, y: 85 },
+                        { x: 50, y: 100 },
+                        { x: 15, y: 85 },
+                        { x: 0, y: 50 },
+                        { x: 15, y: 15 },
+                    ];
+                }
+
+                onAddDecoration?.(decoration);
+            }}
+            className="w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left mb-1
+                hover:bg-[var(--bg-card-secondary)] hover:text-[var(--text-primary)] cursor-pointer text-[var(--text-secondary)] bg-[var(--bg-card-secondary)]/50 border border-[var(--border-color)] hover:border-indigo-500"
+        >
+            <div className="group-hover:text-indigo-400 text-[var(--text-secondary)]">{icon}</div>
+            <div className="flex flex-col">
+                <span className="text-sm font-medium text-[var(--text-primary)]">{label}</span>
+                <span className="text-[10px] text-[var(--text-secondary)]">배경 꾸미기</span>
+            </div>
+        </button>
+    );
 
     return (
         <aside className="h-full flex bg-white/80 backdrop-blur-md border-r border-[var(--border-color)]">
@@ -160,11 +206,19 @@ const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, rem
 
                         {activeTab === 'visual' && (
                             <>
+                                {/* 기존 시각 효과 */}
                                 {renderBtn(<AlertCircle size={18} />, "콜아웃 (Callout)", 'callout')}
                                 {renderBtn(<Highlighter size={18} />, "형광펜 강조", 'highlight')}
                                 {renderBtn(<EyeOff size={18} />, "스포일러 방지", 'spoiler')}
-                                {renderBtn(<Sigma size={18} />, "수식 (Math)", 'math')}
-                                {renderBtn(<MoreHorizontal size={18} className="rotate-90" />, "세로쓰기", 'vertical-text')}
+
+                                <div className="my-2 border-t border-dashed border-[var(--border-color)]" />
+                                <h4 className="text-[10px] font-bold text-[var(--text-secondary)] mb-2 px-1">배경 도형</h4>
+
+                                {/* 🌟 배경 도형 추가 버튼 */}
+                                {renderDecoBtn(<div className="w-4 h-4 rounded-full border-2 border-current" />, "원형 (Circle)", 'circle')}
+                                {renderDecoBtn(<div className="w-4 h-4 border-2 border-current" />, "사각형 (Square)", 'square')}
+                                {renderDecoBtn(<Star size={18} />, "별 모양 (Star)", 'star')}
+                                {renderDecoBtn(<Sparkles size={18} />, "유기적 도형 (Blob)", 'blob')}
                             </>
                         )}
 
@@ -204,12 +258,10 @@ const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, rem
                                 {renderBtn(<Search size={18} />, "영화 정보 검색", 'movie-ticket')}
                             </>
                         )}
-
-
                     </div>
                 </div>
             </div>
-        </aside>
+        </aside >
     );
 };
 

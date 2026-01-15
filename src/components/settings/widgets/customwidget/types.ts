@@ -53,7 +53,7 @@ export interface WidgetBlock {
     id: string;
     type: BlockType;
     layout?: BlockLayout;
-    content: any; // 텍스트, 리스트 아이템, 수식 등
+    content: any | { decorations?: WidgetDecoration[]; children?: WidgetBlock[] }; // 텍스트, 리스트 아이템, 수식 등 + decorations for CustomBlock
     styles: WidgetBlockStyle;
     action?: string; // 버튼 등 액션
 }
@@ -78,4 +78,39 @@ export type ContainerLocation = {
     blockId: string;
     colIndex: number;
 } | null;
+
+export type DecorationType = 'circle' | 'square' | 'blob' | 'star';
+
+export interface WidgetDecoration {
+    id: string;
+    type: DecorationType;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    color: string;
+    opacity: number;
+    rotation?: number;
+    zIndex?: number;
+    points?: { x: number; y: number }[]; // [NEW] For organic blobs (normalized 0-100 relative to box)
+    imageUrl?: string; // [NEW] For image decorations
+
+    // [NEW] Video Support
+    mediaType?: 'image' | 'video'; // Default to 'image' if undefined
+    videoUrl?: string;
+    videoStartTime?: number; // seconds
+    videoEndTime?: number;   // seconds
+    animation?: {
+        type: 'pulse' | 'spin' | 'bounce' | 'float' | 'wiggle';
+        duration?: number; // seconds
+        delay?: number;    // seconds
+    };
+}
+
+export interface WidgetScene {
+    id: string;
+    decorations: WidgetDecoration[];
+    blocks: WidgetBlock[]; // [NEW] Blocks are now scene-specific
+    duration: number; // Duration in seconds
+}
 

@@ -14,10 +14,11 @@ interface SortableBlockItemProps {
     activeContainer: ContainerLocation;
     onSetActiveContainer: (loc: ContainerLocation) => void;
     onUpdateBlock: (id: string, updates: any) => void;
+    onOpenSettings?: () => void; // 🌟 [NEW]
 }
 
 const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
-    const { block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer, onUpdateBlock } = props;
+    const { block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer, onUpdateBlock, onOpenSettings } = props;
 
     const {
         attributes,
@@ -120,6 +121,11 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                     onClick={(e) => {
                         e.stopPropagation();
                         onSelectBlock(block.id);
+                    }}
+                    onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        // 🌟 더블 클릭 시 설정 열기
+                        if (onOpenSettings) onOpenSettings();
                     }}
                     className={`
                         relative group rounded-lg transition-all border-2 h-full overflow-hidden

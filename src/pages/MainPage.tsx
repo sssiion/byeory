@@ -231,7 +231,7 @@ const MainPage: React.FC = () => {
                             </div>
                             <div className="flex-1 min-h-0 flex flex-col relative">
                                 <WidgetGallery
-                                    onSelect={(item) => addWidget(item, setIsCatalogOpen)}
+                                    onSelect={(item, props) => addWidget(item, setIsCatalogOpen, props)}
                                     onMultiSelect={(items) => addWidgets(items, setIsCatalogOpen)}
                                     onEdit={(data) => {
                                         setEditingWidgetData(data);

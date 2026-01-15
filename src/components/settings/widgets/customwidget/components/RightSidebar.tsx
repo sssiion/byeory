@@ -10,18 +10,349 @@ import {
     ThumbsUp,
     Heart,
     Zap,
-    Star, Search, Film, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight
+    Star, Search, Film, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight,
+    Sparkles // [NEW] Added for decoration header
 } from 'lucide-react';
-import type { WidgetBlock } from '../types';
+import type { WidgetBlock, WidgetDecoration } from '../types';
 import { getLabelByType } from '../utils';
 
 interface Props {
     selectedBlock: WidgetBlock | undefined;
     onUpdateBlock: (id: string, updates: any) => void;
+    onDeleteBlock?: (id: string) => void;
     onClose?: () => void;
+    // Debcoration Props
+    selectedDecoration?: WidgetDecoration;
+    onUpdateDecoration?: (id: string, updates: Partial<WidgetDecoration>) => void;
+    onDeleteDecoration?: (id: string) => void;
+    type?: string;
 }
 
-const RightSidebar: React.FC<Props> = ({ selectedBlock, onUpdateBlock, onClose }) => {
+const RightSidebar: React.FC<Props> = ({
+    selectedBlock, onUpdateBlock, onDeleteBlock, onClose,
+    selectedDecoration, onUpdateDecoration, onDeleteDecoration
+}) => {
+
+    // 🌟 데코레이션 편집 모드
+    if (selectedDecoration && !selectedBlock) {
+        return (
+            <div className="w-80 h-full bg-[var(--bg-card)] border-l border-[var(--border-color)] flex flex-col shadow-xl z-50 overflow-hidden">
+                {/* 헤더 */}
+                <div className="h-14 flex items-center justify-between px-4 border-b border-[var(--border-color)] bg-[var(--bg-card-secondary)]">
+                    <div className="flex items-center gap-2">
+                        <Sparkles size={18} className="text-indigo-500" />
+                        <span className="font-bold text-[var(--text-primary)]">배경 꾸미기</span>
+                    </div>
+                    <button onClick={onClose} className="p-1 hover:bg-black/10 rounded-full dark:hover:bg-white/10 transition-colors">
+                        <XCircle size={20} className="text-[var(--text-secondary)]" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    {/* 0. 🌟 [NEW] 미디어 (이미지 / 동영상) 선택 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">미디어 타입</label>
+                        <div className="flex bg-[var(--bg-primary)] p-1 rounded-lg border border-[var(--border-color)]">
+                            <button
+                                onClick={() => onUpdateDecoration?.(selectedDecoration.id, { mediaType: 'image' })}
+                                className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors
+                                    ${(selectedDecoration.mediaType || 'image') === 'image'
+                                        ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm'
+                                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                    }`}
+                            >
+                                <Search size={12} /> 이미지
+                            </button>
+                            <button
+                                onClick={() => onUpdateDecoration?.(selectedDecoration.id, { mediaType: 'video' })}
+                                className={`flex-1 py-1 text-xs font-bold rounded flex items-center justify-center gap-1 transition-colors
+                                    ${selectedDecoration.mediaType === 'video'
+                                        ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm'
+                                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                    }`}
+                            >
+                                <Film size={12} /> 동영상
+                            </button>
+                        </div>
+
+                        {/* Image Input */}
+                        {(selectedDecoration.mediaType || 'image') === 'image' && (
+                            <div className="space-y-2 mt-2">
+                                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">이미지 주소</label>
+                                <input
+                                    type="text"
+                                    value={selectedDecoration.imageUrl || ''}
+                                    onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { imageUrl: e.target.value })}
+                                    placeholder="이미지 URL 입력..."
+                                    className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs text-[var(--text-primary)]"
+                                />
+                                {selectedDecoration.imageUrl && (
+                                    <div className="w-20 h-20 bg-[var(--bg-primary)] rounded border border-[var(--border-color)] overflow-hidden mx-auto">
+                                        <img src={selectedDecoration.imageUrl} alt="preview" className="w-full h-full object-contain" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Video Input */}
+                        {selectedDecoration.mediaType === 'video' && (
+                            <div className="space-y-2 mt-2">
+                                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">동영상 주소 (mp4/webm)</label>
+                                <input
+                                    type="text"
+                                    value={selectedDecoration.videoUrl || ''}
+                                    onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { videoUrl: e.target.value })}
+                                    placeholder="동영상 URL 입력... (직접 링크)"
+                                    className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs text-[var(--text-primary)]"
+                                />
+                                <div className="flex gap-2">
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-[10px] text-[var(--text-secondary)]">시작 시간 (초)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={selectedDecoration.videoStartTime || 0}
+                                            onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { videoStartTime: parseFloat(e.target.value) })}
+                                            className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs"
+                                        />
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        <label className="text-[10px] text-[var(--text-secondary)]">종료 시간 (초)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={selectedDecoration.videoEndTime || 0}
+                                            onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { videoEndTime: parseFloat(e.target.value) })}
+                                            className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                {selectedDecoration.videoUrl && (
+                                    <div className="w-full h-24 bg-[var(--bg-primary)] rounded border border-[var(--border-color)] overflow-hidden mx-auto relative group">
+                                        {/* Simple Preview */}
+                                        <video
+                                            src={selectedDecoration.videoUrl}
+                                            className="w-full h-full object-cover"
+                                            autoPlay muted loop playsInline
+                                            onTimeUpdate={(e) => {
+                                                const vid = e.currentTarget;
+                                                const start = selectedDecoration.videoStartTime || 0;
+                                                const end = selectedDecoration.videoEndTime || 0;
+                                                if (end > 0 && vid.currentTime >= end) {
+                                                    vid.currentTime = start;
+                                                }
+                                            }}
+                                        />
+                                        <div className="absolute top-1 left-1 bg-black/50 text-white text-[10px] px-1 rounded">Preview</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 1. 색상 선택 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">색상</label>
+                        <div className="flex flex-wrap gap-2">
+                            {['#a5b4fc', '#818cf8', '#6366f1', '#fb7185', '#f472b6', '#2dd4bf', '#34d399', '#fbbf24', '#f87171', '#94a3b8'].map((c) => (
+                                <button
+                                    key={c}
+                                    onClick={() => onUpdateDecoration?.(selectedDecoration.id, { color: c })}
+                                    className={`w-6 h-6 rounded-full border border-gray-300 shadow-sm transition-transform hover:scale-110 ${selectedDecoration.color === c ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
+                                    style={{ backgroundColor: c }}
+                                />
+                            ))}
+                            {/* 🌟 Custom Color Picker */}
+                            <label className="w-6 h-6 rounded-full border border-gray-300 shadow-sm transition-transform hover:scale-110 cursor-pointer flex items-center justify-center bg-white overflow-hidden relative group" title="커스텀 색상 선택">
+                                <div className="absolute inset-0 bg-gradient-to-br from-red-400 via-green-400 to-blue-400 opacity-50 group-hover:opacity-80 transition-opacity" />
+                                <Plus size={14} className="text-gray-700 z-10" />
+                                <input
+                                    type="color"
+                                    value={selectedDecoration.color}
+                                    onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { color: e.target.value })}
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full p-0 border-0"
+                                />
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* 2. 투명도 */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-[var(--text-secondary)]">
+                            <label className="font-bold uppercase">투명도</label>
+                            <span>{Math.round(selectedDecoration.opacity * 100)}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0.1"
+                            max="1"
+                            step="0.1"
+                            value={selectedDecoration.opacity}
+                            onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { opacity: parseFloat(e.target.value) })}
+                            className="w-full accent-indigo-500 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                    </div>
+
+                    {/* 3. 크기 & 회전 */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">크기 (W)</label>
+                            <input
+                                type="number"
+                                value={selectedDecoration.w}
+                                onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { w: Number(e.target.value) })}
+                                className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-sm text-[var(--text-primary)]"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">크기 (H)</label>
+                            <input
+                                type="number"
+                                value={selectedDecoration.h}
+                                onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { h: Number(e.target.value) })}
+                                className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-sm text-[var(--text-primary)]"
+                            />
+                        </div>
+                        <div className="space-y-2 col-span-2">
+                            <div className="flex justify-between text-xs text-[var(--text-secondary)]">
+                                <label className="font-bold uppercase">회전</label>
+                                <span>{selectedDecoration.rotation || 0}°</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="360"
+                                step="15"
+                                value={selectedDecoration.rotation || 0}
+                                onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { rotation: Number(e.target.value) })}
+                                className="w-full accent-indigo-500 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
+                    </div>
+
+                    {/* 4. 위치 (X, Y) */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">X 위치 (%)</label>
+                            <input
+                                type="number"
+                                value={selectedDecoration.x}
+                                onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { x: Number(e.target.value) })}
+                                className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-sm text-[var(--text-primary)]"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">Y 위치 (%)</label>
+                            <input
+                                type="number"
+                                value={selectedDecoration.y}
+                                onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, { y: Number(e.target.value) })}
+                                className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-sm text-[var(--text-primary)]"
+                            />
+                        </div>
+                    </div>
+
+                    {/* 5. 레이어 순서 (Z-Index) */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">레이어 순서</label>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => onUpdateDecoration?.(selectedDecoration.id, { zIndex: (selectedDecoration.zIndex || 0) - 1 })}
+                                className="flex-1 p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-card-hover)] text-xs"
+                            >
+                                뒤로 보내기
+                            </button>
+                            <button
+                                onClick={() => onUpdateDecoration?.(selectedDecoration.id, { zIndex: (selectedDecoration.zIndex || 0) + 1 })}
+                                className="flex-1 p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-card-hover)] text-xs"
+                            >
+                                앞으로 가져오기
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 6. 🌟 [NEW] 애니메이션 설정 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">애니메이션</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {['none', 'spin', 'pulse', 'float', 'wiggle', 'bounce'].map((anim) => (
+                                <button
+                                    key={anim}
+                                    onClick={() => {
+                                        if (anim === 'none') {
+                                            onUpdateDecoration?.(selectedDecoration.id, { animation: undefined });
+                                        } else {
+                                            onUpdateDecoration?.(selectedDecoration.id, {
+                                                animation: {
+                                                    type: anim as any,
+                                                    duration: selectedDecoration.animation?.duration || 3,
+                                                    delay: selectedDecoration.animation?.delay || 0
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    className={`p-2 text-xs rounded border transition-all capitalized ${selectedDecoration.animation?.type === anim || (!selectedDecoration.animation && anim === 'none')
+                                        ? 'bg-indigo-600 text-white border-indigo-500'
+                                        : 'bg-[var(--bg-primary)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-[var(--bg-card-hover)]'
+                                        }`}
+                                >
+                                    {anim === 'none' ? '없음' : anim}
+                                </button>
+                            ))}
+                        </div>
+                        {selectedDecoration.animation && (
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] text-[var(--text-secondary)]">속도 (초)</span>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0.1"
+                                        value={selectedDecoration.animation.duration || 3}
+                                        onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, {
+                                            animation: { ...selectedDecoration.animation!, duration: Number(e.target.value) }
+                                        })}
+                                        className="w-full p-1.5 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[10px] text-[var(--text-secondary)]">지연 (초)</span>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        value={selectedDecoration.animation.delay || 0}
+                                        onChange={(e) => onUpdateDecoration?.(selectedDecoration.id, {
+                                            animation: { ...selectedDecoration.animation!, delay: Number(e.target.value) }
+                                        })}
+                                        className="w-full p-1.5 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer: 삭제 */}
+                <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-card-secondary)]">
+                    <button
+                        onClick={() => {
+                            if (confirm('이 꾸미기 요소를 삭제하시겠습니까?')) {
+                                onDeleteDecoration?.(selectedDecoration.id);
+                                onClose?.();
+                            }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 p-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-bold"
+                    >
+                        <Trash2 size={16} />
+                        삭제하기
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (!selectedBlock) return <EmptyState />;
 
