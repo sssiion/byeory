@@ -9,16 +9,47 @@ interface DailyQuestModalProps {
     onClose: () => void;
 }
 
+import ConfirmationModal from '../common/ConfirmationModal';
+
 const DailyQuestModal: React.FC<DailyQuestModalProps> = ({ isOpen, onClose }) => {
     const { credits, addCredits, dailyQuests, claimQuest, resetTime } = useCredits();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'quests' | 'shop'>('quests');
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: React.ReactNode;
+        type?: 'info' | 'danger' | 'success';
+        onConfirm: () => void;
+        singleButton?: boolean;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+    });
 
     if (!isOpen) return null;
 
-    const handleClaim = (quest: DailyQuest) => {
+    const showAlert = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info') => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: () => setModalConfig(prev => ({ ...prev, isOpen: false })),
+        });
+    };
+
+    const handleClaim = async (quest: DailyQuest) => {
         if (!quest.isCompleted && quest.isClaimable) {
-            claimQuest(quest.id);
+            try {
+                await claimQuest(quest.id);
+                showAlert('보상 수령 완료', `${quest.reward} 크레딧을 받았습니다!`, 'success');
+            } catch (e: any) {
+                showAlert('수령 실패', e.message || '보상을 수령할 수 없습니다.', 'danger');
+            }
         }
     };
 
@@ -180,10 +211,22 @@ const DailyQuestModal: React.FC<DailyQuestModalProps> = ({ isOpen, onClose }) =>
                                             <button
                                                 key={i}
                                                 onClick={() => {
-                                                    if (confirm(`[테스트 결제] 💳\n${item.price}으로 ${item.amount} 크레딧을 충전하시겠습니까?`)) {
-                                                        addCredits(item.amount, 'Quick Charge (Test)');
-                                                        alert(`${item.amount} 크레딧이 충전되었습니다!`);
-                                                    }
+                                                    setModalConfig({
+                                                        isOpen: true,
+                                                        title: '빠른 충전 확인',
+                                                        message: `[테스트 결제] 💳\n${item.price}으로 ${item.amount} 크레딧을 충전하시겠습니까?`,
+                                                        type: 'info',
+                                                        singleButton: false,
+                                                        onConfirm: async () => {
+                                                            try {
+                                                                await addCredits(item.amount);
+                                                                setModalConfig(prev => ({ ...prev, isOpen: false }));
+                                                                showAlert('충전 완료', `${item.amount} 크레딧이 충전되었습니다!`, 'success');
+                                                            } catch (e) {
+                                                                showAlert('충전 실패', '크레딧 충전 중 오류가 발생했습니다.', 'danger');
+                                                            }
+                                                        },
+                                                    });
                                                 }}
                                                 className="relative group p-3 rounded-xl border theme-border bg-[var(--bg-card)] hover:border-primary/50 transition-all flex items-center gap-3 text-left"
                                             >
@@ -203,6 +246,11 @@ const DailyQuestModal: React.FC<DailyQuestModalProps> = ({ isOpen, onClose }) =>
                     )}
                 </div>
             </div>
+
+            <ConfirmationModal
+                {...modalConfig}
+                onCancel={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 };

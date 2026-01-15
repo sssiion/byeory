@@ -18,6 +18,9 @@ import PasswordChangePage from './pages/profile/PasswordChangePage';
 import GetOutPage from './pages/profile/GetOutPage';
 import InitialProfileSetup from './pages/auth/InitialProfileSetup';
 import ChargePage from './pages/payment/ChargePage';
+import PaymentSuccessPage from './pages/payment/PaymentSuccessPage';
+import PaymentCancelPage from './pages/payment/PaymentCancelPage';
+import PaymentFailPage from './pages/payment/PaymentFailPage';
 
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -176,6 +179,9 @@ createRoot(document.getElementById('root')!).render(
                       <Route path="/profile/analysis" element={<AnalysisPage />} />
                       <Route path="/season-greeting" element={<YearPage />} />
                       <Route path="/charge" element={<ChargePage />} />
+                      <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                      <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+                      <Route path="/payment/fail" element={<PaymentFailPage />} />
                     </Route>
                   </Routes>
                 </BrowserRouter>

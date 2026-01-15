@@ -12,8 +12,8 @@ import type { DailyQuest } from '../types/credit';
 interface CreditContextType {
   userId: string | null;
   credits: number;
-  addCredits: (amount: number, reason?: string) => Promise<void>;
-  spendCredits: (amount: number, reason?: string) => boolean;
+  addCredits: (amount: number) => Promise<void>;
+  spendCredits: (amount: number) => boolean;
   dailyQuests: DailyQuest[];
   claimQuest: (questId: string) => void;
   resetTime: string;
@@ -89,7 +89,7 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
       {
         id: "widget_play",
         description: "위젯 상호작용하기",
-        reward: 10,
+        reward: 100,
         isCompleted: false,
         isClaimable: false,
         type: "widget",
@@ -226,7 +226,7 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const addCredits = useCallback(
-    async (amount: number, reason?: string) => {
+    async (amount: number) => {
       const token = localStorage.getItem("accessToken");
       if (!token) return;
       try {
@@ -253,11 +253,11 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const spendCredits = useCallback(
-    (amount: number, reason?: string) => {
+    (amount: number) => {
       if (credits >= amount) {
         setCredits((prev) => prev - amount); // Optimistic update
         // Sync with backend (UserService allows negative addCredits)
-        addCredits(-amount, reason || "Spent credits").catch((e) => {
+        addCredits(-amount).catch((e) => {
           console.error("Failed to sync spent credits", e);
           refreshCredits();
         });
@@ -310,14 +310,14 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
           const error = await response.text();
           console.error("Quest claim failed:", error);
           if (error.includes("Already claimed")) {
-            alert("이미 오늘 받은 보상입니다.");
+            throw new Error("이미 오늘 받은 보상입니다.");
           } else {
-            alert("퀘스트 보상을 받을 수 없습니다. (조건 미달)");
+            throw new Error("퀘스트 보상을 받을 수 없습니다. (조건 미달)");
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Failed to claim quest", e);
-        alert("퀘스트 보상 처리 중 오류가 발생했습니다.");
+        throw e;
       }
     },
     [refreshCredits]

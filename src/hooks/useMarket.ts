@@ -565,7 +565,7 @@ export const useMarket = () => {
             // 4. Inject Discount Credits
             if (discountGrantAmount > 0) {
                 try {
-                    await addCredits(discountGrantAmount, "Pack Completion Discount");
+                    await addCredits(discountGrantAmount);
                 } catch (e) {
                     console.error("Failed to inject discount", e);
                     alert("할인 적용 중 오류가 발생했습니다.");
@@ -606,7 +606,7 @@ export const useMarket = () => {
 
                     if (discountGrantAmount > 0) {
                         try {
-                            await addCredits(-discountGrantAmount, "Rollback Discount");
+                            await addCredits(-discountGrantAmount);
                         } catch (rollbackError) {
 
                         }
@@ -618,7 +618,7 @@ export const useMarket = () => {
                 console.error("Error buying pack", e);
                 // Rollback on network error too
                 if (discountGrantAmount > 0) {
-                    await addCredits(-discountGrantAmount, "Rollback Discount");
+                    await addCredits(-discountGrantAmount);
                 }
                 return false;
             }

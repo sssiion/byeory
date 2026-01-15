@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CreditCard, Wallet, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useCredits } from '../../context/CreditContext';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const ChargePage: React.FC = () => {
     const navigate = useNavigate();
-    const { addCredits, refreshCredits } = useCredits();
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: React.ReactNode;
+        type?: 'info' | 'danger' | 'success';
+        onConfirm: () => void;
+        singleButton?: boolean;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+    });
 
-    React.useEffect(() => {
+    useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
@@ -19,20 +31,54 @@ const ChargePage: React.FC = () => {
         { amount: 50000, price: 50000, bonus: 10000 },
     ];
 
-    const handleCharge = async (option: any) => {
-        if (confirm(`[테스트 결제] 💳\n${option.price.toLocaleString()}원을 결제하고 ${option.amount.toLocaleString()} C (+보너스 ${option.bonus.toLocaleString()} C)를 충전하시겠습니까?`)) {
-            try {
-                // Actual add logic
-                await addCredits(option.amount + option.bonus, 'Credit Charge (Test)');
-                await refreshCredits();
+    const showAlert = (title: string, message: string, type: 'info' | 'danger' | 'success' = 'info') => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            type,
+            singleButton: true,
+            onConfirm: () => setModalConfig(prev => ({ ...prev, isOpen: false })),
+        });
+    };
 
-                alert(`충전 완료! 🎉\n총 ${(option.amount + option.bonus).toLocaleString()} 크레딧이 성공적으로 충전되었습니다.`);
-                navigate(-1);
-            } catch (e) {
-                console.error(e);
-                alert('충전 처리 중 오류가 발생했습니다.');
-            }
+    const handleCharge = async (option: any) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            showAlert('로그인 필요', '크레딧 충전을 위해 로그인이 필요합니다.', 'info');
+            return;
         }
+
+        setModalConfig({
+            isOpen: true,
+            title: '크레딧 충전 확인',
+            message: `${option.price.toLocaleString()}원을 결제하고 ${option.amount.toLocaleString()} C (+보너스 ${option.bonus.toLocaleString()} C)를 충전하시겠습니까?`,
+            type: 'info',
+            singleButton: false,
+            onConfirm: async () => {
+                setModalConfig(prev => ({ ...prev, isOpen: false }));
+                try {
+                    const response = await fetch('http://localhost:8080/api/payment/ready', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ amount: option.amount + option.bonus })
+                    });
+
+                    if (!response.ok) throw new Error('Payment ready failed');
+
+                    const data = await response.json();
+                    localStorage.setItem('kakaopay_tid', data.tid);
+                    window.location.href = data.next_redirect_pc_url;
+
+                } catch (e) {
+                    console.error(e);
+                    showAlert('오류 발생', '결제 준비 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'danger');
+                }
+            },
+        });
     };
 
     return (
@@ -50,12 +96,12 @@ const ChargePage: React.FC = () => {
 
             <main className="max-w-2xl mx-auto p-4 space-y-6 pt-6">
                 {/* Banner */}
-                <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div className="bg-[var(--btn-bg)] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                     <div className="relative z-10">
                         <h2 className="text-2xl font-black mb-2">Credit Charge</h2>
                         <p className="opacity-90">필요한 만큼 크레딧을 충전하고<br />다양한 아이템을 구매해보세요!</p>
                     </div>
-                    <Wallet className="absolute right-4 bottom-[-20px] w-32 h-32 text-white/20 rotate-[-15deg]" />
+                    <Wallet className="absolute right-4 bottom-[-20px] w-32 h-32 text-white/10 rotate-[-15deg]" />
                 </div>
 
                 {/* Options Grid */}
@@ -102,6 +148,11 @@ const ChargePage: React.FC = () => {
                     </p>
                 </div>
             </main>
+
+            <ConfirmationModal
+                {...modalConfig}
+                onCancel={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 };

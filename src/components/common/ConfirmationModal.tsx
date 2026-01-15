@@ -75,10 +75,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             onClick={onConfirm}
                             className={`flex-1 px-4 py-3 rounded-xl font-bold text-white transition-all shadow-md active:scale-95 flex items-center justify-center gap-2
                                 ${type === 'danger'
-                                    ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:shadow-red-500/25'
+                                    ? 'bg-red-500 hover:bg-red-600 shadow-red-500/25'
                                     : type === 'success'
-                                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:shadow-green-500/25'
-                                        : 'bg-gradient-to-r from-[var(--btn-bg)] to-[var(--btn-bg-hover)] hover:shadow-[var(--btn-bg)]/25'
+                                        ? 'bg-green-500 hover:bg-green-600 shadow-green-500/25'
+                                        : 'bg-[var(--btn-bg)] hover:brightness-110 shadow-[var(--btn-bg)]/25'
                                 }`}
                         >
                             {confirmText || '확인'}
