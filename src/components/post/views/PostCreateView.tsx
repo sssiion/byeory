@@ -12,11 +12,65 @@ interface Props {
     handleImagesUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
+import InputModal from '../../common/InputModal'; // ✨ Import InputModal
+
+// ...
+
 const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
     const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
     const canvasRef = React.useRef<HTMLDivElement>(null);
 
+    // ✨ Input Modal State
+    const [templateInputModal, setTemplateInputModal] = React.useState({
+        isOpen: false,
+        defaultValue: ''
+    });
+
+    // ✨ Destructure Editor State & Handlers
+    const {
+        setViewMode,
+        blocks, setBlocks,
+        addFloatingText, addFloatingImage, addSticker,
+        addWidgetSticker: handleAddWidgetSticker, // Alias to match JSX usage
+        isPublic, setIsPublic,
+        rawInput, setRawInput,
+        selectedLayoutId, setSelectedLayoutId,
+        tempImages, setTempImages,
+        fileInputRef,
+        isAiProcessing, handleAiGenerate,
+        currentTags, setTags,
+        applyPaperPreset,
+        myTemplates, applyTemplate,
+        selectedId, selectedIds, selectedType,
+        handleSelect, handleUpdate, handleDelete,
+        handleBlockImageUpload, handleSaveAsTemplate,
+        paperStyles, title, setTitle, titleStyles,
+        handleSave
+    } = editor;
+
+    const checkSoloActivityRestriction = () => {
+        // ✨ 그룹 활동 혼자 쓰기 방지
+        const restrictedTags = ['롤링페이퍼', '교환일기', 'rolling-paper', 'exchange-diary'];
+        const hasRestrictedTag = editor.currentTags.some(tag => restrictedTags.includes(tag));
+        const hasRestrictedTitle = restrictedTags.some(keyword => editor.title.includes(keyword));
+
+        if (hasRestrictedTag || hasRestrictedTitle) {
+            editor.showConfirmModal(
+                '저장 불가',
+                "롤링페이퍼와 교환일기는 친구들과 함께하는 활동입니다.\n[내 앨범 > + 버튼]을 눌러 '모임방'을 만든 뒤 이용해주세요.",
+                'danger',
+                undefined,
+                true
+            );
+            return true; // Restricted
+        }
+        return false;
+    };
+
     const handleConfirmSave = async () => {
+        if (checkSoloActivityRestriction()) return; // ✨ Block if restricted
+
+        // ... (기본 저장 로직 유지)
         const result = await editor.handleSave(); // 실제 저장 로직
         setIsSaveModalOpen(false);
 
@@ -31,13 +85,19 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
         }
     };
 
-    const handleSaveAsTemplateWrapper = async () => {
+    const openTemplateNameModal = () => {
+        setTemplateInputModal({ isOpen: true, defaultValue: '' });
+    };
+
+    const handleSaveAsTemplateFinal = async (name: string) => {
+        // ✨ Logic moved from wrapper
+
         // ✨ Auto-Generate Thumbnail
         if (canvasRef.current) {
             try {
                 const dataUrl = await domToPng(canvasRef.current, {
                     scale: 0.5,
-                    // backgroundColor: '#ffffff', // Removed to allow background images/colors to show
+                    // backgroundColor: '#ffffff', 
                 });
 
                 if (dataUrl) {
@@ -45,54 +105,58 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     const file = new File([blob], `tmpl-${Date.now()}.png`, { type: "image/png" });
                     const url = await uploadImageToSupabase(file);
 
-                    if (url) {
-                        // alert(`Debug: 썸네일 생성 성공!\nURL: ${url}`);
-                    } else {
-                        // alert(`Debug: 썸네일 업로드 실패 (Supabase Error)`);
-                    }
-
-                    editor.handleSaveAsTemplate(url || undefined);
+                    // Pass name first, then thumbnail URL
+                    handleSaveAsTemplate(name, url || undefined);
                 } else {
-                    // alert("Debug: 썸네일 캡처 데이터 없음");
-                    editor.handleSaveAsTemplate();
+                    handleSaveAsTemplate(name);
                 }
             } catch (e: any) {
                 console.warn("Thumbnail capture failed", e);
-                // alert(`Debug Error: ${e?.message}`);
-                editor.handleSaveAsTemplate();
+                handleSaveAsTemplate(name);
             }
         } else {
-            editor.handleSaveAsTemplate();
+            handleSaveAsTemplate(name);
         }
     };
 
     return (
         <div className="flex flex-col xl:flex-row h-auto min-h-[85vh] gap-6 relative">
+            {/* ✨ Input Modal for Template Name */}
+            <InputModal
+                isOpen={templateInputModal.isOpen}
+                onClose={() => setTemplateInputModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={handleSaveAsTemplateFinal}
+                title="템플릿 저장"
+                message="이 디자인을 '나만의 템플릿'으로 저장하시겠습니까?"
+                placeholder="템플릿 이름을 입력해주세요"
+                confirmText="저장하기"
+            />
+
             {/* 메인 캔버스 */}
             {/* 메인 캔버스 */}
             <EditorCanvas
                 ref={canvasRef}
-                title={editor.title} setTitle={editor.setTitle}
-                titleStyles={editor.titleStyles}
+                title={title} setTitle={setTitle}
+                titleStyles={titleStyles}
                 viewMode={'editor'}
-                blocks={editor.blocks} setBlocks={editor.setBlocks}
+                blocks={blocks} setBlocks={setBlocks}
                 stickers={editor.stickers} floatingTexts={editor.floatingTexts}
                 floatingImages={editor.floatingImages}
-                selectedId={editor.selectedId}
-                selectedIds={editor.selectedIds} // ✨ Pass Multi-Select State
-                selectedType={editor.selectedType}
+                selectedId={selectedId}
+                selectedIds={selectedIds} // ✨ Pass Multi-Select State
+                selectedType={selectedType}
                 onSelect={(id, type, isMulti) => { // ✨ Handle Multi-Select
-                    editor.handleSelect(id, type, isMulti);
+                    handleSelect(id, type, isMulti);
                 }}
-                onUpdate={(id, _, changes) => editor.handleUpdate(id, changes)}
+                onUpdate={(id, _, changes) => handleUpdate(id, changes)}
                 onDelete={() => {
-                    if (editor.selectedId) editor.handleDelete(editor.selectedId);
+                    if (selectedId) handleDelete(selectedId);
                 }}
-                onBlockImageUpload={(id, file) => editor.handleBlockImageUpload(file, id)}
+                onBlockImageUpload={(id, file) => handleBlockImageUpload(file, id)}
                 onBackgroundClick={() => {
-                    editor.handleSelect(null, null);
+                    handleSelect(null, null);
                 }}
-                paperStyles={editor.paperStyles}
+                paperStyles={paperStyles}
             />
 
             {/* 오른쪽 사이드바 */}
@@ -100,11 +164,11 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 isSaving={editor.isSaving}
                 onSave={() => {
                     // ✨ Validation: Check Title & Content
-                    if (!editor.title.trim()) {
+                    if (!title.trim()) {
                         editor.showConfirmModal('입력 확인', "제목을 입력해주세요!", 'danger', undefined, true);
                         return;
                     }
-                    const hasContent = editor.blocks.some(b => b.text?.trim() || b.imageUrl || b.imageUrl2) ||
+                    const hasContent = blocks.some(b => b.text?.trim() || b.imageUrl || b.imageUrl2) ||
                         editor.stickers.length > 0 ||
                         editor.floatingTexts.length > 0 ||
                         editor.floatingImages.length > 0;
@@ -117,7 +181,7 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     setIsSaveModalOpen(true);
                 }}
                 onTempSave={async () => {
-                    const result = await editor.handleSave(true);
+                    const result = await handleSave(true);
                     if (result?.message) {
                         editor.showConfirmModal(
                             result.success ? '임시 저장' : '저장 실패',
@@ -128,23 +192,26 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                         );
                     }
                 }}
-                onCancel={() => editor.setViewMode('album')}
-                onAddBlock={() => editor.setBlocks([...editor.blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
-                onAddFloatingText={editor.addFloatingText}
-                onAddSticker={editor.addSticker}
-                onAddFloatingImage={editor.addFloatingImage}
-                onAddWidgetSticker={editor.addWidgetSticker} // ✨ Pass Widget Adder
-                rawInput={editor.rawInput} setRawInput={editor.setRawInput}
-                selectedLayoutId={editor.selectedLayoutId} setSelectedLayoutId={editor.setSelectedLayoutId}
-                tempImages={editor.tempImages} setTempImages={editor.setTempImages}
-                fileInputRef={editor.fileInputRef as React.RefObject<HTMLInputElement>} handleImagesUpload={handleImagesUpload}
-                onAiGenerate={editor.handleAiGenerate} isAiProcessing={editor.isAiProcessing}
-                currentTags={editor.currentTags}
-                onTagsChange={editor.setTags}
-                applyPaperPreset={editor.applyPaperPreset}
-                onSaveAsTemplate={handleSaveAsTemplateWrapper}
-                myTemplates={editor.myTemplates}
-                applyTemplate={editor.applyTemplate}
+                onCancel={() => setViewMode('album')}
+                onAddBlock={() => setBlocks([...blocks, { id: `m-${Date.now()}`, type: 'paragraph', text: '' }])}
+                onAddFloatingText={addFloatingText}
+                onAddSticker={addSticker}
+                onAddFloatingImage={addFloatingImage}
+                onAddWidgetSticker={handleAddWidgetSticker}
+                // ✨ 공개 여부 제어
+                isPublic={isPublic}
+                setIsPublic={setIsPublic}
+                rawInput={rawInput} setRawInput={setRawInput}
+                selectedLayoutId={selectedLayoutId} setSelectedLayoutId={setSelectedLayoutId}
+                tempImages={tempImages} setTempImages={setTempImages}
+                fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>} handleImagesUpload={handleImagesUpload}
+                onAiGenerate={handleAiGenerate} isAiProcessing={isAiProcessing}
+                currentTags={currentTags}
+                onTagsChange={setTags}
+                applyPaperPreset={applyPaperPreset}
+                onSaveAsTemplate={openTemplateNameModal} // ✨ Use Modal Opener
+                myTemplates={myTemplates}
+                applyTemplate={applyTemplate}
             />
 
             {/* ✨ 저장 위치 선택 모달 */}

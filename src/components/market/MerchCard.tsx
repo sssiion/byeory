@@ -1,7 +1,7 @@
-import React from 'react';
 import { Coins, Heart, ShoppingBag, Star } from 'lucide-react';
 import type { MarketItem } from '../../types/market';
 import { useCredits } from '../../context/CreditContext';
+import CustomWidgetPreview from '../settings/widgets/customwidget/components/CustomWidgetPreview'; // ✨ Import Widget Preview
 
 interface MerchCardProps {
     item: MarketItem;
@@ -46,6 +46,19 @@ const MerchCard: React.FC<MerchCardProps> = ({ item, onBuy, onToggleWishlist, is
                         draggable={false}
                         className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-sm select-none"
                     />
+                ) : (item.widgetType === 'custom-block' || item.type === 'custom-block' || (typeof item.widgetType === 'string' && item.widgetType.startsWith('custom-')) || (item.type === 'template_widget' && item.content)) ? (
+                    // ✨ Live Preview (Fallback if no thumbnail)
+                    <div className="w-full h-full flex items-center justify-center p-2">
+                        <div className="w-full h-full transform scale-90 origin-center pointer-events-none select-none">
+                            <CustomWidgetPreview
+                                content={{
+                                    ...item.content,
+                                    decorations: item.decorations || [],
+                                }}
+                                defaultSize={item.defaultSize || '2x2'}
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <div className="text-[var(--text-secondary)] font-medium text-xs">이미지 없음</div>
                 )}

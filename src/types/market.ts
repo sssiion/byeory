@@ -16,4 +16,11 @@ export interface MarketItem {
     isAlreadySelling?: boolean;
     status: string; // Added to match useMarket usage
     isVirtual?: boolean;
+
+    // ✨ Optional fields for Custom Widgets
+    widgetType?: string;
+    content?: any;
+    decorations?: any[];
+    defaultSize?: string;
+    initialTab?: string; // For ItemDetailModal tab state
 }

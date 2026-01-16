@@ -608,6 +608,7 @@ export const createAlbumApi = async (albumData: any) => {
 };
 
 // 모임방 생성 (POST)
+// 모임방 생성 (POST)
 export const createRoomApi = async (roomData: any) => {
   try {
     const response = await fetch(`${API_ROOM_URL}`, {
@@ -615,11 +616,31 @@ export const createRoomApi = async (roomData: any) => {
       headers: getAuthHeaders(),
       body: JSON.stringify(roomData),
     });
-    if (!response.ok) throw new Error("모임방 생성 실패");
+
+    if (!response.ok) {
+      let errorMsg = "모임방 생성에 실패했습니다.";
+      try {
+        const errData = await response.json();
+        if (errData.message) errorMsg = errData.message;
+      } catch (e) {
+        // JSON 파싱 실패 시 텍스트 읽기
+        try {
+          const text = await response.text();
+          if (text && text.length < 100) errorMsg = text;
+        } catch (t) { }
+      }
+
+      // 사용자 요청 반영: 구체적인 권한 안내 메시지 추가 (만약 403 Forbidden 등)
+      if (response.status === 403 || errorMsg.includes("권한")) {
+        throw new Error("방 생성 권한이 없습니다.\n(방 생성은 방장만 가능하거나 제한될 수 있습니다.)");
+      }
+
+      throw new Error(errorMsg);
+    }
     return await response.json();
   } catch (error) {
     console.error(error);
-    return null;
+    throw error; // 에러를 호출부로 전파
   }
 };
 

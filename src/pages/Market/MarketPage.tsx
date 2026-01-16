@@ -114,9 +114,11 @@ const Market: React.FC = () => {
         }
 
         const formattedWidgets = apiWidgets.map(w => ({
+            ...w, // ✨ Spread original widget data (content, styles, decorations, type)
             id: w.id || w._id,
             title: w.name,
             type: 'template_widget',
+            widgetType: w.type, // ✨ Map API 'type' to 'widgetType' for renderer
             description: '사용자가 직접 생성한 커스텀 위젯입니다.',
             price: 0,
             source: 'api'
@@ -262,7 +264,7 @@ const Market: React.FC = () => {
             }
         }
 
-        if (['template_post', 'TEMPLATE_POST'].includes(sellModalItem.type)) {
+        if (['template_post', 'TEMPLATE_POST', 'template_widget', 'custom-block'].includes(sellModalItem.type) || (typeof sellModalItem.type === 'string' && sellModalItem.type.startsWith('custom-'))) {
             const templateId = isEditMode ? sellModalItem.referenceId : sellModalItem.id;
             const candidate = mySellableCandidates.find(c => String(c.id) === String(templateId));
             if (candidate?.thumbnailUrl) {

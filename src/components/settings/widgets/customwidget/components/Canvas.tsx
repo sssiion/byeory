@@ -680,6 +680,9 @@ const Canvas: React.FC<Props> = (props) => {
                     <DndContext
                         sensors={sensors}
                         collisionDetection={pointerWithin}
+                        onDragStart={handleDragStart} // ✨ Connect handleDragStart
+                        onDragEnd={handleDragEndLocal} // ✨ Connect handleDragEndLocal
+                        onDragOver={onDragOver} // ✨ Connect onDragOver prop
                     >
                         {/* 🌟 pointerEvents를 인라인 스타일로 강제 적용하여 클릭 투과 보장 */}
                         <div

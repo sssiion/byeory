@@ -4,6 +4,7 @@ import { useCredits } from '../../context/CreditContext';
 import type { MarketItem } from '../../types/market';
 import { STICKERS } from '../post/constants';
 import ConfirmationModal from '../common/ConfirmationModal';
+import CustomWidgetPreview from '../settings/widgets/customwidget/components/CustomWidgetPreview';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
@@ -278,6 +279,19 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                             draggable={false}
                             className="w-full h-full object-contain drop-shadow-xl select-none"
                         />
+                    ) : (item.widgetType === 'custom-block' || item.type === 'custom-block' || (typeof item.widgetType === 'string' && item.widgetType.startsWith('custom-')) || (item.type === 'template_widget' && item.content)) ? (
+                        // ✨ Live Preview (Fallback if no thumbnail)
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                            <div className="w-full h-full transform scale-150 md:scale-125 origin-center pointer-events-none select-none flex items-center justify-center">
+                                <CustomWidgetPreview
+                                    content={{
+                                        ...item.content,
+                                        decorations: item.decorations || [],
+                                    }}
+                                    defaultSize={item.defaultSize || '2x2'}
+                                />
+                            </div>
+                        </div>
                     ) : (
                         <div className="text-[var(--text-secondary)] flex flex-col items-center gap-4">
                             <ShoppingBag className="w-20 h-20 opacity-20" />

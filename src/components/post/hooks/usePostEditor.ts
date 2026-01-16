@@ -537,30 +537,45 @@ export const usePostEditor = () => {
     };
 
     const handleCreateAlbum = async (name: string, tags: string[], parentId?: string, type: 'album' | 'room' = 'album', roomConfig?: any, coverConfig?: any) => {
-        let res;
-        if (type === 'room') {
-            res = await createRoomApi({
-                name,
-                description: roomConfig?.description,
-                password: roomConfig?.password,
-                coverConfig,
-                tag: tags[0], // ✨ Pass Primary Tag
-                hashtags: tags // ✨ Pass All Tags
-            });
-        } else {
-            res = await createAlbumApi({
-                name,
-                tags,
-                tag: tags[0], // ✨ Pass Primary Tag for Backend
-                hashtags: tags, // ✨ Consistency
-                type,
-                parentId,
-                coverConfig
-            });
-        }
+        try {
+            let res;
+            if (type === 'room') {
+                res = await createRoomApi({
+                    name,
+                    description: roomConfig?.description,
+                    password: roomConfig?.password,
+                    coverConfig,
+                    tag: tags[0], // ✨ Pass Primary Tag
+                    hashtags: tags // ✨ Pass All Tags
+                });
+            } else {
+                res = await createAlbumApi({
+                    name,
+                    tags,
+                    tag: tags[0], // ✨ Pass Primary Tag for Backend
+                    hashtags: tags, // ✨ Consistency
+                    type,
+                    parentId,
+                    coverConfig
+                });
+            }
 
-        if (res) { fetchAlbums(); return res.id; }
-        return null;
+            if (res) {
+                fetchAlbums();
+                return res.id;
+            }
+            return null;
+        } catch (e: any) {
+            console.error(e);
+            showConfirmModal(
+                "생성 실패",
+                e.message || "알 수 없는 오류가 발생했습니다.",
+                "danger",
+                undefined,
+                true
+            );
+            return null;
+        }
     };
 
     const handleUpdateAlbum = async (id: string, data: any) => {

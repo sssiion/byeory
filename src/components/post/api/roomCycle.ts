@@ -69,7 +69,29 @@ export const createCycleApi = async (
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create cycle");
+    let errorMsg = "활동 생성에 실패했습니다.";
+    try {
+      const errData = await response.json();
+      if (errData.message) errorMsg = errData.message;
+    } catch (e) {
+      try {
+        const text = await response.text();
+        if (text && text.length < 200) errorMsg = text;
+      } catch (t) { }
+    }
+
+    // Check for 403, 400 (Bad Request often used for business logic), or permission/owner keywords
+    if (
+      response.status === 403 ||
+      response.status === 400 ||
+      errorMsg.includes("권한") ||
+      errorMsg.includes("Access Denied") ||
+      errorMsg.toLowerCase().includes("owner")
+    ) {
+      throw new Error("방장만 새로운 활동을 시작할 수 있습니다.");
+    }
+
+    throw new Error(errorMsg);
   }
   return await response.json();
 };

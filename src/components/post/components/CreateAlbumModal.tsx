@@ -43,7 +43,7 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
         setPassword(pw);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name.trim()) {
             if (showConfirmModal) {
                 showConfirmModal("입력 확인", "이름을 입력해주세요.", "danger", undefined, true);
@@ -53,19 +53,23 @@ const CreateAlbumModal: React.FC<CreateAlbumModalProps> = ({ isOpen, onClose, on
             return;
         }
 
-        if (mode === 'room') {
-            const roomConfig = {
-                description,
-                password: password || undefined,
-            };
-
-            // Save immediately without showing mock success screen
-            onSave(name, selectedTag || null, null, 'room', roomConfig, coverConfig);
+        try {
+            if (mode === 'room') {
+                const roomConfig = {
+                    description,
+                    password: password || undefined,
+                };
+                // Await the save operation
+                await onSave(name, selectedTag || null, null, 'room', roomConfig, coverConfig);
+            } else {
+                // Standard Album
+                await onSave(name, selectedTag || null, null, 'album', undefined, coverConfig);
+            }
+            // Only close if no error thrown (or handled) and we want to close
             handleClose();
-        } else {
-            // Standard Album
-            onSave(name, selectedTag || null, null, 'album', undefined, coverConfig);
-            handleClose();
+        } catch (e) {
+            // Error handling should be done by onSave (handleCreateAlbum), showing the generic error modal
+            // We just catch here to prevent unhandled rejection if it bubbles up
         }
     };
 

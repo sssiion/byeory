@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { X, Tag, FileText, DollarSign, Image as ImageIcon, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Tag, FileText, DollarSign, Image as ImageIcon } from 'lucide-react';
+import CustomWidgetPreview from '../settings/widgets/customwidget/components/CustomWidgetPreview'; // ✨ Import Widget Preview
 
 interface SellModalProps {
     item: any;
@@ -12,23 +13,9 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
     const [description, setDescription] = useState(item.description || '');
     const [tags, setTags] = useState<string[]>(item.tags || []);
     const [tagInput, setTagInput] = useState('');
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    // ✨ Initialize with thumbnail if available
-    const [previewUrl, setPreviewUrl] = useState<string | null>(item.imageUrl || item.thumbnailUrl || null);
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPreviewUrl(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    // ✨ 썸네일은 읽기 전용 (자동 생성된 것만 표시)
+    const previewUrl = item.imageUrl || item.thumbnailUrl || null;
 
     const handleAddTag = () => {
         if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -54,7 +41,8 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
             alert('유효한 가격을 입력해주세요.');
             return;
         }
-        onSubmit({ price: numPrice, description, tags, imageFile });
+        // ✨ imageFile은 null로 전달 (썸네일은 자동 생성)
+        onSubmit({ price: numPrice, description, tags, imageFile: null });
     };
 
     return (
@@ -74,43 +62,57 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
 
                 {/* Body - Scrollable */}
                 <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
-                    {/* Thumbnail Upload / Display */}
-                    {!['template_post', 'TEMPLATE_POST', 'template_widget', 'TEMPLATE_WIDGET'].includes(item.type) && (
-                        <div>
-                            <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase flex items-center gap-1">
-                                <ImageIcon size={12} /> 썸네일 이미지
-                            </label>
+                    {/* Thumbnail Display - ✨ 읽기 전용 (자동 생성된 썸네일만 표시) */}
+                    <div>
+                        <label className="block text-xs font-bold text-[var(--text-secondary)] mb-2 uppercase flex items-center gap-1">
+                            <ImageIcon size={12} /> 썸네일 미리보기
+                        </label>
 
-                            <div
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full aspect-video bg-[var(--bg-card-secondary)] rounded-xl border border-dashed border-[var(--border-color)] flex flex-col items-center justify-center cursor-pointer hover:border-[var(--btn-bg)] hover:bg-[var(--btn-bg)]/5 transition-all group overflow-hidden relative"
-                            >
-                                {previewUrl ? (
-                                    <img src={previewUrl} alt="Thumbnail" className="w-full h-full object-cover" />
-                                ) : (
-                                    <>
-                                        <Upload className="w-8 h-8 text-[var(--text-secondary)] group-hover:text-[var(--btn-bg)] mb-2 transition-colors" />
-                                        <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--btn-bg)] transition-colors">클릭하여 이미지 업로드</span>
-                                    </>
-                                )}
-                                {/* Overlay for Change */}
-                                {previewUrl && (
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span className="text-white text-xs font-bold flex items-center gap-1">
-                                            <Upload size={12} /> 변경하기
-                                        </span>
+                        <div className="w-full aspect-video bg-[var(--bg-card-secondary)] rounded-xl border border-[var(--border-color)] flex flex-col items-center justify-center overflow-hidden relative">
+                            {previewUrl ? (
+                                <img src={previewUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                            ) : (item.widgetType === 'custom-block' || item.type === 'custom-block' || (item.type === 'template_widget' && item.content)) ? (
+                                // ✨ Live Preview (Fallback if no thumbnail)
+                                <div className="w-full h-full flex items-center justify-center p-4">
+                                    <div className="w-full h-full transform scale-90 origin-center pointer-events-none select-none">
+                                        <CustomWidgetPreview
+                                            content={{
+                                                ...item.content,
+                                                decorations: item.decorations || [],
+                                            }}
+                                            defaultSize={item.defaultSize || '2x2'}
+                                        />
                                     </div>
-                                )}
-                            </div>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImageChange}
-                                accept="image/*"
-                                hidden
-                            />
+                                </div>
+                            ) : item.widgetType ? (
+                                // ✨ 위젯 썸네일 처리
+                                item.widgetType.startsWith('custom-') ? (
+                                    <div className="flex flex-col items-center justify-center text-[var(--btn-bg)]">
+                                        <span className="text-4xl">🧩</span>
+                                        <span className="text-xs font-bold mt-2">Custom Widget</span>
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={`/thumbnails/${item.widgetType}.png`}
+                                        alt={item.label}
+                                        className="w-full h-full object-contain p-4"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.parentElement?.classList.add('flex', 'flex-col', 'items-center', 'justify-center');
+                                        }}
+                                    />
+                                )
+                            ) : (
+                                <div className="text-center">
+                                    <ImageIcon className="w-8 h-8 text-[var(--text-secondary)] mx-auto mb-2" />
+                                    <span className="text-xs font-bold text-[var(--text-secondary)]">자동 생성된 썸네일</span>
+                                </div>
+                            )}
                         </div>
-                    )}
+                        <p className="text-[10px] text-[var(--text-secondary)] mt-2">
+                            * 썸네일은 자동으로 생성됩니다
+                        </p>
+                    </div>
 
                     {/* Price Input */}
                     <div>
@@ -173,11 +175,17 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-card-secondary)] shrink-0">
+                {/* Footer - ✨ 취소 버튼 추가 */}
+                <div className="p-6 border-t border-[var(--border-color)] bg-[var(--bg-card-secondary)] shrink-0 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-3 bg-[var(--bg-card-secondary)] text-[var(--text-secondary)] font-bold rounded-xl hover:bg-black/5 active:scale-95 transition-all border border-[var(--border-color)]"
+                    >
+                        취소
+                    </button>
                     <button
                         onClick={handleSubmit}
-                        className="w-full py-3 bg-[var(--btn-bg)] text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg"
+                        className="flex-1 py-3 bg-[var(--btn-bg)] text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg"
                     >
                         등록하기
                     </button>

@@ -667,6 +667,7 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     isOpen={isCycleModalOpen}
                     onClose={() => setIsCycleModalOpen(false)}
                     roomId={String(albumId).replace('room-', '')}
+                    showConfirmModal={showConfirmModal}
                     onSuccess={() => {
                         loadContents();
                         onRefresh?.();

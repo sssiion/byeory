@@ -59,6 +59,7 @@ export const updateWidget = async (id: string, block: any, name: string) => {
                 content: block.content,
                 styles: block.styles,
                 decorations: block.decorations, // 🌟 저장 시 decorations 포함
+                thumbnailUrl: block.thumbnailUrl, // ✨ 썸네일 URL 추가
             },
             {
                 headers: {
@@ -88,6 +89,7 @@ export const saveWidget = async (block: any, name: string) => {
                 content: block.content,
                 styles: block.styles,
                 decorations: block.decorations, // 🌟 저장 시 decorations 포함
+                thumbnailUrl: block.thumbnailUrl, // ✨ 썸네일 URL 추가
             },
             {
                 headers: {

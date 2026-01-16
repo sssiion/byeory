@@ -38,7 +38,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
     onConfirm: () => void;
     type?: "info" | "danger" | "success";
     singleButton?: boolean;
-  }>({ isOpen: false, title: "", message: "", onConfirm: () => {} });
+  }>({ isOpen: false, title: "", message: "", onConfirm: () => { } });
 
   // ✨ Load Shared Content (API Flow 1)
   React.useEffect(() => {
@@ -102,6 +102,27 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
   };
 
   const handleCompleteTurn = async () => {
+    // ✨ 사용자가 실제로 내용을 작성했는지 검증
+    const hasUserContent = editor.blocks.some(b => {
+      // 잠긴 블록(이전 사용자 작성)이 아니고, 실제 텍스트가 있는지 확인
+      return !b.locked && (b.text?.trim() || b.imageUrl);
+    }) ||
+      editor.stickers.some(s => !s.locked) ||
+      editor.floatingTexts.some(t => !t.locked && t.text?.trim()) ||
+      editor.floatingImages.some(i => !i.locked);
+
+    if (!hasUserContent) {
+      setConfirmation({
+        isOpen: true,
+        title: "내용 없음",
+        message: "작성한 내용이 없습니다.\n내용을 입력한 후 완료해주세요.",
+        type: "danger",
+        singleButton: true,
+        onConfirm: () => setConfirmation((prev) => ({ ...prev, isOpen: false })),
+      });
+      return;
+    }
+
     setConfirmation({
       isOpen: true,
       title: "작성 완료",
@@ -113,7 +134,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
         setIsSubmitting(true);
         try {
           const contentPayload = {
-            title: editor.title,
+            title: editor.title || cycle.title, // ✨ 제목이 비어있으면 활동 제목 사용
             blocks: editor.blocks,
             stickers: editor.stickers,
             floatingTexts: editor.floatingTexts,
@@ -219,13 +240,12 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
           {cycle.members?.map((m) => (
             <div
               key={m.userId}
-              className={`w-3 h-3 rounded-full ${
-                m.isCompleted
-                  ? "bg-indigo-500"
-                  : (m.order ?? m.turnOrder) === cycle.currentTurnOrder
+              className={`w-3 h-3 rounded-full ${m.isCompleted
+                ? "bg-indigo-500"
+                : (m.order ?? m.turnOrder) === cycle.currentTurnOrder
                   ? "bg-yellow-400 animate-bounce"
                   : "bg-gray-200"
-              }`}
+                }`}
             />
           ))}
         </div>
@@ -303,9 +323,9 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                 containerClassName=""
                 showActionButtons={false}
                 isSaving={editor.isSaving}
-                onSave={() => {}} // Disabled in RollingPaper
+                onSave={() => { }} // Disabled in RollingPaper
                 onTempSave={handleTempSave} // ✨ Pass temp save handler
-                onCancel={() => {}} // Disabled
+                onCancel={() => { }} // Disabled
                 onAddBlock={() =>
                   editor.setBlocks([
                     ...editor.blocks,
@@ -315,6 +335,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                 onAddFloatingText={editor.addFloatingText}
                 onAddSticker={editor.addSticker}
                 onAddFloatingImage={editor.addFloatingImage}
+                onAddWidgetSticker={editor.addWidgetSticker}
                 rawInput={editor.rawInput}
                 setRawInput={editor.setRawInput}
                 selectedLayoutId={editor.selectedLayoutId}
@@ -331,7 +352,7 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
                 onTagsChange={editor.setTags}
                 // ✨ Fix: Enable Design & Templates
                 applyPaperPreset={editor.applyPaperPreset}
-                onSaveAsTemplate={editor.handleSaveAsTemplate}
+                onSaveAsTemplate={() => { }} // Disabled for rolling paper
                 myTemplates={editor.myTemplates}
                 applyTemplate={editor.applyTemplate}
               />
@@ -371,21 +392,21 @@ const RollingPaperView: React.FC<Props> = ({ cycle, onPassTurn }) => {
         {completedData ? (
           <EditorCanvas
             title={completedData.title || cycle.title}
-            setTitle={() => {}} // ReadOnly
+            setTitle={() => { }} // ReadOnly
             titleStyles={completedData.titleStyles}
             viewMode={"read"} // Read Only Mode
             blocks={completedData.blocks || []}
-            setBlocks={() => {}}
+            setBlocks={() => { }}
             stickers={completedData.stickers || []}
             floatingTexts={completedData.floatingTexts || []}
             floatingImages={completedData.floatingImages || []}
             selectedId={null}
             selectedType={null}
-            onSelect={() => {}}
-            onUpdate={() => {}}
-            onDelete={() => {}}
-            onBlockImageUpload={() => {}}
-            onBackgroundClick={() => {}}
+            onSelect={() => { }}
+            onUpdate={() => { }}
+            onDelete={() => { }}
+            onBlockImageUpload={() => { }}
+            onBackgroundClick={() => { }}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400">

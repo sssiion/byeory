@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void;
   roomId: string | number;
   onSuccess: () => void;
+  showConfirmModal?: (title: string, message: string, type?: 'info' | 'danger' | 'success', onConfirm?: () => void, singleButton?: boolean) => void;
 }
 
 const NewCycleModal: React.FC<Props> = ({
@@ -15,6 +16,7 @@ const NewCycleModal: React.FC<Props> = ({
   onClose,
   roomId,
   onSuccess,
+  showConfirmModal
 }) => {
   const [title, setTitle] = useState("");
   const [type, setType] = useState<CycleType>("ROLLING_PAPER");
@@ -56,9 +58,16 @@ const NewCycleModal: React.FC<Props> = ({
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) return alert("제목을 입력해주세요.");
-    if (selectedMemberIds.length === 0)
-      return alert("참여할 멤버를 선택해주세요.");
+    if (!title.trim()) {
+      if (showConfirmModal) showConfirmModal("입력 확인", "활동 제목을 입력해주세요.", "danger", undefined, true);
+      else alert("활동 제목을 입력해주세요.");
+      return;
+    }
+    if (selectedMemberIds.length === 0) {
+      if (showConfirmModal) showConfirmModal("입력 확인", "함께할 멤버를 최소 1명 이상 선택해주세요.", "danger", undefined, true);
+      else alert("함께할 멤버를 최소 1명 이상 선택해주세요.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -70,9 +79,11 @@ const NewCycleModal: React.FC<Props> = ({
       });
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("생성에 실패했습니다.");
+      const errMsg = error.message || "활동 생성 중 오류가 발생했습니다.";
+      if (showConfirmModal) showConfirmModal("생성 실패", errMsg, "danger", undefined, true);
+      else alert(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -118,22 +129,20 @@ const NewCycleModal: React.FC<Props> = ({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setType("ROLLING_PAPER")}
-                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                  type === "ROLLING_PAPER"
-                    ? "bg-indigo-50 border-indigo-500 text-indigo-700"
-                    : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]"
-                }`}
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${type === "ROLLING_PAPER"
+                  ? "bg-indigo-50 border-indigo-500 text-indigo-700"
+                  : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]"
+                  }`}
               >
                 <ScrollText size={24} />
                 <span className="font-bold text-sm">롤링페이퍼</span>
               </button>
               <button
                 onClick={() => setType("EXCHANGE_DIARY")}
-                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${
-                  type === "EXCHANGE_DIARY"
-                    ? "bg-indigo-50 border-indigo-500 text-indigo-700"
-                    : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]"
-                }`}
+                className={`p-4 rounded-xl border flex flex-col items-center gap-2 transition-all ${type === "EXCHANGE_DIARY"
+                  ? "bg-indigo-50 border-indigo-500 text-indigo-700"
+                  : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]"
+                  }`}
               >
                 <BookOpen size={24} />
                 <span className="font-bold text-sm">교환일기</span>
@@ -171,28 +180,25 @@ const NewCycleModal: React.FC<Props> = ({
                     <div
                       key={member.userId}
                       onClick={() => handleToggleMember(member.userId)}
-                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                        isSelected
-                          ? "bg-indigo-50 border-indigo-200"
-                          : "bg-[var(--bg-card-secondary)] border-[var(--border-color)] hover:border-indigo-300"
-                      }`}
+                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected
+                        ? "bg-indigo-50 border-indigo-200"
+                        : "bg-[var(--bg-card-secondary)] border-[var(--border-color)] hover:border-indigo-300"
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                            isSelected
-                              ? "bg-indigo-200 text-indigo-700"
-                              : "bg-gray-200 text-gray-500"
-                          }`}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isSelected
+                            ? "bg-indigo-200 text-indigo-700"
+                            : "bg-gray-200 text-gray-500"
+                            }`}
                         >
                           {member.nickname?.substring(0, 2).toUpperCase()}
                         </div>
                         <span
-                          className={`text-sm font-medium ${
-                            isSelected
-                              ? "text-indigo-900"
-                              : "text-[var(--text-primary)]"
-                          }`}
+                          className={`text-sm font-medium ${isSelected
+                            ? "text-indigo-900"
+                            : "text-[var(--text-primary)]"
+                            }`}
                         >
                           {member.nickname}
                         </span>

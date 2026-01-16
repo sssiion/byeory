@@ -23,6 +23,11 @@ export interface MarketItem {
     isBackend?: boolean;
     isVirtual?: boolean;
     purchasedAt?: string;
+    // ✨ Extended properties for Custom Widgets
+    content?: any;
+    decorations?: any[];
+    widgetType?: string;
+    defaultSize?: string;
 }
 
 // 백엔드 응답을 프론트엔드 모델로 매핑하는 헬퍼 함수
@@ -58,7 +63,13 @@ const mapBackendItemToFrontend = (i: any): MarketItem => {
         averageRating: i.averageRating,
         reviewCount: i.reviewCount,
         purchasedAt: i.transactionDate, // 구매 시점에만 존재
-        isBackend: true
+        isBackend: true,
+
+        // ✨ Extended properties for Custom Widgets
+        content: (content as any).content,
+        decorations: (content as any).decorations,
+        widgetType: (content as any).widgetType,
+        defaultSize: (content as any).defaultSize
     };
 };
 
@@ -361,6 +372,19 @@ export const useMarket = () => {
                     tags: item.tags || []
                     // Note: 'description' and 'paperId' are OMITTED as backend DTO throws UnrecognizedPropertyException
                 });
+            } else if (item.type === 'template_widget' || item.type === 'custom-block' || (typeof item.type === 'string' && item.type.startsWith('custom-'))) {
+                // ✨ Custom Widget: Save full content for preview
+                contentJson = JSON.stringify({
+                    description: item.description,
+                    imageUrl: item.imageUrl,
+                    tags: item.tags,
+                    // Widget Data
+                    content: item.content,
+                    decorations: item.decorations,
+                    styles: item.styles,
+                    widgetType: item.widgetType || (item.type === 'template_widget' ? 'custom-block' : item.type),
+                    defaultSize: item.defaultSize
+                });
             } else {
                 // Standard Item (Sticker, Widget, etc.)
                 contentJson = JSON.stringify({
@@ -406,15 +430,52 @@ export const useMarket = () => {
         if (!token) { alert('로그인이 필요합니다.'); return false; }
 
         try {
+            let contentJson = '';
+
+            // Handle Templates specifically (Backend requires PostTemplateDto structure in contentJson)
+            if (['template_post', 'TEMPLATE_POST'].includes(itemData.type)) {
+                contentJson = JSON.stringify({
+                    // Required DTO fields
+                    name: itemData.name || itemData.title, // Template Name
+                    styles: itemData.styles || {},
+                    defaultFontColor: itemData.defaultFontColor || '#000000',
+                    stickers: (itemData.stickers || []).map((s: any) => {
+                        const { widgetType, ...safeSticker } = s;
+                        return safeSticker;
+                    }),
+                    floatingTexts: itemData.floatingTexts || [],
+                    floatingImages: itemData.floatingImages || [],
+                    thumbnailUrl: itemData.imageUrl, // Use the updated imageUrl
+                    tags: itemData.tags || []
+                });
+            } else if (itemData.type === 'template_widget' || itemData.type === 'custom-block' || (typeof itemData.type === 'string' && itemData.type.startsWith('custom-'))) {
+                // ✨ Custom Widget: Save full content for preview
+                contentJson = JSON.stringify({
+                    description: itemData.description,
+                    imageUrl: itemData.imageUrl,
+                    tags: itemData.tags,
+                    // Widget Data
+                    content: itemData.content,
+                    decorations: itemData.decorations,
+                    styles: itemData.styles,
+                    widgetType: itemData.widgetType || (itemData.type === 'template_widget' ? 'custom-block' : itemData.type),
+                    defaultSize: itemData.defaultSize
+                });
+            } else {
+                // Standard Item (Sticker, Widget, etc.)
+                contentJson = JSON.stringify({
+                    description: itemData.description,
+                    imageUrl: itemData.imageUrl,
+                    tags: itemData.tags
+                });
+            }
+
             const body = {
                 name: itemData.title,
                 price: itemData.price,
                 category: itemData.type,
                 description: itemData.description,
-                contentJson: JSON.stringify({
-                    tags: itemData.tags,
-                    imageUrl: itemData.imageUrl || ''
-                })
+                contentJson: contentJson
             };
 
             const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {

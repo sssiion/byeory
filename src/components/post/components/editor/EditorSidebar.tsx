@@ -38,6 +38,8 @@ interface Props {
     containerClassName?: string;
     showActionButtons?: boolean;
     onAddWidgetSticker: (widgetType: string, props?: any) => void; // ✨ New Prop
+    isPublic?: boolean;
+    setIsPublic?: (v: boolean) => void;
 }
 
 import { useWidgetRegistry } from '../../../../components/settings/widgets/useWidgetRegistry'; // ✨ Import Registry
@@ -142,7 +144,8 @@ const EditorSidebar: React.FC<Props> = ({
     tempImages, fileInputRef, handleImagesUpload, onAiGenerate, isAiProcessing,
     currentTags, onTagsChange, applyPaperPreset, onSaveAsTemplate,
     myTemplates = [], applyTemplate, containerClassName = "xl:w-80", showActionButtons = true,
-    onAddWidgetSticker = (type) => console.warn("onAddWidgetSticker missing", type) // ✨ Destructure with default
+    onAddWidgetSticker = (type) => console.warn("onAddWidgetSticker missing", type), // ✨ Destructure with default
+    isPublic = true, setIsPublic // ✨ Destructure
 }) => {
     // ... existing ...
 
@@ -397,11 +400,36 @@ const EditorSidebar: React.FC<Props> = ({
         });
     };
 
+
     return (
         <div className={`w-full ${containerClassName} flex flex-col gap-5 h-full overflow-y-auto py-4 md:py-8 pr-1 pb-10`}>
             {/* 상단 액션 버튼 */}
             {showActionButtons && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
+                    {/* ✨ 커뮤니티 공개 토글 */}
+                    {setIsPublic && (
+                        <div className="flex items-center justify-between px-1">
+                            <label className="text-sm font-bold text-[var(--text-secondary)] flex items-center gap-1.5 cursor-pointer select-none">
+                                <span className="text-lg">{isPublic ? '🌐' : '🔒'}</span>
+                                {isPublic ? '커뮤니티 공개' : '나만 보기'}
+                            </label>
+                            <button
+                                onClick={() => setIsPublic(!isPublic)}
+                                className={`
+                                    relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                                    ${isPublic ? 'bg-indigo-600' : 'bg-gray-300'}
+                                `}
+                            >
+                                <span
+                                    className={`
+                                        absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 shadow-sm
+                                        ${isPublic ? 'translate-x-5' : 'translate-x-0'}
+                                    `}
+                                />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Row 1: Cancel & Complete (Taller, 5:5) */}
                     <div className="flex gap-2 w-full">
                         <button

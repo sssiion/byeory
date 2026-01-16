@@ -10,6 +10,8 @@ import RightSidebar from './components/RightSidebar';
 import Canvas from './components/Canvas';
 import type { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
 import { saveWidget, updateWidget, deleteWidget } from "./widgetApi.ts";
+import { domToPng } from 'modern-screenshot'; // ✨
+import { uploadImageToSupabase } from '../../../post/api/index.ts'; // ✨
 
 interface Props {
     onExit: () => void;
@@ -398,17 +400,44 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         if (!name) return;
 
         try {
+            // ✨ 썸네일 자동 생성 및 업로드
+            let thumbnailUrl: string | undefined;
+            const canvasElement = document.getElementById('widget-canvas-container'); // Canvas 컴포넌트에 ID 부여 필요
+            if (canvasElement) {
+                try {
+                    const dataUrl = await domToPng(canvasElement, {
+                        scale: 2,
+                        backgroundColor: '#ffffff', // 배경색 보장
+                    });
+                    const blob = await (await fetch(dataUrl)).blob();
+                    const file = new File([blob], `thumb-${Date.now()}.png`, { type: "image/png" });
+
+                    // Post API의 uploadImageToSupabase 재사용 (import 필요)
+                    const uploadedUrl = await uploadImageToSupabase(file);
+                    thumbnailUrl = uploadedUrl || undefined;
+                } catch (imgError) {
+                    console.warn("썸네일 생성 실패:", imgError);
+                    // 썸네일 실패해도 저장은 진행
+                }
+            }
+
             // DB ID 호환성 처리 (_id vs id)
             const targetId = initialData?.id || initialData?._id;
             let result;
 
             if (targetId) {
                 // 수정
-                result = await updateWidget(targetId, blockToSave, name);
+                result = await updateWidget(targetId, {
+                    ...blockToSave,
+                    thumbnailUrl // ✨ 썸네일 URL 추가
+                }, name);
                 alert(`'${name}' 위젯이 업데이트되었습니다! ☁️`);
             } else {
                 // 신규 저장
-                result = await saveWidget(blockToSave, name);
+                result = await saveWidget({
+                    ...blockToSave,
+                    thumbnailUrl // ✨ 썸네일 URL 추가
+                }, name);
                 alert(`'${name}' 위젯이 서버에 저장되었습니다! ☁️`);
             }
 
@@ -445,8 +474,6 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
     const [activeTab, setActiveTab] = useState<Category>('text'); // LeftSidebar에 필요한 상태
     const handleRemoveBlock = removeBlock; // Canvas에 필요한 함수
     const handleUpdateBlock = updateBlock; // Canvas, RightSidebar에 필요한 함수
-    const handleDragEnd = handleDndKitDragEnd; // Canvas에 필요한 함수
-    const handleDragOver = handleDndKitDragOver; // Canvas에 필요한 함수
 
 
     return (

@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getMyWidgets, deleteWidget } from './customwidget/widgetApi.ts'; // Import API
 import { WIDGET_COMPONENT_MAP } from "./componentMap.ts"; // Import Component Map
 import CustomWidgetPreview from "./customwidget/components/CustomWidgetPreview"; // Import Preview Component
+import { searchWidget } from '../../../utils/searchUtils'; // ✨ Import search utility
 
 // MainPage에서 넘겨주는 props 이름(onSelect, onEdit)과 일치시킵니다.
 interface WidgetGalleryProps {
@@ -113,13 +114,9 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
         if (onMultiSelect) {
             onMultiSelect(selectedWidgets);
         } else {
-            // Fallback for custom widgets: pass extra props if supported
+            // Fallback: onSelect는 widgetType만 받음
             selectedWidgets.forEach(widget => {
-                // 🌟 [수정] onSelect가 (type, props)를 받을 수 있다고 가정하거나,
-                // 커스텀 위젯의 경우 별도 처리 필요.
-                // 만약 onSelect가 string만 받는다면 커스텀 위젯 정보가 유실됨.
-                // 일단 defaultProps를 두 번째 인자로 넘겨봄 (수신 측 확인 필요)
-                onSelect(widget.widgetType, widget.defaultProps);
+                onSelect(widget.widgetType);
             });
         }
     };
@@ -138,14 +135,8 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
         ...customWidgets
     ];
 
-    // 검색어 필터링
-    const widgets = allWidgets.filter(widget => {
-        const term = searchTerm.toLowerCase();
-        return (
-            widget.label.toLowerCase().includes(term) ||
-            (widget.description && widget.description.toLowerCase().includes(term))
-        );
-    });
+    // ✨ 고급 검색 적용
+    const widgets = allWidgets.filter(widget => searchWidget(searchTerm, widget));
 
     // 카테고리 순서 정의
     const CATEGORY_ORDER = [

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
+import CustomWidgetPreview from '../../settings/widgets/customwidget/components/CustomWidgetPreview'; // ✨ Import Widget Preview
 
 interface MarketMyShopViewProps {
     sellingItems: any[];
@@ -63,32 +64,61 @@ const MarketMyShopView: React.FC<MarketMyShopViewProps> = ({
                                     'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-900';
                                 const statusText = isCanceled ? '판매 중지됨' : '판매 중';
 
+                                // ✨ Enrich item with content from mySellableCandidates (if available)
+                                // This fixes missing content for existing market items
+                                const sourceCandidate = mySellableCandidates.find(c => String(c.id) === String(item.referenceId));
+                                const displayItem = sourceCandidate ? {
+                                    ...item,
+                                    content: item.content || sourceCandidate.content,
+                                    decorations: item.decorations || sourceCandidate.decorations,
+                                    widgetType: item.widgetType || sourceCandidate.widgetType || sourceCandidate.type,
+                                    // Ensure we preserve essential market data while taking content from source
+                                } : item;
+
                                 return (
-                                    <div key={`${item.id}-${idx}`} className={`bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 relative transition-colors ${!isCanceled ? 'hover:border-green-500/50' : ''} ${isCanceled ? 'opacity-60' : ''}`}>
+                                    <div key={`${displayItem.id}-${idx}`} className={`bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] p-4 flex flex-col gap-3 relative transition-colors ${!isCanceled ? 'hover:border-green-500/50' : ''} ${isCanceled ? 'opacity-60' : ''}`}>
                                         <div className={`absolute top-3 right-3 px-2 py-1 text-[10px] font-bold rounded-full border ${badgeColor}`}>
                                             {statusText}
                                         </div>
                                         <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider overflow-hidden">
-                                            {(item.imageUrl || item.thumbnailUrl) ? (
-                                                <img src={item.imageUrl || item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+                                            {(displayItem.imageUrl || displayItem.thumbnailUrl) ? (
+                                                <img src={displayItem.imageUrl || displayItem.thumbnailUrl} alt={displayItem.title} className="w-full h-full object-cover" />
                                             ) : (
-                                                (item.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
-                                                    (item.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
-                                                        (item.type as string).toLowerCase() === 'sticker' ? '스티커' :
-                                                            (item.type as string).toLowerCase() === 'package' ? '패키지' :
-                                                                (item.type as string).toLowerCase() === 'start_pack' ? '패키지' :
-                                                                    item.type
+                                                displayItem.widgetType === 'custom-block' ||
+                                                displayItem.type === 'custom-block' ||
+                                                (typeof displayItem.widgetType === 'string' && displayItem.widgetType.startsWith('custom-')) ||
+                                                (displayItem.type === 'template_widget' && displayItem.content) // ✨ Check for template_widget with content
+                                            ) ? (
+                                                // ✨ Live Preview (Fallback if no thumbnail)
+                                                <div className="w-full h-full flex items-center justify-center p-2">
+                                                    <div className="w-full h-full transform scale-90 origin-center pointer-events-none select-none">
+                                                        <CustomWidgetPreview
+                                                            content={{
+                                                                ...displayItem.content,
+                                                                decorations: displayItem.decorations || [],
+                                                            }}
+                                                            defaultSize={displayItem.defaultSize || '2x2'}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                (displayItem.type as string).toLowerCase() === 'template_widget' ? '위젯 템플릿' :
+                                                    (displayItem.type as string).toLowerCase() === 'template_post' ? '게시물 템플릿' :
+                                                        (displayItem.type as string).toLowerCase() === 'sticker' ? '스티커' :
+                                                            (displayItem.type as string).toLowerCase() === 'package' ? '패키지' :
+                                                                (displayItem.type as string).toLowerCase() === 'start_pack' ? '패키지' :
+                                                                    displayItem.type
                                             )}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-[var(--text-primary)]">{item.title}</h3>
-                                            <p className="text-xs text-[var(--text-secondary)] font-mono mt-1">{item.price} C</p>
+                                            <h3 className="font-bold text-[var(--text-primary)]">{displayItem.title}</h3>
+                                            <p className="text-xs text-[var(--text-secondary)] font-mono mt-1">{displayItem.price} C</p>
                                         </div>
                                         <div className="flex gap-2 w-full mt-auto">
                                             <button
                                                 onClick={() => {
-                                                    if (confirm(`'${item.title}' 판매를 중지하시겠습니까?`)) {
-                                                        cancelItem(item.id);
+                                                    if (confirm(`'${displayItem.title}' 판매를 중지하시겠습니까?`)) {
+                                                        cancelItem(displayItem.id);
                                                     }
                                                 }}
                                                 disabled={isCanceled}
@@ -102,7 +132,7 @@ const MarketMyShopView: React.FC<MarketMyShopViewProps> = ({
                                             </button>
                                             {!isCanceled && (
                                                 <button
-                                                    onClick={() => handleSell(item, true)}
+                                                    onClick={() => handleSell(displayItem, true)}
                                                     className="flex-1 py-2 rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card-secondary)] text-xs font-bold transition-colors"
                                                 >
                                                     수정
@@ -139,6 +169,24 @@ const MarketMyShopView: React.FC<MarketMyShopViewProps> = ({
                                 <div className="aspect-video bg-[var(--bg-card-secondary)] rounded-xl flex items-center justify-center text-[var(--text-secondary)] font-bold text-xs uppercase tracking-wider overflow-hidden">
                                     {(item.imageUrl || item.thumbnailUrl) ? (
                                         <img src={item.imageUrl || item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        item.widgetType === 'custom-block' ||
+                                        item.type === 'custom-block' ||
+                                        (typeof item.widgetType === 'string' && item.widgetType?.startsWith('custom-')) ||
+                                        (item.type === 'template_widget' && item.content) // ✨ Check for template_widget with content
+                                    ) ? (
+                                        // ✨ Live Preview (Fallback if no thumbnail)
+                                        <div className="w-full h-full flex items-center justify-center p-2">
+                                            <div className="w-full h-full transform scale-90 origin-center pointer-events-none select-none">
+                                                <CustomWidgetPreview
+                                                    content={{
+                                                        ...item.content,
+                                                        decorations: item.decorations || [],
+                                                    }}
+                                                    defaultSize={item.defaultSize || '2x2'}
+                                                />
+                                            </div>
+                                        </div>
                                     ) : (
                                         item.type === 'template_widget' ? '위젯 템플릿' :
                                             item.type === 'sticker' ? '스티커' :

@@ -177,12 +177,16 @@ const Post: React.FC = () => {
                 onClose={() => setIsAlbumModalOpen(false)}
                 albums={editor.customAlbums}
                 showConfirmModal={editor.showConfirmModal}
-                onSave={(name, tag, parentId, type, roomConfig, coverConfig) => {
+                onSave={async (name, tag, parentId, type, roomConfig, coverConfig) => {
                     const tags = tag ? [tag] : [];
                     const pId = parentId || undefined;
 
-                    editor.handleCreateAlbum(name, tags, pId, type, roomConfig, coverConfig);
-                    setIsAlbumModalOpen(false);
+                    // ✨ Return the promise so modal can await it
+                    const result = await editor.handleCreateAlbum(name, tags, pId, type, roomConfig, coverConfig);
+
+                    if (result) {
+                        setIsAlbumModalOpen(false);
+                    }
                 }}
             />
 
