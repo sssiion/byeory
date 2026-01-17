@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api/widgets';
-const TEMP_USER_ID = '1'; // 컨트롤러가 요구하므로 유지 (나중엔 이것도 토큰에서 추출 가능)
+
 
 // 🌟 토큰 가져오는 함수 (로그인 시 저장한 키 이름이 'accessToken'이라고 가정)
 const getToken = () => localStorage.getItem('accessToken');
@@ -15,8 +15,7 @@ export const getMyWidgets = async () => {
                 // 🌟 1. JWT 토큰 추가 (Bearer 방식)
                 'Authorization': `Bearer ${token}`,
 
-                // 🌟 2. 컨트롤러 로직 유지를 위한 User ID (이전과 동일)
-                'X-User-Id': TEMP_USER_ID,
+
 
                 'Content-Type': 'application/json',
             },
@@ -38,7 +37,7 @@ export const deleteWidget = async (id: string) => {
         await axios.delete(`${API_BASE_URL}/${id}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'X-User-Id': TEMP_USER_ID,
+
             }
         });
         return true;
@@ -64,7 +63,7 @@ export const updateWidget = async (id: string, block: any, name: string) => {
             {
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'X-User-Id': TEMP_USER_ID,
+
                     'Content-Type': 'application/json',
                 }
             }
@@ -94,7 +93,7 @@ export const saveWidget = async (block: any, name: string) => {
             {
                 headers: {
                     'Authorization': `Bearer ${token}`, // 🌟 토큰 추가
-                    'X-User-Id': TEMP_USER_ID,
+
                     'Content-Type': 'application/json',
                 }
             }
