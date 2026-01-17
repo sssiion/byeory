@@ -11,7 +11,7 @@ import { searchWidget } from '../../../utils/searchUtils'; // ✨ Import search 
 
 // MainPage에서 넘겨주는 props 이름(onSelect, onEdit)과 일치시킵니다.
 interface WidgetGalleryProps {
-    onSelect: (widgetType: string) => void; // 문자열(ID)을 넘기도록 수정
+    onSelect: (widget: WidgetConfig, props?: any) => void;
     onMultiSelect?: (items: WidgetConfig[]) => void; // 다중 선택 처리를 위한 prop 추가
     onEdit?: (data: WidgetConfig) => void; // MainPage에서 onEdit도 넘겨주고 있으므로 추가
     onCreate?: () => void; // 커스텀 위젯 만들기 버튼 동작
@@ -116,7 +116,7 @@ export const WidgetGallery = ({ onSelect, onMultiSelect, onEdit, onCreate }: Wid
         } else {
             // Fallback: onSelect는 widgetType만 받음
             selectedWidgets.forEach(widget => {
-                onSelect(widget.widgetType);
+                onSelect(widget);
             });
         }
     };

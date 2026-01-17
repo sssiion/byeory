@@ -25,7 +25,7 @@ const DecorationLayer: React.FC<DecorationLayerProps> = ({ decorations = [] }) =
             </style>
             {decorations.map((deco) => {
                 // 🌟 Data recovery for corrupted 'type'
-                let safeType = deco.type;
+                let safeType: string = deco.type;
                 if (typeof safeType === 'object' && (safeType as any).type) {
                     safeType = (safeType as any).type;
                 }

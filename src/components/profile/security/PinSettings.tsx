@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, ChevronDown, Shield, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
-import PinInputModal from '../../security/PinInputModal';
+import PinInputModal from '../../Security/PinInputModal';
 
 interface PinSettingsProps {
     confirmModal: (config: {

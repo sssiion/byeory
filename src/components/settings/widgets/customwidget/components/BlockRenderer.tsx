@@ -571,7 +571,7 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
     }
 
     // 🌟 [NEW] Composite Widget (Custom Block) Rendering
-    if (type === 'custom-block') {
+    if ((type as string) === 'custom-block') {
         const children = (content.children || []) as WidgetBlock[];
         // 🌟 [Fix] decorations 데이터 가져오기
         const decorations = content.decorations || [];
