@@ -250,6 +250,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                             />
                         ) : (
                             <WidgetComponent
+                                {...(registryItem?.defaultProps || {})} // 🌟 Merge defaults first
                                 {...(widget.props || {})}
                                 gridSize={{ w, h }}
                                 updateLayout={(layout: Partial<WidgetInstance['layout']>) => updateLayout(widget.id, layout)}
