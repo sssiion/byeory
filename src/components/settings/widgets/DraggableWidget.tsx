@@ -210,6 +210,42 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                 onSetActiveContainer={() => { }}
                                 onUpdateBlock={(id, updates) => {
                                     if (onUpdateWidget) {
+                                        // 🌟 [Fix] Handle nested block updates for custom-block
+                                        if (widget.type === 'custom-block' || (widget.props?.content?.children)) {
+                                            const currentContent = widget.props?.content || {};
+                                            const children = currentContent.children || [];
+
+                                            // Check if the update is for a child block
+                                            const childIndex = children.findIndex((c: any) => c.id === id);
+
+                                            if (childIndex !== -1) {
+                                                // Create a deep copy of children to avoid mutating state directly
+                                                const newChildren = [...children];
+                                                newChildren[childIndex] = {
+                                                    ...newChildren[childIndex],
+                                                    ...updates,
+                                                    content: {
+                                                        ...newChildren[childIndex].content,
+                                                        ...(updates.content || {})
+                                                    },
+                                                    styles: {
+                                                        ...newChildren[childIndex].styles,
+                                                        ...(updates.styles || {})
+                                                    }
+                                                };
+
+                                                // Update the parent widget with new children
+                                                onUpdateWidget(widget.id, {
+                                                    content: {
+                                                        ...currentContent,
+                                                        children: newChildren
+                                                    }
+                                                });
+                                                return;
+                                            }
+                                        }
+
+                                        // Fallback: Update root widget directly (for non-nested or root updates)
                                         onUpdateWidget(widget.id, updates);
                                     }
                                 }}
