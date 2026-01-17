@@ -37,13 +37,6 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
         try {
             const response = await getCommunities(page, 12, currentUserId, selectedTag || undefined);
 
-            console.log("Values from fetchPosts:", {
-                page,
-                last: response.last,
-                empty: response.empty,
-                contentLen: response.content?.length
-            });
-
             // ✨ Filter out private/draft posts
             const publicPosts = response.content.filter(p => p.isPublic);
 

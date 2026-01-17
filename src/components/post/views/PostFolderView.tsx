@@ -88,6 +88,14 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                 // 1. Determine Type from CustomAlbums
                 // albumId is potentially prefixed (e.g., 'room-1')
                 const targetAlbum = customAlbums.find(a => String(a.id) === String(albumId));
+                const isSpecial = albumId === '__all__' || albumId === '__others__';
+
+                // ✨ Fix: Prevent 400 Error by skipping fetch if album not found in loaded list
+                if (!isSpecial && !targetAlbum) {
+                    setIsLoading(false);
+                    return;
+                }
+
                 const type = targetAlbum?.type || 'album';
 
                 // ✨ Fix: Strip prefix strictly for API calls
