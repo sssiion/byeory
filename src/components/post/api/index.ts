@@ -373,6 +373,24 @@ export const deletePostApi = async (id: string | number) => {
   }
 };
 
+// 템플릿 복원 (PUT)
+export const restorePostTemplateApi = async (templateId: number) => {
+  try {
+    const response = await fetch(`${API_TEMPLATE_URL}/${templateId}/restore`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`템플릿 복원 실패: ${response.status} ${errorText}`);
+    }
+    return true;
+  } catch (error) {
+    console.error("템플릿 복원 API 오류:", error);
+    throw error;
+  }
+};
+
 // 앨범 목록 조회 (GET)
 export const fetchAlbumsFromApi = async () => {
   try {
@@ -1082,9 +1100,13 @@ export const fetchPostTemplateById = async (templateId: string | number) => {
 };
 
 // 내 템플릿 목록 조회 (GET)
-export const fetchMyPostTemplatesApi = async () => {
+export const fetchMyPostTemplatesApi = async (showHidden?: boolean) => {
   try {
-    const response = await fetch(`${API_TEMPLATE_URL}/my`, {
+    let url = `${API_TEMPLATE_URL}/my`;
+    if (showHidden) {
+      url += `?showHidden=${showHidden}`;
+    }
+    const response = await fetch(url, {
       headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error("템플릿 목록 불러오기 실패");

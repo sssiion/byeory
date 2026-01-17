@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, createRoomApi, updateAlbumApi, deleteAlbumApi, createPostTemplateApi, fetchMyPostTemplatesApi } from '../api';
+import { supabase, uploadImageToSupabase, generateBlogContent, savePostToApi, fetchPostsFromApi, deletePostApi, fetchAlbumsFromApi, fetchRoomsFromApi, createAlbumApi, createRoomApi, updateAlbumApi, deleteAlbumApi, createPostTemplateApi, fetchMyPostTemplatesApi, deletePostTemplateApi, restorePostTemplateApi } from '../api';
 import type { Block, PostData, Sticker, FloatingText, FloatingImage, ViewMode, CustomAlbum } from '../types';
 import { useCredits } from '../../../context/CreditContext'; // Import Credit Context
 
@@ -58,6 +58,7 @@ export const usePostEditor = () => {
     // ... Albums & Templates
     const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>([]);
     const [myTemplates, setMyTemplates] = useState<any[]>([]);
+    const [showHiddenTemplates, setShowHiddenTemplates] = useState(false);
 
     const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
     const [isFavorite, setIsFavorite] = useState(false);
@@ -149,9 +150,16 @@ export const usePostEditor = () => {
     };
 
     const fetchMyTemplates = async () => {
-        const templates = await fetchMyPostTemplatesApi();
+        const templates = await fetchMyPostTemplatesApi(showHiddenTemplates);
         setMyTemplates(templates);
     };
+
+    // Refetch when toggle changes
+    useEffect(() => {
+        if (supabase) {
+            fetchMyTemplates();
+        }
+    }, [showHiddenTemplates]);
 
     // Helper: Get Max Z-Index
     const getMaxZ = () => {
@@ -366,6 +374,49 @@ export const usePostEditor = () => {
             fetchMyTemplates(); // Refresh List
         } else {
             showConfirmModal("저장 실패", "템플릿 저장에 실패했습니다.", "danger", undefined, true);
+        }
+    };
+
+    // ✨ Delete Template
+    const handleDeleteTemplate = async (templateId: number) => {
+        showConfirmModal(
+            "템플릿 삭제",
+            "정말 이 템플릿을 삭제하시겠습니까?",
+            "danger",
+            async () => {
+                // Close confirm modal immediately to prevent stacking or lag
+                closeConfirmModal();
+
+                try {
+                    const success = await deletePostTemplateApi(templateId);
+                    if (success) {
+                        // alert("템플릿이 삭제되었습니다."); // Simple feedback or optional
+                        await fetchMyTemplates(); // Refresh List
+                    } else {
+                        // Re-open modal for error, or alert
+                        alert("삭제 실패: 권한이 없거나 오류가 발생했습니다.");
+                    }
+                } catch (e) {
+                    console.error("Delete template error:", e);
+                }
+            }
+        );
+    };
+
+    // ✨ Restore Template
+    // ✨ Restore Template
+    const handleRestoreTemplate = async (templateId: number) => {
+        try {
+            const success = await restorePostTemplateApi(templateId);
+            if (success) {
+                showConfirmModal("복구 완료", "템플릿이 성공적으로 복구되었습니다! ✨", "success", undefined, true);
+                setShowHiddenTemplates(false); // Go back to active list to show the restored item
+            } else {
+                showConfirmModal("복구 실패", "템플릿 복원에 실패했습니다.", "danger", undefined, true);
+            }
+        } catch (e) {
+            console.error("Restore template error:", e);
+            showConfirmModal("오류", "복구 중 오류가 발생했습니다.", "danger", undefined, true);
         }
     };
 
@@ -741,10 +792,11 @@ export const usePostEditor = () => {
         refreshPosts: fetchPosts,
         setStickers, setFloatingTexts, setFloatingImages,
         paperStyles, setPaperStyles, applyPaperPreset,
-        handleSaveAsTemplate,
+        handleSaveAsTemplate, handleDeleteTemplate,
         myTemplates, applyTemplate, fetchMyTemplates,
         isDirty, setIsDirty,
         confirmModal, showConfirmModal, closeConfirmModal, // ✨ Export Modal State & Helpers
         selectedIds, handleSelect, // ✨ Export Multi-Select
+        showHiddenTemplates, setShowHiddenTemplates, handleRestoreTemplate
     };
 };

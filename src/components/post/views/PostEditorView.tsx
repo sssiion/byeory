@@ -47,7 +47,9 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
         handleUpdate, handleDelete,
         handleBlockImageUpload, handleSaveAsTemplate,
         paperStyles, title, setTitle, titleStyles,
-        handleSave, currentPostId, selectedAlbumId
+        handleSave, currentPostId, selectedAlbumId,
+        handleDeleteTemplate,
+        showHiddenTemplates, setShowHiddenTemplates, handleRestoreTemplate
     } = editor;
 
 
@@ -258,6 +260,10 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onSaveAsTemplate={openTemplateNameModal}
                 myTemplates={myTemplates}
                 applyTemplate={applyTemplate}
+                onDeleteTemplate={handleDeleteTemplate} // ✨ Pass Delete Handler
+                showHiddenTemplates={showHiddenTemplates}
+                setShowHiddenTemplates={setShowHiddenTemplates}
+                onRestoreTemplate={handleRestoreTemplate}
             />
 
             <SavePostModal

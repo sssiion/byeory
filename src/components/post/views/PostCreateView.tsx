@@ -45,7 +45,8 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
         handleSelect, handleUpdate, handleDelete,
         handleBlockImageUpload, handleSaveAsTemplate,
         paperStyles, title, setTitle, titleStyles,
-        handleSave
+        handleSave, handleDeleteTemplate,
+        showHiddenTemplates, setShowHiddenTemplates, handleRestoreTemplate
     } = editor;
 
     const checkSoloActivityRestriction = () => {
@@ -212,6 +213,10 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 onSaveAsTemplate={openTemplateNameModal} // ✨ Use Modal Opener
                 myTemplates={myTemplates}
                 applyTemplate={applyTemplate}
+                onDeleteTemplate={handleDeleteTemplate} // ✨ Pass Delete Handler
+                showHiddenTemplates={showHiddenTemplates}
+                setShowHiddenTemplates={setShowHiddenTemplates}
+                onRestoreTemplate={handleRestoreTemplate}
             />
 
             {/* ✨ 저장 위치 선택 모달 */}

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks';
-import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown } from 'lucide-react';
+import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown, Trash2, Undo2 } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
@@ -35,11 +35,15 @@ interface Props {
     onSaveAsTemplate: () => void;
     myTemplates?: any[];
     applyTemplate?: (template: any) => void;
+    onDeleteTemplate?: (id: number) => void;
     containerClassName?: string;
     showActionButtons?: boolean;
     onAddWidgetSticker: (widgetType: string, props?: any) => void; // ✨ New Prop
     isPublic?: boolean;
     setIsPublic?: (v: boolean) => void;
+    showHiddenTemplates?: boolean;
+    setShowHiddenTemplates?: (show: boolean) => void;
+    onRestoreTemplate?: (id: number) => void;
 }
 
 import { useWidgetRegistry } from '../../../../components/settings/widgets/useWidgetRegistry'; // ✨ Import Registry
@@ -145,7 +149,9 @@ const EditorSidebar: React.FC<Props> = ({
     currentTags, onTagsChange, applyPaperPreset, onSaveAsTemplate,
     myTemplates = [], applyTemplate, containerClassName = "xl:w-80", showActionButtons = true,
     onAddWidgetSticker = (type) => console.warn("onAddWidgetSticker missing", type), // ✨ Destructure with default
-    isPublic = true, setIsPublic // ✨ Destructure
+    isPublic = true, setIsPublic, // ✨ Destructure
+    onDeleteTemplate, // ✨ Destructure
+    showHiddenTemplates = false, setShowHiddenTemplates, onRestoreTemplate // ✨ New Props
 }) => {
     // ... existing ...
 
@@ -698,15 +704,27 @@ const EditorSidebar: React.FC<Props> = ({
                     <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
                         <Save size={18} className="text-[var(--text-secondary)]" />
                         나의 템플릿
+                        {setShowHiddenTemplates && (
+                            <button
+                                onClick={() => {
+                                    console.log("Toggling trash bin");
+                                    setShowHiddenTemplates(!showHiddenTemplates);
+                                }}
+                                className={`ml-auto p-1 rounded-full transition-colors ${showHiddenTemplates ? 'bg-red-100 text-red-500' : 'hover:bg-gray-100 text-gray-400'}`}
+                                title={showHiddenTemplates ? "숨긴 템플릿 닫기" : "휴지통 보기"}
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        )}
                     </h3>
                 </div>
                 <div className="p-4 grid grid-cols-2 gap-2">
                     {myTemplates.length > 0 ? (
                         myTemplates.map((template: any) => (
-                            <button
+                            <div
                                 key={template.id}
                                 onClick={() => applyTemplate && applyTemplate(template)}
-                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 overflow-hidden relative"
+                                className="p-2 border border-[var(--border-color)] rounded-lg text-xs hover:bg-[var(--bg-card-secondary)] hover:border-indigo-200 transition text-[var(--text-secondary)] font-medium flex flex-col items-center gap-1 overflow-hidden relative group cursor-pointer"
                                 style={{
                                     backgroundColor: template.styles?.backgroundColor || '#fff'
                                 }}
@@ -730,11 +748,38 @@ const EditorSidebar: React.FC<Props> = ({
                                 >
                                     {template.name}
                                 </span>
-                            </button>
+                                {showHiddenTemplates ? (
+                                    onRestoreTemplate && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onRestoreTemplate(template.id);
+                                            }}
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-black/10 hover:bg-green-500 hover:text-white transition-colors text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 z-20"
+                                            title="템플릿 복원"
+                                        >
+                                            <Undo2 size={12} />
+                                        </button>
+                                    )
+                                ) : (
+                                    onDeleteTemplate && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteTemplate(template.id);
+                                            }}
+                                            className="absolute top-1 right-1 p-1 rounded-full bg-black/10 hover:bg-red-500 hover:text-white transition-colors text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 z-20"
+                                            title="템플릿 삭제"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    )
+                                )}
+                            </div>
                         ))
                     ) : (
                         <div className="col-span-2 text-center text-xs text-gray-400 py-2">
-                            저장된 템플릿이 없습니다.
+                            {showHiddenTemplates ? "휴지통이 비었습니다." : "저장된 템플릿이 없습니다."}
                         </div>
                     )}
                 </div>
