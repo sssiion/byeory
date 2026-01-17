@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import MainPage from './pages/MainPage'
 import PostPage from './pages/post/PostPage'
 import TodoPage from './pages/todo/TodoPage'
@@ -145,6 +145,55 @@ const RootRouting = () => {
   return <WelcomePage />;
 };
 
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootRouting />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/join",
+    element: <JoinPage />,
+  },
+  {
+    path: "/find-password",
+    element: <FindPasswordPage />,
+  },
+  {
+    path: "/invite/:code",
+    element: <InviteAcceptPage />,
+  },
+  {
+    path: "/rooms/:roomId/join",
+    element: <RoomJoinPage />,
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      { path: "/home", element: <MainPage /> },
+      { path: "/post", element: <PostPage /> },
+      { path: "/cycles/:cycleId", element: <RoomCyclePage /> },
+      { path: "/todo", element: <TodoPage /> },
+      { path: "/community", element: <CommunityPage /> },
+      { path: "/market", element: <MarketPage /> },
+      { path: "/profile", element: <ProfilePage /> },
+      { path: "/profile/edit", element: <ProfileEditPage /> },
+      { path: "/profile/password", element: <PasswordChangePage /> },
+      { path: "/profile/delete", element: <GetOutPage /> },
+      { path: "/setup-profile", element: <InitialProfileSetup /> },
+      { path: "/profile/analysis", element: <AnalysisPage /> },
+      { path: "/season-greeting", element: <YearPage /> },
+      { path: "/charge", element: <ChargePage /> },
+      { path: "/payment/success", element: <PaymentSuccessPage /> },
+      { path: "/payment/cancel", element: <PaymentCancelPage /> },
+      { path: "/payment/fail", element: <PaymentFailPage /> },
+    ]
+  }
+]);
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -154,37 +203,7 @@ createRoot(document.getElementById('root')!).render(
           <ThemeProvider>
             <CreditProvider>
               <TodoProvider>
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<RootRouting />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/join" element={<JoinPage />} />
-                    <Route path="/find-password" element={<FindPasswordPage />} />
-                    <Route path="/invite/:code" element={<InviteAcceptPage />} />
-                    <Route path="/rooms/:roomId/join" element={<RoomJoinPage />} />
-
-                    {/* Protected Routes */}
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/home" element={<MainPage />} />
-                      <Route path="/post" element={<PostPage />} />
-                      <Route path="/cycles/:cycleId" element={<RoomCyclePage />} />
-                      <Route path="/todo" element={<TodoPage />} />
-                      <Route path="/community" element={<CommunityPage />} />
-                      <Route path="/market" element={<MarketPage />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="/profile/edit" element={<ProfileEditPage />} />
-                      <Route path="/profile/password" element={<PasswordChangePage />} />
-                      <Route path="/profile/delete" element={<GetOutPage />} />
-                      <Route path="/setup-profile" element={<InitialProfileSetup />} />
-                      <Route path="/profile/analysis" element={<AnalysisPage />} />
-                      <Route path="/season-greeting" element={<YearPage />} />
-                      <Route path="/charge" element={<ChargePage />} />
-                      <Route path="/payment/success" element={<PaymentSuccessPage />} />
-                      <Route path="/payment/cancel" element={<PaymentCancelPage />} />
-                      <Route path="/payment/fail" element={<PaymentFailPage />} />
-                    </Route>
-                  </Routes>
-                </BrowserRouter>
+                <RouterProvider router={router} />
               </TodoProvider>
             </CreditProvider>
           </ThemeProvider>

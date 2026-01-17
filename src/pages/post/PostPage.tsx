@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useBlocker } from 'react-router-dom'; // ✨ Import useBlocker from v6.19+ / v7
 import Navigation from '../../components/header/Navigation';
 import { usePostEditor } from '../../components/post/hooks/usePostEditor';
 
@@ -61,6 +62,36 @@ const Post: React.FC = () => {
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [editor.viewMode, editor.isDirty]);
+
+    // ✨ useBlocker Implementation
+    // Block navigation if in editor mode and dirty
+    const blocker = useBlocker(
+        ({ currentLocation, nextLocation }) =>
+            editor.viewMode === 'editor' &&
+            editor.isDirty &&
+            currentLocation.pathname !== nextLocation.pathname
+    );
+
+    const { showConfirmModal, closeConfirmModal } = editor; // ✨ Destructure for stable dependency
+
+    React.useEffect(() => {
+        if (blocker.state === "blocked") {
+            showConfirmModal(
+                "이동 확인",
+                "작성 중인 내용이 저장되지 않았습니다.\n정말 이동하시겠습니까?",
+                "danger",
+                () => { // Confirm (Proceed)
+                    blocker.proceed();
+                    closeConfirmModal();
+                },
+                false,
+                () => { // Cancel (Reset)
+                    blocker.reset();
+                    closeConfirmModal();
+                }
+            );
+        }
+    }, [blocker.state, showConfirmModal, closeConfirmModal]);
 
     const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -199,7 +230,7 @@ const Post: React.FC = () => {
                 onConfirm={() => {
                     editor.confirmModal.onConfirm();
                 }}
-                onCancel={editor.closeConfirmModal}
+                onCancel={editor.confirmModal.onCancel || editor.closeConfirmModal}
             />
         </div>
     );

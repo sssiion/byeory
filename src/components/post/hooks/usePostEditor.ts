@@ -642,6 +642,7 @@ export const usePostEditor = () => {
         type?: 'info' | 'danger' | 'success';
         singleButton?: boolean;
         onConfirm: () => void;
+        onCancel?: () => void; // ✨ Added
     }>({
         isOpen: false,
         title: '',
@@ -649,20 +650,21 @@ export const usePostEditor = () => {
         onConfirm: () => { }
     });
 
-    const closeConfirmModal = () => {
+    const closeConfirmModal = React.useCallback(() => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
-    };
+    }, []);
 
-    const showConfirmModal = (title: string, message: React.ReactNode, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void, singleButton: boolean = false) => {
+    const showConfirmModal = React.useCallback((title: string, message: React.ReactNode, type: 'info' | 'danger' | 'success' = 'info', onConfirm?: () => void, singleButton: boolean = false, onCancel?: () => void) => {
         setConfirmModal({
             isOpen: true,
             title,
             message,
             type,
             singleButton,
-            onConfirm: onConfirm || closeConfirmModal
+            onConfirm: onConfirm || closeConfirmModal,
+            onCancel // ✨ Store definition
         });
-    };
+    }, [closeConfirmModal]);
 
     // ✨ Apply Paper Preset logic
     const applyPaperPreset = (preset: any) => {

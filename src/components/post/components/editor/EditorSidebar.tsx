@@ -205,7 +205,7 @@ const EditorSidebar: React.FC<Props> = ({
                     }).filter((w): w is WidgetConfig => w !== null);
 
                     setCustomWidgets(refinedConfigs);
-                    console.log("Sidebar: Fetched custom widgets:", refinedConfigs.length);
+
                 }
             } catch (e) {
                 console.error("Failed to load custom widgets in Sidebar:", e);
@@ -222,7 +222,7 @@ const EditorSidebar: React.FC<Props> = ({
         ...customWidgets
     ];
 
-    console.log("Sidebar: Total widgets:", allWidgets.length);
+
 
     const { isOwned, buyItem, getMarketItem, getPackPrice } = useMarket();
 
@@ -706,10 +706,7 @@ const EditorSidebar: React.FC<Props> = ({
                         나의 템플릿
                         {setShowHiddenTemplates && (
                             <button
-                                onClick={() => {
-                                    console.log("Toggling trash bin");
-                                    setShowHiddenTemplates(!showHiddenTemplates);
-                                }}
+                                onClick={() => setShowHiddenTemplates(!showHiddenTemplates)}
                                 className={`ml-auto p-1 rounded-full transition-colors ${showHiddenTemplates ? 'bg-red-100 text-red-500' : 'hover:bg-gray-100 text-gray-400'}`}
                                 title={showHiddenTemplates ? "숨긴 템플릿 닫기" : "휴지통 보기"}
                             >
