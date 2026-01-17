@@ -79,7 +79,7 @@ export type ContainerLocation = {
     colIndex: number;
 } | null;
 
-export type DecorationType = 'circle' | 'square' | 'blob' | 'star';
+export type DecorationType = 'circle' | 'square' | 'blob' | 'star' | 'text' | 'image' | 'sticker' | 'shape';
 
 export interface WidgetDecoration {
     id: string;
@@ -105,6 +105,14 @@ export interface WidgetDecoration {
         duration?: number; // seconds
         delay?: number;    // seconds
     };
+    // [NEW] Text & Extended Support
+    text?: string;
+    style?: React.CSSProperties;
+    src?: string; // Alias for imageUrl
+    width?: number; // Alias for w
+    height?: number; // Alias for h
+    unit?: string; // 'px' | '%'
+    shapeType?: string; // For type='shape'
 }
 
 export interface WidgetScene {

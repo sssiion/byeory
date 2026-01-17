@@ -10,9 +10,11 @@ interface CustomWidgetPreviewProps {
         scenes?: WidgetScene[]; // 🌟 Animation Support
     };
     defaultSize?: string; // "2x2"
+    style?: React.CSSProperties;
+    styles?: React.CSSProperties;
 }
 
-const CustomWidgetPreview: React.FC<CustomWidgetPreviewProps> = ({ content, defaultSize = "2x2" }) => {
+const CustomWidgetPreview: React.FC<CustomWidgetPreviewProps> = ({ content, defaultSize = "2x2", style, styles }) => {
     // 🌟 Animation State
     const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
 
@@ -42,8 +44,16 @@ const CustomWidgetPreview: React.FC<CustomWidgetPreviewProps> = ({ content, defa
     const [w, h] = defaultSize.split('x').map(Number);
     const size = { w: w || 2, h: h || 2 };
 
+    const finalStyle = {
+        ...(style || styles),
+        backgroundColor: (style?.backgroundColor || styles?.backgroundColor || '#ffffff'), // Default to white if not set, but respect external style
+    };
+
     return (
-        <div className="w-full h-full relative bg-white overflow-hidden rounded-lg">
+        <div
+            className="w-full h-full relative overflow-hidden rounded-lg"
+            style={finalStyle}
+        >
             {/* 1. Decorations Layer (Background) */}
             <DecorationLayer decorations={decorations} />
 

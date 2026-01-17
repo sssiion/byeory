@@ -10,7 +10,7 @@ import CommunityPage from './pages/community/CommunityPage';
 import { MenuProvider } from './components/settings/menu/MenuSettings';
 
 import { ThemeProvider } from './context/ThemeContext';
-import MarketPage from './pages/market/MarketPage.tsx'
+import MarketPage from './pages/Market/MarketPage.tsx'
 
 import ProfilePage from './pages/profile/My/ProfilePage'
 import ProfileEditPage from './pages/profile/My/ProfileEditPage';
