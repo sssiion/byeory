@@ -83,7 +83,7 @@ export const WidgetInfoModal: React.FC<WidgetInfoProps> = ({
                             </div>
                         ) : (
                             <img
-                                src={`/thumbnails/${widget.type}.png`}
+                                src={`${import.meta.env.BASE_URL}thumbnails/${widget.type}.png`}
                                 className="w-full h-full object-contain"
                                 alt={widget.label}
                                 onError={(e) => e.currentTarget.style.display = 'none'}

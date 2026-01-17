@@ -166,7 +166,7 @@ export default function PersonalSettings({ onBack, onClose, currentTheme, onThem
         };
 
         try {
-            await fetch('http://localhost:8080/api/setting/theme', {
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/setting/theme`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

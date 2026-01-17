@@ -180,7 +180,7 @@ const Navigation: React.FC = () => {
                     className={`flex items-center justify-self-start ${isEditMode ? 'cursor-default opacity-50' : 'cursor-pointer'}`}
                     onClick={() => !isEditMode && navigate('/')}
                 >
-                    <img src="/logo.png" alt="Logo" className="w-18 md:w-20" />
+                    <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="w-18 md:w-20" />
                 </div>
 
                 {/* 데스크탑 중앙 네비게이션 */}

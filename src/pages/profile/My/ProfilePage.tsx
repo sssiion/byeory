@@ -75,7 +75,7 @@ function ProfilePage() {
       }
 
       try {
-        const response = await fetch("http://localhost:8080/api/user/profile", {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

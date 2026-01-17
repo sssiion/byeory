@@ -6,7 +6,7 @@ import { STICKERS } from '../post/constants';
 import ConfirmationModal from '../common/ConfirmationModal';
 import CustomWidgetPreview from '../settings/widgets/customwidget/components/CustomWidgetPreview';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
 
 interface ItemDetailModalProps {
     item: MarketItem;

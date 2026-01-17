@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api/pin';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/pin`;
 
 export const pinService = {
     verifyPin: async (token: string, pin: string) => {

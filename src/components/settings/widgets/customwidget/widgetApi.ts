@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/widgets';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/widgets`;
 const TEMP_USER_ID = '1'; // 컨트롤러가 요구하므로 유지 (나중엔 이것도 토큰에서 추출 가능)
 
 // 🌟 토큰 가져오는 함수 (로그인 시 저장한 키 이름이 'accessToken'이라고 가정)

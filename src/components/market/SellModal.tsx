@@ -93,7 +93,7 @@ const SellModal: React.FC<SellModalProps> = ({ item, onClose, onSubmit }) => {
                                     </div>
                                 ) : (
                                     <img
-                                        src={`/thumbnails/${item.widgetType}.png`}
+                                        src={`${import.meta.env.BASE_URL}thumbnails/${item.widgetType}.png`}
                                         alt={item.label}
                                         className="w-full h-full object-contain p-4"
                                         onError={(e) => {

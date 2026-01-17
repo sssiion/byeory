@@ -7,7 +7,7 @@ import { WIDGET_COMPONENT_MAP } from "./componentMap.ts";
 import { getMyWidgets } from './customwidget/widgetApi.ts';
 
 // 백엔드 주소 상수 정의
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const getAuthHeaders = () => {
     const token = localStorage.getItem('accessToken');
     return {

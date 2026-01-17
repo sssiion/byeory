@@ -34,7 +34,7 @@ export function Bonfire({ gridSize }: BonfireProps) {
             >
                 <video
                     ref={videoRef}
-                    src="/videos/bonfire.mp4"
+                    src={`${import.meta.env.BASE_URL}videos/bonfire.mp4`}
                     autoPlay
                     loop
                     muted

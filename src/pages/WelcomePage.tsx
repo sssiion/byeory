@@ -54,7 +54,7 @@ const WelcomePage: React.FC = () => {
                     className="max-w-7xl mx-auto text-center relative z-10 opacity-0 translate-y-10 transition-all duration-1000"
                 >
                     <div className="inline-block mb-8 animate-fade-in-up">
-                        <img src="/logo.png" alt="Byeory" className="w-40 md:w-56 mx-auto drop-shadow-2xl" />
+                        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Byeory" className="w-40 md:w-56 mx-auto drop-shadow-2xl" />
                     </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 dark:text-white mb-8 tracking-tight animate-fade-in-up animation-delay-100">
                         일상을 담다, <span className="text-blue-600 dark:text-blue-400">벼리</span>
@@ -271,7 +271,7 @@ const WelcomePage: React.FC = () => {
 
                     <div className="border-t border-slate-100 dark:border-slate-800 pt-10 flex flex-col md:relative md:flex-row items-center justify-center gap-6">
                         <div className="md:absolute md:left-0 flex items-center gap-2">
-                            <img src="/logo.png" alt="Byeory" className="w-20 md:w-28 grayscale opacity-80" />
+                            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Byeory" className="w-20 md:w-28 grayscale opacity-80" />
                         </div>
                         <div className="text-sm text-slate-400">
                             © 2025 Byeory. All rights reserved.

@@ -12,7 +12,7 @@ interface TodoContextType {
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
-const API_BASE_URL = 'http://localhost:8080/api/todos';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/todos`;
 
 export const TodoProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [todos, setTodos] = useState<Todo[]>([]);

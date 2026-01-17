@@ -33,7 +33,7 @@ export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSett
         const token = localStorage.getItem('accessToken');
         if (token) {
             try {
-                await fetch('http://localhost:8080/api/setting/page', {
+                await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/setting/page`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

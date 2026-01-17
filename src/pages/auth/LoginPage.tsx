@@ -32,7 +32,7 @@ function LoginPage() {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <Link to="/" className="mb-8 block text-center">
-                    <img src="/logo.png" alt="벼리" className="mx-auto w-32 mb-4" />
+                    <img src={`${import.meta.env.BASE_URL}logo.png`} alt="벼리" className="mx-auto w-32 mb-4" />
                     <h1 className="theme-text-primary mb-2 text-3xl font-bold">환영합니다</h1>
                     <p className="theme-text-secondary text-sm">벼리에 로그인하여 일상을 기록하세요</p>
                 </Link>

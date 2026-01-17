@@ -33,7 +33,7 @@ const NaverLoginButton: React.FC<NaverLoginButtonProps> = ({ onSuccess, onError 
         // Initialize Naver Login SDK
         const naverLogin = new naver.LoginWithNaverId({
             clientId: import.meta.env.VITE_NAVER_CLIENT_ID,
-            callbackUrl: window.location.origin + '/login',
+            callbackUrl: window.location.origin + import.meta.env.BASE_URL + 'login',
             isPopup: false,
             loginButton: { color: "green", type: 3, height: 48 }, // Hidden button logic
             callbackHandle: true

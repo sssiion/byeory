@@ -173,7 +173,7 @@ function AnalysisPage() {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:8080/api/persona", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/persona`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -227,7 +227,7 @@ function AnalysisPage() {
     setAnalyzing(true);
 
     // 파라미터 구성
-    let url = "http://localhost:8080/api/persona/analyze";
+    let url = `${import.meta.env.VITE_API_BASE_URL}/api/persona/analyze`;
     if (filterMode === "MONTH") {
       const [y, m] = selectedDate.split("-");
       url += `?year=${y}&month=${m}`;

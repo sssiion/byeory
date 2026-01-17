@@ -60,7 +60,7 @@ const ChargePage: React.FC = () => {
             onConfirm: async () => {
                 setModalConfig(prev => ({ ...prev, isOpen: false }));
                 try {
-                    const response = await fetch('http://localhost:8080/api/payment/ready', {
+                    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payment/ready`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

@@ -39,7 +39,7 @@ function FindPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password-reset/request', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/password-reset/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
@@ -71,7 +71,7 @@ function FindPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password-reset/verify', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/password-reset/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, code }),
@@ -106,7 +106,7 @@ function FindPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password-reset/confirm', {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/password-reset/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -136,7 +136,7 @@ function FindPasswordPage() {
                 {/* Logo & Title */}
                 <div className="mb-8 text-center">
                     <Link to="/login" className="mb-4 inline-block">
-                        <img src="/logo.png" alt="벼리" className="mx-auto w-32" />
+                        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="벼리" className="mx-auto w-32" />
                     </Link>
                     <h1 className="theme-text-primary mb-2 text-2xl font-bold">비밀번호 찾기</h1>
                     <p className="theme-text-secondary text-sm">

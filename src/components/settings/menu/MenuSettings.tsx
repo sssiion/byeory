@@ -73,7 +73,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!token) return;
 
             try {
-                const response = await fetch('http://localhost:8080/api/setting/menu', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/setting/menu`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -106,7 +106,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const token = localStorage.getItem('accessToken');
         if (token) {
             try {
-                await fetch('http://localhost:8080/api/setting/menu', {
+                await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/setting/menu`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

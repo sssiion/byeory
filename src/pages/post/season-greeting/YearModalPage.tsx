@@ -39,7 +39,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         // Page 3: Spring Field Background
         if (pageNum === 3) return (
             <div className="w-full h-full relative overflow-hidden">
-                <img src="/year/spring_field.png" className="w-full h-full object-cover" alt="Spring Field" />
+                <img src={`${import.meta.env.BASE_URL}year/spring_field.png`} className="w-full h-full object-cover" alt="Spring Field" />
                 <div className="absolute inset-0 bg-black/10"></div>
                 <div className="absolute top-8 left-8 text-white font-serif text-4xl font-bold drop-shadow-md">Spring</div>
             </div>
@@ -49,7 +49,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         if (pageNum === 4) return (
             <div className="w-full h-full bg-[#fdfbf7] p-6 flex flex-col items-center">
                 <div className="w-full aspect-square bg-white p-3 shadow-md rotate-2 mb-4">
-                    <img src="/year/puppy_run.png" className="w-full h-full object-cover" alt="Puppy" />
+                    <img src={`${import.meta.env.BASE_URL}year/puppy_run.png`} className="w-full h-full object-cover" alt="Puppy" />
                 </div>
                 <div className="flex-1 flex items-center">
                     <p className="font-serif text-sm leading-7 text-gray-700 text-center">
@@ -69,7 +69,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         // Page 5: Summer Theme (Hot Sun)
         if (pageNum === 5) return (
             <div className="w-full h-full relative overflow-hidden">
-                <img src="/year/summer_heat.png" className="w-full h-full object-cover" alt="Summer Heat" />
+                <img src={`${import.meta.env.BASE_URL}year/summer_heat.png`} className="w-full h-full object-cover" alt="Summer Heat" />
                 <div className="absolute top-8 left-8 text-white font-serif text-4xl font-bold drop-shadow-md">Summer</div>
             </div>
         );
@@ -95,7 +95,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         if (pageNum === 7) return (
             <div className="w-full h-full bg-[#fdfbf7] p-6 flex flex-col items-center">
                 <div className="w-full aspect-[4/3] bg-white p-2 shadow-md -rotate-1 mb-6">
-                    <img src="/year/grandma_food.png" className="w-full h-full object-cover" alt="Grandma Food" />
+                    <img src={`${import.meta.env.BASE_URL}year/grandma_food.png`} className="w-full h-full object-cover" alt="Grandma Food" />
                 </div>
                 <p className="font-serif text-sm leading-7 text-gray-700 text-center">
                     "할머니 밥 그만 주세요.."<br />
@@ -110,7 +110,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         // Page 8: Autumn Leaves Bg
         if (pageNum === 8) return (
             <div className="w-full h-full relative overflow-hidden">
-                <img src="/year/autumn_leaves.png" className="w-full h-full object-cover" alt="Autumn Leaves" />
+                <img src={`${import.meta.env.BASE_URL}year/autumn_leaves.png`} className="w-full h-full object-cover" alt="Autumn Leaves" />
                 <div className="absolute bottom-8 right-8 text-white font-serif text-4xl font-bold drop-shadow-md text-right">Autumn</div>
             </div>
         );
@@ -119,7 +119,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         if (pageNum === 9) return (
             <div className="w-full h-full bg-[#fdfbf7] p-6 flex flex-col items-center">
                 <div className="w-full aspect-square bg-white p-3 shadow-md rotate-1 mb-4">
-                    <img src="/year/winter_study.png" className="w-full h-full object-cover" alt="Winter Study" />
+                    <img src={`${import.meta.env.BASE_URL}year/winter_study.png`} className="w-full h-full object-cover" alt="Winter Study" />
                 </div>
                 <p className="font-serif text-sm leading-7 text-gray-700 text-center">
                     강의도 끝을 보게 되었습니다.<br />
@@ -133,7 +133,7 @@ const YearModalPage: React.FC<YearModalPageProps> = ({ onClose }) => {
         // Page 10: Snowman
         if (pageNum === 10) return (
             <div className="w-full h-full relative overflow-hidden">
-                <img src="/year/snowman.png" className="w-full h-full object-cover" alt="Snowman" />
+                <img src={`${import.meta.env.BASE_URL}year/snowman.png`} className="w-full h-full object-cover" alt="Snowman" />
                 <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent"></div>
                 <div className="absolute bottom-12 w-full text-center text-[#2c3e50] font-serif text-2xl font-bold">Winter Wonderland</div>
             </div>

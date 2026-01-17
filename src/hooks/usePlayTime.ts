@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = 'http://localhost:8080/api/user';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/user`;
 const SESSION_STORAGE_KEY = 'session_playtime_seconds';
 
 export const usePlayTime = () => {

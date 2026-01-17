@@ -18,7 +18,7 @@ export const StreakWidget = React.memo(function StreakWidget({ gridSize }: Strea
                 const token = localStorage.getItem("accessToken");
                 if (!token) return;
 
-                const response = await axios.get("http://localhost:8080/api/user/profile", {
+                const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/profile`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

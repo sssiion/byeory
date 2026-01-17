@@ -28,7 +28,7 @@ function JoinPage() {
 
         setIsSending(true);
         try {
-            const res = await fetch('http://localhost:8080/auth/email/send', {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/email/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -57,7 +57,7 @@ function JoinPage() {
             return;
         }
         try {
-            const res = await fetch('http://localhost:8080/auth/email/check', {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/email/check`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, authNum: verificationCode })
@@ -101,7 +101,7 @@ function JoinPage() {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <Link to="/" className="mb-8 block text-center">
-                    <img src="/logo.png" alt="벼리" className="mx-auto w-32 mb-4" />
+                    <img src={`${import.meta.env.BASE_URL}logo.png`} alt="벼리" className="mx-auto w-32 mb-4" />
                     <h1 className="theme-text-primary mb-2 text-3xl font-bold">회원가입</h1>
                     <p className="theme-text-secondary text-sm">벼리와 함께 일상을 기록해보세요</p>
                 </Link>

@@ -55,7 +55,7 @@ import type { WidgetConfig } from '../../../../components/settings/widgets/type'
 // Helper Component for safe image loading
 const WidgetButton = ({ widget, onAdd }: { widget: any, onAdd: (type: string, props?: any) => void }) => {
     const [imgError, setImgError] = React.useState(false);
-    const thumbnailUrl = `/thumbnails/${widget.widgetType}.png`;
+    const thumbnailUrl = `${import.meta.env.BASE_URL}thumbnails/${widget.widgetType}.png`;
 
     return (
         <div key={widget.widgetType} className="group relative">
@@ -626,7 +626,7 @@ const EditorSidebar: React.FC<Props> = ({
                 <div className="px-4 pb-4 pt-2 border-t border-[var(--border-color)]">
                     <h4 className="text-xs font-bold text-[var(--text-secondary)] mb-3 mt-2 uppercase tracking-wider flex justify-between items-center">
                         Stickers
-                        <a href="/market" className="text-[10px] text-indigo-500 hover:underline">Get more</a>
+                        <a href={`${import.meta.env.BASE_URL}market`} className="text-[10px] text-indigo-500 hover:underline">Get more</a>
                     </h4>
                     <div className="grid grid-cols-4 gap-2">
                         {STICKERS.map((sticker) => {

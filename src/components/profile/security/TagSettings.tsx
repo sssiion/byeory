@@ -13,7 +13,7 @@ const TagSettings: React.FC = () => {
             if (!token) return;
 
             try {
-                const response = await fetch('http://localhost:8080/api/persona/settings', {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/persona/settings`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
