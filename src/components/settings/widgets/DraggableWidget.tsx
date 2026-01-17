@@ -187,9 +187,7 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
 
                     {/* 🔥 [수정 3] WidgetComponent가 없거나 custom-block 일 때 BlockRenderer 렌더링 */}
                     {(() => {
-                        if (widget.type === 'custom-block' || !WidgetComponent) {
-                            console.log('🚧 [DraggableWidget] Rendering custom-block:', widget.id, widget.props);
-                        }
+
                         return (widget.type === 'custom-block' || !WidgetComponent) ? (
                             <BlockRenderer
                                 block={{
