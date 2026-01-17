@@ -66,6 +66,7 @@ const FloatingSettingsPanel: React.FC<FloatingSettingsPanelProps> = ({
             {/* Panel Content (Slides in/out) */}
             <div
                 className={`fixed right-0 top-32 z-[90] w-64 flex flex-col gap-4 bg-[var(--bg-card)]/80 backdrop-blur-xl border-y border-l border-[var(--border-color)] rounded-l-3xl p-5 min-h-[240px] shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+                max-h-[calc(100vh-9rem)] overflow-y-auto custom-scrollbar
                 ${isOpen ? 'translate-x-0' : 'translate-x-[120%]'}`}
             >
                 <div className="flex items-center mb-2 px-1">
