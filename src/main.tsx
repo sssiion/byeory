@@ -192,7 +192,9 @@ const router = createBrowserRouter([
       { path: "/payment/fail", element: <PaymentFailPage /> },
     ]
   }
-]);
+], {
+  basename: import.meta.env.BASE_URL
+});
 
 
 createRoot(document.getElementById('root')!).render(
