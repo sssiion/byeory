@@ -152,7 +152,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ currentUserId, selectedTa
                 </h3>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 w-full">
                 {posts.map((post, index) => (
                     <div key={`post-${post.postId || 'none'}-${index}`} className="w-full">
                         <CommunityCard
