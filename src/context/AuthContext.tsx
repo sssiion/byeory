@@ -69,35 +69,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            const payload = parseJwt(token);
-            if (payload) {
-                setIsLoggedIn(true);
-                setUser({ email: payload.email });
+        const verifyToken = async () => {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                const payload = parseJwt(token);
+                if (payload) {
+                    try {
+                        // 🌟 Verify token with backend
+                        await authService.validateToken(token);
 
-                // Restore session start time or set new one if missing
-                const storedStartTime = localStorage.getItem('sessionStartTime');
-                if (storedStartTime) {
-                    setSessionStartTime(parseInt(storedStartTime, 10));
+                        setIsLoggedIn(true);
+                        setUser({ email: payload.email });
+
+                        const storedStartTime = localStorage.getItem('sessionStartTime');
+                        if (storedStartTime) {
+                            setSessionStartTime(parseInt(storedStartTime, 10));
+                        } else {
+                            const now = Date.now();
+                            setSessionStartTime(now);
+                            localStorage.setItem('sessionStartTime', now.toString());
+                        }
+
+                        triggerPinFlow(token);
+                    } catch (error) {
+                        console.error("Token verification failed:", error);
+                        logout(); // Invalid token -> logout
+                    }
                 } else {
-                    const now = Date.now();
-                    setSessionStartTime(now);
-                    localStorage.setItem('sessionStartTime', now.toString());
+                    logout(); // Malformed token
                 }
-
-                // Check PIN status on refresh
-                triggerPinFlow(token);
             } else {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('sessionStartTime');
+                logout(); // No token
             }
-        } else {
-            localStorage.removeItem('sessionStartTime');
-        }
+        };
+
+        verifyToken();
 
         // Clean up legacy storage if it exists
-        localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userEmail');
     }, []);
 

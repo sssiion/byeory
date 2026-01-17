@@ -65,5 +65,14 @@ export const authService = {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         return response.ok;
+    },
+
+    validateToken: async (token: string) => {
+        // Use a lightweight endpoint to check token validity
+        const response = await fetch(`${API_BASE_URL}/api/pin/check`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Invalid token');
+        return true;
     }
 };
