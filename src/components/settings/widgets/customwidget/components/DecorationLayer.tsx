@@ -6,9 +6,10 @@ import { getSvgPathFromPoints } from '../utils';
 
 interface DecorationLayerProps {
     decorations?: WidgetDecoration[];
+    scale?: number; // ✨ NEW
 }
 
-const DecorationLayer: React.FC<DecorationLayerProps> = ({ decorations = [] }) => {
+const DecorationLayer: React.FC<DecorationLayerProps> = ({ decorations = [], scale = 1 }) => {
     if (!decorations || decorations.length === 0) return null;
 
     return (
@@ -34,9 +35,17 @@ const DecorationLayer: React.FC<DecorationLayerProps> = ({ decorations = [] }) =
                 const isText = safeType === 'text';
                 const defaultSize = isText ? 'auto' : 100;
 
-                const widthVal = deco.w ?? deco.width ?? defaultSize;
-                const heightVal = deco.h ?? deco.height ?? defaultSize;
+                // ✨ Apply Scale
+                const rawW = deco.w ?? deco.width ?? defaultSize;
+                const rawH = deco.h ?? deco.height ?? defaultSize;
+
+                const widthVal = typeof rawW === 'number' ? rawW * scale : rawW;
+                const heightVal = typeof rawH === 'number' ? rawH * scale : rawH;
                 const unit = deco.unit || 'px';
+
+                // ✨ Ensure Numbers for positions
+                const xVal = !isNaN(Number(deco.x)) ? Number(deco.x) : 0;
+                const yVal = !isNaN(Number(deco.y)) ? Number(deco.y) : 0;
 
                 const widthStyle = (widthVal as any) === 'auto' ? 'auto' : `${widthVal}${unit}`;
                 const heightStyle = (heightVal as any) === 'auto' ? 'auto' : `${heightVal}${unit}`;
@@ -50,11 +59,11 @@ const DecorationLayer: React.FC<DecorationLayerProps> = ({ decorations = [] }) =
                         key={deco.id || Math.random().toString()}
                         className={`absolute flex items-center justify-center transform-gpu ${isText ? 'whitespace-pre-wrap' : ''}`}
                         style={{
-                            left: `${deco.x}%`,
-                            top: `${deco.y}%`,
+                            left: `${xVal}%`,
+                            top: `${yVal}%`,
                             width: widthStyle,
                             height: heightStyle,
-                            transform: `translate(-50%, -50%) rotate(${deco.rotation || 0}deg)`,
+                            transform: `rotate(${deco.rotation || 0}deg)`,
                             opacity: deco.opacity,
                             zIndex: deco.zIndex || 0,
                             // 🌟 Animation Implementation

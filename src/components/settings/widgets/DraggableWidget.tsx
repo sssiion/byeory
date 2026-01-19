@@ -4,6 +4,7 @@ import { getEmptyImage } from 'react-dnd-html5-backend';
 import { HelpCircle, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import BlockRenderer from "./customwidget/components/BlockRenderer"; // .tsx 제거
+import CustomWidgetPreview from "./customwidget/components/CustomWidgetPreview"; // 🌟 [NEW] CustomWidgetPreview 임포트
 import { useCredits } from '../../../context/CreditContext';
 import type { WidgetConfig, WidgetInstance } from "./type.ts";
 import { WIDGET_COMPONENT_MAP } from "./componentMap.ts";
@@ -139,7 +140,12 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
             category: 'My Saved',
             keywords: [],
             defaultSize: '2x2',
-            validSizes: [[1, 1], [1, 2], [2, 1], [2, 2]],
+            validSizes: [
+                [1, 1], [1, 2], [1, 3], [1, 4],
+                [2, 1], [2, 2], [2, 3], [2, 4],
+                [3, 1], [3, 2], [3, 3], [3, 4],
+                [4, 1], [4, 2], [4, 3], [4, 4]
+            ],
             defaultProps: {},
             isSystem: false,
             component: null as any
@@ -188,7 +194,14 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                     {/* 🔥 [수정 3] WidgetComponent가 없거나 custom-block 일 때 BlockRenderer 렌더링 */}
                     {(() => {
 
-                        return (widget.type === 'custom-block' || !WidgetComponent) ? (
+                        return (widget.type === 'custom-block') ? (
+                            <CustomWidgetPreview
+                                content={widget.props?.content || {}}
+                                styles={widget.props?.styles || {}}
+                                defaultSize={widget.props?.defaultSize || '2x2'}
+                                style={{ width: '100%', height: '100%' }}
+                            />
+                        ) : (!WidgetComponent) ? (
                             <BlockRenderer
                                 block={{
                                     id: widget.id,
@@ -204,8 +217,6 @@ export const DraggableWidget: React.FC<DraggableWidgetProps> = ({
                                 selectedBlockId={null}
                                 onSelectBlock={() => { }}
                                 onRemoveBlock={() => { }}
-                                activeContainer={null as any}
-                                onSetActiveContainer={() => { }}
                                 onUpdateBlock={(id, updates) => {
                                     if (onUpdateWidget) {
                                         // 🌟 [Fix] Handle nested block updates for custom-block

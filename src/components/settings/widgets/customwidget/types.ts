@@ -99,6 +99,14 @@ export interface WidgetDecoration {
     points?: { x: number; y: number }[]; // [NEW] For organic blobs (normalized 0-100 relative to box)
     imageUrl?: string; // [NEW] For image decorations
 
+    // [NEW] Crop Support
+    crop?: {
+        contentX: number;
+        contentY: number;
+        contentW: number;
+        contentH: number;
+    };
+
     // [NEW] Video Support
     mediaType?: 'image' | 'video'; // Default to 'image' if undefined
     videoUrl?: string;

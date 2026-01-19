@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Smartphone, Play, Pause, Plus, Trash2, Clock } from 'lucide-react';
-import type { WidgetBlock, WidgetSize, WidgetDecoration, WidgetScene } from '../types';
-import { getSvgPathFromPoints } from '../utils';
+import React, { useRef, useEffect } from 'react';
+import { Smartphone } from 'lucide-react';
+import type { WidgetBlock, WidgetSize, WidgetDecoration } from '../types';
+import { getSvgPathFromPoints, generateBlobPoints } from '../utils';
 import DraggableBlockItem from './Rendercomponent/DraggableBlockItem';
 
 interface Props {
@@ -16,12 +16,7 @@ interface Props {
     onSelectDecoration: (id: string | null) => void;
     updateDecoration: (id: string, updates: Partial<WidgetDecoration>) => void;
     onOpenSettings?: () => void;
-    scenes?: WidgetScene[];
-    currentSceneIndex?: number;
-    onAddScene?: () => void;
-    onChangeScene?: (index: number) => void;
-    onUpdateSceneDuration?: (index: number, duration: number) => void;
-    onDeleteScene?: (index: number) => void;
+    croppingId: string | null; // ✨ NEW
 }
 
 const Canvas: React.FC<Props> = (props) => {
@@ -37,27 +32,8 @@ const Canvas: React.FC<Props> = (props) => {
         onSelectDecoration,
         updateDecoration,
         onOpenSettings,
-        scenes,
-        currentSceneIndex = 0,
-        onAddScene,
-        onChangeScene,
-        onUpdateSceneDuration,
-        onDeleteScene
+        croppingId // ✨ NEW
     } = props;
-
-    const [isPlaying, setIsPlaying] = useState(false);
-
-    useEffect(() => {
-        let timer: ReturnType<typeof setTimeout>;
-        if (isPlaying && scenes && scenes.length > 1) {
-            const currentDuration = scenes[currentSceneIndex].duration || 1;
-            timer = setTimeout(() => {
-                const nextIndex = (currentSceneIndex + 1) % scenes.length;
-                onChangeScene?.(nextIndex);
-            }, currentDuration * 1000);
-        }
-        return () => clearTimeout(timer);
-    }, [isPlaying, scenes, currentSceneIndex, onChangeScene]);
 
     const blockDragRef = useRef<{
         id: string | null;
@@ -129,6 +105,22 @@ const Canvas: React.FC<Props> = (props) => {
         e.preventDefault();
         onSelectDecoration(deco.id);
 
+        // ✨ Pan Mode Check
+        if (croppingId === deco.id && deco.crop) {
+            panRef.current = {
+                id: deco.id,
+                startX: e.clientX,
+                startY: e.clientY,
+                initialContentX: deco.crop.contentX,
+                initialContentY: deco.crop.contentY,
+                initialContentW: deco.crop.contentW,
+                initialContentH: deco.crop.contentH
+            };
+            window.addEventListener('mousemove', handlePanMouseMove);
+            window.addEventListener('mouseup', handlePanMouseUp);
+            return;
+        }
+
         dragRef.current = {
             id: deco.id,
             startX: e.clientX,
@@ -139,6 +131,39 @@ const Canvas: React.FC<Props> = (props) => {
 
         window.addEventListener('mousemove', handleDecoMouseMove);
         window.addEventListener('mouseup', handleDecoMouseUp);
+    };
+
+    // ✨ Pan Handlers
+    const panRef = useRef<{
+        id: string | null;
+        startX: number;
+        startY: number;
+        initialContentX: number;
+        initialContentY: number;
+        initialContentW: number;
+        initialContentH: number;
+    }>({ id: null, startX: 0, startY: 0, initialContentX: 0, initialContentY: 0, initialContentW: 0, initialContentH: 0 });
+
+    const handlePanMouseMove = (e: MouseEvent) => {
+        if (!panRef.current.id) return;
+        const { startX, startY, initialContentX, initialContentY, initialContentW, initialContentH, id } = panRef.current;
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        updateDecoration(id, {
+            crop: {
+                contentX: initialContentX + deltaX,
+                contentY: initialContentY + deltaY,
+                contentW: initialContentW,
+                contentH: initialContentH
+            }
+        });
+    };
+
+    const handlePanMouseUp = () => {
+        panRef.current.id = null;
+        window.removeEventListener('mousemove', handlePanMouseMove);
+        window.removeEventListener('mouseup', handlePanMouseUp);
     };
 
     const handleDecoMouseMove = (e: MouseEvent) => {
@@ -197,36 +222,90 @@ const Canvas: React.FC<Props> = (props) => {
         const canvasW = currentSize.w || 1;
         const canvasH = currentSize.h || 1;
 
-        let newW = initialW;
-        let newH = initialH;
-        let newX = initialX;
-        let newY = initialY;
+        // ✨ [Safe] Ensure explicit Number conversion
+        let newW = Number(initialW) || 0;
+        let newH = Number(initialH) || 0;
+        let newX = Number(initialX) || 0;
+        let newY = Number(initialY) || 0;
 
-        switch (handle) {
-            case 'se':
-                newW = initialW + deltaX;
-                newH = initialH + deltaY;
-                newX = initialX + ((deltaX / 2) / canvasW * 100);
-                newY = initialY + ((deltaY / 2) / canvasH * 100);
-                break;
-            case 'sw':
-                newW = initialW - deltaX;
-                newH = initialH + deltaY;
-                newX = initialX + ((deltaX / 2) / canvasW * 100);
-                newY = initialY + ((deltaY / 2) / canvasH * 100);
-                break;
-            case 'ne':
-                newW = initialW + deltaX;
-                newH = initialH - deltaY;
-                newX = initialX + ((deltaX / 2) / canvasW * 100);
-                newY = initialY + ((deltaY / 2) / canvasH * 100);
-                break;
-            case 'nw':
-                newW = initialW - deltaX;
-                newH = initialH - deltaY;
-                newX = initialX + ((deltaX / 2) / canvasW * 100);
-                newY = initialY + ((deltaY / 2) / canvasH * 100);
-                break;
+        // 🌟 [NEW] Aspect Ratio Lock Logic
+        if (e.shiftKey) {
+            const ratio = initialW / initialH;
+
+            // Determine dominant axis based on handle (simplified logic)
+            // Or just use DeltaX to drive both
+            let d = deltaX;
+            if (handle.includes('nm') || handle.includes('s')) d = deltaY; // vertical handles (not used here yet)
+
+            // For corner handles, let's use the larger movement or X
+            // actually simpler: just let width drive height or vice versa based on handle
+
+            switch (handle) {
+                case 'se':
+                    newW = initialW + deltaX;
+                    newH = newW / ratio;
+                    break;
+                case 'sw':
+                    newW = initialW - deltaX;
+                    newH = newW / ratio;
+                    break;
+                case 'ne':
+                    newW = initialW + deltaX;
+                    newH = newW / ratio;
+                    break;
+                case 'nw':
+                    newW = initialW - deltaX;
+                    newH = newW / ratio;
+                    break;
+            }
+
+            // Recalculate position based on new size and handle
+            switch (handle) {
+                case 'se':
+                    newX = initialX + ((newW - initialW) / 2 / canvasW * 100);
+                    newY = initialY + ((newH - initialH) / 2 / canvasH * 100);
+                    break;
+                case 'sw':
+                    newX = initialX - ((newW - initialW) / 2 / canvasW * 100);
+                    newY = initialY + ((newH - initialH) / 2 / canvasH * 100);
+                    break;
+                case 'ne':
+                    newX = initialX + ((newW - initialW) / 2 / canvasW * 100);
+                    newY = initialY - ((newH - initialH) / 2 / canvasH * 100);
+                    break;
+                case 'nw':
+                    newX = initialX - ((newW - initialW) / 2 / canvasW * 100);
+                    newY = initialY - ((newH - initialH) / 2 / canvasH * 100);
+                    break;
+            }
+
+        } else {
+            switch (handle) {
+                case 'se':
+                    newW = initialW + deltaX;
+                    newH = initialH + deltaY;
+                    newX = initialX + ((deltaX / 2) / canvasW * 100);
+                    newY = initialY + ((deltaY / 2) / canvasH * 100);
+                    break;
+                case 'sw':
+                    newW = initialW - deltaX;
+                    newH = initialH + deltaY;
+                    newX = initialX + ((deltaX / 2) / canvasW * 100);
+                    newY = initialY + ((deltaY / 2) / canvasH * 100);
+                    break;
+                case 'ne':
+                    newW = initialW + deltaX;
+                    newH = initialH - deltaY;
+                    newX = initialX + ((deltaX / 2) / canvasW * 100);
+                    newY = initialY + ((deltaY / 2) / canvasH * 100);
+                    break;
+                case 'nw':
+                    newW = initialW - deltaX;
+                    newH = initialH - deltaY;
+                    newX = initialX + ((deltaX / 2) / canvasW * 100);
+                    newY = initialY + ((deltaY / 2) / canvasH * 100);
+                    break;
+            }
         }
 
         if (newW < 20) newW = 20;
@@ -241,39 +320,128 @@ const Canvas: React.FC<Props> = (props) => {
         window.removeEventListener('mouseup', handleResizeMouseUp);
     };
 
-    const blobRef = useRef<{ id: string, index: number } | null>(null);
-    const canvasRef = useRef<HTMLDivElement>(null);
+    // ✨ Refined Point Drag Handlers
+    const pointDragRef = useRef<{
+        decoId: string | null;
+        pointIndex: number | null;
+        startX: number;
+        startY: number;
+        initialPointX: number;
+        initialPointY: number;
+    }>({ decoId: null, pointIndex: null, startX: 0, startY: 0, initialPointX: 0, initialPointY: 0 });
+
+    const handlePointMouseDown = (e: React.MouseEvent, deco: WidgetDecoration, index: number) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        // Right click to delete
+        if (e.button === 2) {
+            const newPoints = [...(deco.points || [])];
+            newPoints.splice(index, 1);
+            if (newPoints.length < 3) return; // Keep min 3 points
+            updateDecoration(deco.id, { points: newPoints });
+            return;
+        }
+
+        if (!deco.points) return;
+
+        pointDragRef.current = {
+            decoId: deco.id,
+            pointIndex: index,
+            startX: e.clientX,
+            startY: e.clientY,
+            initialPointX: deco.points[index].x,
+            initialPointY: deco.points[index].y
+        };
+
+        window.addEventListener('mousemove', handlePointMouseMove);
+        window.addEventListener('mouseup', handlePointMouseUp);
+    };
+
+    const handlePointMouseMove = (e: MouseEvent) => {
+        const { decoId, pointIndex, startX, startY, initialPointX, initialPointY } = pointDragRef.current;
+        if (!decoId || pointIndex === null) return;
+
+        const deco = decorations.find(d => d.id === decoId);
+        if (!deco) return;
+
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        // Convert pixel delta to percentage
+        const scaleX = 100 / (deco.w || 100);
+        const scaleY = 100 / (deco.h || 100);
+
+        let newX = initialPointX + (deltaX * scaleX);
+        let newY = initialPointY + (deltaY * scaleY);
+
+        newX = Math.max(0, Math.min(100, newX));
+        newY = Math.max(0, Math.min(100, newY));
+
+        const newPoints = [...(deco.points || [])];
+        newPoints[pointIndex] = { x: newX, y: newY };
+
+        updateDecoration(decoId, { points: newPoints });
+    };
 
     const handlePointMouseUp = () => {
-        blobRef.current = null;
-        window.removeEventListener('mousemove', handlePointDrag);
+        pointDragRef.current = { decoId: null, pointIndex: null, startX: 0, startY: 0, initialPointX: 0, initialPointY: 0 };
+        window.removeEventListener('mousemove', handlePointMouseMove);
         window.removeEventListener('mouseup', handlePointMouseUp);
     };
 
-    const handlePointDrag = (e: MouseEvent) => {
-        if (!blobRef.current || !canvasRef.current) return;
-        const { id, index } = blobRef.current;
-        const deco = decorations.find(d => d.id === id);
-        if (!deco || !deco.points) return;
+    // ✨ Refined Path Click (Add Point)
+    const handlePathClick = (e: React.MouseEvent, deco: WidgetDecoration) => {
+        e.stopPropagation();
 
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        const rad = -(deco.rotation || 0) * Math.PI / 180;
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
+        // 🌟 [Fix] Only add points if ALREADY selected
+        if (selectedDecorationId !== deco.id) {
+            onSelectDecoration(deco.id);
+            return;
+        }
 
-        const dx = (e.clientX - canvasRect.left) - ((deco.x / 100) * canvasRect.width);
-        const dy = (e.clientY - canvasRect.top) - ((deco.y / 100) * canvasRect.height);
+        if (!deco.points) return;
 
-        const localX = dx * cos - dy * sin;
-        const localY = dx * sin + dy * cos;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickX = ((e.clientX - rect.left) / rect.width) * 100;
+        const clickY = ((e.clientY - rect.top) / rect.height) * 100;
+
+        // Find best insertion index
+        let bestIndex = 0;
+        let minDistance = Infinity;
+
+        for (let i = 0; i < deco.points.length; i++) {
+            const p1 = deco.points[i];
+            const p2 = deco.points[(i + 1) % deco.points.length];
+            const dist = distanceToSegment(clickX, clickY, p1.x, p1.y, p2.x, p2.y);
+            if (dist < minDistance) {
+                minDistance = dist;
+                bestIndex = i + 1;
+            }
+        }
 
         const newPoints = [...deco.points];
-        newPoints[index] = {
-            x: ((localX + deco.w / 2) / deco.w) * 100,
-            y: ((localY + deco.h / 2) / deco.h) * 100
-        };
+        newPoints.splice(bestIndex, 0, { x: clickX, y: clickY });
+        updateDecoration(deco.id, { points: newPoints });
+    };
 
-        updateDecoration(id, { points: newPoints });
+    // Helper for distance
+    const distanceToSegment = (x: number, y: number, x1: number, y1: number, x2: number, y2: number) => {
+        const A = x - x1;
+        const B = y - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = -1;
+        if (lenSq !== 0) param = dot / lenSq;
+        let xx, yy;
+        if (param < 0) { xx = x1; yy = y1; }
+        else if (param > 1) { xx = x2; yy = y2; }
+        else { xx = x1 + param * C; yy = y1 + param * D; }
+        const dx = x - xx;
+        const dy = y - yy;
+        return Math.sqrt(dx * dx + dy * dy);
     };
 
     useEffect(() => {
@@ -282,270 +450,210 @@ const Canvas: React.FC<Props> = (props) => {
             window.removeEventListener('mouseup', handleDecoMouseUp);
             window.removeEventListener('mousemove', handleResizeMouseMove);
             window.removeEventListener('mouseup', handleResizeMouseUp);
-            window.removeEventListener('mousemove', handlePointDrag);
+            window.removeEventListener('mousemove', handlePointMouseMove);
             window.removeEventListener('mouseup', handlePointMouseUp);
             window.removeEventListener('mousemove', handleBlockMouseMove);
             window.removeEventListener('mouseup', handleBlockMouseUp);
+            window.removeEventListener('mousemove', handlePanMouseMove); // ✨
+            window.removeEventListener('mouseup', handlePanMouseUp);     // ✨
         };
     }, []);
 
-    const startPointDrag = (e: React.MouseEvent, decoId: string, index: number) => {
-        e.stopPropagation();
-        e.preventDefault();
-        blobRef.current = { id: decoId, index };
-        window.addEventListener('mousemove', handlePointDrag);
-        window.addEventListener('mouseup', handlePointMouseUp);
-    };
 
-    const handlePathClick = (e: React.MouseEvent, deco: WidgetDecoration) => {
-        if (!deco.points || !canvasRef.current) return;
-        e.stopPropagation();
-
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        const rad = -(deco.rotation || 0) * Math.PI / 180;
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-
-        const dx = (e.clientX - canvasRect.left) - ((deco.x / 100) * canvasRect.width);
-        const dy = (e.clientY - canvasRect.top) - ((deco.y / 100) * canvasRect.height);
-
-        const localX = dx * cos - dy * sin;
-        const localY = dx * sin + dy * cos;
-
-        const newPoint = {
-            x: ((localX + deco.w / 2) / deco.w) * 100,
-            y: ((localY + deco.h / 2) / deco.h) * 100
-        };
-
-        let minDist = Infinity;
-        let insertIdx = 0;
-        for (let i = 0; i < deco.points.length; i++) {
-            const p1 = deco.points[i];
-            const p2 = deco.points[(i + 1) % deco.points.length];
-            const d = (Math.hypot(p1.x - newPoint.x, p1.y - newPoint.y) + Math.hypot(p2.x - newPoint.x, p2.y - newPoint.y)) - Math.hypot(p1.x - p2.x, p1.y - p2.y);
-            if (d < minDist) { minDist = d; insertIdx = i + 1; }
-        }
-
-        const newPoints = [...deco.points];
-        newPoints.splice(insertIdx, 0, newPoint);
-        updateDecoration(deco.id, { points: newPoints });
-    };
 
     return (
-        <main className="flex-1 bg-[var(--bg-primary)] relative flex flex-col items-center pt-12 p-4 overflow-auto gap-1">
-            <div className="relative group/canvas w-full max-w-full flex justify-center flex-1 ">
-                <div
-                    ref={canvasRef}
-                    id="canvas-boundary"
-                    className="bg-[var(--bg-card)] rounded-[24px] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
-                    style={{
-                        width: `${currentSize.w}px`,
-                        height: `${currentSize.h}px`,
-                        flexShrink: 0,
-                    }}
-                    onClick={() => {
-                        onSelectBlock(null);
-                        onSelectDecoration(null);
-                    }}
-                >
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-                        <style>
-                            {`
-                                @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-                                @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } }
-                                @keyframes bounce { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -60%); } }
-                                @keyframes float { 0% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -55%); } 100% { transform: translate(-50%, -50%); } }
-                                @keyframes wiggle { 0%, 100% { transform: translate(-50%, -50%) rotate(-3deg); } 50% { transform: translate(-50%, -50%) rotate(3deg); } }
-                            `}
-                        </style>
-                        {decorations?.map(deco => {
-                            let safeType = deco.type;
-                            if (typeof safeType === 'object' && (safeType as any).type) safeType = (safeType as any).type;
+        <div
+            id="canvas-boundary"
+            // ✨ [Fix] Removed outer <main> and fixed sizing to preventing internal scrolling
+            // The parent in WidgetBuilder now controls the "Stage" size.
+            // We set width/height: '100%' here to fill that stage, 
+            // OR use the explicit size if we want to be sure.
+            // Using '100%' is safer if parent is already sized.
+            className="bg-[var(--bg-card)] rounded-[24px] shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden relative transition-all duration-500 flex flex-col ring-[12px] ring-gray-900 border border-[var(--border-color)]"
+            style={{
+                width: '100%',
+                height: '100%',
+                // width: `${currentSize.w}px`, // Parent already has this size
+                // height: `${currentSize.h}px`,
+            }}
+            onClick={() => {
+                onSelectBlock(null);
+                onSelectDecoration(null);
+            }}
+        >
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+                <style>
+                    {`
+                        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+                        @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } }
+                        @keyframes bounce { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -60%); } }
+                        @keyframes float { 0% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -55%); } 100% { transform: translate(-50%, -50%); } }
+                        @keyframes wiggle { 0%, 100% { transform: translate(-50%, -50%) rotate(-3deg); } 50% { transform: translate(-50%, -50%) rotate(3deg); } }
+                    `}
+                </style>
+                {decorations?.map(deco => {
+                    let safeType = deco.type;
+                    if (typeof safeType === 'object' && (safeType as any).type) safeType = (safeType as any).type;
 
-                            return (
+                    return (
+                        <div
+                            key={deco.id}
+                            onMouseDown={(e) => handleDecoMouseDown(e, deco)}
+                            onClick={(e) => e.stopPropagation()}
+                            onDoubleClick={(e) => {
+                                e.stopPropagation();
+                                if (onOpenSettings) onOpenSettings();
+                            }}
+                            className={`absolute transition-all duration-300 ease-out cursor-pointer pointer-events-auto ${selectedDecorationId === deco.id ? 'ring-2 ring-indigo-500 ring-offset-2' : 'hover:ring-1 hover:ring-indigo-300'}`}
+                            style={{
+                                left: `${deco.x}%`,
+                                top: `${deco.y}%`,
+                                width: `${deco.w}px`,
+                                height: `${deco.h}px`,
+                                // ✨ Cropping Logic
+                                overflow: deco.crop ? 'hidden' : 'visible',
+                            }}
+                        >
+                            {/* ✨ Ghost Overlay for Panning Feedback */}
+                            {croppingId === deco.id && deco.crop && (
                                 <div
-                                    key={deco.id}
-                                    onMouseDown={(e) => handleDecoMouseDown(e, deco)}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onDoubleClick={(e) => {
-                                        e.stopPropagation();
-                                        if (onOpenSettings) onOpenSettings();
-                                    }}
-                                    className={`absolute transition-all duration-300 ease-out cursor-pointer pointer-events-auto ${selectedDecorationId === deco.id ? 'ring-2 ring-indigo-500 ring-offset-2' : 'hover:ring-1 hover:ring-indigo-300'}`}
+                                    className="absolute border border-blue-400 pointer-events-none z-50"
                                     style={{
-                                        left: `${deco.x}%`,
-                                        top: `${deco.y}%`,
-                                        width: `${deco.w}px`,
-                                        height: `${deco.h}px`,
-                                        backgroundColor: deco.imageUrl ? undefined : ((safeType === 'circle' || safeType === 'square') ? deco.color : undefined),
-                                        backgroundImage: (deco.imageUrl && safeType !== 'blob') ? `url(${deco.imageUrl})` : undefined,
+                                        left: deco.crop.contentX,
+                                        top: deco.crop.contentY,
+                                        width: deco.crop.contentW,
+                                        height: deco.crop.contentH,
+                                        opacity: 0.5
+                                    }}
+                                />
+                            )}
+
+                            {safeType === 'blob' && !deco.mediaType && !deco.imageUrl ? (
+                                <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
+                                    <path
+                                        d={getSvgPathFromPoints(deco.points || [], 0.5, true)}
+                                        fill={deco.color}
+                                        fillOpacity={0.8}
+                                        stroke={selectedDecorationId === deco.id ? "rgba(99, 102, 241, 0.5)" : "none"}
+                                        strokeWidth="1"
+                                        className="pointer-events-none"
+                                    />
+                                    {/* ✨ Invisible click target for adding points */}
+                                    <path
+                                        d={getSvgPathFromPoints(deco.points || [], 0.5, true)}
+                                        fill="transparent"
+                                        stroke="transparent"
+                                        strokeWidth="15"
+                                        className="cursor-crosshair pointer-events-auto"
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => handlePathClick(e, deco)}
+                                        onDoubleClick={(e) => {
+                                            // ✨ Regenerate Shape on Double Click
+                                            e.stopPropagation();
+                                            updateDecoration(deco.id, { points: generateBlobPoints() });
+                                        }}
+                                    />
+                                </svg>
+                            ) : (
+                                <div
+                                    style={{
+                                        width: deco.crop ? `${deco.crop.contentW}px` : '100%',
+                                        height: deco.crop ? `${deco.crop.contentH}px` : '100%',
+                                        position: deco.crop ? 'absolute' : 'static',
+                                        left: deco.crop ? deco.crop.contentX : undefined,
+                                        top: deco.crop ? deco.crop.contentY : undefined,
+                                        backgroundColor: (deco.mediaType === 'video' || deco.imageUrl) ? undefined : deco.color,
+                                        backgroundImage: (deco.mediaType !== 'video' && deco.imageUrl && safeType !== 'blob' && !deco.crop) ? `url(${deco.imageUrl})` : undefined, // Disable BG image if cropped (use IMG tag)
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
                                         borderRadius: safeType === 'circle' ? '50%' : safeType === 'square' ? '10%' : '0%',
-                                        transform: `translate(-50%, -50%) rotate(${deco.rotation || 0}deg)`,
-                                        opacity: deco.opacity,
-                                        zIndex: deco.zIndex || 0,
-                                        animationName: deco.animation?.type,
-                                        animationDuration: `${deco.animation?.duration || 3}s`,
-                                        animationIterationCount: 'infinite',
-                                        animationTimingFunction: 'ease-in-out',
-                                        animationDelay: `${deco.animation?.delay || 0}s`,
+                                        clipPath: (safeType === 'star')
+                                            ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+                                            : (safeType === 'blob' && deco.points)
+                                                ? `path('${getSvgPathFromPoints(deco.points, 0.5, true).replace(/,/g, ' ')}')`
+                                                : undefined
                                     }}
                                 >
-                                    {safeType === 'blob' && !deco.mediaType && !deco.imageUrl ? (
-                                        <svg width="100%" height="100%" viewBox="0 0 100 100" style={{ overflow: 'visible' }}>
-                                            <path
-                                                d={getSvgPathFromPoints(deco.points || [], 0.5, true)}
-                                                fill={deco.color}
-                                                fillOpacity={0.8}
-                                                stroke={selectedDecorationId === deco.id ? "rgba(99, 102, 241, 0.5)" : "none"}
-                                                strokeWidth="1"
-                                                className="pointer-events-none"
-                                            />
-                                            <path
-                                                d={getSvgPathFromPoints(deco.points || [], 0.5, true)}
-                                                fill="transparent"
-                                                stroke="transparent"
-                                                strokeWidth="15"
-                                                className="cursor-crosshair pointer-events-auto"
-                                                onMouseDown={(e) => e.stopPropagation()}
-                                                onClick={(e) => handlePathClick(e, deco)}
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <div
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                backgroundColor: (deco.mediaType === 'video' || deco.imageUrl) ? undefined : deco.color,
-                                                backgroundImage: (deco.mediaType !== 'video' && deco.imageUrl && safeType !== 'blob') ? `url(${deco.imageUrl})` : undefined,
-                                                backgroundSize: 'cover',
-                                                backgroundPosition: 'center',
-                                                borderRadius: safeType === 'circle' ? '50%' : safeType === 'square' ? '10%' : '0%',
-                                                clipPath: (safeType === 'star')
-                                                    ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-                                                    : (safeType === 'blob' && deco.points)
-                                                        ? `path('${getSvgPathFromPoints(deco.points, 0.5, true).replace(/,/g, ' ')}')`
-                                                        : undefined
-                                            }}
-                                        >
-                                            {deco.mediaType === 'video' && deco.videoUrl && (
-                                                <video
-                                                    src={deco.videoUrl}
-                                                    autoPlay
-                                                    muted
-                                                    loop
-                                                    playsInline
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                            )}
-                                            {deco.mediaType !== 'video' && deco.imageUrl && safeType === 'blob' && (
-                                                <img src={deco.imageUrl} alt="" className="w-full h-full object-cover" />
-                                            )}
-                                        </div>
+                                    {deco.mediaType === 'video' && deco.videoUrl && (
+                                        <video
+                                            src={deco.videoUrl}
+                                            autoPlay
+                                            muted
+                                            loop
+                                            playsInline
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
                                     )}
+                                    {/* ✨ Render IMG if cropped OR blob OR explicit image */}
+                                    {deco.mediaType !== 'video' && deco.imageUrl && (safeType === 'blob' || deco.crop) && (
+                                        <img src={deco.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    )}
+                                </div>
+                            )}
 
-                                    {selectedDecorationId === deco.id && deco.points && deco.points.map((p, idx) => (
+                            {selectedDecorationId === deco.id && safeType === 'blob' && deco.points && (
+                                <>
+                                    {/* 🌟 [NEW] Control Polygon (Guide to show where segments are) */}
+                                    <svg className="absolute inset-0 pointer-events-none" style={{ overflow: 'visible' }}>
+                                        <polygon
+                                            points={deco.points.map(p => `${p.x},${p.y}`).join(' ')}
+                                            fill="none"
+                                            stroke="#6366f1"
+                                            strokeWidth="1"
+                                            strokeDasharray="4 4"
+                                            opacity="0.5"
+                                        />
+                                    </svg>
+
+                                    {deco.points.map((p, idx) => (
                                         <div
                                             key={idx}
-                                            onMouseDown={(e) => startPointDrag(e, deco.id, idx)}
-                                            className="absolute w-3 h-3 bg-white border border-indigo-500 rounded-full cursor-grab active:cursor-grabbing hover:bg-indigo-100 z-50 shadow-sm"
+                                            onMouseDown={(e) => handlePointMouseDown(e, deco, idx)}
+                                            className="absolute w-3 h-3 bg-white border border-indigo-500 rounded-full cursor-grab active:cursor-grabbing hover:bg-red-100 z-50 shadow-sm"
                                             style={{ left: `${p.x}%`, top: `${p.y}%`, transform: 'translate(-50%, -50%)' }}
+                                            title="우클릭하여 삭제 / 드래그하여 이동"
                                         />
                                     ))}
+                                </>
+                            )}
 
-                                    {selectedDecorationId === deco.id && (
-                                        <>
-                                            <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'nw')} className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-nw-resize z-50" />
-                                            <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'ne')} className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-ne-resize z-50" />
-                                            <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'sw')} className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-sw-resize z-50" />
-                                            <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'se')} className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-se-resize z-50" />
-                                        </>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex-1 min-h-full relative z-20" style={{ pointerEvents: 'none' }}>
-                        {blocks.length === 0 ? (
-                            <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] absolute inset-0" style={{ pointerEvents: 'none', userSelect: 'none' }}>
-                                <Smartphone size={40} className="mb-3 opacity-10" />
-                                <p className="text-sm font-semibold opacity-20 max-md:hidden">좌측에서 기능 선택</p>
-                                <p className="text-sm font-semibold opacity-20 md:hidden">아래에서 기능 선택</p>
-                            </div>
-                        ) : (
-                            blocks.map((block) => (
-                                <DraggableBlockItem
-                                    key={block.id}
-                                    block={block}
-                                    layout={block.layout || { x: 50, y: 50, w: 100, h: 'auto', rotation: 0, zIndex: 1 }}
-                                    selectedBlockId={selectedBlockId}
-                                    onSelectBlock={onSelectBlock}
-                                    onRemoveBlock={onRemoveBlock}
-                                    onUpdateBlock={onUpdateBlock}
-                                    onMouseDown={(e) => handleBlockMouseDown(e, block)}
-                                    onOpenSettings={onOpenSettings}
-                                />
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-bold text-[var(--text-secondary)] bg-[var(--bg-card-secondary)] px-4 py-1.5 rounded-full border border-[var(--border-color)] opacity-0 group-hover/canvas:opacity-100 transition-opacity">
-                    <span>WIDTH {currentSize.w}px</span>
-                    <span className="text-[var(--text-secondary)]">|</span>
-                    <span>HEIGHT {currentSize.h}px</span>
-                </div>
-
-                {scenes && (
-                    <div className="mt-4 w-full max-w-[500px] flex flex-col gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg p-2 shadow-sm z-10 transition-all absolute bottom-4 left-1/2 -translate-x-1/2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-[var(--text-secondary)] flex items-center gap-1">
-                                <Clock size={12} /> ANIMATION TIMELINE
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setIsPlaying(!isPlaying)} className={`p-1.5 rounded hover:bg-[var(--bg-card-secondary)] transition-colors ${isPlaying ? 'text-indigo-500' : 'text-[var(--text-primary)]'}`}>
-                                    {isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-                                </button>
-                                <div className="flex items-center gap-1 bg-[var(--bg-site)] px-2 py-1 rounded text-[10px] border border-[var(--border-color)]">
-                                    <span className="text-[var(--text-secondary)]">Duration:</span>
-                                    <input
-                                        type="number"
-                                        min="0.1"
-                                        step="0.1"
-                                        value={scenes[currentSceneIndex]?.duration || 1}
-                                        onChange={(e) => onUpdateSceneDuration?.(currentSceneIndex, parseFloat(e.target.value))}
-                                        className="w-8 bg-transparent text-right outline-none font-bold"
-                                    />
-                                    <span className="text-[var(--text-secondary)]">s</span>
-                                </div>
-                            </div>
+                            {selectedDecorationId === deco.id && (
+                                <>
+                                    <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'nw')} className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-nw-resize z-50" />
+                                    <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'ne')} className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-ne-resize z-50" />
+                                    <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'sw')} className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-sw-resize z-50" />
+                                    <div onMouseDown={(e) => handleResizeMouseDown(e, deco, 'se')} className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-white border border-indigo-500 rounded-full cursor-se-resize z-50" />
+                                </>
+                            )}
                         </div>
+                    );
+                })}
+            </div>
 
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                            {scenes.map((scene, idx) => (
-                                <div
-                                    key={scene.id}
-                                    onClick={() => { onChangeScene?.(idx); setIsPlaying(false); }}
-                                    className={`flex-shrink-0 w-16 h-12 rounded border cursor-pointer relative group flex flex-col items-center justify-center gap-1 transition-all ${currentSceneIndex === idx ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500' : 'border-[var(--border-color)] hover:border-[var(--text-secondary)] bg-[var(--bg-site)]'}`}
-                                >
-                                    <span className="text-[10px] font-bold text-[var(--text-secondary)]">Frame {idx + 1}</span>
-                                    {scenes.length > 1 && currentSceneIndex === idx && (
-                                        <button onClick={(e) => { e.stopPropagation(); onDeleteScene?.(idx); }} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Trash2 size={8} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                            <button onClick={() => { onAddScene?.(); setIsPlaying(false); }} className="flex-shrink-0 w-8 h-12 rounded border border-dashed border-[var(--border-color)] hover:border-indigo-500 hover:text-indigo-500 flex items-center justify-center transition-colors text-[var(--text-secondary)]">
-                                <Plus size={16} />
-                            </button>
-                        </div>
+            <div className="flex-1 min-h-full relative z-20" style={{ pointerEvents: 'none' }}>
+                {blocks.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] absolute inset-0" style={{ pointerEvents: 'none', userSelect: 'none' }}>
+                        <Smartphone size={40} className="mb-3 opacity-10" />
+                        <p className="text-sm font-semibold opacity-20 max-md:hidden">좌측에서 기능 선택</p>
+                        <p className="text-sm font-semibold opacity-20 md:hidden">아래에서 기능 선택</p>
                     </div>
+                ) : (
+                    blocks.map((block) => (
+                        <DraggableBlockItem
+                            key={block.id}
+                            block={block}
+                            layout={block.layout || { x: 50, y: 50, w: 100, h: 'auto', rotation: 0, zIndex: 1 }}
+                            selectedBlockId={selectedBlockId}
+                            onSelectBlock={onSelectBlock}
+                            onRemoveBlock={onRemoveBlock}
+                            onUpdateBlock={onUpdateBlock}
+                            onMouseDown={(e) => handleBlockMouseDown(e, block)}
+                            onOpenSettings={onOpenSettings}
+                        />
+                    ))
                 )}
             </div>
-        </main>
+        </div>
     );
 };
 
