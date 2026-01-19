@@ -10,6 +10,8 @@ export interface Block {
     imageUrl2?: string;
     imageRotation?: number;
     imageFit?: 'cover' | 'contain';
+    imageTransform?: { x: number; y: number; scale: number }; // ✨ Focus/Crop Data
+    imageTransform2?: { x: number; y: number; scale: number };
     styles?: Record<string, any>;
     locked?: boolean;
 }
@@ -55,6 +57,8 @@ export interface FloatingText extends BaseFloatingItem {
         fontStyle?: string;
         textDecoration?: string;
     };
+    imageTransform?: { x: number; y: number; scale: number }; // ✨ Focus Data for Sticky Notes
+    imageFit?: 'cover' | 'contain'; // ✨ Image Fit Mode
 }
 
 export interface FloatingImage extends BaseFloatingItem {
