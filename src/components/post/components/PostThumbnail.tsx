@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import type { PostData } from '../types';
-import EditorCanvas from './editor/EditorCanvas';
+import MiniPostViewer from '../../community/components/MiniPostPreview';
 
 interface Props {
     post: PostData;
@@ -39,8 +39,8 @@ const PostThumbnail: React.FC<Props> = ({ post, width = 300, height = 300 }) => 
         return () => observer.disconnect();
     }, []);
 
-    // Dummy handler for read-only
-    const noop = () => { };
+    // Dummy handler for read-only removed
+
 
     return (
         <div
@@ -56,22 +56,14 @@ const PostThumbnail: React.FC<Props> = ({ post, width = 300, height = 300 }) => 
         >
             <div
                 style={{
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'top left',
-                    width: `${baseWidth}px`,
-                    height: `${baseWidth}px`, // Ensure it takes up space, height will be cut off by parent overflow anyway
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    // If we want centering, we could do:
-                    // left: '50%', transform: `translateX(-50%) scale(${scale})`, transformOrigin: 'top center'
-                    // But standard scaling strategy:
-                    // If we match width exactly (which ResizeObserver does), top-left is fine.
+                    width: '100%',
+                    height: '100%',
+                    // scale is handled by MiniPostViewer internally via zoom
                 }}
+
             >
-                <EditorCanvas
+                <MiniPostViewer
                     title={post.title}
-                    setTitle={noop}
                     titleStyles={post.titleStyles || {
                         fontSize: '30px',
                         fontWeight: 'bold',
@@ -79,21 +71,14 @@ const PostThumbnail: React.FC<Props> = ({ post, width = 300, height = 300 }) => 
                         color: '#000000',
                         textAlign: 'left'
                     }}
-                    paperStyles={post.styles || {}}
-                    viewMode="read"
+                    styles={post.styles || {}}
                     blocks={post.blocks || []}
-                    setBlocks={noop}
                     stickers={post.stickers || []}
                     floatingTexts={post.floatingTexts || []}
                     floatingImages={post.floatingImages || []}
-                    selectedId={null}
-                    selectedType={null}
-                    onSelect={noop}
-                    onUpdate={noop}
-                    onDelete={noop}
-                    onBlockImageUpload={noop}
-                    onBackgroundClick={noop}
-                    hideTitle={true} // ✨ Hide redundant title
+                    scale={scale}
+                    minHeight="100%"
+                    hideTitle={true} // ✨ Hide redundant name in thumbnail
                 />
             </div>
         </div>

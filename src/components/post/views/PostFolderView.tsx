@@ -5,12 +5,13 @@ import RoomSettingsModal from '../components/RoomSettingsModal';
 import NewCycleModal from '../components/NewCycleModal';
 import RoomCycleList from '../components/RoomCycleList';
 import type { PostData } from '../types';
-import { ArrowLeft, Folder, PenLine, Trash2, X, Lock, Users } from 'lucide-react';
+import { ArrowLeft, Folder, PenLine, Trash2, X, Lock, Users, BookOpen } from 'lucide-react';
 import PostBreadcrumb from '../components/PostBreadcrumb';
 import { useBreadcrumbs } from '../hooks/useBreadcrumbs';
 import { DndContext, useDraggable, useDroppable, type DragEndEvent, useSensors, useSensor, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import PostThumbnail from '../components/PostThumbnail';
+import PostBookView from './PostBookView';
 
 // ✨ Helper Components for DnD
 const DraggablePost = ({ id, children }: { id: string | number, children: React.ReactNode }) => {
@@ -64,6 +65,7 @@ interface Props {
 
 const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh, showConfirmModal }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+    const [isBookViewOpen, setIsBookViewOpen] = useState(false); // ✨ Book View State
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
     const [isCycleModalOpen, setIsCycleModalOpen] = useState(false); // ✨ New Cycle Modal State
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false); // ✨ Favorites Filter State
@@ -324,6 +326,17 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                     title={showFavoritesOnly ? "모든 기록 보기" : "즐겨찾기만 보기"}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                                </button>
+                            )}
+
+                            {/* ✨ Book View Toggle */}
+                            {!isRoom && displayedPosts.length > 0 && (
+                                <button
+                                    onClick={() => setIsBookViewOpen(true)}
+                                    className="ml-2 p-1.5 text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors"
+                                    title="책 뷰로 보기"
+                                >
+                                    <BookOpen size={20} />
                                 </button>
                             )}
 
@@ -660,6 +673,14 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                             </div>
                         </div>
                     </div>
+                )}
+                {/* ✨ Book View Modal */}
+                {isBookViewOpen && (
+                    <PostBookView
+                        posts={displayedPosts} // Use displayedPosts to respect filters
+                        onClose={() => setIsBookViewOpen(false)}
+                        startIndex={0}
+                    />
                 )}
                 {/* ✨ Room Settings Modal */}
                 {roomSettingsId && (

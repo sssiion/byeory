@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import type { Block, FloatingImage, FloatingText, Sticker } from "../../post/types.ts";
+import { WIDGET_COMPONENT_MAP } from '../../settings/widgets/componentMap';
+import CustomWidgetPreview from '../../settings/widgets/customwidget/components/CustomWidgetPreview';
 
 interface MiniPostViewerProps {
     title: string;
@@ -11,6 +13,8 @@ interface MiniPostViewerProps {
     floatingImages?: FloatingImage[];
     scale?: number;
     minHeight?: string;
+    hideTitle?: boolean; // ✨ Option to hide title
+    preserveTitleSpace?: boolean; // ✨ Maintain title height even if hidden
 }
 
 const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
@@ -22,10 +26,13 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     floatingTexts = [],
     floatingImages = [],
     scale = 1,
-    minHeight = 'auto'
+    minHeight = 'auto',
+    hideTitle = false, // ✨ Default false
+    preserveTitleSpace = false
 }) => {
     const ORIGINAL_WIDTH = 800; // 에디터 기준 너비
 
+    // ✨ Restore helper function
     const getSafeStyle = (item: any, defaultSize = 150) => {
         const x = item.x ?? item.left ?? 0;
         const y = item.y ?? item.top ?? 0;
@@ -72,10 +79,14 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 }
             `}</style>
 
-            {/* 제목 영역은 글자가 흐르므로 overflow-hidden 유지 */}
+            {/* 제목 영역은 글자가 흐르므로 overflow-hidden 유지 via visibility */}
             <div
                 className="p-8 pb-4 border-b border-gray-100 mb-8 overflow-hidden whitespace-nowrap"
-                style={{ backgroundColor: titleStyles.backgroundColor || 'transparent' }}
+                style={{
+                    backgroundColor: titleStyles.backgroundColor || 'transparent',
+                    display: hideTitle && !preserveTitleSpace ? 'none' : 'block', // ✨ Hide completely if not preserving space
+                    visibility: hideTitle && preserveTitleSpace ? 'hidden' : 'visible' // ✨ Hide visually but keep space
+                }}
             >
                 {/* h1에 animate 클래스 적용 */}
                 <h1 className="title-marquee" style={{
@@ -92,7 +103,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
             </div>
 
             {/* 본문 블록 */}
-            <div className="px-12 pb-20 space-y-6 relative z-0">
+            <div className="px-12 pb-20 space-y-4 relative z-0">
                 {blocks.map((block, index) => {
                     const textStyle = {
                         fontFamily: block.styles?.fontFamily || 'sans-serif',
@@ -149,17 +160,50 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
             </div>
 
             {/* 3. 자유 배치 요소들 */}
-            {stickers.map((stk, index) => (
-                <img
-                    key={`stk-${stk.id || 'none'}-${index}`}
-                    src={stk.url}
-                    style={{
-                        ...getSafeStyle(stk, 120),
-                        pointerEvents: 'none'
-                    }}
-                    alt="sticker"
-                />
-            ))}
+            {stickers.map((stk, index) => {
+                // Debugging: Check if widgetType exists
+                if (stk.widgetType) {
+                    console.log("[MiniPostPreview] Found widget:", stk.widgetType, stk);
+                }
+
+                if (stk.widgetType) {
+                    return (
+                        <div
+                            key={`stk-${stk.id || 'none'}-${index}`}
+                            style={{
+                                ...getSafeStyle(stk, 120),
+                                pointerEvents: 'none'
+                            }}
+                        >
+                            <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-xl" />}>
+                                {stk.widgetType.startsWith('custom-') ? (
+                                    <CustomWidgetPreview
+                                        content={stk.widgetProps?.content || {}}
+                                        defaultSize={stk.widgetProps?.defaultSize || "2x2"}
+                                    />
+                                ) : (
+                                    (() => {
+                                        const WidgetComp = WIDGET_COMPONENT_MAP[stk.widgetType];
+                                        return WidgetComp ? <WidgetComp {...stk.widgetProps} /> : null;
+                                    })()
+                                )}
+                            </Suspense>
+                        </div>
+                    );
+                }
+
+                return (
+                    <img
+                        key={`stk-${stk.id || 'none'}-${index}`}
+                        src={stk.url}
+                        style={{
+                            ...getSafeStyle(stk, 120),
+                            pointerEvents: 'none'
+                        }}
+                        alt="sticker"
+                    />
+                );
+            })}
 
             {floatingImages.map((img, index) => (
                 <img

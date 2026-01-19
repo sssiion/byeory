@@ -467,24 +467,7 @@ const RightSidebar: React.FC<Props> = ({
                         </div>
                     </div>
 
-                    {/* 5. 레이어 순서 (Z-Index) */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">레이어 순서</label>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => onUpdateDecoration?.(selectedDecoration.id, { zIndex: (selectedDecoration.zIndex || 0) - 1 })}
-                                className="flex-1 p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-card-hover)] text-xs"
-                            >
-                                뒤로 보내기
-                            </button>
-                            <button
-                                onClick={() => onUpdateDecoration?.(selectedDecoration.id, { zIndex: (selectedDecoration.zIndex || 0) + 1 })}
-                                className="flex-1 p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded hover:bg-[var(--bg-card-hover)] text-xs"
-                            >
-                                앞으로 가져오기
-                            </button>
-                        </div>
-                    </div>
+
 
                     {/* 6. 🌟 [NEW] 애니메이션 설정 */}
                     <div className="space-y-2">

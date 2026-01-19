@@ -44,6 +44,8 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     const contentRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined);
+    const titleRef = useRef<HTMLDivElement>(null); // ✨ Title Measurement
+    const [titleHeight, setTitleHeight] = useState(0);
 
     // ✨ Drag Selection State
     const [isSelecting, setIsSelecting] = useState(false);
@@ -149,6 +151,10 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                 const originalHeight = contentRef.current.offsetHeight;
                 setScaledHeight(originalHeight * scale);
             }
+            // ✨ Measure Title Height
+            if (titleRef.current) {
+                setTitleHeight(titleRef.current.offsetHeight);
+            }
         };
 
         // Run immediately
@@ -161,7 +167,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
         }
 
         return () => observer.disconnect();
-    }, [scale, blocks, stickers, floatingTexts, floatingImages]);
+    }, [scale, blocks, stickers, floatingTexts, floatingImages, title]); // ✨ Added title to dep to remeasure if wraps
 
     // ✨ Selection Box Logic
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -385,10 +391,53 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                         ref={contentRef}
                         className={`w-[800px] ${viewMode === 'editor' ? 'min-h-[1000px]' : ''} relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone`}
                         style={{
-                            backgroundColor: '#ffffff',
                             ...paperStyles
                         }}
                     >
+                        {/* ✨ Background Layer: Title & Separate Pages */}
+                        <div className="absolute inset-0 pointer-events-none z-0">
+                            {/* Title Background Area */}
+                            <div
+                                style={{
+                                    height: titleHeight ? `${titleHeight}px` : '100px',
+                                    backgroundColor: '#ffffff'
+                                }}
+                                className="w-full border-b border-gray-100"
+                            />
+
+                            {/* Page Sheets & Gaps */}
+                            {Array.from({ length: Math.max(1, Math.ceil(((scaledHeight || 1200) - (titleHeight || 0)) / (930 + 20))) + 1 }).map((_, i) => {
+                                // Start pages AFTER the title
+                                // Page 0 (First Page) starts at titleHeight
+                                const PAGE_HEIGHT = 930; // ✨ Adjusted to 930px to match BookView capacity (Editor has padding)
+                                const topPos = (titleHeight || 0) + i * (PAGE_HEIGHT + 20);
+
+                                return (
+                                    <React.Fragment key={`page-bg-${i}`}>
+                                        {/* White Paper Sheet */}
+                                        <div
+                                            className="absolute left-0 w-full bg-white shadow-sm"
+                                            style={{
+                                                top: `${topPos}px`,
+                                                height: `${PAGE_HEIGHT}px`,
+                                                border: '1px solid #f0f0f0'
+                                            }}
+                                        />
+
+                                        {/* Gap / Page Break Indicator */}
+                                        <div
+                                            className="absolute left-0 w-full h-[20px] flex items-center justify-center z-10"
+                                            style={{ top: `${topPos + PAGE_HEIGHT}px` }}
+                                        >
+                                            <span className="text-[10px] font-medium text-gray-400 bg-gray-100/80 px-2 rounded-full backdrop-blur-sm border border-gray-200">
+                                                Page {i + 1} End — Page {i + 2} Start
+                                            </span>
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+
                         {/* ✨ Selection Overlay */}
                         {isSelecting && selectionBox && (
                             <div
@@ -409,6 +458,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                         {/* 헤더 */}
                         {!hideTitle && (
                             <div
+                                ref={titleRef} // ✨ Measure Title Height
                                 id="title" // ✨ Added ID for ToolbarOverlay
                                 className={`sticky top-0 bg-transparent border-b flex flex-col justify-start items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
                                 style={{ zIndex: titleStyles.zIndex || 20 }}
@@ -673,19 +723,10 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             </ResizableItem>
                         ))}
 
-                        {/* ✨ NEW: Global Overlay Toolbar for Blocks & Title */}
-                        {viewMode === 'editor' && selectedId && currentItem && (detectedType === 'block' || detectedType === 'title' || detectedType === 'floating') && (
-                            // Keeping Overlay inside scale for now as it attaches to blocks? Or should we move it?
-                            // ToolbarOverlay handles its own positioning usually.
-                            <ToolbarOverlay
-                                selectedId={selectedId}
-                                selectedType={detectedType} // 'block' | 'title'
-                                currentItem={currentItem}
-                                onUpdate={onUpdate}
-                                onDelete={detectedType === 'title' ? undefined : onDelete}
-                                scale={scale}
-                            />
-                        )}
+                        {/* ✨ Old Page Guides Removed - Handled by Background Layer */}
+
+                        {/* ✨ Duplicate Title & Toolbar Removed */}
+
                     </div>
                 </div>
             </div>
