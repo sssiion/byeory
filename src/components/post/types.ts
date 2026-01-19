@@ -1,4 +1,4 @@
-import type { AlbumCoverConfig } from './components/AlbumCover/constants';
+import type { AlbumCoverConfig } from './components/albumCover/constants';
 
 export type ViewMode = 'list' | 'editor' | 'read' | 'album' | 'folder';
 
