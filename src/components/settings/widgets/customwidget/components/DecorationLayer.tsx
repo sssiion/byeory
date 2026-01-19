@@ -51,7 +51,7 @@ const DecorationLayer: React.FC<DecorationLayerProps> = ({ decorations = [], sca
                 const heightStyle = (heightVal as any) === 'auto' ? 'auto' : `${heightVal}${unit}`;
 
                 const imageUrl = deco.imageUrl || deco.src;
-                const isShape = ['circle', 'square', 'star', 'shape'].includes(safeType);
+                const isShape = ['circle', 'square', 'star', 'shape', 'line'].includes(safeType);
                 const isImage = ['image', 'sticker'].includes(safeType) || !!imageUrl;
 
                 return (

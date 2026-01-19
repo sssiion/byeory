@@ -205,11 +205,11 @@ const RightSidebar: React.FC<Props> = ({
                                     className="w-full p-2 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded text-xs text-[var(--text-primary)]"
                                 />
                                 {/* ✨ Crop & AI Tools */}
-                                <div className="flex gap-2">
+                                <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={handleRemoveBackground}
                                         disabled={isProcessing}
-                                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors
+                                        className={`flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors
                                             ${isProcessing ? 'bg-violet-100 text-violet-500 animate-pulse' : 'bg-violet-50 text-violet-600 hover:bg-violet-100'} border border-violet-100`}
                                         title={isProcessing ? "배경 제거 중..." : "AI 배경 제거"}
                                     >
@@ -218,7 +218,7 @@ const RightSidebar: React.FC<Props> = ({
                                     </button>
                                     <button
                                         onClick={onCropToggle}
-                                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors border
+                                        className={`flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors border
                                             ${isCropping
                                                 ? 'bg-indigo-500 text-white border-indigo-600 shadow-sm'
                                                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
@@ -1864,7 +1864,7 @@ const RightSidebar: React.FC<Props> = ({
                                             newData[idx].value = Number(e.target.value);
                                             updateContent('data', newData);
                                         }}
-                                        className="w-12 bg-[var(--bg-card)] text-white p-2 rounded border border-[var(--border-color)] outline-none text-xs text-center"
+                                        className="w-12 bg-[var(--bg-card)] text-gray-900 p-2 rounded border border-[var(--border-color)] outline-none text-xs text-center"
                                     />
                                     <button
                                         onClick={() => {

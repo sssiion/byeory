@@ -289,12 +289,24 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         const cost = BLOCK_COSTS[type] || 1;
         if (cost > remainingCapacity) { alert("공간 부족!"); return; }
 
+        // ✨ [Fix] Use 1x1 size (180px) as default for better grid fit
+        // Charts specifically requested to match standard sizes
+        let defaultW = WIDGET_SIZES['1x1'].w; // 180
+        let defaultH: string | number = 'auto';
+
+        if (type.startsWith('chart-')) {
+            defaultH = WIDGET_SIZES['1x1'].h;
+        } else if (type === 'database') {
+            defaultW = WIDGET_SIZES['2x2'].w;
+            defaultH = 250;
+        }
+
         const newBlock: WidgetBlock = {
             id: `blk-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             type,
             content: getDefaultContent(type),
             styles: { color: '#1e293b', align: 'left', fontSize: 14 },
-            layout: { x: 50, y: 50, w: 320, h: 'auto', rotation: 0, zIndex: 1 }
+            layout: { x: 50, y: 50, w: defaultW, h: defaultH, rotation: 0, zIndex: 1 }
         };
 
         setBlocks([newBlock, ...blocks]);
@@ -321,11 +333,15 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
             const canvasW = currentSize.w || 320;
             const canvasH = currentSize.h || 320; // Default fallback
 
-            // ✨ Calculate square size (e.g. 150px)
+            // ✨ Calculate size
             const targetSize = 150;
-            // Canvas uses pixels for w/h, so we just use targetSize directly
-            const w = targetSize;
-            const h = targetSize;
+            let w = targetSize;
+            let h = targetSize;
+
+            if (type === 'line') {
+                w = 100;
+                h = 5;
+            }
 
             // ✨ Center it
             // x, y are percentages. Center (50%) minus half width/height in %

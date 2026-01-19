@@ -325,6 +325,8 @@ const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, onA
                                 <div className="my-2 border-t border-dashed border-[var(--border-color)]" />
                                 <h4 className="text-[10px] font-bold text-[var(--text-secondary)] mb-2 px-1">배경 도형</h4>
 
+                                {renderDecoBtn(<Minus size={18} />, "선 (Line)", 'line')}
+
                                 {/* 🌟 배경 도형 추가 버튼 */}
                                 {renderDecoBtn(<div className="w-4 h-4 rounded-full border-2 border-current" />, "원형 (Circle)", 'circle')}
                                 {renderDecoBtn(<div className="w-4 h-4 border-2 border-current" />, "사각형 (Square)", 'square')}

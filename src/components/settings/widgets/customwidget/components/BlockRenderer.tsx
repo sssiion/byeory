@@ -400,18 +400,20 @@ const RatingItem = ({ block, onUpdateBlock }: any) => {
     );
 };
 
-const ScrollTextItem = ({ block, onUpdateBlock, style }: any) => {
+const ScrollTextItem = ({ block, onUpdateBlock, style, isSelected }: any) => {
     const { content } = block;
     const speed = content.speed || 10; // seconds
     const text = content.text || '스크롤 텍스트';
 
     return (
-        <div style={{ ...style, overflow: 'hidden', whiteSpace: 'nowrap' }} className="w-full h-full flex items-center relative">
+        <div style={{ ...style, overflow: 'hidden', whiteSpace: 'nowrap' }} className="w-full h-full flex items-center relative group">
             <div
                 style={{
-                    animation: `scrollText ${speed}s linear infinite`,
+                    animation: isSelected ? 'none' : `scrollText ${speed}s linear infinite`,
                     display: 'inline-block',
-                    paddingLeft: '100%',
+                    paddingLeft: isSelected ? '0' : '100%',
+                    width: isSelected ? '100%' : 'auto', // Ensure full width for input when selected
+                    transform: isSelected ? 'none' : undefined
                 }}
             >
                 <EditableText
@@ -811,28 +813,34 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             case 'highlight':
                 return <HighlightItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
             case 'scroll-text':
-                return <ScrollTextItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+                return <ScrollTextItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} isSelected={selectedBlockId === block.id} />;
             case 'heatmap':
                 return <HeatmapWidget viewMode={content.viewMode || 'month'} themeColor={styles.color || '#6366f1'} />;
             case 'bullet-list':
                 return (
-                    <ul className="list-disc pl-5 m-0" style={commonStyle}>
+                    <div className="flex flex-col h-full justify-between pl-2" style={commonStyle}>
                         {(content.items || []).map((it: string, i: number) => (
-                            <li key={i}>
-                                <EditableText tagName="span" text={it} onUpdate={v => { const n = [...content.items || []]; n[i] = v; onUpdateBlock(block.id, { content: { ...content, items: n } }); }} />
-                            </li>
+                            <div key={i} className="flex items-start gap-2">
+                                <span className="select-none">•</span>
+                                <div className="flex-1 min-w-0">
+                                    <EditableText tagName="span" text={it} onUpdate={v => { const n = [...content.items || []]; n[i] = v; onUpdateBlock(block.id, { content: { ...content, items: n } }); }} />
+                                </div>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 );
             case 'number-list':
                 return (
-                    <ol className="list-decimal pl-5 m-0" style={commonStyle}>
+                    <div className="flex flex-col h-full justify-between pl-2" style={commonStyle}>
                         {(content.items || []).map((it: string, i: number) => (
-                            <li key={i}>
-                                <EditableText tagName="span" text={it} onUpdate={v => { const n = [...content.items || []]; n[i] = v; onUpdateBlock(block.id, { content: { ...content, items: n } }); }} />
-                            </li>
+                            <div key={i} className="flex items-start gap-2">
+                                <span className="select-none min-w-[1.2em]">{i + 1}.</span>
+                                <div className="flex-1 min-w-0">
+                                    <EditableText tagName="span" text={it} onUpdate={v => { const n = [...content.items || []]; n[i] = v; onUpdateBlock(block.id, { content: { ...content, items: n } }); }} />
+                                </div>
+                            </div>
                         ))}
-                    </ol>
+                    </div>
                 );
             case 'callout':
                 return (

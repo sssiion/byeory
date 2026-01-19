@@ -83,7 +83,7 @@ export type ContainerLocation = {
     colIndex: number;
 } | null;
 
-export type DecorationType = 'circle' | 'square' | 'blob' | 'star' | 'text' | 'image' | 'sticker' | 'shape';
+export type DecorationType = 'circle' | 'square' | 'blob' | 'star' | 'text' | 'image' | 'sticker' | 'shape' | 'line';
 
 export interface WidgetDecoration {
     id: string;
