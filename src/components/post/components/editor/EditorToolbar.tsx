@@ -17,6 +17,7 @@ import {
     Search, // ✨ Import Search for Zoom
     Eraser // ✨ Import Eraser for BG Removal
 } from 'lucide-react';
+import { useBackgroundRemoval } from '../../../../hooks/useBackgroundRemoval';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
 import { FONT_FAMILIES } from '../../constants';
 
@@ -36,7 +37,7 @@ interface Props {
 const EditorToolbar: React.FC<Props> = ({
     selectedId, selectedType, currentItem, onUpdate, onDelete, positionMode = 'fixed', onCropToggle, isCropping
 }) => {
-    const [isLoading, setIsLoading] = useState(false); // ✨ Add loading state
+    // const [isLoading, setIsLoading] = useState(false); // ✨ Removed local state in favor of hook
     const [showTextMenu, setShowTextMenu] = React.useState(false);
     const [showBgMenu, setShowBgMenu] = React.useState(false);
     const itemType = (currentItem as any)?.type;
@@ -47,56 +48,84 @@ const EditorToolbar: React.FC<Props> = ({
         onUpdate(selectedId, selectedType, { zIndex: newZIndex });
     };
 
-    // ✨ Handle AI Background Removal
+    // ✨ Handle AI Background Removal (Local Library)
+    const { removeBg, isProcessing } = useBackgroundRemoval();
+
     const handleRemoveBackground = async () => {
         if (!selectedId || (selectedType !== 'floatingImage' && selectedType !== 'sticker')) return;
-
-        const apiKey = import.meta.env.VITE_API_FREEPIK;
-        if (!apiKey) {
-            alert("Freepik API Key가 필요합니다.");
-            return;
-        }
 
         // We need a URL. For stickers/images, we check if they have a source URL.
         const imageUrl = (currentItem as any).url || (currentItem as any).src;
         if (!imageUrl) {
-            alert("URL 기반 이미지만 현재 배경 제거가 가능합니다.");
+            alert("이미지 처리 중 오류가 발생했습니다.");
             return;
         }
 
-        setIsLoading(true);
+        // Set Loading State ON
+        onUpdate(selectedId, selectedType, { isProcessing: true });
 
         try {
-            const response = await fetch('/freepik-api/v1/ai/beta/remove-background', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Freepik-API-Key': apiKey,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    image_url: imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl}`
-                })
-            });
+            let blobToProcess: Blob;
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.message || "배경 제거에 실패했습니다.");
+            // ✨ Handle Cropped Images: Bake visible area to new Blob
+            if (currentItem.crop) {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = imageUrl;
+
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+
+                const canvas = document.createElement('canvas');
+                // Viewport size
+                const w = typeof currentItem.w === 'number' ? currentItem.w : parseFloat(currentItem.w);
+                const h = typeof currentItem.h === 'number' ? currentItem.h : parseFloat(currentItem.h);
+
+                canvas.width = w;
+                canvas.height = h;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error("Canvas Context Error");
+
+                // Draw exactly what is visible:
+                ctx.drawImage(
+                    img,
+                    currentItem.crop.contentX,
+                    currentItem.crop.contentY,
+                    currentItem.crop.contentW,
+                    currentItem.crop.contentH
+                );
+
+                const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve));
+                if (!blob) throw new Error("Canvas Blob conversion failed");
+                blobToProcess = blob;
+
+            } else {
+                const response = await fetch(imageUrl, { mode: 'cors' });
+                blobToProcess = await response.blob();
             }
 
-            const data = await response.json();
-            const newUrl = data.data.url;
+            // Remove Background
+            const newUrl = await removeBg(blobToProcess);
 
             if (newUrl) {
                 onUpdate(selectedId, selectedType, {
-                    url: newUrl
+                    url: newUrl,
+                    crop: undefined,
+                    isProcessing: false // Turn OFF loading
                 });
+            } else {
+                // If it failed silently or returned null?
+                onUpdate(selectedId, selectedType, { isProcessing: false });
             }
+
         } catch (error) {
             console.error("BG Removal Error:", error);
-            alert(error instanceof Error ? error.message : "오류가 발생했습니다.");
-        } finally {
-            setIsLoading(false);
+            alert(error instanceof Error ? error.message : "배경 제거 중 오류가 발생했습니다.");
+            // Turn OFF loading on error
+            onUpdate(selectedId, selectedType, { isProcessing: false });
         }
     };
 
@@ -390,13 +419,13 @@ const EditorToolbar: React.FC<Props> = ({
                         <div className="border-l pl-3 ml-2 border-gray-200 flex items-center gap-3">
                             <button
                                 onClick={handleRemoveBackground}
-                                disabled={isLoading}
+                                disabled={isProcessing}
                                 className={`p-2 rounded-lg transition items-center justify-center flex text-violet-600 hover:bg-violet-50
-                                    ${isLoading ? 'animate-pulse bg-violet-50' : ''}
+                                    ${isProcessing ? 'animate-pulse bg-violet-50' : ''}
                                 `}
-                                title="배경 제거 (AI)"
+                                title={currentItem.crop ? "자른 영역 배경 제거 (저장)" : "배경 제거 (AI)"}
                             >
-                                <Eraser size={18} className={isLoading ? "animate-bounce" : ""} />
+                                <Eraser size={18} className={isProcessing ? "animate-bounce" : ""} />
                             </button>
 
                             <button

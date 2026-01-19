@@ -3,6 +3,7 @@ import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown, Trash2, Undo2, Search, ImageDown } from 'lucide-react';
+import axios from 'axios'; // ✨ Import Axios
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
@@ -168,6 +169,8 @@ const EditorSidebar: React.FC<Props> = ({
         setIsFreepikLoading(true);
 
         const apiKey = import.meta.env.VITE_API_FREEPIK;
+        console.log("Freepik API Key Loaded:", apiKey ? "Yes (" + apiKey.slice(0, 4) + "...)" : "No");
+
         if (!apiKey) {
             alert('Freepik API Key가 설정되지 않았습니다. (.env 파일을 확인해주세요)');
             setIsFreepikLoading(false);
@@ -178,52 +181,47 @@ const EditorSidebar: React.FC<Props> = ({
             const isIconSearch = freepikFilter === 'icon';
             const endpoint = isIconSearch ? '/v1/icons' : '/v1/resources';
 
-            // Base filters
-            let filterParams = '';
-            if (freepikFilter === 'photo') {
-                filterParams = '&filters[content_type][photo]=1';
-            } else if (freepikFilter === 'vector') {
-                filterParams = '&filters[content_type][vector]=1';
-            } else if (isIconSearch) {
-                // Dedicated Icons API doesn't need vector filter, 
-                // but we can add style filters if needed.
-                // filterParams = '&filters[style]=flat'; 
+            // Construct params for axios
+            const params: Record<string, string> = {
+                limit: '24',
+                page: targetPage.toString(),
+                term: freepikQuery,
+            };
+
+            if (!isIconSearch) {
+                params.locale = 'ko-KR';
+                if (freepikFilter === 'photo') {
+                    params['filters[content_type][photo]'] = '1';
+                } else if (freepikFilter === 'vector') {
+                    params['filters[content_type][vector]'] = '1';
+                }
             }
 
-            // Construct Query
-            const queryTerm = freepikQuery;
+            console.log(`Freepik Request (Axios): ${endpoint}`, params);
 
-            // Use Proxy URL to bypass CORS
-            // Note: Icons API might not support locale in query string, resources API does.
-            const urlQuery = isIconSearch
-                ? `limit=24&page=${targetPage}&term=${encodeURIComponent(queryTerm)}${filterParams}`
-                : `locale=ko-KR&limit=24&page=${targetPage}&term=${encodeURIComponent(queryTerm)}${filterParams}`;
-
-            const response = await fetch(`/freepik-api${endpoint}?${urlQuery}`, {
+            // Use Axios with Proxy Path
+            // Using /freepik-api/... to proxy request to https://api.freepik.com
+            const response = await axios.get<{ data: any[], meta: any }>(`/freepik-api${endpoint}`, {
+                params: params,
                 headers: {
                     'Accept-Language': 'ko-KR',
-                    'X-Freepik-API-Key': apiKey
+                    'x-freepik-api-key': apiKey // Lowercase as requested
                 }
             });
 
-            if (!response.ok) {
-                if (response.status === 403 || response.status === 401) {
-                    throw new Error("API 키가 잘못되었거나 만료되었습니다.");
+            const data = response.data;
+            const resources = data.data; // Freepik response structure: { data: [...] }
+
+            if (!resources || resources.length === 0) {
+                if (targetPage === 1) {
+                    alert('검색 결과가 없습니다.');
                 }
-                throw new Error("이미지를 불러오는데 실패했습니다.");
-            }
-
-            const data = await response.json();
-
-            if (!data || !data.data || !Array.isArray(data.data)) {
-                console.warn("Freepik API returned unexpected structure:", data);
-                setFreepikResults([]);
                 setIsFreepikLoading(false);
                 return;
             }
 
             // Extract Image URLs
-            const results = data.data.map((item: any) => {
+            const results = resources.map((item: any) => {
                 let previewUrl = '';
                 let downloadUrl = '';
 

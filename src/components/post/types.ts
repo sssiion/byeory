@@ -32,6 +32,8 @@ export interface BaseFloatingItem {
         contentW: number; // Fixed size of content
         contentH: number;
     };
+    // ✨ Processing State (e.g., Background Removal Loading)
+    isProcessing?: boolean;
 }
 
 export interface Sticker extends BaseFloatingItem {
