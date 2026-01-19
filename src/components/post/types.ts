@@ -25,6 +25,13 @@ export interface BaseFloatingItem {
     opacity?: number;
     zIndex: number;
     locked?: boolean;
+    // ✨ Crop Data (Optional)
+    crop?: {
+        contentX: number; // Offset of content within the viewport
+        contentY: number;
+        contentW: number; // Fixed size of content
+        contentH: number;
+    };
 }
 
 export interface Sticker extends BaseFloatingItem {

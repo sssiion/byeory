@@ -69,8 +69,12 @@ export interface WidgetSize {
     label: string;
 }
 export interface BlockLayout {
-    w: number | string; // 픽셀(number) 또는 '100%'(string) 허용
-    h: number | string; // 'auto' 또는 픽셀
+    x: number; // Normalized 0-100 relative to widget
+    y: number; // Normalized 0-100 relative to widget
+    w: number | string; // px or %
+    h: number | string; // px or 'auto'
+    rotation?: number;
+    zIndex?: number;
 }
 // 🆕 [중요] 다단 컬럼 포커스 위치 타입
 // (어떤 블록의 몇 번째 칸이 선택되었는지 저장)

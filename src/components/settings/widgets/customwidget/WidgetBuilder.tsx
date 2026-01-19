@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, PanelLeft, PanelRight, Trash2 } from 'lucide-react';
-import type { WidgetBlock, BlockType, ContainerLocation, WidgetDecoration, DecorationType, WidgetScene } from './types';
+import type { WidgetBlock, BlockType, WidgetDecoration, DecorationType, WidgetScene } from './types';
 import { WIDGET_SIZES, BLOCK_COSTS } from './constants';
 import { getDefaultContent, getLabelByType } from './utils';
 
@@ -8,7 +8,6 @@ import { getDefaultContent, getLabelByType } from './utils';
 import LeftSidebar, { type Category } from './components/LeftSidebar';
 import RightSidebar from './components/RightSidebar';
 import Canvas from './components/Canvas';
-import type { DragEndEvent, DragOverEvent } from "@dnd-kit/core";
 import { saveWidget, updateWidget, deleteWidget } from "./widgetApi.ts";
 import { domToPng } from 'modern-screenshot'; // ✨
 import { uploadImageToSupabase } from '../../../post/api/index.ts'; // ✨
@@ -142,7 +141,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
             } else {
                 // 단일 블록 로드 -> Scene 1
                 const loadedBlock: WidgetBlock = {
-                    id: initialData.id || initialData._id || `blk - ${Date.now()} `,
+                    id: initialData.id || initialData._id || `blk-${Date.now()}`,
                     type: initialData.type,
                     content: initialData.content || {},
                     styles: initialData.styles || {}
@@ -155,38 +154,11 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         }
     }, [initialData]);
 
-    const [activeContainer, setActiveContainer] = useState<ContainerLocation>(null);
     const currentSize = WIDGET_SIZES[currentSizeKey];
 
     // --- Helper Functions ---
-    const findBlockRecursive = (items: WidgetBlock[], id: string): WidgetBlock | undefined => {
-        for (const item of items) {
-            if (item.id === id) return item;
-            if (item.type === 'columns' && item.content.layout) {
-                for (const col of item.content.layout) {
-                    const found = findBlockRecursive(col, id);
-                    if (found) return found;
-                }
-            }
-        }
-        return undefined;
-    };
 
-    const getListFromId = (droppableId: string, currentBlocks: WidgetBlock[]): WidgetBlock[] | undefined => {
-        if (droppableId === 'ROOT') return currentBlocks;
-        if (droppableId.startsWith('COL-')) {
-            const splitIndex = droppableId.lastIndexOf('-');
-            const blockId = droppableId.substring(4, splitIndex);
-            const colIndex = parseInt(droppableId.substring(splitIndex + 1));
-            const parentBlock = findBlockRecursive(currentBlocks, blockId);
-            if (parentBlock && parentBlock.type === 'columns' && parentBlock.content.layout) {
-                return parentBlock.content.layout[colIndex];
-            }
-        }
-        return undefined;
-    };
-
-    const selectedBlock = selectedBlockId ? findBlockRecursive(blocks, selectedBlockId) : undefined;
+    const selectedBlock = selectedBlockId ? blocks.find(b => b.id === selectedBlockId) : undefined;
 
     const calculateCapacity = (items: WidgetBlock[]): number => {
         return items.reduce((sum, block) => {
@@ -209,56 +181,24 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         if (cost > remainingCapacity) { alert("공간 부족!"); return; }
 
         const newBlock: WidgetBlock = {
-            id: `blk - ${Date.now()} -${Math.random().toString(36).substr(2, 5)} `,
+            id: `blk-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             type,
             content: getDefaultContent(type),
-            styles: { color: '#1e293b', align: 'left', fontSize: 14 }
+            styles: { color: '#1e293b', align: 'left', fontSize: 14 },
+            layout: { x: 50, y: 50, w: 100, h: 'auto', rotation: 0, zIndex: 1 }
         };
 
-        if (activeContainer) {
-            setBlocks(prev => {
-                const copy = JSON.parse(JSON.stringify(prev));
-                const targetListId = `COL - ${activeContainer.blockId} -${activeContainer.colIndex} `;
-                const targetList = getListFromId(targetListId, copy);
-                if (targetList) targetList.unshift(newBlock);
-                else copy.unshift(newBlock);
-                return copy;
-            });
-        } else {
-            setBlocks([newBlock, ...blocks]);
-        }
+        setBlocks([newBlock, ...blocks]);
         setSelectedBlockId(newBlock.id);
     };
 
     const removeBlock = (id: string) => {
-        const filterRecursive = (items: WidgetBlock[]): WidgetBlock[] => {
-            return items.filter(item => item.id !== id).map(item => {
-                if (item.type === 'columns') {
-                    item.content.layout = item.content.layout.map((col: any) => filterRecursive(col));
-                }
-                return item;
-            });
-        };
-        setBlocks(prev => filterRecursive(prev));
+        setBlocks(prev => prev.filter(item => item.id !== id));
         if (selectedBlockId === id) setSelectedBlockId(null);
     };
 
     const updateBlock = (id: string, updates: any) => {
-        const updateRecursive = (items: WidgetBlock[]): WidgetBlock[] => {
-            return items.map(item => {
-                if (item.id === id) {
-                    if ('color' in updates || 'bgColor' in updates || 'fontSize' in updates || 'align' in updates || 'bold' in updates || 'italic' in updates || 'underline' in updates || 'strikethrough' in updates) {
-                        return { ...item, styles: { ...item.styles, ...updates } };
-                    }
-                    return { ...item, ...updates };
-                }
-                if (item.type === 'columns') {
-                    item.content.layout = item.content.layout.map((col: any) => updateRecursive(col));
-                }
-                return item;
-            });
-        };
-        setBlocks(prev => updateRecursive(prev));
+        setBlocks(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
     };
 
     // --- Decoration Handlers ---
@@ -287,71 +227,6 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
         if (selectedDecorationId === id) setSelectedDecorationId(null);
     };
 
-
-    const getContainerIdFromDroppable = (over: any): string | undefined => {
-        return (over?.data?.current?.containerId as string | undefined)
-            ?? (typeof over?.id === 'string' ? (over.id as string) : undefined);
-    };
-
-    // --- DnD Handlers ---
-    const handleDndKitDragOver = (event: DragOverEvent) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const activeId = active.id as string;
-        const fromContainer = active.data.current?.containerId as string | undefined;
-        const toContainer = getContainerIdFromDroppable(over);
-
-        if (!fromContainer || !toContainer) return;
-        if (fromContainer === toContainer) return;
-
-        setBlocks((prev) => {
-            const draft: WidgetBlock[] = JSON.parse(JSON.stringify(prev));
-            const sourceList = getListFromId(fromContainer, draft);
-            const destList = getListFromId(toContainer, draft);
-            if (!sourceList || !destList) return prev;
-
-            const oldIndex = sourceList.findIndex((b) => b.id === activeId);
-            if (oldIndex === -1) return prev;
-
-            const [moved] = sourceList.splice(oldIndex, 1);
-            destList.push(moved);
-
-            active.data.current = { ...(active.data.current ?? {}), containerId: toContainer };
-            return draft;
-        });
-    };
-
-    const handleDndKitDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const activeId = active.id as string;
-        const fromContainer = active.data.current?.containerId as string | undefined;
-        const toContainer = getContainerIdFromDroppable(over);
-
-        if (!fromContainer || !toContainer) return;
-
-        if (fromContainer === toContainer) {
-            setBlocks((prev) => {
-                const draft: WidgetBlock[] = JSON.parse(JSON.stringify(prev));
-                const list = getListFromId(fromContainer, draft);
-                if (!list) return prev;
-
-                const oldIndex = list.findIndex((b) => b.id === activeId);
-                if (oldIndex === -1) return prev;
-
-                const overId = over.id as string;
-                let newIndex = list.findIndex((b) => b.id === overId);
-                if (newIndex === -1) newIndex = list.length - 1;
-
-                const [moved] = list.splice(oldIndex, 1);
-                list.splice(newIndex, 0, moved);
-
-                return draft;
-            });
-        }
-    };
 
     // 🌟 저장 로직 핸들러
     const handleSaveToCloud = async () => {
@@ -498,9 +373,9 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                                     key={key}
                                     onClick={() => setCurrentSizeKey(key as any)}
                                     className={`px-3 py-1 text-xs font-bold rounded transition-colors whitespace-nowrap
-                                        max-md:px-2 max-md:text-[10px] max-md:py-1
-                                        ${currentSizeKey === key ? 'bg-indigo-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'} 
-                                    `}
+max-md:px-2 max-md:text-[10px] max-md:py-1
+                                        ${currentSizeKey === key ? 'bg-indigo-600 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}
+`}
                                 >
                                     {val.label}
                                 </button>
@@ -518,8 +393,8 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                                     key={key}
                                     onClick={() => setCurrentSizeKey(key as any)}
                                     className={`px-2 py-1 text-[10px] font-bold rounded transition-colors whitespace-nowrap
-                                        ${currentSizeKey === key ? 'bg-indigo-500 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'} 
-                                    `}
+                                        ${currentSizeKey === key ? 'bg-indigo-500 text-white' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}
+`}
                                 >
                                     {val.label}
                                 </button>
@@ -619,12 +494,8 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                     onUpdateBlock={updateBlock}
                     updateDecoration={updateDecoration} // [NEW]
                     currentSize={currentSize}
-                    onDragOver={handleDndKitDragOver}
-                    onDragEnd={handleDndKitDragEnd}
-                    activeContainer={activeContainer}
                     // Missing props
                     onRemoveBlock={handleRemoveBlock}
-                    onSetActiveContainer={setActiveContainer}
                     // 🌟 [NEW] 더블 클릭 시 설정 열기
                     onOpenSettings={handleOpenSettings}
                 />
@@ -638,7 +509,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                     />
                 )}
 
-                <div className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0
                     ${isRightOpen
                         ? 'w-80 opacity-100 max-md:fixed max-md:top-1/2 max-md:left-1/2 max-md:-translate-x-1/2 max-md:-translate-y-1/2 max-md:w-[90%] max-md:h-[80%] max-md:z-[100] max-md:rounded-2xl max-md:shadow-2xl max-md:border max-md:border-white/20'
                         : 'w-0 opacity-0 max-md:hidden'}
@@ -650,7 +521,6 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
                             setSelectedBlockId(null);
                             setSelectedDecorationId(null);
                         }}
-                        // Decoration Props
                         selectedDecoration={decorations.find(d => d.id === selectedDecorationId)}
                         onUpdateDecoration={updateDecoration}
                         onDeleteDecoration={removeDecoration}

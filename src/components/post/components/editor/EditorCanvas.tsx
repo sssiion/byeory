@@ -3,7 +3,7 @@ import ContentBlock from './ContentBlock';
 import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
 import CustomWidgetPreview from '../../../../components/settings/widgets/customwidget/components/CustomWidgetPreview'; // 🌟 Import CustomWidgetPreview
 import ResizableItem from './ResizableItem';
-import EditorToolbar from './EditorToolbar';
+// import EditorToolbar from './EditorToolbar'; // Unused
 import ToolbarOverlay from './ToolbarOverlay';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
@@ -30,11 +30,12 @@ interface Props {
     onBlockImageUpload: (id: string, file: File, idx?: number) => void;
     onBackgroundClick: () => void;
     paperStyles?: Record<string, any>;
+    hideTitle?: boolean; // ✨ Optional prop to hide title
 }
 
 const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedIds = [], selectedType,
-    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, paperStyles
+    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, paperStyles, hideTitle = false
 }, ref) => {
 
     // ✨ Responsive Scaling Logic
@@ -47,6 +48,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     const [isSelecting, setIsSelecting] = useState(false);
     const [selectionBox, setSelectionBox] = useState<{ startX: number, startY: number, currentX: number, currentY: number } | null>(null);
     const [isToolbarVisible, setIsToolbarVisible] = useState(false); // ✨ Toolbar Visibility State
+    const [croppingId, setCroppingId] = useState<string | null>(null); // ✨ Crop State
 
     // ✨ Expose Content Ref
     useImperativeHandle(ref, () => contentRef.current!);
@@ -103,6 +105,41 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [selectedIds, selectedId, onDelete]);
+
+    // ✨ Reset cropping when selection changes
+    useEffect(() => {
+        setCroppingId(null);
+    }, [selectedId]);
+
+    // ✨ Handle Crop Toggle
+    const handleCropToggle = () => {
+        if (!selectedId) return;
+
+        if (croppingId === selectedId) {
+            setCroppingId(null);
+        } else {
+            setCroppingId(selectedId);
+
+            // Initialize Crop Data if missing
+            // Find item
+            let item: any = null;
+            if (selectedType === 'sticker') item = stickers.find(s => s.id === selectedId);
+            else if (selectedType === 'floatingImage') item = floatingImages.find(f => f.id === selectedId);
+
+            if (item && !item.crop) {
+                // Determine implicit type for onUpdate
+                // Type is strictly needed by onUpdate
+                onUpdate(selectedId, selectedType as any, {
+                    crop: {
+                        contentX: 0,
+                        contentY: 0,
+                        contentW: item.w,
+                        contentH: item.h
+                    }
+                });
+            }
+        }
+    };
 
     // ✨ Update wrapper height to match scaled content
     useEffect(() => {
@@ -369,34 +406,36 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                         )}
 
                         {/* 헤더 */}
-                        <div
-                            id="title" // ✨ Added ID for ToolbarOverlay
-                            className={`sticky top-0 bg-transparent border-b flex flex-col justify-start items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
-                            style={{ zIndex: titleStyles.zIndex || 20 }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (viewMode === 'editor') onSelect('title', 'title');
-                            }}
-                        >
-                            <div className="flex justify-between items-start gap-4 pointer-events-auto w-full">
-                                <input
-                                    value={title}
-                                    onChange={e => setTitle(e.target.value)}
-                                    placeholder="제목을 입력하세요"
-                                    readOnly={viewMode === 'read'}
-                                    className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0 h-25 pl-5"
-                                    style={{
-                                        ...titleStyles,
-                                        fontSize: titleStyles.fontSize || '30px',
-                                        fontWeight: titleStyles.fontWeight || 'bold',
-                                    }}
-                                />
+                        {!hideTitle && (
+                            <div
+                                id="title" // ✨ Added ID for ToolbarOverlay
+                                className={`sticky top-0 bg-transparent border-b flex flex-col justify-start items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
+                                style={{ zIndex: titleStyles.zIndex || 20 }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (viewMode === 'editor') onSelect('title', 'title');
+                                }}
+                            >
+                                <div className="flex justify-between items-start gap-4 pointer-events-auto w-full">
+                                    <input
+                                        value={title}
+                                        onChange={e => setTitle(e.target.value)}
+                                        placeholder="제목을 입력하세요"
+                                        readOnly={viewMode === 'read'}
+                                        className="flex-1 outline-none bg-transparent placeholder-gray-300 min-w-0 h-25 pl-5"
+                                        style={{
+                                            ...titleStyles,
+                                            fontSize: titleStyles.fontSize || '30px',
+                                            fontWeight: titleStyles.fontWeight || 'bold',
+                                        }}
+                                    />
+                                </div>
+                                {viewMode === 'editor' && selectedId === 'title' && (
+                                    // ✨ Toolbar Removed: Moved to Overlay
+                                    null
+                                )}
                             </div>
-                            {viewMode === 'editor' && selectedId === 'title' && (
-                                // ✨ Toolbar Removed: Moved to Overlay
-                                null
-                            )}
-                        </div>
+                        )}
 
                         <div className={`flex-1 relative ${viewMode === 'read' ? 'p-6 md:pl-12 md:py-12 md:pr-16' : 'pl-12 py-12 pr-16'}`}>
 
@@ -485,60 +524,6 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             )}
                         </div>
 
-                        {stickers.map(stk => (
-                            <ResizableItem
-                                key={stk.id}
-                                {...stk}
-                                // ✨ Check against selectedIds
-                                isSelected={selectedId === stk.id || selectedIds.includes(stk.id)}
-                                readOnly={viewMode === 'read' || !!stk.locked}
-                                onSelect={(isMulti) => { onSelect(stk.id, 'sticker', isMulti); setIsToolbarVisible(false); }}
-                                onDoubleClick={() => setIsToolbarVisible(true)}
-                                onUpdate={(changes) => onUpdate(stk.id, 'sticker', changes)}
-                            >
-                                {stk.widgetType ? (
-                                    <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-lg" />}>
-                                        {(() => {
-                                            const Widget = WIDGET_COMPONENT_MAP[stk.widgetType!];
-
-                                            // 🌟 1. Standard Widget
-                                            if (Widget) {
-                                                return (
-                                                    <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setIsToolbarVisible(true); }}>
-                                                        <Widget {...(stk.widgetProps || {})} isStickerMode={true} />
-                                                    </div>
-                                                );
-                                            }
-
-                                            // 🌟 2. Custom Widget Fallback (custom-block or custom-*)
-                                            if (stk.widgetType === 'custom-block' || stk.widgetType?.startsWith('custom-')) {
-                                                return (
-                                                    <div className="w-full h-full overflow-hidden rounded-lg pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setIsToolbarVisible(true); }}>
-                                                        <CustomWidgetPreview
-                                                            content={{
-                                                                ...(stk.widgetProps?.content || {}),
-                                                                decorations: stk.widgetProps?.decorations || []
-                                                            }}
-                                                            defaultSize="2x2"
-                                                        />
-                                                    </div>
-                                                );
-                                            }
-
-                                            // 🌟 3. Unknown
-                                            return (
-                                                <div className="w-full h-full bg-red-50 flex items-center justify-center text-red-400 text-xs">
-                                                    Unknown ({stk.widgetType})
-                                                </div>
-                                            );
-                                        })()}
-                                    </Suspense>
-                                ) : (
-                                    <img src={stk.url} className="w-full h-full object-contain pointer-events-none select-none" style={{ opacity: stk.opacity }} />
-                                )}
-                            </ResizableItem>
-                        ))}
-
                         {floatingTexts.map(txt => (
                             <ResizableItem
                                 key={txt.id}
@@ -548,6 +533,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 onSelect={(isMulti) => { onSelect(txt.id, 'floating', isMulti); setIsToolbarVisible(false); }}
                                 onDoubleClick={() => setIsToolbarVisible(true)}
                                 onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
+                                scale={scale}
                             >
                                 <textarea
                                     value={txt.text}
@@ -568,17 +554,79 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             </ResizableItem>
                         ))}
 
-                        {floatingImages.map(img => (
+                        {/* Floating Images Layer */}
+                        {floatingImages.map((img) => (
                             <ResizableItem
                                 key={img.id}
-                                {...img}
-                                isSelected={selectedId === img.id || selectedIds.includes(img.id)}
+                                id={img.id}
+                                x={img.x}
+                                y={img.y}
+                                w={img.w}
+                                h={img.h}
+                                rotation={img.rotation}
+                                zIndex={img.zIndex}
+                                opacity={img.opacity}
+                                isSelected={selectedId === img.id || (selectedIds && selectedIds.includes(img.id))}
                                 readOnly={viewMode === 'read' || !!img.locked}
-                                onSelect={(isMulti) => { onSelect(img.id, 'floatingImage', isMulti); setIsToolbarVisible(false); }}
-                                onDoubleClick={() => setIsToolbarVisible(true)}
+                                onSelect={(isMulti) => { if (viewMode === 'editor') { onSelect(img.id, 'floatingImage', isMulti); setIsToolbarVisible(false); } }}
                                 onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
+                                onDoubleClick={() => { if (viewMode === 'editor') { onSelect(img.id, 'floatingImage'); setIsToolbarVisible(true); } }}
+                                isCropping={croppingId === img.id}
+                                crop={img.crop}
+                                scale={scale}
                             >
-                                <img src={img.url} className="w-full h-full object-cover pointer-events-none rounded-lg select-none" style={{ opacity: img.opacity }} />
+                                <img
+                                    src={img.url}
+                                    alt="floating"
+                                    className="w-full h-full object-cover pointer-events-none select-none"
+                                    draggable={false}
+                                />
+                            </ResizableItem>
+                        ))}
+
+                        {/* Stickers Layer */}
+                        {stickers.map((sticker) => (
+                            <ResizableItem
+                                key={sticker.id}
+                                id={sticker.id}
+                                x={sticker.x}
+                                y={sticker.y}
+                                w={sticker.w}
+                                h={sticker.h}
+                                rotation={sticker.rotation}
+                                zIndex={sticker.zIndex}
+                                opacity={sticker.opacity}
+                                isSelected={selectedId === sticker.id || (selectedIds && selectedIds.includes(sticker.id))}
+                                readOnly={viewMode === 'read' || !!sticker.locked}
+                                onSelect={(isMulti) => { if (viewMode === 'editor') { onSelect(sticker.id, 'sticker', isMulti); setIsToolbarVisible(false); } }}
+                                onUpdate={(changes) => onUpdate(sticker.id, 'sticker', changes)}
+                                onDoubleClick={() => { if (viewMode === 'editor') { onSelect(sticker.id, 'sticker'); setIsToolbarVisible(true); } }}
+                                isCropping={croppingId === sticker.id}
+                                crop={sticker.crop}
+                                scale={scale}
+                            >
+                                {sticker.widgetType ? (
+                                    <Suspense fallback={<div className="w-full h-full bg-gray-100 animate-pulse rounded-xl" />}>
+                                        {sticker.widgetType.startsWith('custom-') ? (
+                                            <CustomWidgetPreview
+                                                content={sticker.widgetProps?.content || {}}
+                                                defaultSize={sticker.widgetProps?.defaultSize || "2x2"}
+                                            />
+                                        ) : (
+                                            (() => {
+                                                const WidgetComp = WIDGET_COMPONENT_MAP[sticker.widgetType];
+                                                return WidgetComp ? <WidgetComp {...sticker.widgetProps} /> : <div>Widget Load Error</div>;
+                                            })()
+                                        )}
+                                    </Suspense>
+                                ) : (
+                                    <img
+                                        src={sticker.url}
+                                        alt="sticker"
+                                        className="w-full h-full object-contain pointer-events-none select-none drop-shadow-sm"
+                                        draggable={false}
+                                    />
+                                )}
                             </ResizableItem>
                         ))}
 
@@ -600,14 +648,16 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
             </div>
 
             {/* ✨ Fixed Toolbar (Moved outside of scaled content) */}
-            {viewMode === 'editor' && selectedId && currentItem && detectedType && detectedType !== 'block' && (detectedType as string) !== 'title' && isToolbarVisible && (
-                <EditorToolbar
+            {isToolbarVisible && selectedId && getSelectedItem() && (
+                <ToolbarOverlay
                     selectedId={selectedId}
-                    selectedType={detectedType}
-                    currentItem={currentItem}
+                    selectedType={selectedType as any}
+                    currentItem={getSelectedItem()}
                     onUpdate={onUpdate}
-                    onDelete={detectedType === 'title' ? undefined : onDelete}
-                    positionMode="fixed"
+                    onDelete={onDelete}
+                    scale={scale}
+                    onCropToggle={handleCropToggle}
+                    isCropping={croppingId === selectedId}
                 />
             )}
         </div>

@@ -8,9 +8,12 @@ interface Props {
     onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
     onDelete?: () => void;
     scale: number;
+    // ✨ Crop Props
+    onCropToggle?: () => void;
+    isCropping?: boolean;
 }
 
-const ToolbarOverlay: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete, scale }) => {
+const ToolbarOverlay: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete, scale, onCropToggle, isCropping }) => {
     const [position, setPosition] = useState<{ top: number, left: number } | null>(null);
 
     useLayoutEffect(() => {
@@ -83,7 +86,9 @@ const ToolbarOverlay: React.FC<Props> = ({ selectedId, selectedType, currentItem
                 currentItem={currentItem}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
-                positionMode="inline" // We use inline mode style, but positioned absolutely by the wrapper
+                positionMode="inline"
+                onCropToggle={onCropToggle}
+                isCropping={isCropping}
             />
         </div>
     );

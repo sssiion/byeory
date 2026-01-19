@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Trash2,
     Type,
@@ -7,26 +7,36 @@ import {
     AlignRight,
     BringToFront,
     SendToBack,
-    Sliders,
     Bold,
     Italic,
     Underline,
     Strikethrough,
-    ChevronDown
+    ChevronDown,
+    Scissors, // ✨ Import Scissors
+    RotateCcw, // ✨ Import Reset icon
+    Search, // ✨ Import Search for Zoom
+    Eraser // ✨ Import Eraser for BG Removal
 } from 'lucide-react';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
 import { FONT_FAMILIES } from '../../constants';
 
 interface Props {
     selectedId: string;
-    selectedType: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title';
+    selectedType: 'block' | 'sticker' | 'floatingText' | 'floatingImage' | 'title';
     currentItem: Block | Sticker | FloatingText | FloatingImage | any;
-    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
+    onUpdate: (id: string, type: 'block' | 'sticker' | 'floatingText' | 'floatingImage' | 'title', changes: any) => void;
     onDelete?: () => void;
     positionMode?: 'fixed' | 'inline';
+    // ✨ New Props
+    onCropToggle?: () => void;
+    isCropping?: boolean;
+    scale?: number;
 }
 
-const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem, onUpdate, onDelete, positionMode = 'fixed' }) => {
+const EditorToolbar: React.FC<Props> = ({
+    selectedId, selectedType, currentItem, onUpdate, onDelete, positionMode = 'fixed', onCropToggle, isCropping
+}) => {
+    const [isLoading, setIsLoading] = useState(false); // ✨ Add loading state
     const [showTextMenu, setShowTextMenu] = React.useState(false);
     const [showBgMenu, setShowBgMenu] = React.useState(false);
     const itemType = (currentItem as any)?.type;
@@ -37,7 +47,60 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
         onUpdate(selectedId, selectedType, { zIndex: newZIndex });
     };
 
-    const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floating') || (selectedType === 'title');
+    // ✨ Handle AI Background Removal
+    const handleRemoveBackground = async () => {
+        if (!selectedId || (selectedType !== 'floatingImage' && selectedType !== 'sticker')) return;
+
+        const apiKey = import.meta.env.VITE_API_FREEPIK;
+        if (!apiKey) {
+            alert("Freepik API Key가 필요합니다.");
+            return;
+        }
+
+        // We need a URL. For stickers/images, we check if they have a source URL.
+        const imageUrl = (currentItem as any).url || (currentItem as any).src;
+        if (!imageUrl) {
+            alert("URL 기반 이미지만 현재 배경 제거가 가능합니다.");
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const response = await fetch('/freepik-api/v1/ai/beta/remove-background', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Freepik-API-Key': apiKey,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    image_url: imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl}`
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || "배경 제거에 실패했습니다.");
+            }
+
+            const data = await response.json();
+            const newUrl = data.data.url;
+
+            if (newUrl) {
+                onUpdate(selectedId, selectedType, {
+                    url: newUrl
+                });
+            }
+        } catch (error) {
+            console.error("BG Removal Error:", error);
+            alert(error instanceof Error ? error.message : "오류가 발생했습니다.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floatingText') || (selectedType === 'title');
     const isImageItem = (selectedType === 'block' && itemType !== 'paragraph') || selectedType === 'sticker' || selectedType === 'floatingImage';
 
     const handleTextUpdate = (key: string, value: any) => {
@@ -56,6 +119,61 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
     const positionClasses = positionMode === 'fixed'
         ? "fixed bottom-8 left-1/2 -translate-x-1/2"
         : "absolute top-full mt-2 left-1/2 -translate-x-1/2";
+
+    // ✨ Handle Zoom (Content Resize during Crop)
+    const handleZoom = (zoomValue: number) => {
+        if (!isCropping || !currentItem.crop) return;
+
+        const crop = currentItem.crop;
+        const currentW = crop.contentW;
+        const currentH = crop.contentH;
+
+        // Prevent division by zero
+        if (currentW === 0 || currentH === 0) return;
+
+        const aspectRatio = currentW / currentH;
+
+        const scaleFactor = zoomValue; // 0.5 to 4.0
+        const viewportW = typeof currentItem.w === 'number' ? currentItem.w : parseFloat(currentItem.w);
+        const viewportH = typeof currentItem.h === 'number' ? currentItem.h : parseFloat(currentItem.h);
+
+        // Determine base size (object-fit: cover equivalent at scale 1.0)
+        let baseW, baseH;
+        if (aspectRatio > (viewportW / viewportH)) {
+            baseH = viewportH;
+            baseW = viewportH * aspectRatio;
+        } else {
+            baseW = viewportW;
+            baseH = viewportW / aspectRatio;
+        }
+
+        const newW = baseW * scaleFactor;
+        const newH = baseH * scaleFactor;
+
+        // Current image center relative to viewport
+        const imgCenter = {
+            x: crop.contentX + currentW / 2,
+            y: crop.contentY + currentH / 2
+        };
+
+        // We want to keep the image centered relative to the viewport
+        // or keep its current relative center if panned? 
+        // Let's stick with centering relative to viewport for simplicity if it hasn't been panned much,
+        // but actually, maintaining the anchor point is better.
+        // Let's use the current center as anchor.
+        const anchorX = imgCenter.x;
+        const anchorY = imgCenter.y;
+
+        onUpdate(selectedId, selectedType, {
+            crop: {
+                ...crop,
+                contentW: newW,
+                contentH: newH,
+                contentX: anchorX - newW / 2,
+                contentY: anchorY - newH / 2
+            }
+        });
+    };
 
     return (
         <div
@@ -264,6 +382,59 @@ const EditorToolbar: React.FC<Props> = ({ selectedId, selectedType, currentItem,
                                 onChange={(e) => onUpdate(selectedId, selectedType, { opacity: parseFloat(e.target.value) })}
                                 className="w-32 accent-indigo-600 cursor-pointer h-2 bg-gray-200 rounded-lg appearance-none"
                             />
+                        </div>
+                    )}
+
+                    {/* ✨ AI & Crop Controls */}
+                    {(selectedType === 'sticker' || selectedType === 'floatingImage') && onCropToggle && (
+                        <div className="border-l pl-3 ml-2 border-gray-200 flex items-center gap-3">
+                            <button
+                                onClick={handleRemoveBackground}
+                                disabled={isLoading}
+                                className={`p-2 rounded-lg transition items-center justify-center flex text-violet-600 hover:bg-violet-50
+                                    ${isLoading ? 'animate-pulse bg-violet-50' : ''}
+                                `}
+                                title="배경 제거 (AI)"
+                            >
+                                <Eraser size={18} className={isLoading ? "animate-bounce" : ""} />
+                            </button>
+
+                            <button
+                                onClick={onCropToggle}
+                                className={`p-2 rounded-lg transition items-center justify-center flex
+                                    ${isCropping ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200' : 'text-gray-600 hover:bg-gray-100'}
+                                `}
+                                title={isCropping ? "자르기 완료" : "자르기"}
+                            >
+                                <Scissors size={18} />
+                            </button>
+
+                            {isCropping && currentItem.crop && (
+                                <>
+                                    <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100">
+                                        <Search size={14} className="text-blue-400" />
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="4"
+                                            step="0.05"
+                                            value={(currentItem.crop.contentW / (currentItem.w as number)) || 1}
+                                            onChange={(e) => handleZoom(parseFloat(e.target.value))}
+                                            className="w-24 accent-blue-500 h-1.5 cursor-pointer"
+                                        />
+                                        <span className="text-[10px] font-bold text-blue-500 w-8">
+                                            {Math.round((currentItem.crop.contentW / (currentItem.w as number)) * 100)}%
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => onUpdate(selectedId, selectedType, { crop: undefined })}
+                                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition items-center justify-center flex border border-red-100"
+                                        title="자르기 초기화"
+                                    >
+                                        <RotateCcw size={18} />
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </>

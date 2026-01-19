@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { STICKERS, LAYOUT_PRESETS, type StickerItemDef } from '../../constants';
 import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks';
-import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown, Trash2, Undo2 } from 'lucide-react';
+import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown, Trash2, Undo2, Search, ImageDown } from 'lucide-react';
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
@@ -133,7 +133,8 @@ const SidebarAccordion = ({
                 />
             </button>
             <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}
+                className={`transition-all duration-300 ease-in-out scrollbar-hide ${isOpen ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'}`}
+                style={{ overflow: isOpen ? 'visible' : 'hidden' }}
             >
                 {children}
             </div>
@@ -153,6 +154,148 @@ const EditorSidebar: React.FC<Props> = ({
     onDeleteTemplate, // ✨ Destructure
     showHiddenTemplates = false, setShowHiddenTemplates, onRestoreTemplate // ✨ New Props
 }) => {
+    // ✨ Freepik Search State
+    const [freepikQuery, setFreepikQuery] = useState('');
+    const [freepikResults, setFreepikResults] = useState<{ url: string; downloadUrl: string; id: string | number }[]>([]);
+    const [freepikFilter, setFreepikFilter] = useState<'all' | 'photo' | 'vector' | 'icon'>('all'); // ✨ Filter State
+    const [freepikPage, setFreepikPage] = useState(1); // ✨ Page State
+    const [isFreepikLoading, setIsFreepikLoading] = useState(false);
+    const freepikScrollRef = useRef<HTMLDivElement>(null); // ✨ Scroll Ref
+
+    // ✨ Real Freepik Search
+    const handleFreepikSearch = async (targetPage: number = 1) => {
+        if (!freepikQuery.trim()) return;
+        setIsFreepikLoading(true);
+
+        const apiKey = import.meta.env.VITE_API_FREEPIK;
+        if (!apiKey) {
+            alert('Freepik API Key가 설정되지 않았습니다. (.env 파일을 확인해주세요)');
+            setIsFreepikLoading(false);
+            return;
+        }
+
+        try {
+            const isIconSearch = freepikFilter === 'icon';
+            const endpoint = isIconSearch ? '/v1/icons' : '/v1/resources';
+
+            // Base filters
+            let filterParams = '';
+            if (freepikFilter === 'photo') {
+                filterParams = '&filters[content_type.photo]=1';
+            } else if (freepikFilter === 'vector') {
+                filterParams = '&filters[content_type.vector]=1';
+            } else if (isIconSearch) {
+                // Dedicated Icons API doesn't need vector filter, 
+                // but we can add style filters if needed.
+                // filterParams = '&filters[style]=flat'; 
+            }
+
+            // Construct Query
+            const queryTerm = freepikQuery;
+
+            // Use Proxy URL to bypass CORS
+            // Note: Icons API might not support locale in query string, resources API does.
+            const urlQuery = isIconSearch
+                ? `limit=24&page=${targetPage}&term=${encodeURIComponent(queryTerm)}${filterParams}`
+                : `locale=ko-KR&limit=24&page=${targetPage}&term=${encodeURIComponent(queryTerm)}${filterParams}`;
+
+            const response = await fetch(`/freepik-api${endpoint}?${urlQuery}`, {
+                headers: {
+                    'Accept-Language': 'ko-KR',
+                    'X-Freepik-API-Key': apiKey
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error("API 키가 잘못되었거나 만료되었습니다.");
+                }
+                throw new Error("이미지를 불러오는데 실패했습니다.");
+            }
+
+            const data = await response.json();
+
+            if (!data || !data.data || !Array.isArray(data.data)) {
+                console.warn("Freepik API returned unexpected structure:", data);
+                setFreepikResults([]);
+                setIsFreepikLoading(false);
+                return;
+            }
+
+            // Extract Image URLs
+            const results = data.data.map((item: any) => {
+                let previewUrl = '';
+                let downloadUrl = '';
+
+                if (isIconSearch) {
+                    // Icons API: Prioritize PNG/SVG for true transparency
+                    previewUrl = item.thumbnails?.[1]?.url || item.thumbnails?.[0]?.url || item.image?.preview?.url || '';
+                    downloadUrl = item.image?.png?.url || item.image?.svg?.url || previewUrl;
+                } else {
+                    // Resources API
+                    previewUrl = item.image?.preview?.url || item.preview?.url || '';
+                    downloadUrl = item.image?.source?.url || item.image?.preview?.url || previewUrl;
+                }
+
+                return {
+                    id: item.id || `f-${Math.random()}`,
+                    url: previewUrl,
+                    downloadUrl: downloadUrl
+                };
+            }).filter((res: any) => !!res.url);
+
+            if (targetPage === 1) {
+                setFreepikResults(results);
+                setFreepikPage(1);
+                if (freepikScrollRef.current) freepikScrollRef.current.scrollTop = 0;
+            } else {
+                setFreepikResults(prev => [...prev, ...results]);
+                setFreepikPage(targetPage);
+            }
+
+        } catch (error) {
+            console.error("Freepik Search Error:", error);
+            const msg = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+            alert(msg);
+            setFreepikResults([]);
+        } finally {
+            setIsFreepikLoading(false);
+        }
+    };
+
+    // ✨ Scroll Handler for Infinite Loading
+    const handleFreepikScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        if (scrollTop + clientHeight >= scrollHeight - 50) {
+            if (!isFreepikLoading && freepikResults.length > 0) {
+                handleFreepikSearch(freepikPage + 1);
+            }
+        }
+    };
+
+    const handleFreepikImageClick = async (item: { url: string; downloadUrl: string }) => {
+        try {
+            const url = item.downloadUrl || item.url;
+            // Try to fetch as blob first
+            const response = await fetch(url.replace('http://', 'https://'), { mode: 'cors' });
+            if (!response.ok) throw new Error("Image fetch failed");
+
+            const blob = await response.blob();
+            // Detect extension from mime type
+            const mimeType = blob.type;
+            let extension = 'jpg';
+            if (mimeType === 'image/png') extension = 'png';
+            else if (mimeType === 'image/svg+xml') extension = 'svg';
+            else if (mimeType === 'image/gif') extension = 'gif';
+
+            const file = new File([blob], `freepik-${Date.now()}.${extension}`, { type: blob.type });
+            onAddFloatingImage(file);
+        } catch (error) {
+            console.warn("Blob fetch failed, falling back to URL sticker:", error);
+            onAddSticker(item.url);
+        }
+    };
+
     // ... existing ...
 
     // ✨ Widget Registry
@@ -655,6 +798,109 @@ const EditorSidebar: React.FC<Props> = ({
                 </div>
             </SidebarAccordion>
 
+            {/* ✨ Freepik Search Section */}
+            <SidebarAccordion title="Freepik 이미지 검색" icon={ImageDown} defaultOpen={false}>
+                <div className="p-4 flex flex-col gap-3">
+                    {/* ✨ Filter Options */}
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                        {['all', 'photo', 'vector', 'icon'].map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setFreepikFilter(type as any)}
+                                className={`px-2.5 py-1.5 text-xs font-bold rounded-lg border transition-all whitespace-nowrap
+                                    ${freepikFilter === type
+                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                                        : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-card-secondary)]'
+                                    }`}
+                            >
+                                {type === 'all' && '전체'}
+                                {type === 'photo' && '사진'}
+                                {type === 'vector' && '일러스트'}
+                                {type === 'icon' && '아이콘'}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={freepikQuery}
+                            onChange={(e) => setFreepikQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleFreepikSearch(1)}
+                            placeholder={
+                                freepikFilter === 'vector' ? "일러스트 검색 (예: 꽃)" :
+                                    freepikFilter === 'icon' ? "아이콘 검색 (예: 집)" :
+                                        "이미지 검색 (예: 바다)"
+                            }
+                            className="flex-1 min-w-0 px-3 py-2 bg-[var(--bg-card-secondary)] border border-[var(--border-color)] rounded-xl text-sm outline-none focus:border-indigo-500 transition-colors"
+                        />
+                        <button
+                            onClick={() => handleFreepikSearch(1)}
+                            disabled={isFreepikLoading}
+                            className="shrink-0 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center w-10"
+                        >
+                            <Search size={18} />
+                        </button>
+                    </div>
+
+                    {isFreepikLoading ? (
+                        <div className="py-8 text-center text-[var(--text-secondary)] text-sm flex flex-col items-center gap-2">
+                            <Sparkles className="animate-spin text-indigo-500" size={24} />
+                            <span>
+                                {freepikFilter === 'vector' ? '멋진 일러스트를 찾는 중...' :
+                                    freepikFilter === 'icon' ? '귀여운 아이콘을 찾는 중...' :
+                                        '열심히 찾는 중...'}
+                            </span>
+                        </div>
+                    ) : (
+                        <div
+                            ref={freepikScrollRef}
+                            onScroll={handleFreepikScroll}
+                            className="grid grid-cols-6 gap-2 max-h-[400px] overflow-y-auto px-1 py-4 custom-scrollbar overflow-x-visible"
+                        >
+                            {freepikResults.length > 0 ? (
+                                freepikResults.map((res) => (
+                                    <button
+                                        key={res.id}
+                                        onClick={() => handleFreepikImageClick(res)}
+                                        className={`
+                                            relative rounded-lg overflow-visible border border-[var(--border-color)] 
+                                            hover:border-indigo-500 transition-all duration-200 group
+                                            hover:scale-[1.5] hover:z-[100] hover:shadow-xl
+                                            active:scale-[1.8] active:z-[101]
+                                            aspect-square
+                                        `}
+                                        style={{
+                                            backgroundImage: 'conic-gradient(#f1f5f9 90deg, #fff 90deg 180deg, #f1f5f9 180deg 270deg, #fff 270deg)',
+                                            backgroundSize: '12px 12px'
+                                        }}
+                                    >
+                                        <img
+                                            src={res.url}
+                                            alt="Freepik Result"
+                                            className={`w-full h-full rounded-lg ${freepikFilter === 'icon' ? 'object-contain p-1' : 'object-cover'}`}
+                                        />
+                                        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg pointer-events-none">
+                                            <Plus className="text-white drop-shadow-md opacity-50" size={10} />
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="col-span-6 py-8 text-center text-[var(--text-secondary)] text-xs">
+                                    <p className="mb-2">
+                                        {freepikFilter === 'vector' ? '🎨 감각적인 일러스트를' :
+                                            freepikFilter === 'icon' ? '🧩 직관적인 아이콘을' :
+                                                '🖼️ 독창적인 이미지를'}
+                                    </p>
+                                    검색하여 포스터를 꾸며보세요!
+                                    <div className="mt-1 opacity-50 text-[10px]">Powered by Freepik</div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </SidebarAccordion>
+
             {/* ✨ 종이 디자인 섹션 */}
             <SidebarAccordion title="배경 디자인" icon={Layout} defaultOpen={false}>
                 <div className="p-4 grid grid-cols-2 gap-2">
@@ -780,10 +1026,10 @@ const EditorSidebar: React.FC<Props> = ({
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* ✨ Widgets Section */}
-            <SidebarAccordion title="위젯" icon={() => <span className="text-lg">🧩</span>} defaultOpen={false}>
+            < SidebarAccordion title="위젯" icon={() => <span className="text-lg">🧩</span>} defaultOpen={false} >
                 <div className="p-4 flex flex-col gap-4">
                     {/* 1. 기본 위젯 */}
                     <div>
@@ -815,7 +1061,7 @@ const EditorSidebar: React.FC<Props> = ({
                         </div>
                     </div>
                 </div>
-            </SidebarAccordion>
+            </SidebarAccordion >
 
             <ConfirmationModal
                 isOpen={confirmation.isOpen}
@@ -829,7 +1075,7 @@ const EditorSidebar: React.FC<Props> = ({
                 confirmText={confirmation.confirmLabel}
                 cancelText={confirmation.secondaryLabel}
             />
-        </div>
+        </div >
     );
 };
 
