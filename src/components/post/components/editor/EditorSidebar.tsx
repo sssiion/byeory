@@ -181,9 +181,9 @@ const EditorSidebar: React.FC<Props> = ({
             // Base filters
             let filterParams = '';
             if (freepikFilter === 'photo') {
-                filterParams = '&filters[content_type.photo]=1';
+                filterParams = '&filters[content_type][photo]=1';
             } else if (freepikFilter === 'vector') {
-                filterParams = '&filters[content_type.vector]=1';
+                filterParams = '&filters[content_type][vector]=1';
             } else if (isIconSearch) {
                 // Dedicated Icons API doesn't need vector filter, 
                 // but we can add style filters if needed.
@@ -233,8 +233,10 @@ const EditorSidebar: React.FC<Props> = ({
                     downloadUrl = item.image?.png?.url || item.image?.svg?.url || previewUrl;
                 } else {
                     // Resources API
-                    previewUrl = item.image?.preview?.url || item.preview?.url || '';
-                    downloadUrl = item.image?.source?.url || item.image?.preview?.url || previewUrl;
+                    // Prioritize source url for best quality, fallback to preview
+                    const sourceUrl = item.image?.source?.url;
+                    previewUrl = item.image?.preview?.url || item.preview?.url || sourceUrl || '';
+                    downloadUrl = sourceUrl || previewUrl;
                 }
 
                 return {
@@ -358,12 +360,19 @@ const EditorSidebar: React.FC<Props> = ({
         fetchCustomWidgets();
     }, []);
 
-    // ✨ 중복 제거 로직 제거 (일단 표시 우선)
-    // registry와 customWidgets를 단순 병합. key 중복은 React가 경고하겠지만 렌더링은 됨.
-    const allWidgets = [
-        ...Object.values(widgetRegistry),
-        ...customWidgets
-    ];
+    // ✨ 중복 제거 로직 추가 (Console Error Fix)
+    const allWidgets = React.useMemo(() => {
+        const combined = [...Object.values(widgetRegistry), ...customWidgets];
+        const uniqueMap = new Map();
+
+        combined.forEach(w => {
+            if (!uniqueMap.has(w.widgetType)) {
+                uniqueMap.set(w.widgetType, w);
+            }
+        });
+
+        return Array.from(uniqueMap.values());
+    }, [widgetRegistry, customWidgets]);
 
 
 
