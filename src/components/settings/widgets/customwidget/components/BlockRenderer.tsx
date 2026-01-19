@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
+import FlashcardWidget from './Rendercomponent/FlashcardWidget';
 import { getSvgPathFromPoints } from '../utils';
 import type { WidgetBlock } from '../types';
 import {
@@ -6,7 +7,7 @@ import {
     CalendarDays,
     ChevronDown,
     ChevronRight,
-    EyeOff, Eye, Info, AlertTriangle, XCircle, CheckCircle, Star, Heart, Zap, ThumbsUp, RotateCw
+    EyeOff, Eye, Star, Heart, Zap, ThumbsUp
 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -179,56 +180,92 @@ const SpoilerItem = ({ block, onUpdateBlock, style }: any) => {
     );
 };
 
-const TypingTextItem = ({ content, style }: any) => {
+const TypingTextItem = ({ block, onUpdateBlock, style }: any) => {
+    const { content } = block;
     const [displayedText, setDisplayedText] = useState('');
     const fullText = content.text || '';
     const speed = content.speed || 100;
-    const isBackspaceMode = content.isBackspaceMode || false;
+    const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
+        if (isEditing) return;
+
         let timeoutId: any;
         let currentText = '';
-        let isDeleting = true;
+        let currentIndex = 0;
 
         const animate = () => {
-            const currentLen = currentText.length;
-            if (isDeleting) {
-                currentText = fullText.substring(0, currentLen - 1);
+            if (currentIndex < fullText.length) {
+                currentText += fullText[currentIndex];
                 setDisplayedText(currentText);
-                if (currentText.length === 0) {
-                    isDeleting = false;
-                    timeoutId = setTimeout(animate, 500);
-                } else {
-                    timeoutId = setTimeout(animate, speed / 2);
-                }
-            }
-            else {
-                currentText = fullText.substring(0, currentLen + 1);
-                setDisplayedText(currentText);
-                if (currentText.length === fullText.length) {
-                    if (isBackspaceMode) {
-                        isDeleting = true;
-                        timeoutId = setTimeout(animate, 2000);
-                    } else {
-                        timeoutId = setTimeout(() => {
-                            currentText = '';
-                            setDisplayedText('');
-                            animate();
-                        }, 2000);
-                    }
-                } else {
-                    timeoutId = setTimeout(animate, speed);
-                }
+                currentIndex++;
+                timeoutId = setTimeout(animate, speed);
+            } else {
+                timeoutId = setTimeout(() => {
+                    setDisplayedText('');
+                    currentIndex = 0;
+                    currentText = '';
+                    animate();
+                }, 2000);
             }
         };
+
+        setDisplayedText('');
         animate();
+
         return () => clearTimeout(timeoutId);
-    }, [fullText, speed, isBackspaceMode]);
+    }, [fullText, speed, isEditing]);
+
+    if (isEditing) {
+        return (
+            <EditableText
+                tagName="p"
+                text={fullText}
+                onUpdate={(val) => {
+                    onUpdateBlock(block.id, { content: { ...content, text: val } });
+                    setIsEditing(false);
+                }}
+                style={style}
+                className="w-full h-full p-1 border border-indigo-300 rounded"
+                placeholder="타이핑될 텍스트 입력..."
+            />
+        );
+    }
 
     return (
-        <div style={style} className="h-full w-full min-h-[1.5em] font-mono break-all">
+        <div
+            style={style}
+            className="h-full w-full min-h-[1.5em] font-mono break-all cursor-pointer hover:bg-gray-50/50"
+            onClick={() => setIsEditing(true)}
+            title="클릭하여 텍스트 수정"
+        >
             {displayedText}
             <span className="animate-pulse border-r-2 border-indigo-500 ml-1 align-middle h-4 inline-block"></span>
+        </div>
+    );
+};
+
+const HighlightItem = ({ block, onUpdateBlock, style }: any) => {
+    const { content, styles } = block;
+    return (
+        <div className="w-full">
+            <mark
+                className="px-1 py-0.5 rounded leading-normal block w-full break-words"
+                style={{
+                    ...style,
+                    backgroundColor: styles.bgColor || '#fef08a', // yellow-200 default
+                    color: styles.color || '#854d0e',
+                    display: 'block'
+                }}
+            >
+                <EditableText
+                    tagName="span"
+                    text={content.text}
+                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                    style={{ backgroundColor: 'transparent' }}
+                    placeholder="강조할 텍스트"
+                />
+            </mark>
         </div>
     );
 };
@@ -348,8 +385,6 @@ const RatingItem = ({ block, onUpdateBlock }: any) => {
                         <IconComponent
                             size={styles.fontSize ? Number(styles.fontSize) + 4 : 24}
                             fill={isActive ? (styles.color || '#F59E0B') : 'none'}
-                            stroke={isActive ? (styles.color || '#F59E0B') : '#d1d5db'}
-                            strokeWidth={isActive ? 0 : 2}
                             style={{
                                 stroke: isActive ? 'none' : (styles.color ? styles.color : '#d1d5db'),
                                 fill: isActive ? (styles.color || '#F59E0B') : 'none'
@@ -361,6 +396,163 @@ const RatingItem = ({ block, onUpdateBlock }: any) => {
             <span className="ml-2 text-sm font-bold text-gray-500">
                 {value}/{max}
             </span>
+        </div>
+    );
+};
+
+const ScrollTextItem = ({ block, onUpdateBlock, style }: any) => {
+    const { content } = block;
+    const speed = content.speed || 10; // seconds
+    const text = content.text || '스크롤 텍스트';
+
+    return (
+        <div style={{ ...style, overflow: 'hidden', whiteSpace: 'nowrap' }} className="w-full h-full flex items-center relative">
+            <div
+                style={{
+                    animation: `scrollText ${speed}s linear infinite`,
+                    display: 'inline-block',
+                    paddingLeft: '100%',
+                }}
+            >
+                <EditableText
+                    tagName="span"
+                    text={text}
+                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, text: val } })}
+                    style={{ backgroundColor: 'transparent' }}
+                    placeholder="내용 입력"
+                />
+            </div>
+            <style>{`
+                @keyframes scrollText {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-100%); }
+                }
+            `}</style>
+        </div>
+    );
+};
+
+
+const BarChartItem = ({ content, style, styles }: any) => {
+    const data = content.data || [];
+    const maxValue = Math.max(...data.map((d: any) => d.value), 0) || 100;
+    const chartColor = styles.color || '#6366f1';
+
+    return (
+        <div style={style} className="w-full h-full p-4 rounded-xl flex flex-col gap-2">
+            <div className="flex-1 flex items-end gap-2 h-full w-full overflow-x-auto pb-1">
+                {data.map((item: any, i: number) => {
+                    const height = Math.max((item.value / maxValue) * 100, 5); // Min height 5%
+                    return (
+                        <div key={i} className="flex-1 min-w-[30px] flex flex-col items-center gap-1 group h-full justify-end">
+                            <div className="w-full relative flex items-end justify-center h-full rounded-t overflow-hidden">
+                                <div
+                                    className="w-full rounded-t transition-all duration-500 hover:opacity-80 relative group-hover:scale-y-105 origin-bottom"
+                                    style={{
+                                        height: `${height}%`,
+                                        backgroundColor: chartColor,
+                                        opacity: 0.8
+                                    }}
+                                >
+                                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-gray-800 text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        {item.value}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="text-[10px] text-gray-500 font-medium truncate w-full text-center">
+                                {item.label}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const PieChartItem = ({ content, style, styles }: any) => {
+    const data = content.data || [];
+    const total = data.reduce((acc: number, cur: any) => acc + (Number(cur.value) || 0), 0);
+    let currentDeg = 0;
+    const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981'];
+
+    const gradientParts = data.length > 0 && total > 0 ? data.map((item: any, i: number) => {
+        const val = Number(item.value) || 0;
+        const deg = (val / total) * 360;
+        const part = `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg`;
+        currentDeg += deg;
+        return part;
+    }).join(', ') : '#e5e7eb 0deg 360deg';
+
+    return (
+        <div style={style} className="relative w-full h-full rounded-xl overflow-hidden p-2 group">
+            <div className="flex-1 min-w-0 min-h-0 flex items-center justify-center w-full h-full">
+                <div
+                    className="aspect-square relative rounded-full flex-shrink-0"
+                    style={{
+                        background: `conic-gradient(${gradientParts})`,
+                        height: '90%',
+                        width: 'auto',
+                        maxHeight: '100%',
+                        maxWidth: '100%',
+                        mask: 'radial-gradient(transparent 40%, black 41%)',
+                        WebkitMask: 'radial-gradient(transparent 40%, black 41%)',
+                    }}
+                >
+                    <div className="absolute inset-[25%] bg-transparent rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 shadow-sm flex-col">
+                        <span>Total</span>
+                        <span className="text-xs text-indigo-600">{total}</span>
+                    </div>
+                </div>
+            </div>
+            {/* Legend */}
+            <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded shadow text-[10px]">
+                {data.map((item: any, i: number) => (
+                    <div key={i} className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[i % colors.length] }}></div>
+                        <span>{item.label}: {item.value}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const CounterItem = ({ block, onUpdateBlock, style, styles }: any) => {
+    const { content } = block;
+    const targetDate = new Date(content.date || new Date().toISOString().split('T')[0]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let dDayString = '';
+    if (diffDays === 0) dDayString = 'D-Day';
+    else if (diffDays > 0) dDayString = `D-${diffDays}`;
+    else dDayString = `D+${Math.abs(diffDays)}`;
+
+    return (
+        <div style={style} className="flex flex-col items-center justify-center w-full h-full p-4 rounded-xl gap-2">
+            <div className="text-sm font-medium text-gray-500">
+                <EditableText
+                    tagName="span"
+                    text={content.title || 'D-Day Title'}
+                    onUpdate={(val) => onUpdateBlock(block.id, { content: { ...content, title: val } })}
+                    placeholder="제목 입력"
+                />
+            </div>
+            <div className="text-4xl font-bold text-indigo-600" style={{ color: styles.color }}>
+                {dDayString}
+            </div>
+            <input
+                type="date"
+                value={content.date || ''}
+                onChange={(e) => onUpdateBlock(block.id, { content: { ...content, date: e.target.value } })}
+                className="text-xs border rounded px-1 text-gray-400 mt-1 opacity-50 hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+            />
         </div>
     );
 };
@@ -384,12 +576,48 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
         textDecoration: textDecoration || undefined,
     };
 
+    // Columns block implementation
     if (type === 'columns') {
+        const layout = content.layout || [[], []]; // Array of columns (which are arrays of blocks)
         return (
-            <div className="flex w-full h-full relative">
-                <div className="flex items-center justify-center w-full h-full text-gray-400 text-xs italic">
-                    Columns block is deprecated in free-form mode.
-                </div>
+            <div className="flex w-full h-full gap-2">
+                {layout.map((columnBlocks: WidgetBlock[], colIdx: number) => (
+                    <div key={colIdx} className="flex-1 min-w-0 border border-dashed border-gray-200 p-2 relative flex flex-col gap-2">
+                        {columnBlocks.length === 0 && (
+                            <div className="text-xs text-center text-gray-300 py-4 italic">빈 칸</div>
+                        )}
+                        {columnBlocks.map((childBlock) => (
+                            <div key={childBlock.id} className="relative group">
+                                <BlockRenderer
+                                    block={childBlock}
+                                    selectedBlockId={selectedBlockId}
+                                    onSelectBlock={onSelectBlock}
+                                    onRemoveBlock={(id) => {
+                                        // Remove block from this specific column
+                                        const newLayout = [...layout];
+                                        newLayout[colIdx] = newLayout[colIdx].filter(b => b.id !== id);
+                                        onUpdateBlock(block.id, { content: { ...content, layout: newLayout } });
+                                    }}
+                                    onUpdateBlock={(id, updates) => {
+                                        // Update block deep inside layout
+                                        const newLayout = [...layout];
+                                        newLayout[colIdx] = newLayout[colIdx].map(b => b.id === id ? { ...b, ...updates } : b);
+                                        onUpdateBlock(block.id, { content: { ...content, layout: newLayout } });
+                                    }}
+                                />
+                                {/* Mini controls for nested block */}
+                                <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 bg-white shadow-sm border rounded flex">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); /* Remove */ }}
+                                        className="p-1 text-red-400 hover:text-red-600"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ))}
             </div>
         );
     }
@@ -530,38 +758,8 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                         ))}
                     </div>
                 );
-            case 'chart-pie': {
-                const data = content.data || [];
-                const total = data.reduce((acc: number, cur: any) => acc + cur.value, 0);
-                let currentDeg = 0;
-                const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981'];
-                const gradientParts = data.map((item: any, i: number) => {
-                    const deg = (item.value / total) * 360;
-                    const part = `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg`;
-                    currentDeg += deg;
-                    return part;
-                }).join(', ');
-                return (
-                    <div className="relative w-full h-full bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-2 group">
-                        <div className="flex-1 min-w-0 min-h-0 flex items-center justify-center w-full">
-                            <div
-                                className="aspect-square relative rounded-full shadow-inner flex-shrink-0"
-                                style={{
-                                    background: `conic-gradient(${gradientParts || '#ddd 0deg 360deg'})`,
-                                    height: '100%',
-                                    width: 'auto',
-                                    maxHeight: '100%',
-                                    maxWidth: '100%',
-                                }}
-                            >
-                                <div className="absolute inset-[25%] bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 shadow-sm">
-                                    Total
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
+            case 'chart-pie':
+                return <PieChartItem content={content} style={commonStyle} styles={styles} />;
             case 'rating':
                 return <RatingItem block={block} onUpdateBlock={onUpdateBlock} />;
             case 'progress-bar': {
@@ -596,11 +794,66 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
             case 'pdf-viewer':
                 return <PdfDropViewer content={content} onUpdate={(patch) => onUpdateBlock(block.id, { content: { ...content, ...patch } })} />;
             case 'flashcards':
-                return <div className="p-4 bg-white rounded-lg border">Flashcards (Simplified)</div>;
+                return <FlashcardWidget block={block} onUpdateBlock={onUpdateBlock} />;
             case 'database':
                 return <DatabaseWidget block={block} onUpdateBlock={onUpdateBlock} />;
-            default:
-                return <div className="text-gray-400 text-xs p-2 border border-dashed rounded">Unknown Block Type: {(type as any)}</div>;
+            case 'accordion':
+                return <AccordionItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+            case 'toggle-list':
+                return <ToggleItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+            case 'spoiler':
+                return <SpoilerItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+            case 'typing-text':
+                // Pass block and onUpdateBlock to TypingTextItem
+                return <TypingTextItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+            case 'chart-radar':
+                return <RadarChartItem content={content} style={commonStyle} styles={styles} />;
+            case 'highlight':
+                return <HighlightItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+            case 'scroll-text':
+                return <ScrollTextItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} />;
+            case 'heatmap':
+                return <HeatmapWidget viewMode={content.viewMode || 'month'} themeColor={styles.color || '#6366f1'} />;
+            case 'bullet-list':
+                return (
+                    <ul className="list-disc pl-5 m-0" style={commonStyle}>
+                        {(content.items || []).map((it: string, i: number) => (
+                            <li key={i}>
+                                <EditableText tagName="span" text={it} onUpdate={v => { const n = [...content.items || []]; n[i] = v; onUpdateBlock(block.id, { content: { ...content, items: n } }); }} />
+                            </li>
+                        ))}
+                    </ul>
+                );
+            case 'number-list':
+                return (
+                    <ol className="list-decimal pl-5 m-0" style={commonStyle}>
+                        {(content.items || []).map((it: string, i: number) => (
+                            <li key={i}>
+                                <EditableText tagName="span" text={it} onUpdate={v => { const n = [...content.items || []]; n[i] = v; onUpdateBlock(block.id, { content: { ...content, items: n } }); }} />
+                            </li>
+                        ))}
+                    </ol>
+                );
+            case 'callout':
+                return (
+                    <div className="p-3 bg-gray-50 border-l-4 border-indigo-500 rounded flex gap-3" style={{ ...commonStyle, backgroundColor: styles.bgColor || '#f9fafb', borderColor: styles.color || '#6366f1' }}>
+                        <div className="text-xl">💡</div>
+                        <div className="flex-1">
+                            <EditableText tagName="p" text={content.text} onUpdate={val => onUpdateBlock(block.id, { content: { ...content, text: val } })} placeholder="내용" />
+                        </div>
+                    </div>
+                );
+            case 'divider':
+                return <hr className="my-2 border-gray-300" style={{ borderColor: styles.color }} />;
+            case 'custom-block':
+                // This shouldn't be reached if early return works, but just in case logic falls through or structure changes
+                return <div className="p-2 border border-dashed text-xs text-gray-400">Nested Custom Block</div>;
+
+
+            case 'chart-bar':
+                return <BarChartItem content={content} style={commonStyle} styles={styles} />;
+            case 'counter':
+                return <CounterItem block={block} onUpdateBlock={onUpdateBlock} style={commonStyle} styles={styles} />;
         }
     };
 

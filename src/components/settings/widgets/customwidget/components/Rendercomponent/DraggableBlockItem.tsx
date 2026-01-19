@@ -75,13 +75,15 @@ const DraggableBlockItem: React.FC<DraggableBlockItemProps> = (props) => {
         >
             <Resizable
                 className="relative"
-                maxWidth="100%"
                 bounds={boundaryElement || undefined}
                 minWidth={30}
                 minHeight={20}
                 size={{
                     width: layout.w,
                     height: layout.h,
+                }}
+                onResizeStart={(e) => {
+                    e.stopPropagation();
                 }}
                 onResizeStop={(e, direction, ref) => {
                     onUpdateBlock(block.id, {

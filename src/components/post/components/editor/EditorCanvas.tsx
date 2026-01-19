@@ -8,7 +8,7 @@ import ToolbarOverlay from './ToolbarOverlay';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
-import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft } from 'lucide-react';
+import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft, Loader2 } from 'lucide-react';
 
 interface Props {
     title: string;
@@ -581,6 +581,11 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                     className="w-full h-full object-cover pointer-events-none select-none"
                                     draggable={false}
                                 />
+                                {img.isProcessing && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 rounded-xl">
+                                        <Loader2 className="animate-spin text-white" size={32} />
+                                    </div>
+                                )}
                             </ResizableItem>
                         ))}
 
@@ -626,6 +631,11 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                         className="w-full h-full object-contain pointer-events-none select-none drop-shadow-sm"
                                         draggable={false}
                                     />
+                                )}
+                                {sticker.isProcessing && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 rounded-xl">
+                                        <Loader2 className="animate-spin text-white" size={32} />
+                                    </div>
                                 )}
                             </ResizableItem>
                         ))}

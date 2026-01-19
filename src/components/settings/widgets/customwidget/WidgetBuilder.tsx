@@ -185,7 +185,7 @@ const WidgetBuilder: React.FC<Props> = ({ onExit, initialData, onSave }) => {
             type,
             content: getDefaultContent(type),
             styles: { color: '#1e293b', align: 'left', fontSize: 14 },
-            layout: { x: 50, y: 50, w: 100, h: 'auto', rotation: 0, zIndex: 1 }
+            layout: { x: 50, y: 50, w: 320, h: 'auto', rotation: 0, zIndex: 1 }
         };
 
         setBlocks([newBlock, ...blocks]);

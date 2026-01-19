@@ -12,10 +12,10 @@ import {
     Underline,
     Strikethrough,
     ChevronDown,
-    Scissors, // ✨ Import Scissors
-    RotateCcw, // ✨ Import Reset icon
-    Search, // ✨ Import Search for Zoom
-    Eraser // ✨ Import Eraser for BG Removal
+    Scissors,
+    RotateCcw,
+    Search,
+    Eraser
 } from 'lucide-react';
 import { useBackgroundRemoval } from '../../../../hooks/useBackgroundRemoval';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
