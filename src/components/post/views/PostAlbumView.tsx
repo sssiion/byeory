@@ -4,9 +4,9 @@ import type { PostData, CustomAlbum } from '../types';
 // ✨ Added GalleryHorizontal for All Posts icon
 import { Folder, Plus, PenLine, MoreVertical, Trash2, Edit, Sparkles, Lock, Users, Gift } from 'lucide-react';
 import RenameAlbumModal from '../components/RenameAlbumModal';
-import AlbumBook from '../components/AlbumCover/AlbumBook';
-import type { AlbumCoverConfig } from '../components/AlbumCover/constants';
-import CoverCustomizer from '../components/AlbumCover/CoverCustomizer';
+import AlbumBook from '../components/albumCover/AlbumBook';
+import type { AlbumCoverConfig } from '../components/albumCover/constants';
+import CoverCustomizer from '../components/albumCover/CoverCustomizer';
 import RoomSettingsModal from '../components/RoomSettingsModal';
 
 
