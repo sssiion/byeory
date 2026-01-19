@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import ForcedPinInputModal from '../components/Security/ForcedPinInputModal';
+import ForcedPinInputModal from '../components/security/ForcedPinInputModal';
 import { authService } from '../services/authService';
 import { pinService } from '../services/pinService';
 
