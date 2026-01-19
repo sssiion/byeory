@@ -50,6 +50,7 @@ export interface FloatingText extends BaseFloatingItem {
         textAlign: string;
         color: string;
         backgroundColor: string;
+        backgroundImage?: string; // ✨ Custom Background Image
         fontFamily: string;
         fontStyle?: string;
         textDecoration?: string;

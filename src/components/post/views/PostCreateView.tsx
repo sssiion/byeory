@@ -158,6 +158,7 @@ const PostCreateView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     handleSelect(null, null);
                 }}
                 paperStyles={paperStyles}
+                onAddFloatingText={addFloatingText} // ✨ Pass Handler
             />
 
             {/* 오른쪽 사이드바 */}

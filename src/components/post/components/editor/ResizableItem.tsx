@@ -131,9 +131,29 @@ const ResizableItem: React.FC<Props> = ({
             if (isDragging) {
                 const deltaX = (e.clientX - startPos.current.startX) / scale;
                 const deltaY = (e.clientY - startPos.current.startY) / scale;
+
+                let newX = startPos.current.initialX + deltaX;
+                let newY = startPos.current.initialY + deltaY;
+
+                // ✨ Boundary Clamping
+                if (elementRef.current && elementRef.current.parentElement) {
+                    const parentWidth = elementRef.current.parentElement.clientWidth;
+                    const parentHeight = elementRef.current.parentElement.clientHeight;
+                    const itemWidth = elementRef.current.offsetWidth;
+                    const itemHeight = elementRef.current.offsetHeight;
+
+                    // Clamp X
+                    if (newX < 0) newX = 0;
+                    if (newX + itemWidth > parentWidth) newX = parentWidth - itemWidth;
+
+                    // Clamp Y (Only top and bottom if needed, but usually we just clamp to positive Y)
+                    if (newY < 0) newY = 0;
+                    if (newY + itemHeight > parentHeight) newY = parentHeight - itemHeight;
+                }
+
                 onUpdate({
-                    x: startPos.current.initialX + deltaX,
-                    y: startPos.current.initialY + deltaY
+                    x: newX,
+                    y: newY
                 });
             } else if (isPanning && crop) {
                 // ✨ Update Content Position (Pan)

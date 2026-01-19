@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Trash2,
     Type,
@@ -14,8 +14,9 @@ import {
     ChevronDown,
     Scissors,
     RotateCcw,
-    Search,
-    Eraser
+    Search, // ✨ Import Search for Zoom
+    Eraser, // ✨ Import Eraser for BG Removal
+    Image as ImageIcon // ✨ Import Image Icon
 } from 'lucide-react';
 import { useBackgroundRemoval } from '../../../../hooks/useBackgroundRemoval';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
@@ -23,9 +24,9 @@ import { FONT_FAMILIES } from '../../constants';
 
 interface Props {
     selectedId: string;
-    selectedType: 'block' | 'sticker' | 'floatingText' | 'floatingImage' | 'title';
+    selectedType: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title';
     currentItem: Block | Sticker | FloatingText | FloatingImage | any;
-    onUpdate: (id: string, type: 'block' | 'sticker' | 'floatingText' | 'floatingImage' | 'title', changes: any) => void;
+    onUpdate: (id: string, type: 'block' | 'sticker' | 'floating' | 'floatingImage' | 'title', changes: any) => void;
     onDelete?: () => void;
     positionMode?: 'fixed' | 'inline';
     // ✨ New Props
@@ -129,7 +130,7 @@ const EditorToolbar: React.FC<Props> = ({
         }
     };
 
-    const isTextItem = (selectedType === 'block' && itemType === 'paragraph') || (selectedType === 'floatingText') || (selectedType === 'title');
+    const isTextItem = (selectedType === 'block' && ['paragraph', 'image-left', 'image-right', 'image-full', 'image-double'].includes(itemType)) || (selectedType === 'floating') || (selectedType === 'title');
     const isImageItem = (selectedType === 'block' && itemType !== 'paragraph') || selectedType === 'sticker' || selectedType === 'floatingImage';
 
     const handleTextUpdate = (key: string, value: any) => {
@@ -371,7 +372,7 @@ const EditorToolbar: React.FC<Props> = ({
                                     </div>
                                     <input
                                         type="color"
-                                        value={(currentItem as any).styles?.backgroundColor || '#ffffff'}
+                                        value={(currentItem as any).styles?.backgroundColor === 'transparent' ? '#ffffff' : ((currentItem as any).styles?.backgroundColor || '#ffffff')}
                                         onChange={(e) => handleTextUpdate('backgroundColor', e.target.value)}
                                         className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                                     />
@@ -383,6 +384,38 @@ const EditorToolbar: React.FC<Props> = ({
                                 >
                                     배경색 없음
                                 </button>
+
+                                {/* ✨ Custom Image Upload */}
+                                <div className="border-t pt-1 mt-1">
+                                    <label className="flex items-center justify-center gap-1.5 w-full py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded cursor-pointer transition">
+                                        <ImageIcon size={14} />
+                                        <span>이미지 배경</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    // Handle Upload
+                                                    const { uploadImageToSupabase } = await import('../../api'); // Lazy import or ensure it is imported at top
+                                                    const url = await uploadImageToSupabase(file);
+                                                    if (url) {
+                                                        // ✨ Fix: Batch updates to prevent stale state overwrite
+                                                        const currentStyles = (currentItem as any).styles || {};
+                                                        onUpdate(selectedId, selectedType, {
+                                                            styles: {
+                                                                ...currentStyles,
+                                                                backgroundImage: url,
+                                                                backgroundColor: 'transparent'
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                </div>
                             </div>
                         )}
                     </div>

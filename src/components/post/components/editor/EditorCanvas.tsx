@@ -8,7 +8,7 @@ import ToolbarOverlay from './ToolbarOverlay';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
-import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft, StickyNote, Loader2 } from 'lucide-react';
 
 interface Props {
     title: string;
@@ -31,11 +31,12 @@ interface Props {
     onBackgroundClick: () => void;
     paperStyles?: Record<string, any>;
     hideTitle?: boolean; // ✨ Optional prop to hide title
+    onAddFloatingText?: (x?: number, y?: number) => void; // ✨ Handler for adding floating text
 }
 
 const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedIds = [], selectedType,
-    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, paperStyles, hideTitle = false
+    setBlocks, onSelect, onUpdate, onDelete, onBlockImageUpload, paperStyles, hideTitle = false, onAddFloatingText
 }, ref) => {
 
     // ✨ Responsive Scaling Logic
@@ -515,10 +516,38 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 <div className="mt-12 py-8 border-t border-dashed border-gray-200 flex flex-col items-center gap-4 text-gray-500 select-none"> {/* ✨ select-none */}
                                     <span className="text-sm font-medium opacity-70">어떤 내용을 추가할까요?</span>
                                     <div className="flex flex-wrap items-center justify-center gap-3">
-                                        <button onClick={() => handleAddBlock('paragraph')} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-full transition shadow-sm"><Type size={16} /> <span>글만 쓰기</span></button>
-                                        <button onClick={() => handleAddBlock('image-left')} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-full transition shadow-sm"><LayoutTemplate size={16} /> <span>사진 + 글</span></button>
-                                        <button onClick={() => handleAddBlock('image-full')} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-full transition shadow-sm"><ImageIcon size={16} /> <span>꽉찬 사진</span></button>
-                                        <button onClick={() => handleAddBlock('image-double')} className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-full transition shadow-sm"><div className="flex"><ImageIcon size={14} /><ImageIcon size={14} /></div> <span>사진 2장</span></button>
+                                        <button onClick={() => handleAddBlock('paragraph')} className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-full transition shadow-sm text-blue-700">
+                                            <Type size={16} /> <span>글만 쓰기</span>
+                                        </button>
+                                        <button onClick={() => handleAddBlock('image-left')} className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-full transition shadow-sm text-green-700">
+                                            <LayoutTemplate size={16} /> <span>사진 + 글</span>
+                                        </button>
+                                        <button onClick={() => handleAddBlock('image-full')} className="flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-full transition shadow-sm text-rose-700">
+                                            <ImageIcon size={16} /> <span>꽉찬 사진</span>
+                                        </button>
+                                        <button onClick={() => handleAddBlock('image-double')} className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 rounded-full transition shadow-sm text-purple-700">
+                                            <div className="flex"><ImageIcon size={14} /><ImageIcon size={14} /></div> <span>사진 2장</span>
+                                        </button>
+
+                                        {/* ✨ Sticky Note Button (Always Visible) */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                // ✨ Calculate Viewport Center
+                                                if (contentRef.current && onAddFloatingText) {
+                                                    const rect = contentRef.current.getBoundingClientRect();
+                                                    const windowCenterY = window.innerHeight / 2;
+                                                    const relativeY = (windowCenterY - rect.top) / scale;
+                                                    const centerX = 400; // Fixed center for 800px width
+                                                    // Pass coordinates centered (subtract half height/width if needed, but centering point is fine)
+                                                    onAddFloatingText(centerX - 100, relativeY - 100);
+                                                }
+                                            }}
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            className="flex items-center gap-2 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 hover:border-yellow-300 rounded-full transition shadow-sm text-yellow-700"
+                                        >
+                                            <StickyNote size={16} /> <span>포스트잇</span>
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -546,6 +575,10 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                         textAlign: txt.styles?.textAlign as any,
                                         color: txt.styles?.color,
                                         backgroundColor: txt.styles?.backgroundColor,
+                                        backgroundImage: txt.styles?.backgroundImage ? `url(${txt.styles.backgroundImage})` : undefined, // ✨ BG Image
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        backgroundRepeat: 'no-repeat',
                                         fontStyle: txt.styles?.fontStyle || 'normal',
                                         textDecoration: txt.styles?.textDecoration || 'none',
                                     }}
@@ -641,7 +674,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                         ))}
 
                         {/* ✨ NEW: Global Overlay Toolbar for Blocks & Title */}
-                        {viewMode === 'editor' && selectedId && currentItem && (detectedType === 'block' || detectedType === 'title') && (
+                        {viewMode === 'editor' && selectedId && currentItem && (detectedType === 'block' || detectedType === 'title' || detectedType === 'floating') && (
                             // Keeping Overlay inside scale for now as it attaches to blocks? Or should we move it?
                             // ToolbarOverlay handles its own positioning usually.
                             <ToolbarOverlay

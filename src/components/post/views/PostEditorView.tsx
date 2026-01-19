@@ -165,6 +165,7 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                     editor.setSelectedType(null);
                 }}
                 paperStyles={paperStyles} // ✨ Pass Styles
+                onAddFloatingText={addFloatingText} // ✨ Pass Handler
             />
 
             {/* 오른쪽 사이드바 */}
