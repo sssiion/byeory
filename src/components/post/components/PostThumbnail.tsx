@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import type { PostData } from '../types';
-import MiniPostViewer from '../../community/components/MiniPostPreview';
+import MiniPostViewer from './MiniPostPreview.tsx';
 
 interface Props {
     post: PostData;

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'; // useState 추가
 import { Heart, Eye, MessageCircle } from 'lucide-react';
 import type { CommunityResponse } from '../types';
-import MiniPostViewer from "./MiniPostPreview.tsx";
+import MiniPostViewer from "../../post/components/MiniPostPreview.tsx";
 import { increaseViewCount } from '../api'; // API 함수 import
 
 interface CommunityCardProps {

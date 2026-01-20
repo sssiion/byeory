@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
-import type { Block, FloatingImage, FloatingText, Sticker } from "../../post/types.ts";
-import { WIDGET_COMPONENT_MAP } from '../../settings/widgets/componentMap';
-import CustomWidgetPreview from '../../settings/widgets/customwidget/components/CustomWidgetPreview';
+import type { Block, FloatingImage, FloatingText, Sticker } from "../types.ts";
+import { WIDGET_COMPONENT_MAP } from '../../settings/widgets/componentMap.ts';
+import CustomWidgetPreview from '../../settings/widgets/customwidget/components/CustomWidgetPreview.tsx';
 
 interface MiniPostViewerProps {
     title: string;
@@ -15,6 +15,7 @@ interface MiniPostViewerProps {
     minHeight?: string;
     hideTitle?: boolean; // ✨ Option to hide title
     preserveTitleSpace?: boolean; // ✨ Maintain title height even if hidden
+    paddingClass?: string; // ✨ Custom padding class (default: px-12)
 }
 
 const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
@@ -28,7 +29,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     scale = 1,
     minHeight = 'auto',
     hideTitle = false, // ✨ Default false
-    preserveTitleSpace = false
+    preserveTitleSpace = false,
+    paddingClass = 'px-12' // ✨ Default padding
 }) => {
     const ORIGINAL_WIDTH = 800; // 에디터 기준 너비
 
@@ -64,46 +66,9 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 position: 'relative', // Ensure relative positioning for absolute children
             }}
         >
-            {/* ✨ 스타일 태그 추가: 제목 흐르기 애니메이션 */}
-            <style>{`
-                @keyframes post-marquee {
-                    0% { transform: translateX(100%); }
-                    100% { transform: translateX(-100%); }
-                }
-                .title-marquee {
-                    display: inline-block;
-                    white-space: nowrap !important;
-                    animation: post-marquee 12s linear infinite;
-                    will-change: transform;
-                    padding-right: 50px;
-                }
-            `}</style>
 
-            {/* 제목 영역은 글자가 흐르므로 overflow-hidden 유지 via visibility */}
-            <div
-                className="p-8 pb-4 border-b border-gray-100 mb-8 overflow-hidden whitespace-nowrap"
-                style={{
-                    backgroundColor: titleStyles.backgroundColor || 'transparent',
-                    display: hideTitle && !preserveTitleSpace ? 'none' : 'block', // ✨ Hide completely if not preserving space
-                    visibility: hideTitle && preserveTitleSpace ? 'hidden' : 'visible' // ✨ Hide visually but keep space
-                }}
-            >
-                {/* h1에 animate 클래스 적용 */}
-                <h1 className="title-marquee" style={{
-                    fontSize: titleStyles.fontSize || '36px',
-                    fontWeight: titleStyles.fontWeight || 'bold',
-                    color: titleStyles.color || '#1a1a1a',
-                    fontFamily: titleStyles.fontFamily || 'sans-serif',
-                    textAlign: titleStyles.textAlign || 'left',
-                    lineHeight: 1.4,
-                    // wordBreak: 'keep-all' // 흐르는 효과를 위해 제거하거나 무시됨
-                }}>
-                    {title || "제목 없음"}
-                </h1>
-            </div>
-
-            {/* 본문 블록 */}
-            <div className="px-12 pb-20 space-y-4 relative z-0">
+            {/* 本文 블록 */}
+            <div className={`${paddingClass} pb-20 space-y-6 relative z-0`}>
                 {blocks.map((block, index) => {
                     const textStyle = {
                         fontFamily: block.styles?.fontFamily || 'sans-serif',
@@ -123,8 +88,10 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                         <div key={`block-${block.id || 'none'}-${index}`} className="relative">
                             {block.type === 'image-full' && (
                                 <div className="space-y-3">
-                                    {block.imageUrl && (
+                                    {block.imageUrl ? (
                                         <img src={block.imageUrl} className="w-full rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" />
+                                    ) : (
+                                        <div className="w-full rounded-lg bg-gray-50 border border-dashed border-gray-200" style={{ height: '200px' }} /> // ✨ Match Editor Placeholder
                                     )}
                                     {block.text && <div style={textStyle}>{block.text}</div>}
                                 </div>
@@ -133,8 +100,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                             {block.type === 'image-double' && (
                                 <div className="space-y-3">
                                     <div className="flex gap-3">
-                                        {block.imageUrl && <img src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" />}
-                                        {block.imageUrl2 && <img src={block.imageUrl2} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" />}
+                                        {block.imageUrl ? <img src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" /> : <div className="w-1/2 rounded-lg bg-gray-50 border border-dashed border-gray-200" style={{ height: '200px' }} />}
+                                        {block.imageUrl2 ? <img src={block.imageUrl2} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" /> : <div className="w-1/2 rounded-lg bg-gray-50 border border-dashed border-gray-200" style={{ height: '200px' }} />}
                                     </div>
                                     {block.text && <div style={textStyle}>{block.text}</div>}
                                 </div>
@@ -142,16 +109,65 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
                             {(block.type === 'image-left' || block.type === 'image-right') && (
                                 <div className={`flex gap-6 items-start ${block.type === 'image-right' ? 'flex-row-reverse' : ''}`}>
-                                    {block.imageUrl && (
+                                    {block.imageUrl ? (
                                         <img src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100 flex-shrink-0" style={{ height: imgHeight, objectFit: imgFit }} alt="" />
+                                    ) : (
+                                        <div className="w-1/2 rounded-lg bg-gray-50 border border-dashed border-gray-200 flex-shrink-0" style={{ height: '200px' }} />
                                     )}
                                     <div className="flex-1 min-w-0 pt-1" style={textStyle}>{block.text}</div>
                                 </div>
                             )}
 
                             {block.type === 'paragraph' && (
-                                <div style={{ ...textStyle, padding: block.styles?.backgroundColor ? '12px' : '0', borderRadius: '4px' }}>
+                                <div style={{
+                                    ...textStyle,
+                                    padding: '8px',
+                                    minHeight: '75px', // ✨ Match Editor min-height
+                                    borderRadius: '4px'
+                                }}>
                                     {block.text || <span className="opacity-0">Empty</span>}
+                                </div>
+                            )}
+
+                            {/* ✨ Bullet List Support */}
+                            {block.type === 'bullet-list' && (
+                                <div style={{
+                                    ...textStyle,
+                                    padding: '8px',
+                                    minHeight: '75px',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    {((block as any).content?.items || []).map((it: string, i: number) => (
+                                        <div key={i} className="flex items-start gap-2">
+                                            <span className="select-none">•</span>
+                                            <div className="flex-1 min-w-0 break-words">{it}</div>
+                                        </div>
+                                    ))}
+                                    {(!((block as any).content?.items) || (block as any).content?.items.length === 0) && <span className="opacity-0">Empty List</span>}
+                                </div>
+                            )}
+
+                            {/* ✨ Number List Support */}
+                            {block.type === 'number-list' && (
+                                <div style={{
+                                    ...textStyle,
+                                    padding: '8px',
+                                    minHeight: '75px',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    {((block as any).content?.items || []).map((it: string, i: number) => (
+                                        <div key={i} className="flex items-start gap-2">
+                                            <span className="select-none min-w-[1.2em]">{i + 1}.</span>
+                                            <div className="flex-1 min-w-0 break-words">{it}</div>
+                                        </div>
+                                    ))}
+                                    {(!((block as any).content?.items) || (block as any).content?.items.length === 0) && <span className="opacity-0">Empty List</span>}
                                 </div>
                             )}
                         </div>
