@@ -56,6 +56,9 @@ export interface FloatingText extends BaseFloatingItem {
         fontFamily: string;
         fontStyle?: string;
         textDecoration?: string;
+        textEffect?: 'none' | 'curve' | 'wave' | 'double-wave'; // ✨ Text Effect
+        textEffectIntensity?: number; // ✨ Text Effect Intensity (0-100)
+        textPathPoints?: { x: number; y: number; type?: 'anchor' | 'control' }[]; // ✨ Interactive Curve Points
     };
     imageTransform?: { x: number; y: number; scale: number }; // ✨ Focus Data for Sticky Notes
     imageFit?: 'cover' | 'contain'; // ✨ Image Fit Mode

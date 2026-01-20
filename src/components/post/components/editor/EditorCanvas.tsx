@@ -618,7 +618,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 <StickyNote
                                     item={txt}
                                     scale={scale}
-                                    isFocusing={croppingId === txt.id}
+                                    isFocusing={selectedId === txt.id || selectedIds.includes(txt.id)}
                                     readOnly={viewMode === 'read' || !!txt.locked}
                                     onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                                     onSelect={() => {

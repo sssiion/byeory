@@ -16,7 +16,8 @@ import {
     RotateCcw,
     Search, // ✨ Import Search for Zoom
     Eraser, // ✨ Import Eraser for BG Removal
-    Image as ImageIcon // ✨ Import Image Icon
+    Image as ImageIcon, // ✨ Import Image Icon
+    Waves // ✨ Import Waves for Text Effects
 } from 'lucide-react';
 import { useBackgroundRemoval } from '../../../../hooks/useBackgroundRemoval';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
@@ -41,6 +42,7 @@ const EditorToolbar: React.FC<Props> = ({
     // const [isLoading, setIsLoading] = useState(false); // ✨ Removed local state in favor of hook
     const [showTextMenu, setShowTextMenu] = React.useState(false);
     const [showBgMenu, setShowBgMenu] = React.useState(false);
+    const [showEffectMenu, setShowEffectMenu] = React.useState(false); // ✨ Text Effect Menu
     const itemType = (currentItem as any)?.type;
     const currentZIndex = (currentItem as any).zIndex || 1;
 
@@ -428,6 +430,64 @@ const EditorToolbar: React.FC<Props> = ({
                                         />
                                     </label>
                                 </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ✨ Text Effect Dropdown (Waves Icon) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowEffectMenu(!showEffectMenu)}
+                            className={`flex items-center gap-1 px-2 py-2 rounded hover:bg-gray-100 transition ${showEffectMenu ? 'bg-gray-100' : ''}`}
+                            title="텍스트 효과"
+                        >
+                            <Waves size={18} className={/* Active indicator */ (currentItem as any).styles?.textEffect && (currentItem as any).styles?.textEffect !== 'none' ? 'text-indigo-600' : 'text-gray-600'} />
+                            <ChevronDown size={12} className="text-gray-400" />
+                        </button>
+
+                        {showEffectMenu && (
+                            <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex flex-col gap-2 min-w-[140px] animate-in fade-in zoom-in-95 duration-200">
+                                <span className="text-xs font-bold text-gray-400 px-1">텍스트 효과</span>
+                                {['none', 'curve', 'wave', 'double-wave'].map((effect) => (
+                                    <button
+                                        key={effect}
+                                        onClick={() => {
+                                            const currentStyles = (currentItem as any).styles || {};
+                                            onUpdate(selectedId, selectedType, {
+                                                styles: {
+                                                    ...currentStyles,
+                                                    textEffect: effect,
+                                                    textPathPoints: undefined // ✨ Reset points to force re-initialization
+                                                }
+                                            });
+                                        }}
+                                        className={`px-3 py-2 text-sm rounded text-left transition ${((currentItem as any).styles?.textEffect || 'none') === effect ? 'bg-indigo-50 text-indigo-700 font-bold' : 'hover:bg-gray-50 text-gray-700'}`}
+                                    >
+                                        {effect === 'none' && '없음'}
+                                        {effect === 'curve' && '둥글게'}
+                                        {effect === 'wave' && '물결'}
+                                        {effect === 'double-wave' && '더블 물결'}
+                                    </button>
+                                ))}
+
+                                {/* ✨ Effect Intensity Slider */}
+                                {((currentItem as any).styles?.textEffect && (currentItem as any).styles?.textEffect !== 'none') && (
+                                    <div className="border-t pt-2 mt-1 px-1">
+                                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                            <span>강도</span>
+                                            <span>{(currentItem as any).styles?.textEffectIntensity ?? 50}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            step="5"
+                                            value={(currentItem as any).styles?.textEffectIntensity ?? 50}
+                                            onChange={(e) => handleTextUpdate('textEffectIntensity', parseInt(e.target.value))}
+                                            className="w-full accent-indigo-600 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
