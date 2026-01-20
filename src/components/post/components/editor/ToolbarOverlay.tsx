@@ -73,9 +73,9 @@ const ToolbarOverlay: React.FC<Props> = ({ selectedId, selectedType, currentItem
             }
 
             // Toggle to TOP if bottom is clipped (e.g. at bottom of screen)
-            // Assuming toolbar height is approx 50-60px
-            if (top + 60 > window.innerHeight) {
-                top = targetRect.top - 50;
+            const toolbarHeight = toolbarRef.current?.offsetHeight || 60;
+            if (top + toolbarHeight > window.innerHeight) {
+                top = targetRect.top - toolbarHeight - 10; // Position above with margin
             }
 
             setPosition(prev => {
@@ -116,9 +116,10 @@ const ToolbarOverlay: React.FC<Props> = ({ selectedId, selectedType, currentItem
                 transform: 'translateX(-50%)',
                 zIndex: 99999, // ✨ Really Always on Top
                 width: 'max-content',
+                maxWidth: '94vw', // ✨ Limit width to screen (with margin)
                 pointerEvents: 'auto',
                 color: '#1f2937',
-                whiteSpace: 'nowrap',
+                whiteSpace: 'normal', // ✨ Allow wrapping
                 // Add shadow/border to ensure visibility against any background
                 filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))'
             }}
