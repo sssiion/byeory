@@ -320,19 +320,24 @@ export const usePostEditor = () => {
             "정말 삭제하시겠습니까?",
             "danger",
             async () => {
-                await deletePostApi(id);
-                await fetchPosts();
+                closeConfirmModal(); // ✨ Close immediately to prevent stuck UI
+                try {
+                    await deletePostApi(id);
+                    await fetchPosts();
 
-                // ✨ Exit if current post is deleted
-                if (currentPostId === id) {
-                    setCurrentPostId(null);
-                    if (selectedAlbumId) {
-                        setViewMode('folder');
-                    } else {
-                        setViewMode('album');
+                    // ✨ Exit if current post is deleted
+                    if (currentPostId === id) {
+                        setCurrentPostId(null);
+                        if (selectedAlbumId) {
+                            setViewMode('folder');
+                        } else {
+                            setViewMode('album');
+                        }
                     }
+                } catch (e) {
+                    console.error("Failed to delete post", e);
+                    // Optionally show error modal here if needed
                 }
-                closeConfirmModal();
             }
         );
     };

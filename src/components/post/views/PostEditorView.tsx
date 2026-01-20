@@ -213,6 +213,7 @@ const PostEditorView: React.FC<Props> = ({ editor, handleImagesUpload }) => {
                 }} // ✨ Temp Save Handler
                 onCancel={() => {
                     const proceed = () => {
+                        editor.closeConfirmModal(); // ✨ Close modal immediately
                         // ✨ Cancel Logic: Smart Navigation
                         // If it's a draft (Temp Save), go back to List (Album/Folder)
                         // If it's a published post (Edit), go back to Read Mode
