@@ -332,6 +332,7 @@ const LeftSidebar: React.FC<Props> = ({ activeTab, setActiveTab, onAddBlock, onA
                                 {renderDecoBtn(<div className="w-4 h-4 border-2 border-current" />, "사각형 (Square)", 'square')}
                                 {renderDecoBtn(<Star size={18} />, "별 모양 (Star)", 'star')}
                                 {renderDecoBtn(<Sparkles size={18} />, "유기적 도형 (Blob)", 'blob')}
+                                {renderDecoBtn(<ImageDown size={18} />, "사진 (Image)", 'image')}
                             </>
                         )}
 

@@ -345,3 +345,111 @@ VALUES (
   0,
   false
 );
+
+-- 7. 📸 Polaroid Frame
+INSERT INTO widgets (name, type, content, styles, decorations, default_size, created_at, updated_at, users, download_count, is_shared)
+VALUES (
+  'Polaroid Frame',
+  'custom-block',
+  '{
+    "scenes": [
+      {
+        "id": "scene-1",
+        "duration": 1,
+        "decorations": [
+          {
+            "id": "polaroid-bg",
+            "type": "shape",
+            "x": 0,
+            "y": 0,
+            "w": 100,
+            "h": 100,
+            "style": {
+              "backgroundColor": "#ffffff",
+              "boxShadow": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              "borderRadius": "2px"
+            }
+          },
+          {
+            "id": "polaroid-photo",
+            "type": "image",
+            "x": 5,
+            "y": 5,
+            "w": 90,
+            "h": 75,
+            "imageUrl": "",
+            "style": {
+              "backgroundColor": "#f3f4f6",
+              "objectFit": "cover"
+            }
+          },
+          {
+            "id": "polaroid-text",
+            "type": "text",
+            "text": "My Memory",
+            "x": 10,
+            "y": 85,
+            "w": 80,
+            "h": 10,
+            "style": {
+                "fontFamily": "cursive",
+                "fontSize": "16px",
+                "textAlign": "center",
+                "color": "#374151"
+            }
+          }
+        ]
+      }
+    ]
+  }',
+  '{}',
+  '[
+    {
+      "id": "polaroid-bg",
+      "type": "shape",
+      "x": 0,
+      "y": 0,
+      "w": 100,
+      "h": 100,
+      "style": {
+        "backgroundColor": "#ffffff",
+        "boxShadow": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+        "borderRadius": "2px"
+      }
+    },
+    {
+      "id": "polaroid-photo",
+      "type": "image",
+      "x": 5,
+      "y": 5,
+      "w": 90,
+      "h": 75,
+      "imageUrl": "",
+      "style": {
+        "backgroundColor": "#f3f4f6",
+        "objectFit": "cover"
+      }
+    },
+    {
+      "id": "polaroid-text",
+      "type": "text",
+      "text": "My Memory",
+      "x": 10,
+      "y": 85,
+      "w": 80,
+      "h": 10,
+      "style": {
+          "fontFamily": "cursive",
+          "fontSize": "16px",
+          "textAlign": "center",
+          "color": "#374151"
+      }
+    }
+  ]',
+  '2x2',
+  NOW(),
+  NOW(),
+  1,
+  0,
+  false
+);

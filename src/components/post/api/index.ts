@@ -11,10 +11,17 @@ const API_BASE_URL = `${BASE_URL}/api/posts`;
 const API_ALBUM_URL = `${BASE_URL}/api/albums`;
 const API_ROOM_URL = `${BASE_URL}/api/rooms`;
 export const API_TEMPLATE_URL = `${BASE_URL}/api/templates`; // Fixed URL matching Controller
+// Helper to safely decode URI components
+const safeDecodeURIComponent = (str: string) => {
+  try {
+    return decodeURIComponent(str);
+  } catch (e) {
+    console.warn("URI Decode Failed:", str, e);
+    return str; // Return original string or empty if completely broken
+  }
+};
 
-// ... existing code ...
 
-// Helper to clean ID (remove 'room-' prefix)
 export const cleanId = (id: string | number): string => {
   return String(id).replace(/^room-/, "");
 };
@@ -208,10 +215,19 @@ export const fetchPostsFromApi = async () => {
         opacity: s.opacity || 1, // Fix invisible items
         // Widget Persistence Decoding
         widgetType: s.url && s.url.startsWith('widget://')
-          ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+          ? safeDecodeURIComponent(s.url.split('widget://')[1].split('?')[0])
           : undefined,
         widgetProps: s.url && s.url.startsWith('widget://')
-          ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+          ? (() => {
+            try {
+              const params = new URLSearchParams(s.url.split('?')[1]);
+              const propsStr = params.get('props');
+              return propsStr ? JSON.parse(safeDecodeURIComponent(propsStr)) : {};
+            } catch (e) {
+              console.warn("Widget Props Parse Failed:", e);
+              return {};
+            }
+          })()
           : undefined
       })),
       floatingTexts: (p.floatingTexts || []).map((t: any) => ({
@@ -318,10 +334,19 @@ export const savePostToApi = async (
         opacity: s.opacity || 1, // Fix invisible items
         // Widget Persistence Decoding
         widgetType: s.url && s.url.startsWith('widget://')
-          ? decodeURIComponent(s.url.split('widget://')[1].split('?')[0])
+          ? safeDecodeURIComponent(s.url.split('widget://')[1].split('?')[0])
           : undefined,
         widgetProps: s.url && s.url.startsWith('widget://')
-          ? JSON.parse(decodeURIComponent(new URLSearchParams(s.url.split('?')[1]).get('props') || '{}'))
+          ? (() => {
+            try {
+              const params = new URLSearchParams(s.url.split('?')[1]);
+              const propsStr = params.get('props');
+              return propsStr ? JSON.parse(safeDecodeURIComponent(propsStr)) : {};
+            } catch (e) {
+              console.warn("Widget Props Parse Failed:", e);
+              return {};
+            }
+          })()
           : undefined
       })),
       floatingTexts: (savedPost.floatingTexts || []).map((t: any) => ({

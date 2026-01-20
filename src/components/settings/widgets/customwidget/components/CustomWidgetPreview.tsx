@@ -114,4 +114,4 @@ const CustomWidgetPreview: React.FC<CustomWidgetPreviewProps> = ({ content, defa
     );
 };
 
-export default CustomWidgetPreview;
+export default React.memo(CustomWidgetPreview);

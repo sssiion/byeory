@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { removeBackground, type Config } from '@imgly/background-removal';
 
 interface UseBackgroundRemovalReturn {
-    removeBg: (imageSource: string | Blob | File, options?: Config) => Promise<string>;
+    removeBg: (imageSource: string | Blob | File, options?: Config) => Promise<{ url: string; blob: Blob }>;
     isProcessing: boolean;
     error: string | null;
 }
@@ -25,7 +25,7 @@ export const useBackgroundRemoval = (): UseBackgroundRemovalReturn => {
 
             const blob = await removeBackground(imageSource, config);
             const url = URL.createObjectURL(blob);
-            return url;
+            return { url, blob };
         } catch (err) {
             console.error("Background removal failed:", err);
             const errorMessage = err instanceof Error ? err.message : "배경 제거 중 오류가 발생했습니다.";

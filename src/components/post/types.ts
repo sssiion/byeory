@@ -4,7 +4,7 @@ export type ViewMode = 'list' | 'editor' | 'read' | 'album' | 'folder';
 
 export interface Block {
     id: string;
-    type: 'paragraph' | 'image-full' | 'image-double' | 'image-left' | 'image-right';
+    type: 'paragraph' | 'image-full' | 'image-double' | 'image-left' | 'image-right' | 'bullet-list' | 'number-list';
     text: string;
     imageUrl?: string;
     imageUrl2?: string;

@@ -18,6 +18,68 @@ interface MiniPostViewerProps {
     paddingClass?: string; // ✨ Custom padding class (default: px-12)
 }
 
+// ✨ Safe Image Component to handle Blob errors
+const SafeImage = ({ src, alt, className, style, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+    const [status, setStatus] = React.useState<'loading' | 'valid' | 'error'>('loading');
+
+    React.useEffect(() => {
+        let isMounted = true;
+
+        if (!src) {
+            setStatus('error');
+            return;
+        }
+
+        // Pre-validate blob URLs using Image object to avoid unhandled fetch errors
+        if (src.startsWith('blob:')) {
+            setStatus('loading');
+            const img = new Image();
+            img.onload = () => {
+                if (isMounted) setStatus('valid');
+            };
+            img.onerror = () => {
+                if (isMounted) setStatus('error');
+            };
+            img.src = src;
+        } else {
+            // For regular URLs, assume valid initially and let onError catch issues
+            setStatus('valid');
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [src]);
+
+    if (status === 'error') {
+        return (
+            <div
+                className={`bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-gray-300 text-xs ${className}`}
+                style={style}
+            >
+                <span className="text-[10px]">이미지 없음</span>
+            </div>
+        );
+    }
+
+    if (status === 'loading') {
+        return (
+            <div className={`bg-gray-50 animate-pulse ${className}`} style={style} />
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            onError={() => setStatus('error')}
+            alt={alt || ""}
+            className={className}
+            style={style}
+            {...props}
+        />
+    );
+};
+
 const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     title,
     titleStyles = {},
@@ -88,11 +150,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                         <div key={`block-${block.id || 'none'}-${index}`} className="relative">
                             {block.type === 'image-full' && (
                                 <div className="space-y-3">
-                                    {block.imageUrl ? (
-                                        <img src={block.imageUrl} className="w-full rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" />
-                                    ) : (
-                                        <div className="w-full rounded-lg bg-gray-50 border border-dashed border-gray-200" style={{ height: '200px' }} /> // ✨ Match Editor Placeholder
-                                    )}
+                                    <SafeImage src={block.imageUrl} className="w-full rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} />
                                     {block.text && <div style={textStyle}>{block.text}</div>}
                                 </div>
                             )}
@@ -100,8 +158,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                             {block.type === 'image-double' && (
                                 <div className="space-y-3">
                                     <div className="flex gap-3">
-                                        {block.imageUrl ? <img src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" /> : <div className="w-1/2 rounded-lg bg-gray-50 border border-dashed border-gray-200" style={{ height: '200px' }} />}
-                                        {block.imageUrl2 ? <img src={block.imageUrl2} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} alt="" /> : <div className="w-1/2 rounded-lg bg-gray-50 border border-dashed border-gray-200" style={{ height: '200px' }} />}
+                                        <SafeImage src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} />
+                                        <SafeImage src={block.imageUrl2} className="w-1/2 rounded-lg bg-gray-100" style={{ height: imgHeight, objectFit: imgFit }} />
                                     </div>
                                     {block.text && <div style={textStyle}>{block.text}</div>}
                                 </div>
@@ -109,11 +167,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
                             {(block.type === 'image-left' || block.type === 'image-right') && (
                                 <div className={`flex gap-6 items-start ${block.type === 'image-right' ? 'flex-row-reverse' : ''}`}>
-                                    {block.imageUrl ? (
-                                        <img src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100 flex-shrink-0" style={{ height: imgHeight, objectFit: imgFit }} alt="" />
-                                    ) : (
-                                        <div className="w-1/2 rounded-lg bg-gray-50 border border-dashed border-gray-200 flex-shrink-0" style={{ height: '200px' }} />
-                                    )}
+                                    <SafeImage src={block.imageUrl} className="w-1/2 rounded-lg bg-gray-100 flex-shrink-0" style={{ height: imgHeight, objectFit: imgFit }} />
                                     <div className="flex-1 min-w-0 pt-1" style={textStyle}>{block.text}</div>
                                 </div>
                             )}
@@ -177,10 +231,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
 
             {/* 3. 자유 배치 요소들 */}
             {stickers.map((stk, index) => {
-                // Debugging: Check if widgetType exists
-                if (stk.widgetType) {
-                    console.log("[MiniPostPreview] Found widget:", stk.widgetType, stk);
-                }
+
 
                 if (stk.widgetType) {
                     return (
@@ -209,7 +260,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
                 }
 
                 return (
-                    <img
+                    <SafeImage
                         key={`stk-${stk.id || 'none'}-${index}`}
                         src={stk.url}
                         style={{
@@ -222,7 +273,7 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
             })}
 
             {floatingImages.map((img, index) => (
-                <img
+                <SafeImage
                     key={`img-${img.id || 'none'}-${index}`}
                     src={img.url}
                     style={{
@@ -261,4 +312,4 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     );
 };
 
-export default MiniPostViewer;
+export default React.memo(MiniPostViewer);

@@ -4,6 +4,7 @@ import { PAPER_PRESETS } from '../../constants/paperPresets'; // ✨ Import
 import { useMarket } from '../../../../hooks';
 import { Save, X, Type, StickyNote, Image as ImageIcon, Sparkles, Upload, Layout, Plus, Palette, Bot, Mic, MicOff, Check, ChevronDown, Trash2, Undo2, Search, ImageDown } from 'lucide-react';
 import axios from 'axios'; // ✨ Import Axios
+import { compressImage } from '../../../../utils/imageUtils'; // ✨ Import Compression
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
@@ -289,7 +290,16 @@ const EditorSidebar: React.FC<Props> = ({
             else if (mimeType === 'image/gif') extension = 'gif';
 
             const file = new File([blob], `freepik-${Date.now()}.${extension}`, { type: blob.type });
-            onAddFloatingImage(file);
+
+            // ✨ Compress before upload
+            try {
+                // Resize to max 1200px, 0.8 quality
+                const compressedFile = await compressImage(file, 1200, 0.8);
+                onAddFloatingImage(compressedFile);
+            } catch (err) {
+                console.warn("Compression failed, using original:", err);
+                onAddFloatingImage(file);
+            }
         } catch (error) {
             console.warn("Blob fetch failed, falling back to URL sticker:", error);
             onAddSticker(item.url);

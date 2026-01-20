@@ -15,6 +15,7 @@ import {
     Scissors, Eraser, RotateCcw // ✨ NEW
 } from 'lucide-react';
 import { useBackgroundRemoval } from '../../../../../hooks/useBackgroundRemoval'; // ✨ NEW
+import { uploadImageToSupabase } from '../../../../../components/post/api';
 import type { WidgetBlock, WidgetDecoration } from '../types';
 import { getLabelByType, generateBlobPoints } from '../utils';
 
@@ -137,12 +138,29 @@ const RightSidebar: React.FC<Props> = ({
                 blobToProcess = await response.blob();
             }
 
-            const newUrl = await removeBg(blobToProcess);
-            if (newUrl) {
+            const { url: previewUrl, blob: processedBlob } = await removeBg(blobToProcess);
+            if (previewUrl && processedBlob) {
+                // 1. Optimistic Update (Preview)
                 onUpdateDecoration(selectedDecoration.id, {
-                    imageUrl: newUrl,
+                    imageUrl: previewUrl,
                     crop: undefined // Reset crop after BG removal
                 });
+
+                // 2. Upload to Supabase (Persistence)
+                try {
+                    const file = new File([processedBlob], `bg-removed-${Date.now()}.png`, { type: 'image/png' });
+                    const supabaseUrl = await uploadImageToSupabase(file);
+
+                    if (supabaseUrl) {
+                        onUpdateDecoration(selectedDecoration.id, {
+                            imageUrl: supabaseUrl
+                        });
+                    }
+                } catch (uploadError) {
+                    console.error("Background removed image upload failed:", uploadError);
+                    // Keep the blob URL if upload fails, or show error?
+                    // User might lose it on refresh, but better than broken UI now.
+                }
             }
 
         } catch (error) {

@@ -43,6 +43,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     // ✨ Responsive Scaling Logic
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null); // ✨ Wrapper Ref (Paper + Controls)
     const [scale, setScale] = useState(1);
     const [scaledHeight, setScaledHeight] = useState<number | undefined>(undefined);
     const titleRef = useRef<HTMLDivElement>(null); // ✨ Title Measurement
@@ -148,8 +149,9 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     // ✨ Update wrapper height to match scaled content
     useEffect(() => {
         const updateHeight = () => {
-            if (contentRef.current) {
-                const originalHeight = contentRef.current.offsetHeight;
+            // ✨ Measure wrapperRef (includes Paper + Controls)
+            if (wrapperRef.current) {
+                const originalHeight = wrapperRef.current.offsetHeight;
                 setScaledHeight(originalHeight * scale);
             }
             // ✨ Measure Title Height
@@ -163,6 +165,10 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
         // Observer for content height changes (blocks added/removed)
         const observer = new ResizeObserver(updateHeight);
+        if (wrapperRef.current) {
+            observer.observe(wrapperRef.current);
+        }
+        // Also observe contentRef just in case inner changes affect outer
         if (contentRef.current) {
             observer.observe(contentRef.current);
         }
@@ -381,6 +387,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
             {/* Let's try inserting a spacer div */}
             <div style={{ height: scaledHeight, width: '100%', display: 'flex', justifyContent: 'center' }}>
                 <div
+                    ref={wrapperRef}
                     style={{
                         transform: `scale(${scale})`,
                         transformOrigin: 'top center',
@@ -390,7 +397,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                 >
                     <div
                         ref={contentRef}
-                        className={`w-[800px] ${viewMode === 'editor' ? 'min-h-[1000px]' : ''} relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone`}
+                        className={`w-[800px] ${viewMode === 'editor' ? 'min-h-[200px]' : ''} relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone`}
                         style={{
                             ...paperStyles
                         }}
@@ -401,13 +408,13 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             <div
                                 style={{
                                     height: titleHeight ? `${titleHeight}px` : '100px',
-                                    backgroundColor: '#ffffff'
+                                    // backgroundColor: '#ffffff' // ✨ Allow paperStyles to dictate bg
                                 }}
-                                className="w-full border-b border-gray-100"
+                                className="w-full"
                             />
 
                             {/* Page Sheets & Gaps */}
-                            {Array.from({ length: Math.max(1, Math.ceil(((scaledHeight || 1200) - (titleHeight || 0)) / (930 + 20))) + 1 }).map((_, i) => {
+                            {Array.from({ length: Math.max(1, Math.ceil(((scaledHeight || 200) - (titleHeight || 0)) / (930 + 20))) + 1 }).map((_, i) => {
                                 // Start pages AFTER the title
                                 // Page 0 (First Page) starts at titleHeight
                                 const PAGE_HEIGHT = 930; // ✨ Adjusted to 930px to match BookView capacity (Editor has padding)
@@ -415,15 +422,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
                                 return (
                                     <React.Fragment key={`page-bg-${i}`}>
-                                        {/* White Paper Sheet */}
-                                        <div
-                                            className="absolute left-0 w-full bg-white shadow-sm"
-                                            style={{
-                                                top: `${topPos}px`,
-                                                height: `${PAGE_HEIGHT}px`,
-                                                border: '1px solid #f0f0f0'
-                                            }}
-                                        />
+                                        {/* White Paper Sheet Removed for Dynamic Height */}
 
                                         {/* Gap / Page Break Indicator */}
                                         <div
@@ -563,46 +562,9 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 </Droppable>
                             </DragDropContext>
 
-                            {viewMode === 'editor' && (
-                                <div className="mt-12 py-8 border-t border-dashed border-gray-200 flex flex-col items-center gap-4 text-gray-500 select-none"> {/* ✨ select-none */}
-                                    <span className="text-sm font-medium opacity-70">어떤 내용을 추가할까요?</span>
-                                    <div className="flex flex-wrap items-center justify-center gap-3">
-                                        <button onClick={() => handleAddBlock('paragraph')} className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-full transition shadow-sm text-blue-700">
-                                            <Type size={16} /> <span>글만 쓰기</span>
-                                        </button>
-                                        <button onClick={() => handleAddBlock('image-left')} className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-full transition shadow-sm text-green-700">
-                                            <LayoutTemplate size={16} /> <span>사진 + 글</span>
-                                        </button>
-                                        <button onClick={() => handleAddBlock('image-full')} className="flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-full transition shadow-sm text-rose-700">
-                                            <ImageIcon size={16} /> <span>꽉찬 사진</span>
-                                        </button>
-                                        <button onClick={() => handleAddBlock('image-double')} className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 rounded-full transition shadow-sm text-purple-700">
-                                            <div className="flex"><ImageIcon size={14} /><ImageIcon size={14} /></div> <span>사진 2장</span>
-                                        </button>
 
-                                        {/* ✨ Sticky Note Button (Always Visible) */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                // ✨ Calculate Viewport Center
-                                                if (contentRef.current && onAddFloatingText) {
-                                                    const rect = contentRef.current.getBoundingClientRect();
-                                                    const windowCenterY = window.innerHeight / 2;
-                                                    const relativeY = (windowCenterY - rect.top) / scale;
-                                                    const centerX = 400; // Fixed center for 800px width
-                                                    // Pass coordinates centered (subtract half height/width if needed, but centering point is fine)
-                                                    onAddFloatingText(centerX - 100, relativeY - 100);
-                                                }
-                                            }}
-                                            onMouseDown={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-2 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 hover:border-yellow-300 rounded-full transition shadow-sm text-yellow-700"
-                                        >
-                                            <StickyNoteIcon size={16} /> <span>포스트잇</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
+
 
                         {floatingTexts.map(txt => (
                             <ResizableItem
@@ -722,6 +684,43 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                         {/* ✨ Duplicate Title & Toolbar Removed */}
 
                     </div>
+
+                    {viewMode === 'editor' && (
+                        <div className="mt-8 py-4 flex flex-col items-center gap-4 text-gray-500 select-none">
+                            <span className="text-sm font-medium opacity-70">어떤 내용을 추가할까요?</span>
+                            <div className="flex flex-wrap items-center justify-center gap-3">
+                                <button onClick={() => handleAddBlock('paragraph')} className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-full transition shadow-sm text-blue-700">
+                                    <Type size={16} /> <span>글만 쓰기</span>
+                                </button>
+                                <button onClick={() => handleAddBlock('image-left')} className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-full transition shadow-sm text-green-700">
+                                    <LayoutTemplate size={16} /> <span>사진 + 글</span>
+                                </button>
+                                <button onClick={() => handleAddBlock('image-full')} className="flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-full transition shadow-sm text-rose-700">
+                                    <ImageIcon size={16} /> <span>꽉찬 사진</span>
+                                </button>
+                                <button onClick={() => handleAddBlock('image-double')} className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 rounded-full transition shadow-sm text-purple-700">
+                                    <div className="flex"><ImageIcon size={14} /><ImageIcon size={14} /></div> <span>사진 2장</span>
+                                </button>
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (contentRef.current && onAddFloatingText) {
+                                            const rect = contentRef.current.getBoundingClientRect();
+                                            const windowCenterY = window.innerHeight / 2;
+                                            const relativeY = (windowCenterY - rect.top) / scale;
+                                            const centerX = 400;
+                                            onAddFloatingText(centerX - 100, relativeY - 100);
+                                        }
+                                    }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 hover:border-yellow-300 rounded-full transition shadow-sm text-yellow-700"
+                                >
+                                    <StickyNoteIcon size={16} /> <span>포스트잇</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
