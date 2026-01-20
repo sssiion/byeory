@@ -5,13 +5,14 @@ import type { FloatingText } from '../../types';
 interface Props {
     item: FloatingText;
     scale: number; // Global canvas scale for event correction
-    isFocusing: boolean;
+    isSelected: boolean;
+    isCropping: boolean;
     readOnly: boolean;
     onUpdate: (changes: Partial<FloatingText>) => void;
     onSelect: () => void;
 }
 
-const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpdate, onSelect }) => {
+const StickyNote: React.FC<Props> = ({ item, scale, isSelected, isCropping, readOnly, onUpdate, onSelect }) => {
     // Text Effect State
     // Text Effect State
     // Text Effect State
@@ -290,7 +291,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
 
     // Panning Handler
     const handleMouseDown = (e: React.MouseEvent) => {
-        if (!isFocusing) return;
+        if (!isCropping) return;
         e.stopPropagation();
         e.preventDefault();
         setIsDragging(true);
@@ -310,7 +311,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
 
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            if (!isDragging || !isFocusing) return;
+            if (!isDragging || !isCropping) return;
             e.preventDefault();
 
             const currentScale = scaleRef.current;
@@ -346,7 +347,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [isDragging, isFocusing]); // dependency removed for transform/scale
+    }, [isDragging, isCropping]); // dependency removed for transform/scale
 
 
     // Styles reconstruction
@@ -358,7 +359,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
             className="w-full h-full relative overflow-hidden"
             style={{ borderRadius: 'inherit' }} // Inherit rounded corners
             onClick={(e) => {
-                if (isFocusing) {
+                if (isSelected) {
                     e.stopPropagation();
                 }
             }}
@@ -367,7 +368,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
             {/* Background Image Layer */}
             {hasBgImage && (
                 <div
-                    className={`absolute inset-0 z-0 ${isFocusing ? 'cursor-move' : ''}`}
+                    className={`absolute inset-0 z-0 ${isCropping ? 'cursor-move' : ''}`}
                     onMouseDown={handleMouseDown}
                 >
                     <img
@@ -386,7 +387,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
 
 
             {/* ✨ Edit Mode Toggle Buttons (Visible when selected and has effect) */}
-            {hasEffect && isFocusing && (
+            {hasEffect && isSelected && (
                 <div className="absolute top-2 right-2 z-50 flex gap-2">
                     {/* Curve Point Toggle */}
                     <button
@@ -487,7 +488,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
                     setIsTextMode(false); // Exit text mode on blur
                 }}
                 // Pointer events: If has effect, only allow interaction if in text mode. Otherwise none (allows dragging points).
-                className={`w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden relative z-20 ${isFocusing ? (hasEffect && !isTextMode ? 'pointer-events-none' : 'pointer-events-auto') : 'cursor-text'}`}
+                className={`w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden relative z-20 ${isSelected ? (isCropping || (hasEffect && !isTextMode) ? 'pointer-events-none' : 'pointer-events-auto') : 'cursor-text'}`}
                 style={{
                     fontFamily: item.styles.fontFamily,
                     fontSize: item.styles.fontSize,
@@ -505,7 +506,7 @@ const StickyNote: React.FC<Props> = ({ item, scale, isFocusing, readOnly, onUpda
                     // If effect is active and NOT in text mode, do nothing (pass through to container select).
                     // Actually pointer-events-none handles this.
                     // If in text mode, standard behavior.
-                    if (!isFocusing) {
+                    if (!isSelected) {
                         onSelect();
                     }
                 }}

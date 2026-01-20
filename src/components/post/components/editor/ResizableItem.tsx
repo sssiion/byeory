@@ -24,12 +24,13 @@ interface Props {
         contentH: number;
     };
     scale?: number; // ✨ Added scale support
+    minY?: number; // ✨ Minimum Y boundary
     children: React.ReactNode;
 }
 
 const ResizableItem: React.FC<Props> = ({
     id, x, y, w, h, rotation, zIndex, opacity = 1, isSelected, readOnly, onSelect, onUpdate, onDoubleClick, children,
-    isCropping = false, crop, scale = 1
+    isCropping = false, crop, scale = 1, minY = 0
 }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
@@ -147,7 +148,7 @@ const ResizableItem: React.FC<Props> = ({
                     if (newX + itemWidth > parentWidth) newX = parentWidth - itemWidth;
 
                     // Clamp Y (Only top and bottom if needed, but usually we just clamp to positive Y)
-                    if (newY < 0) newY = 0;
+                    if (newY < minY) newY = minY;
                     if (newY + itemHeight > parentHeight) newY = parentHeight - itemHeight;
                 }
 

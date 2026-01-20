@@ -1,4 +1,4 @@
-import React, { useRef, useState,useLayoutEffect, useEffect, forwardRef, useImperativeHandle, Suspense } from 'react';
+import React, { useRef, useState, useLayoutEffect, useEffect, forwardRef, useImperativeHandle, Suspense } from 'react';
 import ContentBlock from './ContentBlock';
 import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
 import CustomWidgetPreview from '../../../../components/settings/widgets/customwidget/components/CustomWidgetPreview'; // 🌟 Import CustomWidgetPreview
@@ -577,12 +577,14 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 onSelect={(isMulti) => { onSelect(txt.id, 'floating', isMulti); setIsToolbarVisible(true); }}
                                 onDoubleClick={() => setIsToolbarVisible(true)}
                                 onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
+                                minY={120} // ✨ Prevent overlap with title
                                 scale={scale}
                             >
                                 <StickyNote
                                     item={txt}
                                     scale={scale}
-                                    isFocusing={selectedId === txt.id || selectedIds.includes(txt.id)}
+                                    isSelected={selectedId === txt.id || selectedIds.includes(txt.id)}
+                                    isCropping={croppingId === txt.id} // ✨ Explicit Cropping State
                                     readOnly={viewMode === 'read' || !!txt.locked}
                                     onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                                     onSelect={() => {
@@ -614,6 +616,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 onDoubleClick={() => { if (viewMode === 'editor') { onSelect(img.id, 'floatingImage'); setIsToolbarVisible(true); } }}
                                 isCropping={croppingId === img.id}
                                 crop={img.crop}
+                                minY={120} // ✨ Prevent overlap with title
                                 scale={scale}
                             >
                                 <img

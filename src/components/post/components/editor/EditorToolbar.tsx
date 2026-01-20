@@ -470,24 +470,7 @@ const EditorToolbar: React.FC<Props> = ({
                                     </button>
                                 ))}
 
-                                {/* ✨ Effect Intensity Slider */}
-                                {((currentItem as any).styles?.textEffect && (currentItem as any).styles?.textEffect !== 'none') && (
-                                    <div className="border-t pt-2 mt-1 px-1">
-                                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                            <span>강도</span>
-                                            <span>{(currentItem as any).styles?.textEffectIntensity ?? 50}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            step="5"
-                                            value={(currentItem as any).styles?.textEffectIntensity ?? 50}
-                                            onChange={(e) => handleTextUpdate('textEffectIntensity', parseInt(e.target.value))}
-                                            className="w-full accent-indigo-600 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                )}
+
                             </div>
                         )}
                     </div>
