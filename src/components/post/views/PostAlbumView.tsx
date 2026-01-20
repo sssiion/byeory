@@ -422,8 +422,23 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
             <AnimatePresence>
                 {openingAlbumId && (() => {
                     const album = openingAlbumId === '__all__'
-                        ? { id: '__all__', name: '모든 기록 보관함', count: `기록 ${posts.length}개` }
+                        ? { id: '__all__', name: '모든 기록 보관함', count: `기록 ${posts.length}개`, tag: undefined } // ✨ Added tag: undefined
                         : customAlbums.find(a => a.id === openingAlbumId);
+
+                    // ✨ Find first post for content preview
+                    let overlayPost: PostData | undefined;
+                    if (openingAlbumId === '__all__') {
+                        overlayPost = posts[0];
+                    } else if (album) {
+                        // Filter posts belonging to this album
+                        overlayPost = posts.find(p => {
+                            // Ensure numeric comparison safety
+                            if (p.albumIds && p.albumIds.includes(Number(openingAlbumId) || -1)) return true;
+                            // Fallback tag matching
+                            if (album.tag && p.tags && p.tags.includes(album.tag)) return true;
+                            return false;
+                        });
+                    }
 
                     if (!album && openingAlbumId !== '__all__') return null;
 
@@ -431,6 +446,7 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                         <BookOpeningOverlay
                             key="album-overlay"
                             album={album}
+                            post={overlayPost} // ✨ Pass first post for content
                             onAnimationComplete={() => {
                                 // ✨ Navigate after animation
                                 onAlbumClick(openingAlbumId);

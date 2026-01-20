@@ -12,7 +12,7 @@ import { DndContext, useDraggable, useDroppable, type DragEndEvent, useSensors, 
 import { CSS } from '@dnd-kit/utilities';
 import PostThumbnail from '../components/PostThumbnail';
 import PostBookView from './PostBookView';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // ✨ Helper Components for DnD
 const DraggablePost = ({ id, children }: { id: string | number, children: React.ReactNode }) => {
@@ -705,12 +705,16 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     </div>
                 )}
                 {/* ✨ Book View Modal */}
-                {/* ✨ Book View Modal */}
-                {/* ✨ Book View Modal */}
                 {isBookViewOpen && displayedPosts.length > 0 && (
                     <PostBookView
-                        posts={displayedPosts} // Use displayedPosts to respect filters
-                        onClose={() => setIsBookViewOpen(false)}
+                        posts={displayedPosts}
+                        currentAlbum={currentAlbum} // ✨ Pass album for Back Cover
+                        onClose={() => {
+                            // Close Book View
+                            setIsBookViewOpen(false);
+                            // Navigate to Album List (Exit Folder) immediately after book view closes (it does its own animation)
+                            onAlbumClick(null);
+                        }}
                         startIndex={startIndex}
                     />
                 )}

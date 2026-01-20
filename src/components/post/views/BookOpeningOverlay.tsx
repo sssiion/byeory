@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Star } from 'lucide-react'; // ✨ Import Star Icon
 import type { PostData } from '../types';
-import MiniPostViewer from '../components/MiniPostPreview';
 import AlbumBook from '../components/albumCover/AlbumBook'; // ✨ Added Import
 
 interface Props {
@@ -11,37 +11,54 @@ interface Props {
     onAnimationComplete: () => void;
     onClose: () => void; // To return to grid if user clicks background
     isLoading?: boolean; // If content is being fetched
+    isClosing?: boolean; // ✨ New Prop: Closing Mode
 }
 
-type AnimationState = 'ZOOMING' | 'IDLE_CLOSED' | 'OPENING' | 'COMPLETED';
+type AnimationState = 'ZOOMING' | 'IDLE_CLOSED' | 'OPENING' | 'COMPLETED' | 'CLOSING_START' | 'CLOSING_END';
 
-const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete, onClose, isLoading = false }) => {
-    const [status, setStatus] = useState<AnimationState>('ZOOMING');
+const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete, onClose, isLoading: externalLoading = false, isClosing = false }) => {
+    const [status, setStatus] = useState<AnimationState>(isClosing ? 'CLOSING_START' : 'ZOOMING');
 
-    // Zoom duration
+    // ✨ Simplified Loading: No internal fetch needed for Star design
+    const isLoading = externalLoading;
+
+    // ✨ Lifecycle Management
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setStatus('IDLE_CLOSED');
-        }, 800); // Match layoutId transition duration
-        return () => clearTimeout(timer);
-    }, []);
+        if (isClosing) {
+            // Start Closing Animation immediately
+            // But give a small delay to ensure mount?
+            requestAnimationFrame(() => {
+                setStatus('CLOSING_END');
+            });
+            setTimeout(() => {
+                onAnimationComplete();
+            }, 1600); // 1.5s animation + buffer
+        } else {
+            // Opening Logic
+            const timer = setTimeout(() => {
+                setStatus('IDLE_CLOSED');
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [isClosing]); // Run on mount or isClosing change
 
     const handleBookClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (status === 'IDLE_CLOSED' && !isLoading) {
+        if (status === 'IDLE_CLOSED' && !isLoading && !isClosing) {
             setStatus('OPENING');
-            // Trigger completion after animation
             setTimeout(() => {
                 setStatus('COMPLETED');
                 onAnimationComplete();
-            }, 1000); // Open animation duration
+            }, 1500); // 1.5s
         }
     };
 
     if (status === 'COMPLETED') return null;
 
-    // Helper to extract first page of content for right page preview
-    const firstPageBlocks = post?.blocks ? post.blocks.slice(0, 5) : []; // Simple approximation
+    // Geometry Helpers
+    // If Closing: We start OPEN (Wrapper x:0, Cover -180, Right 0).
+    // Application: Wrapper stays 0. Right Page rotates to -180.
+    const isClosingAnim = status === 'CLOSING_START' || status === 'CLOSING_END';
 
     return (
         <div
@@ -53,7 +70,8 @@ const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete,
                 style={{
                     // When closed: 520px (COVER ONLY)
                     // When open: 1040px (COVER + CONTENT)
-                    width: status === 'OPENING' ? '1040px' : '520px',
+                    // Always full spread width for correct pivot geometry
+                    width: '1040px',
                     height: '760px',
                     transition: 'width 1s ease-in-out',
                     perspective: '2000px',
@@ -61,29 +79,43 @@ const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete,
                 }}
             >
                 {/* 1. THE BOOK WRAPPER */}
+                {/* 
+                    GEOMETRY FIX:
+                    - Container is 1040px.
+                    - Spine is at Center (520px).
+                    - Closed: Cover is at local Right (520-1040).
+                    - We shift the entire container LEFT by 260px (25%) so the Closed Cover is centered on screen.
+                    - Open: We shift back to 0. Cover rotates -180 to occupy Left (0-520). Right Page stays at Right (520-1040).
+                 */}
                 <motion.div
                     className="w-full h-full relative"
-                    layoutId={`album-cover-${album?.id || post?.id}`}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
+                    layoutId={isClosing ? undefined : `album-cover-${album?.id || post?.id}`} // Disable layoutId on close to prevent conflicts? Or keep it?
+                    // Ideally keep layoutId for exit animation if it goes back to album?
+                    // But we want to disappear.
+                    transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
                     onClick={handleBookClick}
+                    animate={{
+                        x: 0 // ✨ Fixed X: Spine at Center. Book opens symmetrically.
+                    }}
                     style={{
                         transformStyle: 'preserve-3d',
                         cursor: (status === 'IDLE_CLOSED' && !isLoading) ? 'pointer' : 'default'
                     }}
                 >
-                    {/* === FRONT COVER (Rotates Open) === */}
+                    {/* === FRONT COVER (Left Side) === */}
                     <motion.div
-                        className="absolute top-0 bottom-0 left-0 w-[520px] h-full z-20 origin-left"
+                        className="absolute top-0 bottom-0 w-[520px] h-full z-20 origin-left"
                         style={{
+                            left: '50%', // Anchor to Right Half
                             transformStyle: 'preserve-3d',
                             backfaceVisibility: 'visible', // We want to see the back (Inside Left)
                         }}
-                        animate={status === 'OPENING' ? {
-                            rotateY: -180,
+                        animate={status === 'OPENING' || isClosingAnim ? {
+                            rotateY: -180, // Open (Left)
                         } : {
-                            rotateY: 0
+                            rotateY: 0 // Closed (Right)
                         }}
-                        transition={{ duration: 1, ease: 'easeInOut' }}
+                        transition={{ duration: 1.5, ease: 'easeInOut' }}
                     >
                         {/* FRONT FACE: Album Art */}
                         <div
@@ -157,90 +189,94 @@ const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete,
                             {/* Inner Page Shadow */}
                             <div className="absolute top-0 bottom-0 right-0 w-12 bg-gradient-to-l from-black/10 to-transparent pointer-events-none z-20" />
 
-                            {/* ✨ Inside Cover Content */}
-                            <div className="flex-1 p-12 flex flex-col relative z-10">
-                                {album ? (
-                                    // if Album, show Title Page style
-                                    <div className="flex flex-col items-center justify-center h-full text-center">
-                                        <div className="w-16 h-16 mb-6 opacity-20">
-                                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" /></svg>
-                                        </div>
-                                        <h2 className="text-2xl font-bold text-gray-800 font-serif mb-2">{album.name}</h2>
-                                        {/* <p className="text-sm text-gray-500 font-serif">{album.count}</p> */}
-                                    </div>
-                                ) : (
-                                    // If Post, show Post Start
-                                    post?.blocks && (
-                                        <div className="w-full h-full overflow-hidden opacity-80" style={{ transform: 'scale(0.9)', transformOrigin: 'center' }}>
-                                            <MiniPostViewer
-                                                title={post.title}
-                                                titleStyles={post.titleStyles || {}}
-                                                blocks={firstPageBlocks}
-                                                hideTitle={false} // Show Title on Inside Cover? Maybe yes for "Title Page" effect
-                                                scale={0.8}
-                                                paddingClass="px-0"
-                                            />
-                                        </div>
-                                    )
-                                )}
+                            {/* ✨ Inside Cover Content (Left Page - Star Design Placeholder) */}
+                            <div className="flex-1 p-0 flex flex-col relative z-10 w-full h-full bg-[#f5f5f5] items-center justify-center">
+                                {/* Inner Shadow */}
+                                <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
+
+                                {/* Content */}
+                                <div className="flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 delay-100">
+                                    {/* ✨ 2D Star Icon */}
+                                    <Star
+                                        size={120}
+                                        fill="#fef3c7" // ✨ Pastel Amber-100
+                                        stroke="#fbbf24" // ✨ Pastel/Soft Amber-400
+                                        strokeWidth={1.5}
+                                        className="mb-4 drop-shadow-md opacity-90"
+                                    />
+                                    <span className="text-gray-400 font-serif text-lg tracking-widest opacity-80">벼리</span>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
 
 
-                    {/* === RIGHT PAGE (Content - Initially Hidden Behind Cover) === */}
-                    <div
-                        className="absolute top-0 right-0 w-[520px] h-full bg-white rounded-r-lg z-10 overflow-hidden"
+                    {/* === RIGHT PAGE (Flipping Back Page) === */}
+                    <motion.div
+                        className="absolute top-0 w-[520px] h-full z-10 origin-left"
                         style={{
-                            // In closed state, this sits BEHIND the cover.
-                            // We position it 'absolute right-0' relative to the 1040px container, 
-                            // but initially container is 520px... wait.
-
-                            // Better geometry:
-                            // If Closed: container is 520px. Cover is at 0. Right Page should be at 0 too (hidden behind).
-                            // If Open: container is 1040px. Cover (rotated) is at -520px visually?
-                            // Let's stick to "One to Two" logic proposed.
-
-                            left: status === 'OPENING' ? '520px' : '0px',
-                            // When closed, it's at 0 (behind cover). When open, it shifts to right side?
-                            // OR, simpler: Always at 'left: 50%' if we had a wide container. 
-
-                            // Let's rely on Flex/Grid behavior or precise absolute pos?
-                            // Container width adapts 520 -> 1040.
-                            // Cover is 'left: 0', width 520.
-                            // Right Page needs to be 'left: 520' when open.
+                            left: '50%',
+                            transformStyle: 'preserve-3d',
                         }}
+                        animate={status === 'CLOSING_END' ? {
+                            rotateY: -180
+                        } : {
+                            rotateY: 0
+                        }}
+                        transition={{ duration: 1.5, ease: 'easeInOut' }}
                     >
-                        {/* We only show this content when opening starts/finishes.
-                             Or it can exist but be covered.
-                         */}
-                        <div className="w-full h-full bg-[#fdfbf7] relative shadow-xl">
-                            {/* Inner Page Shadow */}
-                            <div className="absolute top-0 bottom-0 left-0 w-12 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-20" />
-
-                            {/* Mini Preview of Content (Skeleton or First Page) */}
-                            <div className="w-full h-full opacity-0 animate-[fade-in_0.5s_ease-in_0.5s_forwards] p-12 overflow-hidden">
-                                {/* Only render content if we have it */}
-                                {post?.blocks && post.blocks.length > 0 && (
-                                    <MiniPostViewer
-                                        title={post.title} // Will be hidden by hideTitle
-                                        titleStyles={post.titleStyles || {}}
-                                        blocks={firstPageBlocks}
-                                        hideTitle={true} // NO TITLE
-                                        scale={0.8}
-                                        paddingClass="px-0"
-                                    />
-                                )}
+                        {/* FRONT FACE: Content (Page 1) */}
+                        <div
+                            className="absolute inset-0 w-full h-full bg-white rounded-r-lg shadow-xl overflow-hidden"
+                            style={{ backfaceVisibility: 'hidden' }}
+                        >
+                            <div className="w-full h-full bg-[#fdfbf7] relative">
+                                <div className="absolute top-0 bottom-0 left-0 w-12 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-20" />
+                                <div className="p-0 h-full overflow-hidden">
+                                    <div className="p-0 h-full overflow-hidden flex items-center justify-center bg-white">
+                                        {/* ✨ Just White Screen (As requested) */}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* === SPINE (3D Bar) === */}
+                        {/* BACK FACE: Back Cover (Rotated) */}
+                        <div
+                            className="absolute inset-0 w-full h-full bg-white rounded-l-lg shadow-2xl overflow-hidden flex flex-col transform rotate-y-180"
+                            style={{
+                                backfaceVisibility: 'hidden',
+                                backgroundColor: '#fff',
+                                transform: 'rotateY(180deg)' // Already mapped by parent rotation? No, parent rotates 0->-180. Inner needs to face opposite?
+                                // If parent -180, we see Back Face.
+                                // Back Face standard is 180 rotated? 
+                                // Let's just use `rotateY(180deg)` relative to parent?
+                                // Yes.
+                            }}
+                        >
+                            {/* Render Album Cover Art again as Back Cover */}
+                            {album ? (
+                                <AlbumBook
+                                    title={album.name}
+                                    tag={album.tag}
+                                    count={album.count}
+                                    config={album.coverConfig}
+                                    className="w-full h-full shadow-none"
+                                />
+                            ) : (
+                                // Post Cover Fallback
+                                <div className="w-full h-full bg-gray-800" />
+                            )}
+                            {/* Overlay to make it look like Back Cover (No text usually?) */}
+                            <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" />
+                        </div>
+                    </motion.div>
+
+                    {/* === SPINE (3D Bar - At Center) === */}
                     <div
-                        className="absolute top-0 bottom-0 left-0 w-4 bg-gray-200 z-0 origin-left"
+                        className="absolute top-0 bottom-0 w-4 bg-gray-200 z-0 origin-left"
                         style={{
+                            left: '50%', // Anchor at Center
                             transform: 'rotateY(-90deg) translateX(-2px)', // Push back slightly
-                            // Only visible when rotating
                         }}
                     ></div>
 

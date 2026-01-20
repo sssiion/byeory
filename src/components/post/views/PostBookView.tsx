@@ -1,12 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { PostData } from '../types';
 import MiniPostViewer from '../components/MiniPostPreview';
+import { motion } from 'framer-motion';
+import AlbumBook from '../components/albumCover/AlbumBook'; // ✨ Using AlbumBook for Back Cover Revert
 
 interface PostBookViewProps {
     posts: PostData[];
     onClose: () => void;
     startIndex?: number;
+    // ✨ Optional: Pass generic album info if available for Back Cover art
+    currentAlbum?: any;
 }
 
 // ✨ Pagination Helper (Extract to reusable function if needed outside)
@@ -116,11 +120,19 @@ const PageContent = React.memo(({ page }: { page?: VirtualPage }) => {
     );
 });
 
-const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex = 0 }) => {
+const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex = 0, currentAlbum }) => {
     // ✨ Global Pagination State
-    // Instead of tracking currentPostIndex + pageIndex, we track currentSpreadIndex.
-    // Spread 0 = Pages 0, 1 from the flattened list of all pages.
     const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
+    // ✨ Animation State
+    const [isClosing, setIsClosing] = useState(false);
+
+    // ✨ Internal Close Handler
+    const handleClose = () => {
+        setIsClosing(true); // Trigger animation
+        setTimeout(() => {
+            onClose(); // Call parent close after animation
+        }, 1500);
+    };
 
 
 
@@ -181,12 +193,12 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                onClose();
+                handleClose(); // ✨ Use internal handler
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
+    }, [onClose]); // Dependency strictly onClose, handles wrapper logic validly
 
     const totalPages = allPages.length;
     const totalSpreads = Math.ceil(totalPages / 2);
@@ -219,7 +231,7 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
             {/* ✨ Bookmark to Toggle Folder View */}
             <div
                 className="absolute top-0 right-12 z-[60] cursor-pointer group transition-transform hover:translate-y-2 duration-300"
-                onClick={onClose}
+                onClick={handleClose}
             >
                 <div className="w-12 h-20 bg-red-600 shadow-lg rounded-b-lg relative flex flex-col items-center justify-end pb-2">
                     {/* Ribbon Cutout effect */}
@@ -233,11 +245,27 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
                 </div>
             </div>
 
-            {/* Book Container */}
-            <div className="relative w-full max-w-6xl min-h-[760px] aspect-[3/2] flex shadow-2xl rounded-lg overflow-hidden bg-[#fdfbf7]">
+            {/* ✨ Close Button (Top Right) - Triggers Full Exit */}
+            <button
+                onClick={handleClose}
+                className="absolute top-6 right-6 z-[70] text-white/50 hover:text-white transition-colors bg-black/20 hover:bg-black/40 rounded-full p-2"
+            >
+                <X size={24} />
+            </button>
 
-                {/* Left Page */}
-                <div className="w-1/2 h-full relative border-r border-[#e0e0e0] overflow-hidden bg-white">
+            {/* Book Container */}
+            <motion.div
+                className="relative w-full max-w-6xl min-h-[760px] aspect-[3/2] flex shadow-2xl rounded-lg overflow-hidden"
+                animate={{
+                    backgroundColor: isClosing ? 'rgba(0,0,0,0)' : '#fdfbf7', // Fade out background
+                    boxShadow: isClosing ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)', // Remove shadow
+                    // ✨ Removed maxWidth animation that caused shrinking
+                }}
+                transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+
+                {/* Left Page (Fixed) */}
+                <div className="w-1/2 h-full relative border-r border-[#e0e0e0] overflow-hidden bg-white z-0">
                     <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-black/10 to-transparent pointer-events-none z-10"></div>
                     <PageContent page={leftPage} />
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 font-serif">
@@ -245,14 +273,76 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
                     </div>
                 </div>
 
-                {/* Right Page */}
-                <div className="w-1/2 h-full relative overflow-hidden bg-white">
-                    <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div>
-                    <PageContent page={rightPage} />
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 font-serif">
-                        {currentSpreadIndex * 2 + 2}
+                {/* Right Page (Animates only when closing) */}
+                <motion.div
+                    className="absolute top-0 w-1/2 h-full z-20 origin-left"
+                    style={{
+                        left: '50%',
+                        transformStyle: 'preserve-3d',
+                    }}
+                    animate={isClosing ? { rotateY: -180 } : { rotateY: 0 }}
+                    transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                >
+                    {/* ✨ Thickness / Page Edge (Visible during rotation) */}
+                    <div
+                        className="absolute inset-y-0 left-0 w-[4px] bg-[#ddd] origin-left"
+                        style={{
+                            transform: 'rotateY(90deg) translateX(-2px)', // Perpendicular
+                            zIndex: 5
+                        }}
+                    />
+
+                    {/* ✨ Moving Edge Thickness (Right Edge of page) */}
+                    <div
+                        className="absolute inset-y-0 right-0 w-[6px] bg-[#eee]"
+                        style={{
+                            transform: 'rotateY(90deg) translateX(3px)', // Edge
+                            backfaceVisibility: 'hidden'
+                        }}
+                    />
+
+                    {/* Front Face: Page Content */}
+                    <div
+                        className="absolute inset-0 w-full h-full bg-white relative overflow-hidden"
+                        style={{ backfaceVisibility: 'hidden' }}
+                    >
+                        <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-10"></div>
+                        <PageContent page={rightPage} />
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 font-serif">
+                            {currentSpreadIndex * 2 + 2}
+                        </div>
                     </div>
-                </div>
+
+                    {/* Back Face: Back Cover (Reverted to AlbumBook) */}
+                    {isClosing && (
+                        <div
+                            className="absolute inset-0 w-full h-full bg-white rounded-l-lg overflow-hidden flex flex-col items-center justify-center transform rotate-y-180"
+                            style={{
+                                backfaceVisibility: 'hidden',
+                                transform: 'rotateY(180deg)',
+                                backgroundColor: '#fff',
+                            }}
+                        >
+                            {/* Inherit Album Cover or Fallback */}
+                            {currentAlbum ? (
+                                <div className="w-full h-full relative">
+                                    <AlbumBook
+                                        title={currentAlbum.name}
+                                        config={currentAlbum.coverConfig}
+                                        count="" // Hide count on back cover usually
+                                        className="w-full h-full shadow-none border-none"
+                                    />
+                                    {/* Overlay for "Back Cover" darkening */}
+                                    <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+                                </div>
+                            ) : (
+                                <div className="w-full h-full bg-indigo-900 flex items-center justify-center text-white/20">
+                                    <div className="w-24 h-24 border-4 border-current rounded-full" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </motion.div>
 
                 {/* Navigation */}
                 {currentSpreadIndex > 0 && (
@@ -271,7 +361,7 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
                         <ChevronRight size={24} />
                     </button>
                 )}
-            </div>
+            </motion.div>
         </div>
     );
 };
