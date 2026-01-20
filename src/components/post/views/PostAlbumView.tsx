@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion'; // ✨ Added Import
 import { useNavigate } from 'react-router-dom';
 import type { PostData, CustomAlbum } from '../types';
 // ✨ Added GalleryHorizontal for All Posts icon
@@ -8,6 +9,7 @@ import AlbumBook from '../components/albumCover/AlbumBook';
 import type { AlbumCoverConfig } from '../components/albumCover/constants';
 import CoverCustomizer from '../components/albumCover/CoverCustomizer';
 import RoomSettingsModal from '../components/RoomSettingsModal';
+import BookOpeningOverlay from './BookOpeningOverlay'; // ✨ Import Overlay
 
 
 interface Props {
@@ -34,6 +36,7 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
     const [editingCoverId, setEditingCoverId] = useState<string | null>(null);
     const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
     const [isEasterEggOpen, setIsEasterEggOpen] = useState(false);
+    const [openingAlbumId, setOpeningAlbumId] = useState<string | null>(null); // ✨ Animation State
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -254,14 +257,17 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     const stats = albumStats.stats[album.id];
 
                     return (
-                        <div key={album.id} onClick={() => onAlbumClick(album.id)} className="relative group cursor-pointer">
-                            <AlbumBook
-                                title={album.name}
-                                tag={album.tag || stats.representativeTag || undefined} // ✨ Use inferred tag
-                                count={album.type === 'room' ? undefined : formatStats(stats)}
-                                config={album.coverConfig}
-                                className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
-                            />
+                        <div key={album.id} onClick={() => setOpeningAlbumId(album.id)} className="relative group cursor-pointer">
+                            {/* ✨ Wrap in motion.div for animation source */}
+                            <motion.div layoutId={`album-cover-${album.id}`}>
+                                <AlbumBook
+                                    title={album.name}
+                                    tag={album.tag || stats.representativeTag || undefined} // ✨ Use inferred tag
+                                    count={album.type === 'room' ? undefined : formatStats(stats)}
+                                    config={album.coverConfig}
+                                    className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
+                                />
+                            </motion.div>
 
                             {/* ✨ Room Indicator */}
                             {album.type === 'room' && (
@@ -311,15 +317,18 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     );
                 })}
 
+                {/* ✨ All Posts Card - Fixed Position */}
                 {/* ✨ All Records Album (Moved to End) */}
-                <div onClick={() => onAlbumClick('__all__')} className="relative group cursor-pointer">
-                    <AlbumBook
-                        title="모든 기록 보관함"
-                        count={`기록 ${posts.length}개`}
-                        // config={coverConfigs['__all__']} // Removed LS
-                        className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
-                        showFullTitle={true}
-                    />
+                <div onClick={() => setOpeningAlbumId('__all__')} className="relative group cursor-pointer">
+                    <motion.div layoutId="album-cover-__all__">
+                        <AlbumBook
+                            title="모든 기록 보관함"
+                            count={`기록 ${posts.length}개`}
+                            // config={coverConfigs['__all__']} // Removed LS
+                            className="shadow-sm border border-transparent group-hover:shadow-md transition-shadow duration-300"
+                            showFullTitle={true}
+                        />
+                    </motion.div>
                     {/* Helper Menu for Cover Customization */}
                     <div className="absolute top-2 right-2 z-30">
                         <button onClick={(e) => handleMenuClick(e, '__all__')} className="p-1.5 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 backdrop-blur-sm rounded-full shadow-sm">
@@ -408,6 +417,30 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                     </div>
                 </div>
             )}
+
+            {/* ✨ Book Opening Overlay */}
+            <AnimatePresence>
+                {openingAlbumId && (() => {
+                    const album = openingAlbumId === '__all__'
+                        ? { id: '__all__', name: '모든 기록 보관함', count: `기록 ${posts.length}개` }
+                        : customAlbums.find(a => a.id === openingAlbumId);
+
+                    if (!album && openingAlbumId !== '__all__') return null;
+
+                    return (
+                        <BookOpeningOverlay
+                            key="album-overlay"
+                            album={album}
+                            onAnimationComplete={() => {
+                                // ✨ Navigate after animation
+                                onAlbumClick(openingAlbumId);
+                                setOpeningAlbumId(null);
+                            }}
+                            onClose={() => setOpeningAlbumId(null)}
+                        />
+                    );
+                })()}
+            </AnimatePresence>
         </div>
     );
 };

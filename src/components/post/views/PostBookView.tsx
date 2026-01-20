@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { PostData } from '../types';
 import MiniPostViewer from '../components/MiniPostPreview';
 
@@ -106,7 +106,7 @@ const PageContent = React.memo(({ page }: { page?: VirtualPage }) => {
                         floatingImages={pageFloatingImages}
                         scale={1}
                         minHeight="100%"
-                        hideTitle={pageIndex !== 0} // Only show title on first page of the post
+                        hideTitle={true} // PostBookView shows CONTENT only
                         preserveTitleSpace={false}
                         paddingClass="px-24"
                     />
@@ -177,6 +177,17 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
 
     }, [startIndex, posts]); // Run when startIndex changes
 
+    // ✨ Handle Escape Key
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
     const totalPages = allPages.length;
     const totalSpreads = Math.ceil(totalPages / 2);
 
@@ -205,12 +216,22 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300 overflow-y-auto">
-            <button
+            {/* ✨ Bookmark to Toggle Folder View */}
+            <div
+                className="absolute top-0 right-12 z-[60] cursor-pointer group transition-transform hover:translate-y-2 duration-300"
                 onClick={onClose}
-                className="absolute top-6 right-6 text-white/80 hover:text-white transition-colors z-50"
             >
-                <X size={32} />
-            </button>
+                <div className="w-12 h-20 bg-red-600 shadow-lg rounded-b-lg relative flex flex-col items-center justify-end pb-2">
+                    {/* Ribbon Cutout effect */}
+                    <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
+
+                    <span className="text-white font-bold text-xs writing-vertical-rl mb-1 tracking-widest opacity-90 group-hover:opacity-100">
+                        목록
+                    </span>
+                    {/* Stitching effect */}
+                    <div className="absolute bottom-2 left-1 right-1 border-b-2 border-dashed border-white/30" />
+                </div>
+            </div>
 
             {/* Book Container */}
             <div className="relative w-full max-w-6xl min-h-[760px] aspect-[3/2] flex shadow-2xl rounded-lg overflow-hidden bg-[#fdfbf7]">

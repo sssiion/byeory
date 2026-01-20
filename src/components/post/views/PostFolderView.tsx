@@ -12,6 +12,7 @@ import { DndContext, useDraggable, useDroppable, type DragEndEvent, useSensors, 
 import { CSS } from '@dnd-kit/utilities';
 import PostThumbnail from '../components/PostThumbnail';
 import PostBookView from './PostBookView';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ✨ Helper Components for DnD
 const DraggablePost = ({ id, children }: { id: string | number, children: React.ReactNode }) => {
@@ -65,7 +66,9 @@ interface Props {
 
 const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onStartWriting, onCreateAlbum, customAlbums, onAlbumClick, onDeletePost, onDeleteAlbum, onToggleFavorite, onRefresh, showConfirmModal }) => {
     const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
-    const [isBookViewOpen, setIsBookViewOpen] = useState(false); // ✨ Book View State
+    // ✨ Default to Book View (User Requirement: Album -> Book -> Folder)
+    // We will validate if posts exist before rendering
+    const [isBookViewOpen, setIsBookViewOpen] = useState(true);
     const [roomSettingsId, setRoomSettingsId] = useState<string | null>(null); // ✨ Room Settings Modal State
     const [isCycleModalOpen, setIsCycleModalOpen] = useState(false); // ✨ New Cycle Modal State
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false); // ✨ Favorites Filter State
@@ -74,6 +77,11 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
     const [contents, setContents] = useState<{ type: 'POST' | 'FOLDER', data: any }[]>([]);
     const [currentAlbum, setCurrentAlbum] = useState<any | null>(null); // ✨ Current Album Info
     const [isLoading, setIsLoading] = useState(false);
+
+    // ✨ Animation States (Removed Overlay Logic)
+    // const [openingPostId, setOpeningPostId] = useState<string | number | null>(null);
+    // const [isOpeningLoading, setIsOpeningLoading] = useState(false);
+    const [startIndex, setStartIndex] = useState(0);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false); // For "Add Existing"
 
     // ✨ Local State for Refreshing RoomCycleList
@@ -285,7 +293,25 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
             setContents(previousContents);
             alert("이동에 실패했습니다.");
         }
+    }
+
+
+    // ✨ Handle Post Click for Animation (Now just direct open)
+    const handleGridPostClick = async (post: PostData) => {
+        // Find index
+        const idx = displayedPosts.findIndex(p => String(p.id) === String(post.id));
+        setStartIndex(idx !== -1 ? idx : 0);
+        setIsBookViewOpen(true);
+
+        // We still fetch details if needed, but PostBookView handles its own fetching usually?
+        // Actually PostBookView inputs `posts`. If `blocks` are missing, PostBookView's MiniPostViewer handles it?
+        // No, MiniPostViewer needs blocks.
+        // We integrated `fetchPostById` in `PostBookView` (via User Request 2 Conversation 2).
+        // Let's rely on PostBookView's internal lazy loading if it exists, OR pre-fetch here if we want.
+        // For now, simple switch.
     };
+
+
 
     // ✨ DnD Sensors
     const sensors = useSensors(
@@ -515,7 +541,11 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                             ) : (
                                 displayedPosts.map(p => (
                                     <DraggablePost key={p.id} id={p.id}>
-                                        <div onClick={() => onPostClick(p)} className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden">
+                                        <motion.div
+                                            layoutId={`post-cover-${p.id}`}
+                                            onClick={() => handleGridPostClick(p)}
+                                            className="bg-[var(--bg-card)] rounded-xl shadow-sm border border-[var(--border-color)] hover:shadow-md cursor-pointer transition transform hover:-translate-y-1 relative group h-80 flex flex-col overflow-hidden"
+                                        >
                                             {/* 1. Top - Thumbnail (60%) */}
                                             <div className="h-[60%] w-full bg-white relative overflow-hidden">
                                                 <PostThumbnail post={p} width={400} height={320} />
@@ -610,7 +640,7 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     </DraggablePost>
                                 ))
                             )}
@@ -675,13 +705,16 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                     </div>
                 )}
                 {/* ✨ Book View Modal */}
-                {isBookViewOpen && (
+                {/* ✨ Book View Modal */}
+                {/* ✨ Book View Modal */}
+                {isBookViewOpen && displayedPosts.length > 0 && (
                     <PostBookView
                         posts={displayedPosts} // Use displayedPosts to respect filters
                         onClose={() => setIsBookViewOpen(false)}
-                        startIndex={0}
+                        startIndex={startIndex}
                     />
                 )}
+
                 {/* ✨ Room Settings Modal */}
                 {roomSettingsId && (
                     <RoomSettingsModal
