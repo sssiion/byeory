@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle, Suspense } from 'react';
+import React, { useRef, useState,useLayoutEffect, useEffect, forwardRef, useImperativeHandle, Suspense } from 'react';
 import ContentBlock from './ContentBlock';
 import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
 import CustomWidgetPreview from '../../../../components/settings/widgets/customwidget/components/CustomWidgetPreview'; // 🌟 Import CustomWidgetPreview
@@ -34,6 +34,10 @@ interface Props {
     hideTitle?: boolean; // ✨ Optional prop to hide title
     onAddFloatingText?: (x?: number, y?: number) => void; // ✨ Handler for adding floating text
 }
+// ✨ [설정] 기본 너비를 여기서 조절하세요. (기존 800 -> 1100으로 확대)
+const BASE_WIDTH = 1100;
+// ✨ [설정] 종이 내부 실제 콘텐츠 영역 너비 (여백 고려)
+const CONTENT_MAX_WIDTH = 800;
 
 const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     title, setTitle, titleStyles, viewMode, blocks, stickers, floatingTexts, floatingImages, selectedId, selectedIds = [], selectedType,
@@ -57,34 +61,55 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
     // ✨ Expose Content Ref
     useImperativeHandle(ref, () => contentRef.current!);
+    useLayoutEffect(() => {
+        const updateHeight = () => {
+            if (wrapperRef.current) {
+                const originalHeight = wrapperRef.current.scrollHeight;
+                // 스케일이 줄어들면 전체 높이도 비율에 맞춰 줄어듦 + 여유공간
+                setScaledHeight(originalHeight * scale + 60);
+            }
+            if (titleRef.current) {
+                setTitleHeight(titleRef.current.offsetHeight);
+            }
+        };
+
+        updateHeight();
+        const observer = new ResizeObserver(() => window.requestAnimationFrame(updateHeight));
+        if (wrapperRef.current) observer.observe(wrapperRef.current);
+        if (contentRef.current) observer.observe(contentRef.current); // contentRef 변화도 감지
+        return () => observer.disconnect();
+    }, [scale, blocks, stickers, floatingTexts, floatingImages, title]);
 
     useEffect(() => {
         const handleResize = () => {
             if (containerRef.current) {
-                const targetWidth = 800;
-
                 const containerWidth = containerRef.current.clientWidth;
 
-                // If container is smaller than 800, scale down.
-                if (containerWidth < targetWidth && containerWidth > 0) {
-                    setScale(containerWidth / targetWidth);
+                // 여유 공간(Padding)을 20px 정도 뺀 너비로 계산하여 꽉 끼는 느낌 방지
+                const availableWidth = containerWidth - 20;
+
+                if (availableWidth < BASE_WIDTH && availableWidth > 0) {
+                    // 비율 계산: 현재 가용 너비 / 기준 너비
+                    const newScale = availableWidth / BASE_WIDTH;
+                    setScale(newScale);
                 } else {
+                    // 충분히 넓으면 원본 크기(1) 유지
                     setScale(1);
                 }
             }
         };
 
-        const resizeObserver = new ResizeObserver(handleResize);
+        const resizeObserver = new ResizeObserver(() => {
+            // ResizeObserver로 컨테이너 크기 변화를 즉시 감지
+            window.requestAnimationFrame(handleResize);
+        });
+
         if (containerRef.current) {
             resizeObserver.observe(containerRef.current);
-            // Also observe parent to trigger resize if parent flex changes
-            if (containerRef.current.parentElement) {
-                resizeObserver.observe(containerRef.current.parentElement);
-            }
         }
 
         window.addEventListener('resize', handleResize);
-        handleResize(); // Initial check
+        handleResize(); // 초기 실행
 
         return () => {
             resizeObserver.disconnect();
@@ -147,34 +172,6 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     };
 
     // ✨ Update wrapper height to match scaled content
-    useEffect(() => {
-        const updateHeight = () => {
-            // ✨ Measure wrapperRef (includes Paper + Controls)
-            if (wrapperRef.current) {
-                const originalHeight = wrapperRef.current.offsetHeight;
-                setScaledHeight(originalHeight * scale);
-            }
-            // ✨ Measure Title Height
-            if (titleRef.current) {
-                setTitleHeight(titleRef.current.offsetHeight);
-            }
-        };
-
-        // Run immediately
-        updateHeight();
-
-        // Observer for content height changes (blocks added/removed)
-        const observer = new ResizeObserver(updateHeight);
-        if (wrapperRef.current) {
-            observer.observe(wrapperRef.current);
-        }
-        // Also observe contentRef just in case inner changes affect outer
-        if (contentRef.current) {
-            observer.observe(contentRef.current);
-        }
-
-        return () => observer.disconnect();
-    }, [scale, blocks, stickers, floatingTexts, floatingImages, title]); // ✨ Added title to dep to remeasure if wraps
 
     // ✨ Selection Box Logic
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -318,7 +315,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
     const handleAddBlock = (type: Block['type']) => {
         const newBlock: Block = {
             id: `manual-${Date.now()}`,
-            type, text: '', imageRotation: 0, imageFit: 'cover', styles: { imageHeight: '300px' }
+            type, text: '', imageRotation: 0, imageFit: 'cover', styles: { imageHeight: '500px' }
         };
         setBlocks(prev => [...prev, newBlock]);
     };
@@ -384,23 +381,28 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
         >
-            {/* Let's try inserting a spacer div */}
-            <div style={{ height: scaledHeight, width: '100%', display: 'flex', justifyContent: 'center' }}>
+            {/* ✨ [수정] Spacer div 스타일 보강 */}
+            <div style={{
+                height: scaledHeight,
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                flexShrink: 0 // ✨ 중요: 창이 줄어들어도 이 영역이 찌그러지지 않도록 고정
+            }}>
                 <div
                     ref={wrapperRef}
                     style={{
                         transform: `scale(${scale})`,
                         transformOrigin: 'top center',
-                        width: '800px',
-                        minWidth: '800px'
+                        width: `${BASE_WIDTH}px`,
+                        minWidth: `${BASE_WIDTH}px`,
+                        minHeight: '200px'
                     }}
                 >
                     <div
                         ref={contentRef}
-                        className={`w-[800px] ${viewMode === 'editor' ? 'min-h-[200px]' : ''} relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone`}
-                        style={{
-                            ...paperStyles
-                        }}
+                        className={`w-full max-w-[${CONTENT_MAX_WIDTH}px] mx-auto ${viewMode === 'editor' ? 'min-h-[200px] pb-48' : ''} relative flex flex-col transition-shadow duration-300 overflow-hidden rounded-xl selection-zone`}
+                        style={{ ...paperStyles, maxWidth: `${CONTENT_MAX_WIDTH}px` }}
                     >
                         {/* ✨ Background Layer: Title & Separate Pages */}
                         <div className="absolute inset-0 pointer-events-none z-0">
@@ -460,14 +462,14 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                             <div
                                 ref={titleRef} // ✨ Measure Title Height
                                 id="title" // ✨ Added ID for ToolbarOverlay
-                                className={`sticky top-0 bg-transparent border-b flex flex-col justify-start items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
-                                style={{ zIndex: titleStyles.zIndex || 20 }}
+                                className={`sticky top-0 bg-transparent border-b-0 flex flex-col justify-start items-start transition-all pointer-events-none ${viewMode === 'editor' && selectedId === 'title' ? '' : ''}`}
+                                style={{ zIndex: titleStyles.zIndex || 20, backgroundColor: 'transparent' }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (viewMode === 'editor') onSelect('title', 'title');
                                 }}
                             >
-                                <div className="flex justify-between items-start gap-4 pointer-events-auto w-full">
+                                <div className="flex justify-between items-start gap-4 pointer-events-auto w-full bg-transparent">
                                     <input
                                         value={title}
                                         onChange={e => setTitle(e.target.value)}
@@ -685,60 +687,66 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
 
                     </div>
 
-                    {viewMode === 'editor' && (
-                        <div className="mt-8 py-4 flex flex-col items-center gap-4 text-gray-500 select-none">
-                            <span className="text-sm font-medium opacity-70">어떤 내용을 추가할까요?</span>
-                            <div className="flex flex-wrap items-center justify-center gap-3">
-                                <button onClick={() => handleAddBlock('paragraph')} className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-full transition shadow-sm text-blue-700">
-                                    <Type size={16} /> <span>글만 쓰기</span>
-                                </button>
-                                <button onClick={() => handleAddBlock('image-left')} className="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-full transition shadow-sm text-green-700">
-                                    <LayoutTemplate size={16} /> <span>사진 + 글</span>
-                                </button>
-                                <button onClick={() => handleAddBlock('image-full')} className="flex items-center gap-2 px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-full transition shadow-sm text-rose-700">
-                                    <ImageIcon size={16} /> <span>꽉찬 사진</span>
-                                </button>
-                                <button onClick={() => handleAddBlock('image-double')} className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 rounded-full transition shadow-sm text-purple-700">
-                                    <div className="flex"><ImageIcon size={14} /><ImageIcon size={14} /></div> <span>사진 2장</span>
-                                </button>
-
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (contentRef.current && onAddFloatingText) {
-                                            const rect = contentRef.current.getBoundingClientRect();
-                                            const windowCenterY = window.innerHeight / 2;
-                                            const relativeY = (windowCenterY - rect.top) / scale;
-                                            const centerX = 400;
-                                            onAddFloatingText(centerX - 100, relativeY - 100);
-                                        }
-                                    }}
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    className="flex items-center gap-2 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 hover:border-yellow-300 rounded-full transition shadow-sm text-yellow-700"
-                                >
-                                    <StickyNoteIcon size={16} /> <span>포스트잇</span>
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
-            </div>
+                {viewMode === 'editor' && (
+                    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300 w-full px-4">
+                        <span className="text-xs font-bold text-gray-600 bg-white/90 backdrop-blur px-4 py-1.5 rounded-full shadow-sm border border-gray-100/50 pointer-events-auto select-none">
+                            어떤 내용을 추가할까요?
+                        </span>
 
-            {/* ✨ Fixed Toolbar (Moved outside of scaled content) */}
-            {isToolbarVisible && selectedId && currentItem && (
-                <ToolbarOverlay
-                    selectedId={selectedId}
-                    selectedType={selectedType as any}
-                    currentItem={currentItem}
-                    onUpdate={onUpdate}
-                    onDelete={onDelete}
-                    scale={scale}
-                    onCropToggle={handleCropToggle}
-                    isCropping={croppingId === selectedId}
-                />
-            )}
+                        <div className="flex items-center gap-3 p-2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 pointer-events-auto ring-1 ring-black/5 hover:bg-white/90 transition-colors max-w-full overflow-x-auto no-scrollbar touch-pan-x">
+                            <button onClick={() => handleAddBlock('paragraph')} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-blue-50/80 hover:bg-blue-100 border border-blue-200/50 hover:border-blue-300 rounded-full transition shadow-sm text-blue-700 font-medium text-sm group whitespace-nowrap">
+                                <Type size={16} className="group-hover:scale-110 transition-transform" /> <span>글만 쓰기</span>
+                            </button>
+                            <button onClick={() => handleAddBlock('image-left')} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-green-50/80 hover:bg-green-100 border border-green-200/50 hover:border-green-300 rounded-full transition shadow-sm text-green-700 font-medium text-sm group whitespace-nowrap">
+                                <LayoutTemplate size={16} className="group-hover:scale-110 transition-transform" /> <span>사진 + 글</span>
+                            </button>
+                            <button onClick={() => handleAddBlock('image-full')} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-rose-50/80 hover:bg-rose-100 border border-rose-200/50 hover:border-rose-300 rounded-full transition shadow-sm text-rose-700 font-medium text-sm group whitespace-nowrap">
+                                <ImageIcon size={16} className="group-hover:scale-110 transition-transform" /> <span>꽉찬 사진</span>
+                            </button>
+                            <button onClick={() => handleAddBlock('image-double')} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-purple-50/80 hover:bg-purple-100 border border-purple-200/50 hover:border-purple-300 rounded-full transition shadow-sm text-purple-700 font-medium text-sm group whitespace-nowrap">
+                                <div className="flex group-hover:scale-110 transition-transform"><ImageIcon size={14} /><ImageIcon size={14} /></div> <span>사진 2장</span>
+                            </button>
+
+                            <div className="flex-shrink-0 w-px h-6 bg-gray-200 mx-1"></div>
+
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (contentRef.current && onAddFloatingText) {
+                                        const rect = contentRef.current.getBoundingClientRect();
+                                        const windowCenterY = window.innerHeight / 2;
+                                        const relativeY = (windowCenterY - rect.top) / scale;
+                                        const centerX = 260; // Center of 520px
+                                        onAddFloatingText(centerX - 100, relativeY - 100);
+                                    }
+                                }}
+                                onMouseDown={(e) => e.stopPropagation()}
+                                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-yellow-50/80 hover:bg-yellow-100 border border-yellow-200/50 hover:border-yellow-300 rounded-full transition shadow-sm text-yellow-700 font-medium text-sm group whitespace-nowrap"
+                            >
+                                <StickyNoteIcon size={16} className="group-hover:scale-110 transition-transform" /> <span>포스트잇</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* ✨ Fixed Toolbar (Moved outside of scaled content) */}
+                {isToolbarVisible && selectedId && currentItem && (
+                    <ToolbarOverlay
+                        selectedId={selectedId}
+                        selectedType={selectedType as any}
+                        currentItem={currentItem}
+                        onUpdate={onUpdate}
+                        onDelete={onDelete}
+                        scale={scale}
+                        onCropToggle={handleCropToggle}
+                        isCropping={croppingId === selectedId}
+                    />
+                )}
+
+            </div>
         </div>
     );
-});
+}); // ✨ Properly close forwardRef
 
 export default EditorCanvas;

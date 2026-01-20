@@ -18,7 +18,44 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     const fileInputRef1 = useRef<HTMLInputElement>(null);
     const fileInputRef2 = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const renderTextContent = (minHeight: string = '3rem') => {
+        const style: React.CSSProperties = {
+            fontFamily: block.styles?.fontFamily,
+            fontSize: block.styles?.fontSize || '18px',
+            textAlign: (block.styles?.textAlign as any) || 'left',
+            color: block.styles?.color || 'inherit',
+            fontWeight: block.styles?.fontWeight || 'normal',
+            fontStyle: block.styles?.fontStyle || 'normal',
+            textDecoration: block.styles?.textDecoration || 'none',
+            backgroundColor: block.styles?.backgroundColor || 'transparent',
+            lineHeight: 1.6, // 가독성을 위해 줄간격 명시 권장
+        };
 
+        // 뷰어 모드일 때: div로 렌더링 (자연스러운 높이)
+        if (readOnly) {
+            return (
+                <div
+                    className={`w-full bg-transparent outline-none p-2 whitespace-pre-wrap break-words`}
+                    style={{ ...style, minHeight: 'auto' }} // 높이 자동
+                >
+                    {block.text}
+                </div>
+            );
+        }
+
+        // 에디터 모드일 때: textarea로 렌더링
+        return (
+            <textarea
+                ref={textareaRef}
+                value={block.text}
+                onChange={(e) => onUpdate(block.id, 'text', e.target.value)}
+                placeholder="내용을 입력하세요..."
+                rows={1}
+                className={`w-full block bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 transition-colors rounded-lg ${isSelected ? 'border-indigo-200' : 'border-transparent'} ${block.type === 'paragraph' ? 'border-2' : ''}`}
+                style={{ ...style, minHeight }}
+            />
+        );
+    };
     // ✨ 음성 인식 관련 Hook 및 State
     const {
         transcript,
@@ -89,7 +126,9 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     };
 
     const s = block.styles || {};
-    const imgHeight = s.imageHeight || '300px';
+    // ✨ Dynamic Default Height: 500px for full, 250px for split/double
+    const defaultHeight = (block.type === 'image-double' || block.type === 'image-left' || block.type === 'image-right') ? '250px' : '400px';
+    const imgHeight = s.imageHeight || defaultHeight;
 
     // ✨ Focus (Pan & Zoom) State
     const [focusingIndex, setFocusingIndex] = useState<number | null>(null);
@@ -304,7 +343,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                     ${isFull ? 'w-full' : 'h-full'} 
                     ${isFocusing ? 'cursor-move ring-2 ring-blue-500 z-20 shadow-xl scale-[1.02]' : ''}
                 `}
-                style={{ height: url ? imgHeight : '200px' }}
+                style={{ height: imgHeight }} // ✨ Fixed Height: Prevent layout shift (was 200px placeholder)
             >
                 {url ? (
                     <>
@@ -413,8 +452,6 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {block.type === 'image-full' && (
                 <div className="w-full flex flex-col gap-4">
                     {renderImageArea(block.imageUrl, 1, true)}
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
-
                 </div>
             )}
 
@@ -425,7 +462,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                         <div className="w-1/2">{renderImageArea(block.imageUrl, 1, true)}</div>
                         <div className="w-1/2">{renderImageArea(block.imageUrl2, 2, true)}</div>
                     </div>
-
+                    {renderTextContent()}
                 </div>
             )}
 
@@ -434,7 +471,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                 <div className="w-full flex flex-col md:flex-row gap-4 md:gap-6 items-start">
                     <div className="w-full md:w-1/2 flex-shrink-0">{renderImageArea(block.imageUrl, 1, true)}</div>
                     <div className="w-full md:flex-1 min-w-0 md:pt-2 relative">
-                        <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
+                        {renderTextContent()}
                     </div>
                 </div>
             )}
@@ -445,7 +482,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                     {/* Mobile: Image First, Text Second? Or Text first? Usually stacked = Image top is standard for blog cards, but for 'Image Right' layout, preserving text first on mobile is fine, OR moving image to top. Let's keep DOM order for now (Text top) but common pattern is Image Top. Let's swap order for mobile? No, let's keep text top to match DOM flow unless user asks. */}
                     {/* Actually, standard responsive 'Image Right' often becomes 'Image Top' or 'Image Bottom'. Let's stick to 'Text Top' (natural flow) for now. */}
                     <div className="w-full md:flex-1 min-w-0 md:pt-2 relative order-2 md:order-1">
-                        <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className="w-full bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[3rem]" style={{ fontFamily: block.styles?.fontFamily, fontSize: block.styles?.fontSize || '18px', textAlign: block.styles?.textAlign as any || 'left', color: block.styles?.color || 'inherit' }} />
+                        {renderTextContent()}
                     </div>
                     <div className="w-full md:w-1/2 flex-shrink-0 order-1 md:order-2">{renderImageArea(block.imageUrl, 1, true)}</div>
                 </div>
@@ -454,17 +491,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
             {/* 5. 글만 */}
             {block.type === 'paragraph' && (
                 <div className="w-full">
-                    <textarea ref={textareaRef} value={block.text} onChange={(e) => onUpdate(block.id, 'text', e.target.value)} placeholder={readOnly ? "" : "내용을 입력하세요..."} readOnly={readOnly} rows={1} className={`w-full block bg-transparent outline-none resize-none overflow-hidden leading-relaxed p-2 min-h-[75px] border-2 transition-colors rounded-lg ${isSelected ? 'border-indigo-200' : 'border-transparent'}`} style={{
-                        fontFamily: block.styles?.fontFamily,
-                        fontSize: block.styles?.fontSize || '18px',
-                        textAlign: block.styles?.textAlign as any || 'left',
-                        color: block.styles?.color || 'inherit',
-                        fontWeight: block.styles?.fontWeight || 'normal',
-                        fontStyle: block.styles?.fontStyle || 'normal',
-                        textDecoration: block.styles?.textDecoration || 'none',
-                        backgroundColor: block.styles?.backgroundColor || 'transparent',
-
-                    }} />
+                    {renderTextContent('75px')}
                 </div>
             )}
         </div>
