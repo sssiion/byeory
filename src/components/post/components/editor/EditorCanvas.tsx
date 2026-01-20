@@ -3,12 +3,13 @@ import ContentBlock from './ContentBlock';
 import { WIDGET_COMPONENT_MAP } from '../../../../components/settings/widgets/componentMap';
 import CustomWidgetPreview from '../../../../components/settings/widgets/customwidget/components/CustomWidgetPreview'; // 🌟 Import CustomWidgetPreview
 import ResizableItem from './ResizableItem';
+import StickyNote from './StickyNote';
 // import EditorToolbar from './EditorToolbar'; // Unused
 import ToolbarOverlay from './ToolbarOverlay';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import type { Block, Sticker, FloatingText, FloatingImage } from '../../types';
-import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft, StickyNote, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Type, ArrowUp, ArrowDown, LayoutTemplate, ArrowRightLeft, StickyNote as StickyNoteIcon, Loader2 } from 'lucide-react';
 
 interface Props {
     title: string;
@@ -520,7 +521,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                     zIndex: snapshot.isDragging ? 100 : ((block as any).zIndex || 'auto')
                                                                 }}
                                                                 className={`relative group transition-shadow duration-200 ${isFocused ? 'rounded-xl' : ''}`}
-                                                                onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') { onSelect(block.id, 'block', e.shiftKey); setIsToolbarVisible(false); } }}
+                                                                onClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') { onSelect(block.id, 'block', e.shiftKey); setIsToolbarVisible(true); } }}
                                                                 onDoubleClick={(e) => { e.stopPropagation(); if (viewMode === 'editor') { onSelect(block.id, 'block'); setIsToolbarVisible(true); } }}
                                                             >
                                                                 <ContentBlock
@@ -529,7 +530,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                                                     onDelete={handleDeleteBlock}
                                                                     onImageUpload={onBlockImageUpload}
                                                                     isSelected={isFocused}
-                                                                    onSelect={() => onSelect(block.id, 'block')}
+                                                                    onSelect={() => { onSelect(block.id, 'block'); setIsToolbarVisible(true); }}
                                                                     readOnly={viewMode === 'read' || !!block.locked}
                                                                     dragHandleProps={provided.dragHandleProps}
                                                                 />
@@ -596,7 +597,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                             onMouseDown={(e) => e.stopPropagation()}
                                             className="flex items-center gap-2 px-4 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 hover:border-yellow-300 rounded-full transition shadow-sm text-yellow-700"
                                         >
-                                            <StickyNote size={16} /> <span>포스트잇</span>
+                                            <StickyNoteIcon size={16} /> <span>포스트잇</span>
                                         </button>
                                     </div>
                                 </div>
@@ -609,30 +610,23 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 {...txt}
                                 isSelected={selectedId === txt.id || selectedIds.includes(txt.id)}
                                 readOnly={viewMode === 'read' || !!txt.locked}
-                                onSelect={(isMulti) => { onSelect(txt.id, 'floating', isMulti); setIsToolbarVisible(false); }}
+                                onSelect={(isMulti) => { onSelect(txt.id, 'floating', isMulti); setIsToolbarVisible(true); }}
                                 onDoubleClick={() => setIsToolbarVisible(true)}
                                 onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
                                 scale={scale}
                             >
-                                <textarea
-                                    value={txt.text}
-                                    onChange={(e) => onUpdate(txt.id, 'floating', { text: e.target.value })}
-                                    className="w-full h-full bg-transparent outline-none resize-none p-2 overflow-hidden"
-                                    style={{
-                                        fontFamily: txt.styles?.fontFamily,
-                                        fontSize: txt.styles?.fontSize,
-                                        fontWeight: txt.styles?.fontWeight || 'normal',
-                                        textAlign: txt.styles?.textAlign as any,
-                                        color: txt.styles?.color,
-                                        backgroundColor: txt.styles?.backgroundColor,
-                                        backgroundImage: txt.styles?.backgroundImage ? `url(${txt.styles.backgroundImage})` : undefined, // ✨ BG Image
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        backgroundRepeat: 'no-repeat',
-                                        fontStyle: txt.styles?.fontStyle || 'normal',
-                                        textDecoration: txt.styles?.textDecoration || 'none',
-                                    }}
+                                <StickyNote
+                                    item={txt}
+                                    scale={scale}
+                                    isFocusing={croppingId === txt.id}
                                     readOnly={viewMode === 'read' || !!txt.locked}
+                                    onUpdate={(changes) => onUpdate(txt.id, 'floating', changes)}
+                                    onSelect={() => {
+                                        if (viewMode === 'editor') {
+                                            onSelect(txt.id, 'floating');
+                                            setIsToolbarVisible(true);
+                                        }
+                                    }}
                                 />
                             </ResizableItem>
                         ))}
@@ -651,7 +645,7 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
                                 opacity={img.opacity}
                                 isSelected={selectedId === img.id || (selectedIds && selectedIds.includes(img.id))}
                                 readOnly={viewMode === 'read' || !!img.locked}
-                                onSelect={(isMulti) => { if (viewMode === 'editor') { onSelect(img.id, 'floatingImage', isMulti); setIsToolbarVisible(false); } }}
+                                onSelect={(isMulti) => { if (viewMode === 'editor') { onSelect(img.id, 'floatingImage', isMulti); setIsToolbarVisible(true); } }}
                                 onUpdate={(changes) => onUpdate(img.id, 'floatingImage', changes)}
                                 onDoubleClick={() => { if (viewMode === 'editor') { onSelect(img.id, 'floatingImage'); setIsToolbarVisible(true); } }}
                                 isCropping={croppingId === img.id}
@@ -732,11 +726,11 @@ const EditorCanvas = forwardRef<HTMLDivElement, Props>(({
             </div>
 
             {/* ✨ Fixed Toolbar (Moved outside of scaled content) */}
-            {isToolbarVisible && selectedId && getSelectedItem() && (
+            {isToolbarVisible && selectedId && currentItem && (
                 <ToolbarOverlay
                     selectedId={selectedId}
                     selectedType={selectedType as any}
-                    currentItem={getSelectedItem()}
+                    currentItem={currentItem}
                     onUpdate={onUpdate}
                     onDelete={onDelete}
                     scale={scale}

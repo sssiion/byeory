@@ -150,9 +150,24 @@ const EditorToolbar: React.FC<Props> = ({
         ? "fixed bottom-8 left-1/2 -translate-x-1/2"
         : "absolute top-full mt-2 left-1/2 -translate-x-1/2";
 
-    // ✨ Handle Zoom (Content Resize during Crop)
+    // ✨ Handle Zoom (Content Resize during Crop OR Sticky Focus)
     const handleZoom = (zoomValue: number) => {
-        if (!isCropping || !currentItem.crop) return;
+        if (!isCropping) return;
+
+        // ✨ Case 1: Floating Text (Sticky Note) Image Focus
+        if (selectedType === 'floating' && (currentItem as FloatingText).imageTransform) {
+            const transform = (currentItem as FloatingText).imageTransform || { x: 0, y: 0, scale: 1 };
+            onUpdate(selectedId, selectedType, {
+                imageTransform: {
+                    ...transform,
+                    scale: zoomValue
+                }
+            });
+            return;
+        }
+
+        // ✨ Case 2: Crop (Images/Stickers)
+        if (!currentItem.crop) return;
 
         const crop = currentItem.crop;
         const currentW = crop.contentW;
@@ -186,11 +201,6 @@ const EditorToolbar: React.FC<Props> = ({
             y: crop.contentY + currentH / 2
         };
 
-        // We want to keep the image centered relative to the viewport
-        // or keep its current relative center if panned? 
-        // Let's stick with centering relative to viewport for simplicity if it hasn't been panned much,
-        // but actually, maintaining the anchor point is better.
-        // Let's use the current center as anchor.
         const anchorX = imgCenter.x;
         const anchorY = imgCenter.y;
 
@@ -204,6 +214,8 @@ const EditorToolbar: React.FC<Props> = ({
             }
         });
     };
+
+    const isStickyWithImage = selectedType === 'floating' && !!(currentItem as FloatingText)?.styles?.backgroundImage;
 
     return (
         <div
@@ -419,6 +431,50 @@ const EditorToolbar: React.FC<Props> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* ✨ Sticky Note Image Focus Button & Controls */}
+                    {isStickyWithImage && onCropToggle && (
+                        <>
+                            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                            <button
+                                onClick={onCropToggle}
+                                className={`p-2 rounded-lg transition items-center justify-center flex
+                                    ${isCropping ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200' : 'text-gray-600 hover:bg-gray-100'}
+                                `}
+                                title={isCropping ? "완료" : "확대/이동"}
+                            >
+                                <Scissors size={18} />
+                            </button>
+
+                            {isCropping && (
+                                <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100 animate-in fade-in zoom-in-95">
+                                    <Search size={14} className="text-blue-400" />
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="3"
+                                        step="0.1"
+                                        value={(currentItem as FloatingText).imageTransform?.scale || 1}
+                                        onChange={(e) => handleZoom(parseFloat(e.target.value))}
+                                        className="w-24 accent-blue-500 h-1.5 cursor-pointer"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            const newFit = (currentItem as FloatingText).imageFit === 'contain' ? 'cover' : 'contain';
+                                            onUpdate(selectedId, selectedType, {
+                                                imageFit: newFit,
+                                                imageTransform: { x: 0, y: 0, scale: 1 } // ✨ Reset transform to original state
+                                            });
+                                        }}
+                                        className="text-[10px] font-bold text-blue-600 bg-white border border-blue-200 px-1.5 py-0.5 rounded hover:bg-blue-50 ml-1"
+                                    >
+                                        {(currentItem as FloatingText).imageFit === 'contain' ? '꽉 채우기' : '다 보이기'}
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
                 </div>
             )}
 

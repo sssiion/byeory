@@ -83,7 +83,9 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
     const toggleImageFit = (e: React.MouseEvent) => {
         e.stopPropagation();
         const newFit = block.imageFit === 'contain' ? 'cover' : 'contain';
+        // ✨ Reset transform on toggle
         onUpdate(block.id, 'imageFit', newFit);
+        onUpdate(block.id, 'imageTransform', { x: 0, y: 0, scale: 1 });
     };
 
     const s = block.styles || {};
@@ -326,7 +328,7 @@ const ContentBlock: React.FC<Props> = ({ block, onUpdate, onDelete, onImageUploa
                                     >
                                         <ScanEye size={14} /> 확대/이동
                                     </button>
-                                    <button onClick={toggleImageFit} className="bg-white/80 hover:bg-white text-xs px-2 py-1 rounded shadow text-gray-700 font-bold">{fitMode === 'contain' ? '↔ 꽉 채우기' : '🖼 원본 비율'}</button>
+                                    <button onClick={toggleImageFit} className="bg-white/80 hover:bg-white text-xs px-2 py-1 rounded shadow text-gray-700 font-bold">{fitMode === 'contain' ? '꽉 채우기' : '다 보이기'}</button>
                                 </div>
                             </>
                         )}
