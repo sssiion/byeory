@@ -11,6 +11,7 @@ interface PostBookViewProps {
     startIndex?: number;
     // ✨ Optional: Pass generic album info if available for Back Cover art
     currentAlbum?: any;
+    onOpenList?: () => void; // ✨ Added prop
 }
 
 // ✨ Pagination Helper (Extract to reusable function if needed outside)
@@ -120,7 +121,7 @@ const PageContent = React.memo(({ page }: { page?: VirtualPage }) => {
     );
 });
 
-const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex = 0, currentAlbum }) => {
+const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex = 0, currentAlbum, onOpenList }) => {
     // ✨ Global Pagination State
     const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
     // ✨ Animation State
@@ -132,6 +133,18 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
         setTimeout(() => {
             onClose(); // Call parent close after animation
         }, 1500);
+    };
+
+    // ✨ Handle Open List (Bookmark Click)
+    const handleOpenList = () => {
+        if (onOpenList) {
+            setIsClosing(true);
+            setTimeout(() => {
+                onOpenList();
+            }, 1500);
+        } else {
+            handleClose(); // Fallback
+        }
     };
 
 
@@ -231,7 +244,7 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
             {/* ✨ Bookmark to Toggle Folder View */}
             <div
                 className="absolute top-0 right-12 z-[60] cursor-pointer group transition-transform hover:translate-y-2 duration-300"
-                onClick={handleClose}
+                onClick={handleOpenList} // ✨ Use new handler
             >
                 <div className="w-12 h-20 bg-red-600 shadow-lg rounded-b-lg relative flex flex-col items-center justify-end pb-2">
                     {/* Ribbon Cutout effect */}
@@ -336,8 +349,16 @@ const PostBookView: React.FC<PostBookViewProps> = ({ posts, onClose, startIndex 
                                     <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                                 </div>
                             ) : (
-                                <div className="w-full h-full bg-indigo-900 flex items-center justify-center text-white/20">
-                                    <div className="w-24 h-24 border-4 border-current rounded-full" />
+                                <div className="w-full h-full relative">
+                                    <AlbumBook
+                                        title="모든 기록 보관함"
+                                        config={undefined} // Use default Album styling
+                                        count={posts.length > 1 ? posts.length : undefined}
+                                        className="w-full h-full shadow-none border-none"
+                                        tag={undefined}
+                                    />
+                                    {/* Overlay for realism */}
+                                    <div className="absolute inset-0 bg-black/5 pointer-events-none" />
                                 </div>
                             )}
                         </div>

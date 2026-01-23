@@ -716,6 +716,7 @@ const PostFolderView: React.FC<Props> = ({ albumId, allPosts, onPostClick, onSta
                             onAlbumClick(null);
                         }}
                         startIndex={startIndex}
+                        onOpenList={() => setIsBookViewOpen(false)} // ✨ Stay in folder, just close book
                     />
                 )}
 

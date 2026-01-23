@@ -89,13 +89,18 @@ const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete,
                  */}
                 <motion.div
                     className="w-full h-full relative"
-                    layoutId={isClosing ? undefined : `album-cover-${album?.id || post?.id}`} // Disable layoutId on close to prevent conflicts? Or keep it?
-                    // Ideally keep layoutId for exit animation if it goes back to album?
-                    // But we want to disappear.
-                    transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+                    // layoutId removed to disable zoom from folder linkage
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     onClick={handleBookClick}
                     animate={{
-                        x: 0 // ✨ Fixed X: Spine at Center. Book opens symmetrically.
+                        opacity: 1,
+                        scale: 1,
+                        x: (status === 'OPENING' || status === 'COMPLETED' || status === 'CLOSING_START' || status === 'CLOSING_END') ? 0 : -260,
+                        // ✨ Clip Path: Hide the Left Half (Ghost) when Closed/Zooming, Reveal when Opening
+                        clipPath: (status === 'ZOOMING' || status === 'IDLE_CLOSED')
+                            ? 'inset(0% 0% 0% 50%)' // Cut left 50%
+                            : 'inset(0% 0% 0% 0%)'   // Show full
                     }}
                     style={{
                         transformStyle: 'preserve-3d',
