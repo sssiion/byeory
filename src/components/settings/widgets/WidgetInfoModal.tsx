@@ -19,8 +19,6 @@ const renderWidgetPreview = (widgetData: any) => {
                 selectedBlockId={null}
                 onSelectBlock={() => { }}
                 onRemoveBlock={() => { }}
-                activeContainer={null as any}
-                onSetActiveContainer={() => { }}
                 onUpdateBlock={() => { }}
             />
         </div>

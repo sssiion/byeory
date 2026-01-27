@@ -9,7 +9,7 @@ interface Props {
     height?: number; // Container height (unused for scaling, but kept for interface)
 }
 
-const PostThumbnail: React.FC<Props> = ({ post, width = 300, height = 300 }) => {
+const PostThumbnail: React.FC<Props> = ({ post, width: _width = 300, height: _height = 300 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const baseWidth = 800;

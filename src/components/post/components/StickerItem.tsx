@@ -27,7 +27,7 @@ const StickerItem: React.FC<Props> = ({ sticker, isSelected, onSelect, onUpdate,
     return (
         <Draggable
             nodeRef={nodeRef}
-            position={{ x: sticker.x, y: sticker.y }}
+            position={{ x: Number(sticker.x), y: Number(sticker.y) }}
             onStart={(e) => { e.stopPropagation(); onSelect(); }}
             onStop={(_, data) => onUpdate(sticker.id, { x: data.x, y: data.y })}
         >

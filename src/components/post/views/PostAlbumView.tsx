@@ -433,7 +433,7 @@ const PostAlbumView: React.FC<Props> = ({ posts, customAlbums, onAlbumClick, onC
                         // Filter posts belonging to this album
                         overlayPost = posts.find(p => {
                             // Ensure numeric comparison safety
-                            if (p.albumIds && p.albumIds.includes(Number(openingAlbumId) || -1)) return true;
+                            if (p.albumIds && p.albumIds.includes(String(openingAlbumId))) return true;
                             // Fallback tag matching
                             if (album.tag && p.tags && p.tags.includes(album.tag)) return true;
                             return false;

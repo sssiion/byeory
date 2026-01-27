@@ -96,7 +96,7 @@ const BookOpeningOverlay: React.FC<Props> = ({ post, album, onAnimationComplete,
                     animate={{
                         opacity: 1,
                         scale: 1,
-                        x: (status === 'OPENING' || status === 'COMPLETED' || status === 'CLOSING_START' || status === 'CLOSING_END') ? 0 : -260,
+                        x: (status === 'OPENING' || status === 'CLOSING_START' || status === 'CLOSING_END') ? 0 : -260,
                         // ✨ Clip Path: Hide the Left Half (Ghost) when Closed/Zooming, Reveal when Opening
                         clipPath: (status === 'ZOOMING' || status === 'IDLE_CLOSED')
                             ? 'inset(0% 0% 0% 50%)' // Cut left 50%

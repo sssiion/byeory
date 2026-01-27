@@ -81,8 +81,8 @@ const SafeImage = ({ src, alt, className, style, ...props }: React.ImgHTMLAttrib
 };
 
 const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
-    title,
-    titleStyles = {},
+    title: _title,
+    titleStyles: _titleStyles = {},
     styles = {}, // ✨ Default empty styles
     blocks = [],
     stickers = [],
@@ -90,8 +90,8 @@ const MiniPostViewer: React.FC<MiniPostViewerProps> = ({
     floatingImages = [],
     scale = 1,
     minHeight = 'auto',
-    hideTitle = false, // ✨ Default false
-    preserveTitleSpace = false,
+    hideTitle: _hideTitle = false, // ✨ Default false
+    preserveTitleSpace: _preserveTitleSpace = false,
     paddingClass = 'px-12' // ✨ Default padding
 }) => {
     const ORIGINAL_WIDTH = 800; // 에디터 기준 너비
