@@ -1,10 +1,8 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import FlashcardWidget from './Rendercomponent/FlashcardWidget';
-import { getSvgPathFromPoints } from '../utils';
 import type { WidgetBlock } from '../types';
 import {
     Check,
-    CalendarDays,
     ChevronDown,
     ChevronRight,
     EyeOff, Eye, Star, Heart, Zap, ThumbsUp
@@ -27,10 +25,7 @@ import {
     Background,
     Controls,
     type Edge,
-    type EdgeChange,
-    type NodeChange,
     type Node,
-    type Connection,
     ReactFlow
 } from "@xyflow/react";
 import PdfDropViewer from "./Rendercomponent/PdfDropViewer.tsx";
@@ -43,6 +38,10 @@ interface RendererProps {
     onRemoveBlock: (id: string) => void;
     onUpdateBlock: (id: string, updates: any) => void;
 }
+
+// ... (skipping unchanged code)
+
+
 
 const ToggleItem = ({ block, onUpdateBlock, style }: any) => {
     const { content } = block;
@@ -472,7 +471,7 @@ const BarChartItem = ({ content, style, styles }: any) => {
     );
 };
 
-const PieChartItem = ({ content, style, styles }: any) => {
+const PieChartItem = ({ content, style }: any) => {
     const data = content.data || [];
     const total = data.reduce((acc: number, cur: any) => acc + (Number(cur.value) || 0), 0);
     let currentDeg = 0;
@@ -560,7 +559,7 @@ const CounterItem = ({ block, onUpdateBlock, style, styles }: any) => {
 };
 
 const BlockRenderer: React.FC<RendererProps> = (props) => {
-    const { block, onUpdateBlock, selectedBlockId, onSelectBlock, onRemoveBlock } = props;
+    const { block, onUpdateBlock, selectedBlockId, onSelectBlock } = props;
     const { styles, content, type } = block;
 
     const textDecoration = [
@@ -597,13 +596,13 @@ const BlockRenderer: React.FC<RendererProps> = (props) => {
                                     onRemoveBlock={(id) => {
                                         // Remove block from this specific column
                                         const newLayout = [...layout];
-                                        newLayout[colIdx] = newLayout[colIdx].filter(b => b.id !== id);
+                                        newLayout[colIdx] = newLayout[colIdx].filter((b: WidgetBlock) => b.id !== id);
                                         onUpdateBlock(block.id, { content: { ...content, layout: newLayout } });
                                     }}
                                     onUpdateBlock={(id, updates) => {
                                         // Update block deep inside layout
                                         const newLayout = [...layout];
-                                        newLayout[colIdx] = newLayout[colIdx].map(b => b.id === id ? { ...b, ...updates } : b);
+                                        newLayout[colIdx] = newLayout[colIdx].map((b: WidgetBlock) => b.id === id ? { ...b, ...updates } : b);
                                         onUpdateBlock(block.id, { content: { ...content, layout: newLayout } });
                                     }}
                                 />

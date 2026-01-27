@@ -1,8 +1,8 @@
 import React from "react";
-import type { WidgetBlock, ContainerLocation } from "../../types.ts"; // types 경로 확인 필요
+import type { WidgetBlock } from "../../types.ts"; // types 경로 확인 필요
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import BlockRenderer from "../BlockRenderer.tsx";
 
 
@@ -14,8 +14,7 @@ interface ColumnSortableItemProps {
     onSelectBlock: (id: string | null) => void;
     onRemoveBlock: (id: string) => void;
     // BlockRenderer가 추가로 필요로 하는 props가 있다면 여기에 추가 (예: activeContainer 등)
-    activeContainer: ContainerLocation;
-    onSetActiveContainer: (loc: ContainerLocation) => void;
+    // activeContainer, onSetActiveContainer removed as unused in BlockRenderer
     onUpdateBlock: (id: string, updates: any) => void;
 }
 
@@ -26,8 +25,7 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
     selectedBlockId,
     onSelectBlock,
     onRemoveBlock,
-    activeContainer,
-    onSetActiveContainer,
+
     onUpdateBlock
 }) => {
     // 2️⃣ useSortable 훅 사용
@@ -89,8 +87,6 @@ const ColumnSortableItem: React.FC<ColumnSortableItemProps> = ({
                     selectedBlockId={selectedBlockId}
                     onSelectBlock={onSelectBlock}
                     onRemoveBlock={onRemoveBlock}
-                    activeContainer={activeContainer}
-                    onSetActiveContainer={onSetActiveContainer}
                     onUpdateBlock={onUpdateBlock}
                 />
             </div>

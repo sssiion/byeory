@@ -1,16 +1,15 @@
 // ... imports
-import React, { useState, useRef, useEffect } from 'react'; // Ensure React hooks are imported
+import React, { useState, useRef } from 'react'; // Ensure React hooks are imported
 import axios from 'axios';
 import {
     // 카테고리 대표 아이콘
     Type, Layout, Sparkles, Activity, PieChart, Wrench, GraduationCap, MousePointer2, ImageDown, // ✨ Added ImageDown
     // 블록 아이콘들
     Heading1, Quote, Minus, List, ListOrdered, CheckSquare, Sidebar as IconSidebar,
-    Columns, AlignVerticalJustifyCenter, AlertCircle, Highlighter, EyeOff, Sigma,
-    Play, ChevronsRight, MoreHorizontal, BarChart3, Radar,
+    Columns, AlignVerticalJustifyCenter, AlertCircle, Highlighter, EyeOff,
+    Play, ChevronsRight, BarChart3, Radar,
     Grid3X3, PlusCircle, Star, Battery, Database, ArrowLeftRight,
     Link, FileText, StickyNote, Search, Map,
-    Plus, X // ✨ Added Plus, X for Freepik UI
 } from 'lucide-react';
 import type { BlockType } from '../types';
 import { BLOCK_COSTS } from '../constants';
@@ -476,7 +475,7 @@ const TabButton: React.FC<{ active: boolean, onClick: () => void, icon: React.Re
     </button>
 );
 
-const getCategoryTitle = (cat: Category) => {
+/* const getCategoryTitle = (cat: Category) => {
     switch (cat) {
         case 'text': return '기본 텍스트';
         case 'structure': return '구조 및 목록';
@@ -488,6 +487,6 @@ const getCategoryTitle = (cat: Category) => {
         case 'interaction': return '상호작용';
         default: return '';
     }
-};
+}; */
 
 export default LeftSidebar;

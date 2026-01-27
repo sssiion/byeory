@@ -306,8 +306,8 @@ const Canvas: React.FC<Props> = (props) => {
 
             // Determine dominant axis based on handle (simplified logic)
             // Or just use DeltaX to drive both
-            let d = deltaX;
-            if (handle.includes('nm') || handle.includes('s')) d = deltaY; // vertical handles (not used here yet)
+            // let d = deltaX;
+            // if (handle.includes('nm') || handle.includes('s')) d = deltaY; // vertical handles (not used here yet)
 
             // For corner handles, let's use the larger movement or X
             // actually simpler: just let width drive height or vice versa based on handle

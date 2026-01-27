@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { Database, Calculator } from "lucide-react";
 import type { WidgetBlock } from "../../types";
 
@@ -7,7 +7,7 @@ interface Props {
     onUpdateBlock?: (id: string, updates: any) => void;
 }
 
-export default function DatabaseWidget({ block, onUpdateBlock }: Props) {
+export default function DatabaseWidget({ block, onUpdateBlock: _onUpdateBlock }: Props) {
     const { content, styles } = block;
     const headers = content.headers || ['항목', '금액'];
     const rows = content.rows || [];
