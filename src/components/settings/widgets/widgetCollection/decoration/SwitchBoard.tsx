@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { WidgetWrapper } from '../Common';
 import { Star } from 'lucide-react';
 

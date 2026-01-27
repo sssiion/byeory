@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+
 import { Calendar, DollarSign, MapPin, Plus, Trash2, Check, ChevronDown } from 'lucide-react';
 import type { WidgetBlock } from '../../types';
 

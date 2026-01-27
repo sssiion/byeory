@@ -342,8 +342,6 @@ const MainPage: React.FC = () => {
                                         selectedBlockId={null}
                                         onSelectBlock={() => { }}
                                         onRemoveBlock={() => { }}
-                                        activeContainer={null as any}
-                                        onSetActiveContainer={() => { }}
                                         onUpdateBlock={() => { }}
                                     />
                                 ) : (

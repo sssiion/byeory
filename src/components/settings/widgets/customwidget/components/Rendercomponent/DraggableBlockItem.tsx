@@ -85,7 +85,7 @@ const DraggableBlockItem: React.FC<DraggableBlockItemProps> = (props) => {
                 onResizeStart={(e) => {
                     e.stopPropagation();
                 }}
-                onResizeStop={(e, direction, ref) => {
+                onResizeStop={(_e, _direction, ref) => {
                     onUpdateBlock(block.id, {
                         layout: {
                             ...layout,

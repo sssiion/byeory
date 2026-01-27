@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, ExternalLink, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { EditableText } from '../EditableText';
 
 interface LinkData {
     url: string;
@@ -99,7 +98,7 @@ export default function LinkBookmarkWidget({ block, onUpdateBlock }: any) {
             target="_blank"
             rel="noopener noreferrer"
             className="group block w-full h-full bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md hover:border-indigo-300 transition-all flex flex-col md:flex-row no-underline"
-            onClick={(e) => {
+            onClick={() => {
                 // 편집 모드일 때 클릭 방지 로직이 필요할 수 있음
                 // 여기서는 일단 링크 이동 허용
             }}

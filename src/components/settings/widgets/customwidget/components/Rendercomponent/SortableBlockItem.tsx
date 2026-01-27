@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { ContainerLocation, WidgetBlock } from '../../types.ts';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import BlockRenderer from '../BlockRenderer.tsx';
 import { Resizable } from 're-resizable';
 
@@ -18,7 +18,7 @@ interface SortableBlockItemProps {
 }
 
 const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
-    const { block, selectedBlockId, onSelectBlock, onRemoveBlock, activeContainer, onSetActiveContainer, onUpdateBlock, onOpenSettings } = props;
+    const { block, selectedBlockId, onSelectBlock, onRemoveBlock, onUpdateBlock, onOpenSettings } = props;
 
     const {
         attributes,
@@ -81,7 +81,7 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                 }}
 
                 // 리사이징 종료 시 layout 데이터 업데이트
-                onResizeStop={(e, direction, ref, d) => {
+                onResizeStop={(_e, _direction, ref, _d) => {
                     onUpdateBlock(block.id, {
                         layout: {
                             w: ref.style.width,
@@ -156,8 +156,6 @@ const SortableBlockItem: React.FC<SortableBlockItemProps> = (props) => {
                             selectedBlockId={selectedBlockId}
                             onSelectBlock={onSelectBlock}
                             onRemoveBlock={onRemoveBlock}
-                            activeContainer={activeContainer}
-                            onSetActiveContainer={onSetActiveContainer}
                             onUpdateBlock={onUpdateBlock}
                         />
                     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useWidgetStorage } from '../SDK';
 import { Settings } from 'lucide-react';
 
