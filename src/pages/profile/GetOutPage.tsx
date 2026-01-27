@@ -47,7 +47,8 @@ const GetOutPage: React.FC = () => {
     const executeDelete = async () => {
         try {
             const token = localStorage.getItem('accessToken');
-            const response = await fetch('http://localhost:8080/api/user', {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/api/user`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

@@ -5,8 +5,8 @@ import { LAYOUT_PRESETS } from "../constants";
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
-
-const BASE_URL = "http://localhost:8080";
+const URL = import.meta.env.VITE_API_URL;
+const BASE_URL = URL;
 const API_BASE_URL = `${BASE_URL}/api/posts`;
 const API_ALBUM_URL = `${BASE_URL}/api/albums`;
 const API_ROOM_URL = `${BASE_URL}/api/rooms`;

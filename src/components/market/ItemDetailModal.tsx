@@ -5,8 +5,8 @@ import type { MarketItem } from '../../types/market';
 import { STICKERS } from '../post/constants';
 import ConfirmationModal from '../common/ConfirmationModal';
 import CustomWidgetPreview from '../settings/widgets/customwidget/components/CustomWidgetPreview';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+const URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = URL+'/api';
 
 interface ItemDetailModalProps {
     item: MarketItem;

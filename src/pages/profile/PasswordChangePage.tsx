@@ -74,7 +74,8 @@ const PasswordChangePage: React.FC = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password', {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/auth/password`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

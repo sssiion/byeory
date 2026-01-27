@@ -33,7 +33,7 @@ interface MenuContextType {
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
-
+const URL = import.meta.env.VITE_API_URL;
 export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { isLoggedIn } = useAuth();
     const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_ITEMS);
@@ -73,7 +73,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!token) return;
 
             try {
-                const response = await fetch('http://localhost:8080/api/setting/menu', {
+                const response = await fetch(URL + '/api/setting/menu', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -106,7 +106,8 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const token = localStorage.getItem('accessToken');
         if (token) {
             try {
-                await fetch('http://localhost:8080/api/setting/menu', {
+                const URL = import.meta.env.VITE_API_URL;
+                await fetch(`${URL}/api/setting/menu`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

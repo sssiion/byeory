@@ -28,7 +28,8 @@ function JoinPage() {
 
         setIsSending(true);
         try {
-            const res = await fetch('http://localhost:8080/auth/email/send', {
+            const URL = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${URL}/auth/email/send`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -57,7 +58,8 @@ function JoinPage() {
             return;
         }
         try {
-            const res = await fetch('http://localhost:8080/auth/email/check', {
+            const URL = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${URL}/auth/email/check`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, authNum: verificationCode })

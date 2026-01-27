@@ -18,7 +18,8 @@ export function WelcomeWidget({ gridSize, isStickerMode }: { gridSize?: { w: num
                 const token = localStorage.getItem('accessToken');
                 if (!token) return;
 
-                const response = await fetch('http://localhost:8080/api/user/profile', {
+                const URL = import.meta.env.VITE_API_URL;
+                const response = await fetch(`${URL}/api/user/profile`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 

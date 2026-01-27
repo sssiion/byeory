@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { CommunityResponse, PageResponse, UserProfileBasic, CommunityMessage } from './types';
-
-const BASE_URL = 'http://localhost:8080/api';
+const URL = import.meta.env.VITE_API_URL;
+const BASE_URL = URL+'/api';
 const normalizeTags = (tags: any[]) => {
     if (!tags) return [];
     return tags.map((t: any) => {

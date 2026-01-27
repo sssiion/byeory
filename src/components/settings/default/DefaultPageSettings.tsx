@@ -12,7 +12,7 @@ const pages = [
     { id: 'community', name: '커뮤니티', path: '/community', icon: Users },
     { id: 'market', name: '마켓', path: '/market', icon: CheckSquare },
 ];
-
+const URL = import.meta.env.VITE_API_URL;
 export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSettingsProps) {
     const [selectedPath, setSelectedPath] = useState<string>('/home');
 
@@ -33,7 +33,7 @@ export default function DefaultPageSettings({ onBack, onClose }: DefaultPageSett
         const token = localStorage.getItem('accessToken');
         if (token) {
             try {
-                await fetch('http://localhost:8080/api/setting/page', {
+                await fetch(URL+'/api/setting/page', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

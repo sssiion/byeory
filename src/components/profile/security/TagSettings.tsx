@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, ChevronDown } from 'lucide-react';
-
+const URL = import.meta.env.VITE_API_URL;
 const TagSettings: React.FC = () => {
     const [isTagExpanded, setIsTagExpanded] = useState(false);
     const [privateTags, setPrivateTags] = useState<string[]>([]);
@@ -13,7 +13,7 @@ const TagSettings: React.FC = () => {
             if (!token) return;
 
             try {
-                const response = await fetch('http://localhost:8080/api/persona/settings', {
+                const response = await fetch(URL+'/api/persona/settings', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -57,7 +57,7 @@ const TagSettings: React.FC = () => {
 
         setIsSavingTags(true);
         try {
-            const response = await fetch('http://localhost:8080/api/persona/settings', {
+            const response = await fetch(URL+'/api/persona/settings', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:8080';
+const URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = URL;
 
 export interface SocialLoginData {
     email: string;

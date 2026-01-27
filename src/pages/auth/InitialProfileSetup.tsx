@@ -143,7 +143,8 @@ const InitialProfileSetup: React.FC = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/api/user/profile", {
+      const URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${URL}/api/user/profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

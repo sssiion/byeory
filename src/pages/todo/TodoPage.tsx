@@ -34,7 +34,8 @@ const TodoPage: React.FC = () => {
             const token = localStorage.getItem('accessToken');
             const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-            const response = await fetch(`http://localhost:8080/api/posts/summary?year=${year}&month=${month}`, {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/api/posts/summary?year=${year}&month=${month}`, {
                 headers
             });
 

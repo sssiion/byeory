@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useCredits } from '../context/CreditContext';
 import { STICKERS } from '../components/post/constants';
 
-const API_BASE_URL = 'http://localhost:8080/api/market';
+const URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = `${URL}/api/market`;
 
 export interface MarketItem {
     id: string;

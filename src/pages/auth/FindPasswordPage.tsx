@@ -39,7 +39,8 @@ function FindPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password-reset/request', {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/auth/password-reset/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
@@ -71,7 +72,8 @@ function FindPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password-reset/verify', {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/auth/password-reset/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, code }),
@@ -106,7 +108,8 @@ function FindPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/auth/password-reset/confirm', {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/auth/password-reset/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

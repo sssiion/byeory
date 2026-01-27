@@ -31,7 +31,8 @@ export const MoodAnalytics = ({ className, style, gridSize, isStickerMode }: Com
         }
 
         try {
-            const response = await fetch("http://localhost:8080/api/persona", {
+            const URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${URL}/api/persona`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 

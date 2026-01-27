@@ -36,8 +36,9 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
     const token = localStorage.getItem("accessToken");
     if (!token) return;
     try {
-      const response = await fetch("http://localhost:8080/api/user/profile", {
-        headers: { Authorization: `Bearer ${token}` },
+      const URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${URL}/api/user/profile`, {
+        headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
       });
       if (response.ok) {
         const profile = await response.json();
@@ -191,10 +192,11 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = localStorage.getItem("accessToken");
       if (!token) return;
       try {
+        const URL = import.meta.env.VITE_API_URL;
         const response = await fetch(
-          "http://localhost:8080/api/user/playtime",
+          `${URL}/api/user/playtime`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' },
           }
         );
         if (response.ok) {
@@ -230,7 +232,8 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = localStorage.getItem("accessToken");
       if (!token) return;
       try {
-        const response = await fetch("http://localhost:8080/api/credits/add", {
+        const URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${URL}/api/credits/add`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -289,7 +292,8 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       try {
-        const response = await fetch("http://localhost:8080/api/quest/claim", {
+        const URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${URL}/api/quest/claim`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

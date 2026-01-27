@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/widgets';
+const URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = `${URL}/api/widgets`;
 
 
 // 🌟 토큰 가져오는 함수 (로그인 시 저장한 키 이름이 'accessToken'이라고 가정)

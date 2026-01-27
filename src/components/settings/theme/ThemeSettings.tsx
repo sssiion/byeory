@@ -28,7 +28,8 @@ export default function ThemeSettings({ onBack, onClose }: ThemeSettingsProps) {
                     const fontFamily = localStorage.getItem('fontFamily') || "'Noto Sans KR', sans-serif";
                     const fontSize = localStorage.getItem('fontSize') || "16px";
 
-                    await fetch('http://localhost:8080/api/setting/theme', {
+                    const URL = import.meta.env.VITE_API_URL;
+                    await fetch(`${URL}/api/setting/theme`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',

@@ -7,7 +7,7 @@ interface ThemeContextType {
     setTheme: (theme: string) => void;
     refreshTheme: () => Promise<void>;
 }
-
+const URL = import.meta.env.VITE_API_URL;
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -33,7 +33,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         try {
-            const response = await fetch('http://localhost:8080/api/setting/all', {
+            const response = await fetch(URL+'/api/setting/all', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -64,7 +64,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             // Explicitly fetch page setting as requested
             try {
-                const pageRes = await fetch('http://localhost:8080/api/setting/page', {
+                const pageRes = await fetch(URL+'/api/setting/page', {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

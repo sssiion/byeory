@@ -28,7 +28,8 @@ const PaymentSuccessPage: React.FC = () => {
 
             try {
                 const token = localStorage.getItem('accessToken');
-                const response = await fetch('http://localhost:8080/api/payment/approve', {
+                const URL = import.meta.env.VITE_API_URL;
+                const response = await fetch(`${URL}/api/payment/approve`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

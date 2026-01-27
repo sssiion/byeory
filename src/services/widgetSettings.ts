@@ -1,6 +1,6 @@
 import type { WidgetInstance } from '../components/settings/widgets/type';
-
-const API_BASE_URL = 'http://localhost:8080';
+const URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = URL;
 
 const getHeaders = () => {
     const token = localStorage.getItem('accessToken');
